@@ -1,0 +1,318 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #93D5F6;
+    color: #29235C;
+}
+
+header {
+    background-color: #307BBF;
+    padding: 20px;
+    text-align: center;
+    color: white;
+}
+
+.center {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    width: 500px;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.table-container {
+    max-height: 400px; 
+    overflow-y: auto;
+}
+
+h1 {
+    color: #ffffff;
+}
+
+img.logo {
+    display: block;
+    margin: 0 auto;
+    width: 200px;
+    height: auto;
+}
+
+/* Unified Button Styles */
+button, input[type=button], input[type=submit], input[type=reset] {
+    background-color: #E6007E;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    font-size: 12pt;
+}
+
+button:hover, 
+input[type=button]:hover, 
+input[type=submit]:hover, 
+input[type=reset]:hover {
+    background-color: #005A6C;
+}
+
+input[type="text"], input[type="file"] {
+    width: 100%;  
+    padding: 10px;
+    margin: 10px 0;
+    box-sizing: border-box;
+    border: 2px solid #ccc;
+    border-radius: 5px;
+}
+
+/* Navigation and Toggle Buttons */
+.nav-button {
+    background-color: #307BBF;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    margin: 5px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s ease;
+}
+
+.nav-button:hover {
+    background-color: #005A8C;
+}
+
+.toggle-button {
+    background-color: #E6007E;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s ease;
+}
+
+.toggle-button.active {
+    background-color: #29235C;
+}
+
+/* Footer */
+footer {
+    background-color: #307BBF;
+    padding: 10px;
+    text-align: center;
+    color: white;
+    position: relative;
+    width: 100%;
+    bottom: 0;
+}
+
+footer a {
+    color: white;
+    text-decoration: none;
+}
+
+footer a:hover {
+    text-decoration: underline;
+}
+
+footer img {
+    width: 40px; 
+    height: auto;
+    vertical-align: middle;  
+}
+
+.footer-content {
+    display: inline-flex;
+    align-items: center;
+}
+
+/* Model Tile */
+.model-tile {
+    border: 1px solid #ccc;
+    padding: 10px;
+    border-radius: 5px;
+    background-color: #e9f6fd;
+    position: relative;
+    transition: background-color 0.3s ease;
+}
+
+.model-tile:hover, .model-tile.checked {
+    background-color: #ffe6f4;  
+}
+
+.model-tile input[type="checkbox"] {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+}
+
+.model-tile label {
+    display: block;
+    cursor: pointer;
+    margin-right: 30px;  
+}
+
+/* Dropdown */
+.dropdown-container {
+    margin-bottom: 20px;
+}
+
+.custom-dropdown {
+    position: relative;
+}
+
+#dropdown-table {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    max-height: 200px;
+    overflow-y: auto;
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    display: none;
+    z-index: 1000;
+}
+
+#dropdown-table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#dropdown-table th, #dropdown-table td {
+    padding: 8px;
+    border: 1px solid #ddd;
+    text-align: left;
+}
+
+#dropdown-table th {
+    background-color: #307BBF;
+    color: white;
+    font-weight: bold;
+}
+
+#dropdown-table tr:hover {
+    background-color: #f1f1f1;
+    cursor: pointer;
+}
+
+/* Plot Layout */
+.plot-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    padding: 20px;
+    justify-content: center;
+}
+
+.plot-box {
+    background-color: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    flex: 1 1 45%;
+    max-width: 50%;
+    box-sizing: border-box;
+    margin: 10px;
+}
+
+.plot-box > div {
+    width: 100% !important;
+    height: auto !important;
+}
+
+.plot-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.toggle-label {
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.plot-description {
+    margin-top: 5px;
+    margin-bottom: 10px;
+    font-size: 1rem;
+    color: #333;
+}
+
+.full-width {
+    flex: 1 1 100%;
+    max-width: calc(100% - 20px);
+}
+
+/* Sections */
+.section-block {
+    width: 100%;
+    margin: 40px auto;
+}
+
+.section-header {
+    width: 100%;
+    font-size: 1.8rem;
+    color: #29235C;
+    text-align: center;
+    margin: 20px 0;
+    border-bottom: 2px solid #307BBF;
+    padding-bottom: 10px;
+}
+
+/* Small screens */
+@media (max-width: 1000px) {
+    .plot-box {
+        flex: 1 1 100%;
+        max-width: 100%;
+    }
+}
+
+/* Tabs */
+.tabs {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+.tab-button {
+    padding: 10px 20px;
+    border: none;
+    cursor: pointer;
+    background-color: #307BBF;
+    color: white;
+    font-weight: bold;
+    border-radius: 5px 5px 0 0;
+    margin: 0 5px;
+    transition: background-color 0.3s ease;
+}
+
+.tab-button.active {
+    background-color: #E6007E;
+}
+
+.tab-content {
+    display: none;
+    padding: 20px;
+    background: #93D5F6;
+    border-radius: 0 5px 5px 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.tab-content.active {
+    display: block;
+}
