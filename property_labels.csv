@@ -1,0 +1,28 @@
+uri,label
+http://aopkb.org/aop_ontology#has_key_event,Has Key Event
+http://aopkb.org/aop_ontology#has_key_event_relationship,Has Key Event Relationship
+http://purl.org/dc/elements/1.1/title,Title
+http://purl.org/dc/terms/abstract,Abstract
+http://xmlns.com/foaf/0.1/page,Page
+http://purl.org/dc/elements/1.1/creator,Creator
+http://purl.org/dc/terms/created,Creation Date
+http://purl.org/dc/terms/modified,Modification Date
+http://www.w3.org/2000/01/rdf-schema#label, Label
+http://www.w3.org/2000/01/rdf-schema#seeAlso,Web Link
+http://purl.org/dc/elements/1.1/identifier,Identifier
+http://purl.org/dc/elements/1.1/description,AOP Context
+http://aopkb.org/aop_ontology#AopContext,Domain of Applicability
+http://aopkb.org/aop_ontology#LifeStageContext,Life Stage Applicability
+http://aopkb.org/aop_ontology#has_adverse_outcome,Has Adverse Outcome
+http://aopkb.org/aop_ontology#has_evidence,Has Evidence
+http://aopkb.org/aop_ontology#has_molecular_initiating_event,Has Molecular Initiating Event
+http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25217,Overall Assessment
+http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25688,OECD Status
+http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25725,Considerations for Applications
+http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C48192,Key Event Essentiality
+http://purl.obolibrary.org/obo/PATO_0000047,Sex Applicability
+http://purl.org/dc/terms/alternative,Alternative Title
+http://edamontology.org/operation_3799,Quantitative Understanding
+http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C54571,Prototypical Stressors
+http://www.w3.org/1999/02/22-rdf-syntax-ns#type,Type
+http://purl.org/dc/elements/1.1/source,Source

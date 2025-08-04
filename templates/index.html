@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AOP-Wiki RDF Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+
+<body>
+<header>
+    <h1>AOP-Wiki Monitoring Dashboard</h1>
+    <p style="text-align:center; max-width:800px; margin:10px auto; color:white;">
+        This dashboard provides insights into how the AOP-Wiki has evolved over time, using the quarterly releases. 
+        You can explore entity counts, average key events per AOP, contributions by authors, 
+        and historical trends of AOP creation and modification. 
+    </p>
+</header>
+
+<!-- Tabs -->
+<div class="tabs">
+    <button class="tab-button active" data-tab="latest">Latest Data</button>
+    <button class="tab-button" data-tab="trends">Historical Trends</button>
+</div>
+
+
+
+
+
+
+</div>
+
+<div id="latest" class="tab-content active">
+    <section class="section-block">
+        <h2>Entity Overview</h2>
+        <div class="plot-grid">
+            <div class="plot-box">
+                <h3>Entity Counts</h3>
+                {{ latest_entity_counts | safe }}
+            </div>
+            <div class="plot-box">
+                <h3>KE Components</h3>
+                {{ latest_ke_components | safe }}
+            </div>
+        </div>
+    </section>
+</div>
+
+<div id="trends" class="tab-content">
+    {% include 'trends.html' %}
+</div>
+
+<script>
+document.querySelectorAll(".tab-button").forEach(button => {
+    button.addEventListener("click", () => {
+        document.querySelectorAll(".tab-button").forEach(btn => btn.classList.remove("active"));
+        document.querySelectorAll(".tab-content").forEach(tab => tab.classList.remove("active"));
+        button.classList.add("active");
+        document.getElementById(button.dataset.tab).classList.add("active");
+        window.dispatchEvent(new Event('resize'));
+    });
+});
+</script>
+
+
+
+<footer>
+    <div class="footer-content">
+        AOP-Wiki RDF Monitoring Service — Built for VHP4Safety | 
+        <a href="https://aopwiki.cloud.vhp4safety.nl" target="_blank">AOP-Wiki SPARQL Endpoint</a>
+    </div>
+</footer>
+</body>
+</html>

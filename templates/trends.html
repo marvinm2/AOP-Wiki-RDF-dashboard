@@ -1,0 +1,261 @@
+<section style="background-color: white; margin:40px; padding:20px; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.1);">
+    <h2>How to Use This Dashboard</h2>
+    <p>
+        This dashboard provides interactive visualizations of the AOP-Wiki database.  
+        Use the buttons below to navigate to different sections and switch between total counts 
+        and changes between database versions (deltas). Hover over data points for detailed values.
+    </p>
+    <ul>
+        <li><b>View Modes:</b> Toggle between <i>absolute values</i> (total counts) and 
+            <i>deltas</i> (changes since the previous release).</li>
+        <li><b>Navigation:</b> Use the buttons to quickly jump to main sections.</li>
+        <li><b>Responsiveness:</b> The dashboard automatically adapts to desktop and mobile devices.</li>
+    </ul>
+</section>
+
+<!-- Navigation Buttons -->
+<div style="text-align:center; margin:20px;">
+    <button class="nav-button" onclick="document.getElementById('main-trends').scrollIntoView({behavior:'smooth'});">Main Trends</button>
+    <button class="nav-button" onclick="document.getElementById('network-connectivity').scrollIntoView({behavior:'smooth'});">Connectivity</button>
+    <button class="nav-button" onclick="document.getElementById('authors').scrollIntoView({behavior:'smooth'});">Authors & Lifetime</button>
+    <button class="nav-button" onclick="document.getElementById('ke-components').scrollIntoView({behavior:'smooth'});">KE Components</button>
+</div>
+
+<!-- Global Toggle -->
+<div style="text-align:center; padding: 20px;">
+    <button id="toggle-delta" class="toggle-button">Switch to Delta Mode</button>
+</div>
+
+
+
+<section class="section-block" id="main-trends">
+
+    <!-- Main trends -->
+    <h2 class="section-header">Main Entity Trends</h2>
+    <div class="plot-grid">
+    <div class="plot-box" id="main-trends">
+        <div class="plot-header">
+            <h2>AOP Entity Counts</h2>
+            <label><input type="checkbox" class="plot-toggle"> Show Deltas</label>
+        </div>
+        <p class="plot-description">
+            Tracks the total number of AOPs, Key Events (KEs), Key Event Relationships (KERs), 
+            and Stressors over time.
+        </p>
+        <div class="abs">{{ graph_main_abs | safe }}</div>
+        <div class="delta" style="display:none;">{{ graph_main_delta | safe }}</div>
+    </div>
+
+    <div class="plot-box" id="database-size">
+        <div class="plot-header">
+            <h2>Database Size</h2>
+            <label><input type="checkbox" class="plot-toggle"> Show Deltas</label>
+        </div>
+        <p class="plot-description">Tracks the overall database size, measured as total stored triples, over time.</p>
+        <div class="abs">{{ graph_db_size_abs | safe }}</div>
+        <div class="delta" style="display:none;">{{ graph_db_size_delta | safe }}</div>
+    </div>
+
+
+    <!-- AOP Property Presence -->
+    <div class="plot-box full-width" id="aop-property-presence">
+        <div class="plot-header">
+            <h2>AOP Property Presence Over Time</h2>
+            <label><input type="checkbox" class="plot-toggle"> Show Percentage</label>
+        </div>
+        <p class="plot-description">
+            Shows how many AOPs contain each property over time. 
+            Properties always present (100%) are excluded for clarity.
+        </p>
+        <div class="abs">{{ graph_prop_abs | safe }}</div>
+        <div class="delta" style="display:none;">{{ graph_prop_pct | safe }}</div>
+    </div>
+    </div>
+</section>
+
+
+
+<section class="section-block" id="network-connectivity">
+
+    
+    <!-- Average KEs/KERs -->
+    <h2 class="section-header">AOP Connectivity and Network Structure</h2>
+    <div class="plot-grid">
+    <div class="plot-box" id="avg-per-aop">
+        <div class="plot-header">
+            <h2>Average KEs and KERs per AOP</h2>
+            <label><input type="checkbox" class="plot-toggle"> Show Deltas</label>
+        </div>
+        <p class="plot-description">
+            Shows how densely connected each AOP is on average, 
+            measured by the number of Key Events and Key Event Relationships per AOP.
+        </p>
+        <div class="abs">{{ graph_avg_abs | safe }}</div>
+        <div class="delta" style="display:none;">{{ graph_avg_delta | safe }}</div>
+    </div>
+    <!-- AOP Network Density -->
+    <div class="plot-box" id="density">
+        <h2>AOP Network Density</h2>
+        <p>Shows how densely connected the KE-KER graph is over time, 
+        calculated as the ratio of edges to possible connections between nodes.</p>
+        {{ graph_density | safe }}
+    </div>
+
+    </div>
+</section>
+
+<section class="section-block" id="authors">
+    <!-- Authors -->
+    <h2 id="authors" class="section-header">Authors and AOP Lifetime</h2>
+    <div class="plot-grid">
+    <div class="plot-box" id="authors">
+        <div class="plot-header">
+            <h2>Authors of AOPs</h2>
+            <label><input type="checkbox" class="plot-toggle"> Show Deltas</label>
+        </div>
+        <p class="plot-description">
+            Tracks the number of unique authors contributing to AOPs over time.
+        </p>
+        <div class="abs">{{ graph_authors_abs | safe }}</div>
+        <div class="delta" style="display:none;">{{ graph_authors_delta | safe }}</div>
+    </div>
+
+    <!-- AOPs Created -->
+    <div class="plot-box" id="lifetime">
+        <h2>AOPs Created Over Time</h2>
+        <p>Number of unique AOPs first created in each year.</p>
+        {{ graph_created | safe }}
+    </div>
+
+    <!-- AOPs Modified -->
+    <div class="plot-box">
+        <h2>AOPs Modified Over Time</h2>
+        <p>Tracks how many unique AOPs were last modified in each year.</p>
+        {{ graph_modified | safe }}
+    </div>
+
+    <!-- Scatter plot -->
+    <div class="plot-box">
+        <h2>AOP Creation vs Modification</h2>
+        <p>Scatter plot showing when each AOP was created versus when it was last updated.</p>
+        {{ graph_scatter | safe }}
+    </div>
+    </div>
+</section>
+
+<section class="section-block" id="ke-components">
+    <!-- KE Components and Biological Annotations -->
+    <h2 class="section-header">KE Component Annotations</h2>
+    <div class="plot-grid">
+    <div class="plot-box" id="ke-components">
+        <div class="plot-header">
+            <h2>KE Component Annotations</h2>
+            <label><input type="checkbox" class="plot-toggle"> Show Deltas</label>
+        </div>
+        <p class="plot-description">
+            Tracks how many Key Event annotations include Process, Object, and Action elements over time.
+        </p>
+        <div class="abs">{{ graph_components_abs | safe }}</div>
+        <div class="delta" style="display:none;">{{ graph_components_delta | safe }}</div>
+    </div>
+
+    <div class="plot-box" id="ke-components-pct">
+        <div class="plot-header">
+            <h2>KE Components as % of Total KEs</h2>
+            <label><input type="checkbox" class="plot-toggle"> Show Deltas</label>
+        </div>
+        <p class="plot-description">
+            Shows how many Key Events have Process, Object, and Action annotations as a percentage of all KEs per version.
+        </p>
+        <div class="abs">{{ graph_components_pct_abs | safe }}</div>
+        <div class="delta" style="display:none;">{{ graph_components_pct_delta | safe }}</div>
+    </div>
+
+    <div class="plot-box" id="unique-ke-components">
+        <div class="plot-header">
+            <h2>Unique KE Component Annotations</h2>
+            <label><input type="checkbox" class="plot-toggle"> Show Deltas</label>
+        </div>
+        <p class="plot-description">
+            Tracks the total number of unique Process, Object, and Action annotations used in Key Events over time.
+        </p>
+        <div class="abs">{{ graph_unique_abs | safe }}</div>
+        <div class="delta" style="display:none;">{{ graph_unique_delta | safe }}</div>
+    </div>
+
+    <div class="plot-box" id="bio-processes">
+        <div class="plot-header">
+            <h2>Biological Process Annotations</h2>
+            <label><input type="checkbox" class="plot-toggle"> Show Deltas</label>
+        </div>
+        <p class="plot-description">
+            Shows KE annotations with biological processes grouped by ontology.
+        </p>
+        <div class="abs">{{ graph_bio_processes_abs | safe }}</div>
+        <div class="delta" style="display:none;">{{ graph_bio_processes_delta | safe }}</div>
+    </div>
+
+    <div class="plot-box" id="bio-objects">
+        <div class="plot-header">
+            <h2>Biological Object Annotations</h2>
+            <label><input type="checkbox" class="plot-toggle"> Show Deltas</label>
+        </div>
+        <p class="plot-description">
+            Shows KE annotations with biological objects grouped by ontology.
+        </p>
+        <div class="abs">{{ graph_bio_objects_abs | safe }}</div>
+        <div class="delta" style="display:none;">{{ graph_bio_objects_delta | safe }}</div>
+    </div>
+
+    <div class="plot-box" id="kes-by-kec">
+        <div class="plot-header">
+            <h2>KEs by Number of KECs</h2>
+            <label><input type="checkbox" class="plot-toggle"> Show Deltas</label>
+        </div>
+        <p class="plot-description">
+            Tracks how many Key Events contain a specific number of Key Event Components (KECs) 
+            over time, showing annotation completeness.
+        </p>
+        <div class="abs">{{ graph_kec_count_abs | safe }}</div>
+        <div class="delta" style="display:none;">{{ graph_kec_count_delta | safe }}</div>
+    </div>
+
+    </div>
+</section>
+
+
+<script>
+document.querySelectorAll(".plot-toggle").forEach(toggle => {
+    toggle.addEventListener("change", function() {
+        const box = this.closest(".plot-box");
+        const abs = box.querySelector(".abs");
+        const delta = box.querySelector(".delta");
+        if (abs && delta) {
+            abs.style.display = this.checked ? "none" : "block";
+            delta.style.display = this.checked ? "block" : "none";
+        }
+        window.dispatchEvent(new Event('resize'));
+    });
+});
+</script>
+<script>
+    document.getElementById("toggle-delta").addEventListener("click", function () {
+        const isDelta = this.classList.toggle("active");
+        this.textContent = isDelta ? "Switch to Absolute Mode" : "Switch to Delta Mode";
+
+        document.querySelectorAll(".plot-box").forEach(box => {
+            const abs = box.querySelector(".abs");
+            const delta = box.querySelector(".delta");
+            const checkbox = box.querySelector(".plot-toggle");
+            if (abs && delta) {
+                abs.style.display = isDelta ? "none" : "block";
+                delta.style.display = isDelta ? "block" : "none";
+            }
+            // ✅ Sync individual checkboxes
+            if (checkbox) {
+                checkbox.checked = isDelta;
+            }
+        });
+        window.dispatchEvent(new Event('resize'));
+    });
+</script>
