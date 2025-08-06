@@ -44,9 +44,7 @@ def plot_main_graph() -> tuple[str, str, pd.DataFrame]:
         "KEs": """
             SELECT ?graph (COUNT(?ke) AS ?count)
             WHERE {
-                GRAPH ?graph {
-                    ?aop a aopo:AdverseOutcomePathway ;
-                         aopo:has_key_event ?ke .
+                GRAPH ?graph {?ke a aopo:KeyEvent .
                 }
                 FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
             }
@@ -56,8 +54,7 @@ def plot_main_graph() -> tuple[str, str, pd.DataFrame]:
             SELECT ?graph (COUNT(?ker) AS ?count)
             WHERE {
                 GRAPH ?graph {
-                    ?aop a aopo:AdverseOutcomePathway ;
-                         aopo:has_key_event_relationship ?ker .
+                    ?ker a aopo:KeyEventRelationship .
                 }
                 FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
             }
@@ -158,8 +155,7 @@ def plot_avg_per_aop() -> tuple[str, str]:
         SELECT ?graph (COUNT(?ke) AS ?count)
         WHERE {
             GRAPH ?graph {
-                ?aop a aopo:AdverseOutcomePathway ;
-                     aopo:has_key_event ?ke .
+                ?ke a aopo:KeyEvent .
             }
             FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
         }
@@ -169,8 +165,7 @@ def plot_avg_per_aop() -> tuple[str, str]:
         SELECT ?graph (COUNT(?ker) AS ?count)
         WHERE {
             GRAPH ?graph {
-                ?aop a aopo:AdverseOutcomePathway ;
-                     aopo:has_key_event_relationship ?ker .
+                ?ker a aopo:KeyEventRelationship .
             }
             FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
         }
@@ -1191,3 +1186,154 @@ def plot_kes_by_kec_count() -> tuple[str, str]:
         pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config={"responsive": True}),
         pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config={"responsive": True})
     )
+
+
+def plot_latest_entity_counts() -> str:
+    """Create a bar chart showing the latest version's entity counts."""
+    sparql_queries = {
+        "AOPs": """
+            SELECT ?graph (COUNT(?aop) AS ?count)
+            WHERE {
+                GRAPH ?graph { ?aop a aopo:AdverseOutcomePathway . }
+                FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+            }
+            GROUP BY ?graph
+            ORDER BY DESC(?graph)
+            LIMIT 1
+        """,
+        "KEs": """
+            SELECT ?graph (COUNT(?ke) AS ?count)
+            WHERE {
+                GRAPH ?graph {
+                    ?aop a aopo:AdverseOutcomePathway ;
+                         aopo:has_key_event ?ke .
+                }
+                FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+            }
+            GROUP BY ?graph
+            ORDER BY DESC(?graph)
+            LIMIT 1
+        """,
+        "KERs": """
+            SELECT ?graph (COUNT(?ker) AS ?count)
+            WHERE {
+                GRAPH ?graph {
+                    ?aop a aopo:AdverseOutcomePathway ;
+                         aopo:has_key_event_relationship ?ker .
+                }
+                FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+            }
+            GROUP BY ?graph
+            ORDER BY DESC(?graph)
+            LIMIT 1
+        """,
+        "Stressors": """
+            SELECT ?graph (COUNT(?s) AS ?count)
+            WHERE {
+                GRAPH ?graph {
+                    ?s a nci:C54571 .
+                }
+                FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+            }
+            GROUP BY ?graph
+            ORDER BY DESC(?graph)
+            LIMIT 1
+        """
+    }
+
+    # Get latest counts for each entity type
+    data = []
+    latest_version = None
+    
+    for entity_type, query in sparql_queries.items():
+        results = run_sparql_query(query)
+        if results:
+            count = int(results[0]["count"]["value"])
+            version = results[0]["graph"]["value"].split("/")[-1]
+            if latest_version is None:
+                latest_version = version
+            data.append({"Entity": entity_type, "Count": count})
+    
+    if not data:
+        return "<p>No data available</p>"
+    
+    df = pd.DataFrame(data)
+    
+    fig = px.bar(
+        df,
+        x="Entity",
+        y="Count",
+        title=f"Latest AOP Entity Counts ({latest_version})",
+        color="Entity",
+        text="Count"
+    )
+    
+    fig.update_traces(textposition='outside')
+    fig.update_layout(
+        template="plotly_white",
+        showlegend=False,
+        autosize=True,
+        margin=dict(l=50, r=20, t=50, b=50),
+        yaxis=dict(title="Count"),
+        xaxis=dict(title="Entity Type")
+    )
+    
+    return pio.to_html(fig, full_html=False, include_plotlyjs="cdn", config={"responsive": True})
+
+
+def plot_latest_ke_components() -> str:
+    """Create a pie chart showing the latest version's KE component distribution."""
+    query_components = """
+    SELECT ?graph 
+           (COUNT(?process) AS ?process_count)
+           (COUNT(?object) AS ?object_count)
+           (COUNT(?action) AS ?action_count)
+    WHERE {
+      GRAPH ?graph {
+        ?ke a aopo:KeyEvent ;
+            aopo:hasBiologicalEvent ?bioevent .
+        OPTIONAL { ?bioevent aopo:hasProcess ?process . }
+        OPTIONAL { ?bioevent aopo:hasObject ?object . }
+        OPTIONAL { ?bioevent aopo:hasAction ?action . }
+      }
+      FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+    }
+    GROUP BY ?graph
+    ORDER BY DESC(?graph)
+    LIMIT 1
+    """
+    
+    results = run_sparql_query(query_components)
+    if not results:
+        return "<p>No data available</p>"
+    
+    result = results[0]
+    latest_version = result["graph"]["value"].split("/")[-1]
+    
+    data = [
+        {"Component": "Process", "Count": int(result["process_count"]["value"])},
+        {"Component": "Object", "Count": int(result["object_count"]["value"])},
+        {"Component": "Action", "Count": int(result["action_count"]["value"])}
+    ]
+    
+    df = pd.DataFrame(data)
+    df = df[df["Count"] > 0]  # Remove zero counts
+    
+    if df.empty:
+        return "<p>No component data available</p>"
+    
+    fig = px.pie(
+        df,
+        values="Count",
+        names="Component",
+        title=f"KE Component Distribution ({latest_version})"
+    )
+    
+    fig.update_traces(textposition='inside', textinfo='percent+label')
+    fig.update_layout(
+        template="plotly_white",
+        autosize=True,
+        margin=dict(l=50, r=20, t=50, b=50)
+    )
+    
+    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
