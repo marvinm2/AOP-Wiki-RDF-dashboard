@@ -40,10 +40,17 @@ from plots import (
     plot_author_counts, 
     plot_aop_lifetime,
     plot_aop_property_presence,
-    plot_database_size,
     plot_kes_by_kec_count,
     plot_latest_entity_counts,
     plot_latest_ke_components,
+    plot_latest_network_density,
+    plot_latest_avg_per_aop,
+    plot_latest_ontology_usage,
+    plot_latest_process_usage,
+    plot_latest_object_usage,
+    plot_latest_aop_completeness,
+    plot_latest_database_summary,
+    plot_latest_ke_annotation_depth,
     check_sparql_endpoint_health,
     safe_plot_execution
 )
@@ -70,10 +77,17 @@ def compute_plots_parallel() -> dict:
         ('author_counts', lambda: safe_plot_execution(plot_author_counts)),
         ('aop_lifetime', lambda: safe_plot_execution(plot_aop_lifetime)),
         ('aop_property_presence', lambda: safe_plot_execution(plot_aop_property_presence)),
-        ('database_size', lambda: safe_plot_execution(plot_database_size)),
         ('kes_by_kec_count', lambda: safe_plot_execution(plot_kes_by_kec_count)),
         ('latest_entity_counts', lambda: safe_plot_execution(plot_latest_entity_counts)),
-        ('latest_ke_components', lambda: safe_plot_execution(plot_latest_ke_components))
+        ('latest_ke_components', lambda: safe_plot_execution(plot_latest_ke_components)),
+        ('latest_network_density', lambda: safe_plot_execution(plot_latest_network_density)),
+        ('latest_avg_per_aop', lambda: safe_plot_execution(plot_latest_avg_per_aop)),
+        ('latest_ontology_usage', lambda: safe_plot_execution(plot_latest_ontology_usage)),
+        ('latest_process_usage', lambda: safe_plot_execution(plot_latest_process_usage)),
+        ('latest_object_usage', lambda: safe_plot_execution(plot_latest_object_usage)),
+        ('latest_aop_completeness', lambda: safe_plot_execution(plot_latest_aop_completeness)),
+        ('latest_database_summary', lambda: safe_plot_execution(plot_latest_database_summary)),
+        ('latest_ke_annotation_depth', lambda: safe_plot_execution(plot_latest_ke_annotation_depth))
     ]
     
     results = {}
@@ -130,12 +144,19 @@ graph_bio_objects_abs, graph_bio_objects_delta = plot_results.get('bio_objects',
 graph_authors_abs, graph_authors_delta = plot_results.get('author_counts', ("", ""))
 graph_created, graph_modified, graph_scatter = plot_results.get('aop_lifetime', ("", "", ""))
 graph_prop_abs, graph_prop_pct = plot_results.get('aop_property_presence', ("", ""))
-graph_db_size_abs, graph_db_size_delta = plot_results.get('database_size', ("", ""))
 graph_kec_count_abs, graph_kec_count_delta = plot_results.get('kes_by_kec_count', ("", ""))
 
 # Latest data plots
 latest_entity_counts = plot_results.get('latest_entity_counts') or ""
 latest_ke_components = plot_results.get('latest_ke_components') or ""
+latest_network_density = plot_results.get('latest_network_density') or ""
+latest_avg_per_aop = plot_results.get('latest_avg_per_aop') or ""
+latest_ontology_usage = plot_results.get('latest_ontology_usage') or ""
+latest_process_usage = plot_results.get('latest_process_usage') or ""
+latest_object_usage = plot_results.get('latest_object_usage') or ""
+latest_aop_completeness = plot_results.get('latest_aop_completeness') or ""
+latest_database_summary = plot_results.get('latest_database_summary') or ""
+latest_ke_annotation_depth = plot_results.get('latest_ke_annotation_depth') or ""
 # --- End of precomputed plots ---
 
 @app.route("/health")
@@ -191,12 +212,18 @@ def index():
         graph_scatter=graph_scatter,
         graph_prop_abs=graph_prop_abs,
         graph_prop_pct=graph_prop_pct,
-        graph_db_size_abs=graph_db_size_abs,
-        graph_db_size_delta=graph_db_size_delta,
         graph_kec_count_abs=graph_kec_count_abs,
         graph_kec_count_delta=graph_kec_count_delta,
         latest_entity_counts=latest_entity_counts,
-        latest_ke_components=latest_ke_components
+        latest_ke_components=latest_ke_components,
+        latest_network_density=latest_network_density,
+        latest_avg_per_aop=latest_avg_per_aop,
+        latest_ontology_usage=latest_ontology_usage,
+        latest_process_usage=latest_process_usage,
+        latest_object_usage=latest_object_usage,
+        latest_aop_completeness=latest_aop_completeness,
+        latest_database_summary=latest_database_summary,
+        latest_ke_annotation_depth=latest_ke_annotation_depth
     )
 
 
