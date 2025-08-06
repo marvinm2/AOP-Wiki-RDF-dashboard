@@ -26,6 +26,39 @@ MAX_RETRIES = Config.SPARQL_MAX_RETRIES
 RETRY_DELAY = Config.SPARQL_RETRY_DELAY
 TIMEOUT = Config.SPARQL_TIMEOUT
 
+# Centralized Brand Color Palette
+BRAND_COLORS = {
+    'primary': '#307BBF',      # Primary blue
+    'secondary': '#E6007E',    # Pink/magenta
+    'accent': '#29235C',       # Dark blue
+    'light': '#93D5F6',        # Light blue
+    'content': '#FF9500',      # Orange (from property_labels.csv)
+    'palette': ['#307BBF', '#E6007E', '#29235C', '#93D5F6', '#FF9500', '#4CAF50', '#FF5722'],
+    'type_colors': {           # For property type consistency
+        'Essential': '#307BBF',
+        'Metadata': '#E6007E', 
+        'Content': '#FF9500',
+        'Context': '#93D5F6',
+        'Assessment': '#29235C'
+    }
+}
+
+# Safe file operations with error handling
+def safe_read_csv(filename: str, default_data: Optional[List[Dict]] = None) -> pd.DataFrame:
+    """Safely read CSV file with error handling and fallback."""
+    try:
+        return pd.read_csv(filename)
+    except FileNotFoundError:
+        logger.warning(f"File {filename} not found, using fallback data")
+        if default_data:
+            return pd.DataFrame(default_data)
+        return pd.DataFrame()
+    except Exception as e:
+        logger.error(f"Error reading {filename}: {str(e)}")
+        if default_data:
+            return pd.DataFrame(default_data)
+        return pd.DataFrame()
+
 config = {
     "responsive": True,
     "toImageButtonOptions": {
@@ -256,7 +289,8 @@ def plot_main_graph() -> tuple[str, str, pd.DataFrame]:
     df_abs_melted = df_all.melt(id_vars="version", var_name="Entity", value_name="Count")
     fig_abs = px.line(
         df_abs_melted, x="version", y="Count", color="Entity", markers=True,
-        title="AOP Entity Counts (Absolute)"
+        title="AOP Entity Counts (Absolute)",
+        color_discrete_sequence=BRAND_COLORS['palette']
     )
     fig_abs.update_layout(
         template="plotly_white",
@@ -286,7 +320,8 @@ def plot_main_graph() -> tuple[str, str, pd.DataFrame]:
 
     fig_delta = px.line(
         df_delta_melted, x="version", y="Count", color="Entity", markers=True,
-        title="AOP Entity Counts (Delta Between Versions)"
+        title="AOP Entity Counts (Delta Between Versions)",
+        color_discrete_sequence=BRAND_COLORS['palette']
     )
     fig_delta.update_layout(
         template="plotly_white",
@@ -372,7 +407,8 @@ def plot_avg_per_aop() -> tuple[str, str]:
     })
 
     fig_abs = px.line(df_melted, x="version", y="Average", color="Metric", markers=True,
-                      title="Average KEs and KERs per AOP (Absolute)")
+                      title="Average KEs and KERs per AOP (Absolute)",
+                      color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary']])
     fig_abs.update_layout(
         template="plotly_white",
         hovermode="x unified",
@@ -401,7 +437,8 @@ def plot_avg_per_aop() -> tuple[str, str]:
         "avg_KERs_per_AOP_Δ": "Δ KERs per AOP"
     })
     fig_delta = px.line(df_delta_melted, x="version", y="Δ Average", color="Metric", markers=True,
-                        title="Average KEs and KERs per AOP (Delta)")
+                        title="Average KEs and KERs per AOP (Delta)",
+                        color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary']])
     fig_delta.update_layout(
         template="plotly_white",
         hovermode="x unified",
@@ -457,7 +494,8 @@ def plot_network_density() -> str:
         y="density",
         title="Network Density of KE-KER Graph",
         markers=True,
-        labels={"density": "Graph Density"}
+        labels={"density": "Graph Density"},
+        color_discrete_sequence=[BRAND_COLORS['accent']]
     )
     fig.update_layout(
         template="plotly_white",
@@ -501,7 +539,8 @@ def plot_author_counts() -> tuple[str, str]:
 
     # Absolute
     fig_abs = px.line(df_authors, x="version", y="author_count", markers=True,
-                      title="Unique AOP Authors per Version")
+                      title="Unique AOP Authors per Version",
+                      color_discrete_sequence=[BRAND_COLORS['secondary']])
     fig_abs.update_layout(
         template="plotly_white",
         hovermode="x unified",
@@ -518,7 +557,8 @@ def plot_author_counts() -> tuple[str, str]:
     # Delta
     df_authors["author_count_Δ"] = df_authors["author_count"].diff().fillna(0)
     fig_delta = px.line(df_authors, x="version", y="author_count_Δ", markers=True,
-                        title="Change in Unique AOP Authors per Version")
+                        title="Change in Unique AOP Authors per Version",
+                        color_discrete_sequence=[BRAND_COLORS['light']])
     fig_delta.update_layout(
         template="plotly_white",
         hovermode="x unified",
@@ -571,7 +611,7 @@ def plot_aop_lifetime():
     fig1 = px.histogram(df_created, x="year_created",
                         title="Unique AOPs Created per Year",
                         labels={"year_created": "Year", "count": "AOP Count"},
-                        color_discrete_sequence=["#636EFA"])
+                        color_discrete_sequence=[BRAND_COLORS['primary']])
     fig1.update_layout(template="plotly_white", height=400)
     html1 = pio.to_html(fig1, full_html=False, include_plotlyjs="cdn")
 
@@ -579,7 +619,7 @@ def plot_aop_lifetime():
     fig2 = px.histogram(df_modified, x="year_modified",
                         title="Unique AOPs Last Modified per Year",
                         labels={"year_modified": "Year", "count": "AOP Count"},
-                        color_discrete_sequence=["#EF553B"])
+                        color_discrete_sequence=[BRAND_COLORS['secondary']])
     fig2.update_layout(template="plotly_white", height=400)
     html2 = pio.to_html(fig2, full_html=False, include_plotlyjs=False)
 
@@ -587,7 +627,7 @@ def plot_aop_lifetime():
     fig3 = px.scatter(df_lifetime, x="created", y="modified", hover_name="aop",
                       title="AOP Creation vs. Last Modification Dates",
                       labels={"created": "Created", "modified": "Modified"},
-                      color_discrete_sequence=["#AB63FA"])
+                      color_discrete_sequence=[BRAND_COLORS['accent']])
     fig3.update_layout(template="plotly_white", height=500)
     html3 = pio.to_html(fig3, full_html=False, include_plotlyjs=False)
 
@@ -637,7 +677,8 @@ def plot_ke_components() -> tuple[str, str]:
         y="Count", 
         color="Component",
         title="Total Number of KE Component Annotations Over Time",
-        markers=True
+        markers=True,
+        color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary'], BRAND_COLORS['accent']]
     )
     fig_abs.update_layout(
         template="plotly_white",
@@ -669,7 +710,8 @@ def plot_ke_components() -> tuple[str, str]:
         y="Change", 
         color="Component",
         title="Change in KE Component Annotations Between Versions",
-        markers=True
+        markers=True,
+        color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary'], BRAND_COLORS['accent']]
     )
     fig_delta.update_layout(
         template="plotly_white",
@@ -760,7 +802,8 @@ def plot_ke_components_percentage() -> tuple[str, str]:
         y="Percentage",
         color="Component",
         title="KE Component Annotations as % of Total KEs",
-        markers=True
+        markers=True,
+        color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary'], BRAND_COLORS['accent']]
     )
     fig_abs.update_layout(
         template="plotly_white",
@@ -792,7 +835,8 @@ def plot_ke_components_percentage() -> tuple[str, str]:
         y="Percentage Change",
         color="Component",
         title="Change in KE Component % Between Versions",
-        markers=True
+        markers=True,
+        color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary'], BRAND_COLORS['accent']]
     )
     fig_delta.update_layout(
         template="plotly_white",
@@ -858,7 +902,8 @@ def plot_unique_ke_components() -> tuple[str, str]:
         y="Unique Count", 
         color="Component",
         title="Total Unique KE Component Annotations Over Time",
-        markers=True
+        markers=True,
+        color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary'], BRAND_COLORS['accent']]
     )
     fig_abs.update_layout(
         template="plotly_white",
@@ -890,7 +935,8 @@ def plot_unique_ke_components() -> tuple[str, str]:
         y="Change", 
         color="Component",
         title="Change in Unique KE Component Annotations Between Versions",
-        markers=True
+        markers=True,
+        color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary'], BRAND_COLORS['accent']]
     )
     fig_delta.update_layout(
         template="plotly_white",
@@ -954,7 +1000,8 @@ def plot_bio_processes() -> tuple[str, str]:
         color="ontology",
         barmode="group",
         title="KEs Annotated with Biological Processes by Ontology (Absolute)",
-        labels={"count": "Annotated KEs", "ontology": "Ontology"}
+        labels={"count": "Annotated KEs", "ontology": "Ontology"},
+        color_discrete_sequence=BRAND_COLORS['palette']
     )
     fig_abs.update_layout(template="plotly_white", hovermode="x unified", autosize=True)
     fig_abs.update_xaxes(tickmode='array', tickvals=df_ont["version"], ticktext=df_ont["version"], tickangle=-45)
@@ -970,7 +1017,8 @@ def plot_bio_processes() -> tuple[str, str]:
         color="ontology",
         barmode="group",
         title="Change in Biological Process Annotations by Ontology (Delta)",
-        labels={"count": "Change in Annotated KEs", "ontology": "Ontology"}
+        labels={"count": "Change in Annotated KEs", "ontology": "Ontology"},
+        color_discrete_sequence=BRAND_COLORS['palette']
     )
     fig_delta.update_layout(template="plotly_white", hovermode="x unified", autosize=True)
     fig_delta.update_xaxes(tickmode='array', tickvals=df_ont["version"], ticktext=df_ont["version"], tickangle=-45)
@@ -1101,9 +1149,14 @@ def plot_aop_property_presence(label_file="property_labels.csv") -> tuple[str, s
     )
     df = df[df["property"].isin(props_to_keep)]
 
-    # Label mapping
-    if os.path.exists(label_file):
-        df_labels = pd.read_csv(label_file)
+    # Label mapping with safe file reading
+    default_labels = [
+        {"uri": "http://purl.org/dc/elements/1.1/title", "label": "Title", "type": "Essential"},
+        {"uri": "http://purl.org/dc/elements/1.1/creator", "label": "Creator", "type": "Metadata"}
+    ]
+    df_labels = safe_read_csv(label_file, default_labels)
+    
+    if not df_labels.empty:
         df = df.merge(df_labels, how="left", left_on="property", right_on="uri")
         df["display_label"] = df["label"].fillna(df["property"])
     else:
@@ -1164,76 +1217,6 @@ def plot_aop_property_presence(label_file="property_labels.csv") -> tuple[str, s
     )
 
 
-def plot_database_size() -> tuple[str, str]:
-    query_triples = """
-    SELECT ?graph (COUNT(*) AS ?triples)
-    WHERE { 
-      GRAPH ?graph { ?s ?p ?o } 
-      FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-    }
-    GROUP BY ?graph
-    ORDER BY ?graph
-    """
-
-    results = run_sparql_query(query_triples)
-    df_triples = pd.DataFrame([{
-        "version": r["graph"]["value"].split("/")[-1],
-        "triples": int(r["triples"]["value"])
-    } for r in results])
-
-    # Sort by date
-    df_triples["version_dt"] = pd.to_datetime(df_triples["version"], errors="coerce")
-    df_triples = df_triples.sort_values("version_dt").drop(columns="version_dt")
-
-    # Absolute plot
-    fig_abs = px.line(
-        df_triples,
-        x="version",
-        y="triples",
-        markers=True,
-        title="Database Size Over Time",
-        labels={"triples": "Total Triples", "version": "Version"}
-    )
-    fig_abs.update_layout(
-        template="plotly_white",
-        hovermode="x unified",
-        autosize=True,
-        margin=dict(l=50, r=20, t=50, b=50)
-    )
-    fig_abs.update_xaxes(
-        tickmode='array',
-        tickvals=df_triples["version"],
-        ticktext=df_triples["version"],
-        tickangle=-45
-    )
-
-    # Delta plot
-    df_triples["triples_delta"] = df_triples["triples"].diff().fillna(0)
-    fig_delta = px.line(
-        df_triples,
-        x="version",
-        y="triples_delta",
-        markers=True,
-        title="Change in Database Size Between Versions",
-        labels={"triples_delta": "Change in Triples", "version": "Version"}
-    )
-    fig_delta.update_layout(
-        template="plotly_white",
-        hovermode="x unified",
-        autosize=True,
-        margin=dict(l=50, r=20, t=50, b=50)
-    )
-    fig_delta.update_xaxes(
-        tickmode='array',
-        tickvals=df_triples["version"],
-        ticktext=df_triples["version"],
-        tickangle=-45
-    )
-
-    return (
-        pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config={"responsive": True}),
-        pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config={"responsive": True})
-    )
 
 
 def plot_kes_by_kec_count() -> tuple[str, str]:
@@ -1308,7 +1291,8 @@ def plot_kes_by_kec_count() -> tuple[str, str]:
         y="total_kes",
         color="bioevent_count_group",
         title="Distribution of KEs by Number of KECs Over Time",
-        labels={"total_kes": "Number of KEs", "bioevent_count_group": "Number of KECs"}
+        labels={"total_kes": "Number of KEs", "bioevent_count_group": "Number of KECs"},
+        color_discrete_sequence=BRAND_COLORS['palette']
     )
     fig_abs.update_layout(
         template="plotly_white",
@@ -1333,7 +1317,8 @@ def plot_kes_by_kec_count() -> tuple[str, str]:
         y="total_kes_delta",
         color="bioevent_count_group",
         title="Change in KEs by Number of KECs Over Time",
-        labels={"total_kes_delta": "Change in KEs", "bioevent_count_group": "Number of KECs"}
+        labels={"total_kes_delta": "Change in KEs", "bioevent_count_group": "Number of KECs"},
+        color_discrete_sequence=BRAND_COLORS['palette']
     )
     fig_delta.update_layout(
         template="plotly_white",
@@ -1368,11 +1353,10 @@ def plot_latest_entity_counts() -> str:
             LIMIT 1
         """,
         "KEs": """
-            SELECT ?graph (COUNT(?ke) AS ?count)
+            SELECT ?graph (COUNT(DISTINCT ?ke) AS ?count)
             WHERE {
                 GRAPH ?graph {
-                    ?aop a aopo:AdverseOutcomePathway ;
-                         aopo:has_key_event ?ke .
+                    ?ke a aopo:KeyEvent .
                 }
                 FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
             }
@@ -1381,11 +1365,10 @@ def plot_latest_entity_counts() -> str:
             LIMIT 1
         """,
         "KERs": """
-            SELECT ?graph (COUNT(?ker) AS ?count)
+            SELECT ?graph (COUNT(DISTINCT ?ker) AS ?count)
             WHERE {
                 GRAPH ?graph {
-                    ?aop a aopo:AdverseOutcomePathway ;
-                         aopo:has_key_event_relationship ?ker .
+                    ?ker a aopo:KeyEventRelationship  .
                 }
                 FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
             }
@@ -1398,6 +1381,19 @@ def plot_latest_entity_counts() -> str:
             WHERE {
                 GRAPH ?graph {
                     ?s a nci:C54571 .
+                }
+                FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+            }
+            GROUP BY ?graph
+            ORDER BY DESC(?graph)
+            LIMIT 1
+        """,
+        "Authors": """
+            SELECT ?graph (COUNT(DISTINCT ?c) AS ?count)
+            WHERE {
+                GRAPH ?graph {
+                    ?aop a aopo:AdverseOutcomePathway ;
+                         dc:creator ?c .
                 }
                 FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
             }
@@ -1431,7 +1427,8 @@ def plot_latest_entity_counts() -> str:
         y="Count",
         title=f"Latest AOP Entity Counts ({latest_version})",
         color="Entity",
-        text="Count"
+        text="Count",
+        color_discrete_sequence=BRAND_COLORS['palette']
     )
     
     fig.update_traces(textposition='outside')
@@ -1492,7 +1489,581 @@ def plot_latest_ke_components() -> str:
         df,
         values="Count",
         names="Component",
-        title=f"KE Component Distribution ({latest_version})"
+        title=f"KE Component Distribution ({latest_version})",
+        color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary'], BRAND_COLORS['accent']]
+    )
+    
+    fig.update_traces(textposition='inside', textinfo='percent+label')
+    fig.update_layout(
+        template="plotly_white",
+        autosize=True,
+        margin=dict(l=50, r=20, t=50, b=50)
+    )
+    
+    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+
+
+def plot_latest_network_density() -> str:
+    """Analyze AOP connectivity based on shared Key Events - simplified approach."""
+    
+    # First, get total AOPs in latest version
+    query_total = """
+    SELECT ?graph (COUNT(DISTINCT ?aop) AS ?total_aops)
+    WHERE {
+        GRAPH ?graph { 
+            ?aop a aopo:AdverseOutcomePathway .
+        }
+        FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+    }
+    GROUP BY ?graph
+    ORDER BY DESC(?graph)
+    LIMIT 1
+    """
+    
+    # Second, get AOPs that share at least one KE with another AOP
+    query_connected = """
+    SELECT ?graph (COUNT(DISTINCT ?aop1) AS ?connected_aops)
+    WHERE {
+        GRAPH ?graph {
+            ?aop1 a aopo:AdverseOutcomePathway ;
+                  aopo:has_key_event ?ke .
+            ?aop2 a aopo:AdverseOutcomePathway ;
+                  aopo:has_key_event ?ke .
+            FILTER(?aop1 != ?aop2)
+        }
+        FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+    }
+    GROUP BY ?graph
+    ORDER BY DESC(?graph)
+    LIMIT 1
+    """
+    
+    total_results = run_sparql_query(query_total)
+    connected_results = run_sparql_query(query_connected)
+    
+    if not total_results:
+        return create_fallback_plot("AOP Connectivity", "No AOP data available")
+    
+    total_aops = int(total_results[0]["total_aops"]["value"])
+    connected_aops = int(connected_results[0]["connected_aops"]["value"]) if connected_results else 0
+    isolated_aops = total_aops - connected_aops
+    
+    latest_version = total_results[0]["graph"]["value"].split("/")[-1]
+    
+    if total_aops == 0:
+        return create_fallback_plot("AOP Connectivity", "No AOPs found in latest version")
+    
+    data = [
+        {"Type": "Connected AOPs", "Count": connected_aops, "Description": "Share Key Events with other AOPs"},
+        {"Type": "Isolated AOPs", "Count": isolated_aops, "Description": "Have unique Key Events"}
+    ]
+    df = pd.DataFrame(data)
+    
+    fig = px.pie(
+        df, values="Count", names="Type",
+        title=f"AOP Connectivity Analysis ({latest_version})",
+        color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary']]
+    )
+    
+    fig.update_traces(textposition='inside', textinfo='percent+label')
+    fig.update_layout(
+        template="plotly_white",
+        autosize=True,
+        margin=dict(l=50, r=20, t=50, b=50),
+        annotations=[
+            dict(text=f"Total AOPs: {total_aops}<br>Connected: {connected_aops}<br>Isolated: {isolated_aops}", 
+                 x=0.5, y=0.1, font_size=12, showarrow=False)
+        ]
+    )
+    
+    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+
+
+def plot_latest_avg_per_aop() -> str:
+    """Create a bar chart showing average KEs and KERs per AOP in latest version."""
+    query_aops = """
+        SELECT ?graph (COUNT(?aop) AS ?count)
+        WHERE {
+            GRAPH ?graph { ?aop a aopo:AdverseOutcomePathway . }
+            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        GROUP BY ?graph
+        ORDER BY DESC(?graph)
+        LIMIT 1
+    """
+    query_kes = """
+        SELECT ?graph (COUNT(?ke) AS ?count)
+        WHERE {
+            GRAPH ?graph {
+                ?ke a aopo:KeyEvent .
+            }
+            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        GROUP BY ?graph
+        ORDER BY DESC(?graph)
+        LIMIT 1
+    """
+    query_kers = """
+        SELECT ?graph (COUNT(?ker) AS ?count)
+        WHERE {
+            GRAPH ?graph {
+                ?ker a aopo:KeyEventRelationship .
+            }
+            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        GROUP BY ?graph
+        ORDER BY DESC(?graph)
+        LIMIT 1
+    """
+
+    results_aops = run_sparql_query(query_aops)
+    results_kes = run_sparql_query(query_kes)
+    results_kers = run_sparql_query(query_kers)
+
+    if not all([results_aops, results_kes, results_kers]):
+        return create_fallback_plot("Average per AOP", "Insufficient data available")
+
+    aop_count = int(results_aops[0]["count"]["value"])
+    ke_count = int(results_kes[0]["count"]["value"])
+    ker_count = int(results_kers[0]["count"]["value"])
+    latest_version = results_aops[0]["graph"]["value"].split("/")[-1]
+
+    if aop_count == 0:
+        return create_fallback_plot("Average per AOP", "No AOPs found")
+
+    avg_kes = ke_count / aop_count
+    avg_kers = ker_count / aop_count
+
+    data = [
+        {"Metric": "Avg KEs per AOP", "Value": avg_kes},
+        {"Metric": "Avg KERs per AOP", "Value": avg_kers}
+    ]
+    df = pd.DataFrame(data)
+
+    fig = px.bar(
+        df, x="Metric", y="Value",
+        title=f"Average Connectivity per AOP ({latest_version})",
+        color="Metric",
+        text="Value",
+        color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary']]
+    )
+    
+    fig.update_traces(texttemplate='%{text:.1f}', textposition='outside')
+    fig.update_layout(
+        template="plotly_white",
+        showlegend=False,
+        autosize=True,
+        margin=dict(l=50, r=20, t=50, b=50)
+    )
+    
+    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+
+
+
+def plot_latest_ontology_usage() -> str:
+    """Create a chart showing ontology usage in the latest version."""
+    query = """
+    SELECT ?graph ?ontology (COUNT(DISTINCT ?term) AS ?count)
+    WHERE {
+      GRAPH ?graph {
+        ?ke a aopo:KeyEvent ;
+            aopo:hasBiologicalEvent ?bioevent .
+        {
+          ?bioevent aopo:hasProcess ?term .
+        } UNION {
+          ?bioevent aopo:hasObject ?term .
+        } UNION {
+          ?bioevent aopo:hasAction ?term .
+        }
+        
+        BIND(
+          IF(STRSTARTS(STR(?term), "http://purl.obolibrary.org/obo/GO_"), "GO",
+          IF(STRSTARTS(STR(?term), "http://purl.obolibrary.org/obo/MP_"), "MP",
+          IF(STRSTARTS(STR(?term), "http://purl.obolibrary.org/obo/NBO_"), "NBO",
+          IF(STRSTARTS(STR(?term), "http://purl.obolibrary.org/obo/MI_"), "MI",
+          IF(STRSTARTS(STR(?term), "http://purl.obolibrary.org/obo/VT_"), "VT",
+          IF(STRSTARTS(STR(?term), "http://purl.org/commons/record/mesh/"), "MESH",
+          IF(STRSTARTS(STR(?term), "http://purl.obolibrary.org/obo/HP_"), "HP", "OTHER"))))))) AS ?ontology)
+      }
+      FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+    }
+    GROUP BY ?graph ?ontology
+    ORDER BY DESC(?graph) DESC(?count)
+    """
+    
+    results = run_sparql_query(query)
+    if not results:
+        return create_fallback_plot("Ontology Usage", "No ontology data available")
+    
+    # Get only the latest version
+    latest_version = results[0]["graph"]["value"].split("/")[-1]
+    latest_data = [r for r in results if latest_version in r["graph"]["value"]]
+    
+    data = []
+    for r in latest_data:
+        if "ontology" in r:
+            data.append({
+                "Ontology": r["ontology"]["value"],
+                "Terms": int(r["count"]["value"])
+            })
+    
+    if not data:
+        return create_fallback_plot("Ontology Usage", "No ontology terms found")
+    
+    df = pd.DataFrame(data)
+    
+    fig = px.pie(
+        df, values="Terms", names="Ontology",
+        title=f"Ontology Term Usage ({latest_version})"
+    )
+    
+    fig.update_traces(textposition='inside', textinfo='percent+label')
+    fig.update_layout(
+        template="plotly_white",
+        autosize=True,
+        margin=dict(l=50, r=20, t=50, b=50)
+    )
+    
+    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+
+
+def plot_latest_process_usage() -> str:
+    """Create a pie chart showing ontology source distribution for biological processes."""
+    query = """
+    SELECT ?graph ?ontology (COUNT(DISTINCT ?process) AS ?count)
+    WHERE {
+      GRAPH ?graph {
+        ?ke a aopo:KeyEvent ;
+            aopo:hasBiologicalEvent ?bioevent .
+        ?bioevent aopo:hasProcess ?process .
+
+        BIND(
+          IF(STRSTARTS(STR(?process), "http://purl.obolibrary.org/obo/GO_"), "GO",
+          IF(STRSTARTS(STR(?process), "http://purl.obolibrary.org/obo/MP_"), "MP",
+          IF(STRSTARTS(STR(?process), "http://purl.obolibrary.org/obo/NBO_"), "NBO",
+          IF(STRSTARTS(STR(?process), "http://purl.obolibrary.org/obo/MI_"), "MI",
+          IF(STRSTARTS(STR(?process), "http://purl.obolibrary.org/obo/VT_"), "VT",
+          IF(STRSTARTS(STR(?process), "http://purl.org/commons/record/mesh/"), "MESH",
+          IF(STRSTARTS(STR(?process), "http://purl.obolibrary.org/obo/HP_"), "HP", "OTHER"))))))) AS ?ontology)
+      }
+      FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+    }
+    GROUP BY ?graph ?ontology
+    ORDER BY DESC(?graph) DESC(?count)
+    """
+    
+    results = run_sparql_query(query)
+    if not results:
+        return create_fallback_plot("Process Ontology Sources", "No process ontology data available")
+    
+    latest_version = results[0]["graph"]["value"].split("/")[-1] if results else "Unknown"
+    latest_data = [r for r in results if latest_version in r["graph"]["value"]]
+    
+    data = []
+    for r in latest_data:
+        if "ontology" in r and r["ontology"]["value"]:
+            ontology = r["ontology"]["value"]
+            count = int(r["count"]["value"])
+            data.append({
+                "Ontology": ontology,
+                "Count": count
+            })
+    
+    if not data:
+        return create_fallback_plot("Process Ontology Sources", "No ontology source data found")
+    
+    df = pd.DataFrame(data).sort_values("Count", ascending=False)
+    
+    fig = px.pie(
+        df, values="Count", names="Ontology",
+        title=f"Process Ontology Sources ({latest_version})",
+        color_discrete_sequence=BRAND_COLORS['palette']
+    )
+    
+    fig.update_traces(textposition='inside', textinfo='percent+label')
+    fig.update_layout(
+        template="plotly_white",
+        autosize=True,
+        margin=dict(l=50, r=20, t=50, b=50)
+    )
+    
+    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+
+
+def plot_latest_object_usage() -> str:
+    """Create a pie chart showing ontology source distribution for biological objects."""
+    query = """
+    SELECT ?graph ?ontology (COUNT(DISTINCT ?object) AS ?count)
+    WHERE {
+      GRAPH ?graph {
+        ?ke a aopo:KeyEvent ;
+            aopo:hasBiologicalEvent ?bioevent .
+        ?bioevent aopo:hasObject ?object .
+
+        BIND(
+          IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/GO_"), "GO",
+          IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/CHEBI_"), "CHEBI",
+          IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/PR_"), "PR",
+          IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/CL_"), "CL",
+          IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/UBERON_"), "UBERON",
+          IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/NCBITaxon_"), "NCBITaxon",
+          IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/DOID_"), "DOID",
+          IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/HP_"), "HP", "OTHER")))))))) AS ?ontology)
+      }
+      FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+    }
+    GROUP BY ?graph ?ontology
+    ORDER BY DESC(?graph) DESC(?count)
+    """
+    
+    results = run_sparql_query(query)
+    if not results:
+        return create_fallback_plot("Object Ontology Sources", "No object ontology data available")
+    
+    latest_version = results[0]["graph"]["value"].split("/")[-1] if results else "Unknown"
+    latest_data = [r for r in results if latest_version in r["graph"]["value"]]
+    
+    data = []
+    for r in latest_data:
+        if "ontology" in r and r["ontology"]["value"]:
+            ontology = r["ontology"]["value"]
+            count = int(r["count"]["value"])
+            data.append({
+                "Ontology": ontology,
+                "Count": count
+            })
+    
+    if not data:
+        return create_fallback_plot("Object Ontology Sources", "No ontology source data found")
+    
+    df = pd.DataFrame(data).sort_values("Count", ascending=False)
+    
+    fig = px.pie(
+        df, values="Count", names="Ontology",
+        title=f"Object Ontology Sources ({latest_version})",
+        color_discrete_sequence=BRAND_COLORS['palette']
+    )
+    
+    fig.update_traces(textposition='inside', textinfo='percent+label')
+    fig.update_layout(
+        template="plotly_white",
+        autosize=True,
+        margin=dict(l=50, r=20, t=50, b=50)
+    )
+    
+    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+
+
+def plot_latest_aop_completeness() -> str:
+    """Create a chart showing AOP data completeness for all properties in the CSV spreadsheet."""
+
+    # Default fallback properties for essential AOP completeness
+    default_properties = [
+        {"uri": "http://purl.org/dc/elements/1.1/title", "label": "Title", "type": "Essential"},
+        {"uri": "http://purl.org/dc/terms/abstract", "label": "Abstract", "type": "Essential"},
+        {"uri": "http://purl.org/dc/elements/1.1/creator", "label": "Creator", "type": "Metadata"},
+        {"uri": "http://aopkb.org/aop_ontology#has_key_event", "label": "Has Key Event", "type": "Content"},
+        {"uri": "http://aopkb.org/aop_ontology#has_adverse_outcome", "label": "Has Adverse Outcome", "type": "Content"}
+    ]
+    properties_df = safe_read_csv("property_labels.csv", default_properties)
+    properties = properties_df.to_dict(orient="records")
+
+    # Query total number of AOPs
+    total_query = """
+    SELECT ?graph (COUNT(DISTINCT ?aop) AS ?total_aops)
+    WHERE {
+        GRAPH ?graph { ?aop a aopo:AdverseOutcomePathway . }
+        FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+    }
+    GROUP BY ?graph
+    ORDER BY DESC(?graph)
+    LIMIT 1
+    """
+    total_results = run_sparql_query(total_query)
+    if not total_results:
+        return create_fallback_plot("AOP Completeness", "No AOP data available")
+
+    total_aops = int(total_results[0]["total_aops"]["value"])
+    latest_version = total_results[0]["graph"]["value"].split("/")[-1]
+
+    completeness_data = []
+
+    for prop in properties:
+        uri = prop["uri"]
+        label = prop["label"]
+        ptype = prop["type"]
+
+        query = f"""
+        SELECT ?graph (COUNT(DISTINCT ?aop) AS ?count)
+        WHERE {{
+            GRAPH ?graph {{
+                ?aop a aopo:AdverseOutcomePathway ;
+                     <{uri}> ?value .
+            }}
+            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }}
+        GROUP BY ?graph ORDER BY DESC(?graph) LIMIT 1
+        """
+        results = run_sparql_query(query)
+        count = int(results[0]["count"]["value"]) if results else 0
+        completeness = (count / total_aops) * 100
+
+        completeness_data.append({
+            "Property": label,
+            "Completeness": completeness,
+            "Type": ptype
+        })
+
+    df = pd.DataFrame(completeness_data)
+
+    # Use centralized brand colors for consistency
+    color_map = BRAND_COLORS['type_colors'].copy()
+    # Add fallback for any missing types
+    color_map.update({"Structure": BRAND_COLORS['accent']})
+
+    fig = px.bar(
+        df, x="Property", y="Completeness", color="Type",
+        title=f"AOP Data Completeness ({latest_version})",
+        text="Completeness",
+        color_discrete_map=color_map
+    )
+    fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
+    fig.update_layout(
+        template="plotly_white",
+        autosize=True,
+        margin=dict(l=50, r=20, t=50, b=100),
+        yaxis=dict(title="Completeness (%)", range=[0, 105]),
+        xaxis=dict(title="AOP Properties", tickangle=45),
+        legend=dict(title="Property Type")
+    )
+
+    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+
+def plot_latest_database_summary() -> str:
+    """Create a simple summary chart of main entities in latest version using separate queries."""
+    
+    # Ultra-simple separate queries for each entity type
+    queries = {
+        "AOPs": """
+            SELECT ?graph (COUNT(?aop) AS ?count)
+            WHERE {
+                GRAPH ?graph { ?aop a aopo:AdverseOutcomePathway . }
+                FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+            }
+            GROUP BY ?graph
+            ORDER BY DESC(?graph)
+            LIMIT 1
+        """,
+        "Key Events": """
+            SELECT ?graph (COUNT(?ke) AS ?count)
+            WHERE {
+                GRAPH ?graph { ?ke a aopo:KeyEvent . }
+                FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+            }
+            GROUP BY ?graph
+            ORDER BY DESC(?graph)
+            LIMIT 1
+        """,
+        "KE Relationships": """
+            SELECT ?graph (COUNT(?ker) AS ?count)
+            WHERE {
+                GRAPH ?graph { ?ker a aopo:KeyEventRelationship . }
+                FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+            }
+            GROUP BY ?graph
+            ORDER BY DESC(?graph)
+            LIMIT 1
+        """
+    }
+    
+    data = []
+    latest_version = None
+    
+    for entity_type, query in queries.items():
+        results = run_sparql_query(query)
+        if results:
+            count = int(results[0]["count"]["value"])
+            version = results[0]["graph"]["value"].split("/")[-1]
+            if latest_version is None:
+                latest_version = version
+            data.append({"Entity": entity_type, "Count": count})
+    
+    if not data:
+        return create_fallback_plot("Core Entity Summary", "No database data available")
+    
+    df = pd.DataFrame(data)
+    
+    # Regular bar chart since values are in similar ranges
+    fig = px.bar(
+        df, x="Entity", y="Count", 
+        title=f"Core Entity Summary ({latest_version})",
+        text="Count",
+        color="Entity",
+        color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary'], BRAND_COLORS['accent']]
+    )
+    
+    fig.update_traces(textposition='outside')
+    fig.update_layout(
+        template="plotly_white",
+        showlegend=False,
+        autosize=True,
+        margin=dict(l=50, r=20, t=50, b=50),
+        yaxis=dict(title="Count")
+    )
+    
+    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+
+
+def plot_latest_ke_annotation_depth() -> str:
+    """Show distribution of Key Events by annotation depth (number of components)."""
+    query = """
+    SELECT ?graph ?annotation_depth (COUNT(DISTINCT ?ke) AS ?ke_count)
+    WHERE {
+      GRAPH ?graph {
+        ?ke a aopo:KeyEvent .
+        OPTIONAL { ?ke aopo:hasBiologicalEvent ?bioevent . }
+        {
+          SELECT ?ke (COUNT(DISTINCT ?bioevent) AS ?annotation_depth)
+          WHERE {
+            ?ke a aopo:KeyEvent .
+            OPTIONAL { 
+              ?ke aopo:hasBiologicalEvent ?bioevent .
+                          }
+          }
+          GROUP BY ?ke
+        }
+      }
+      FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+    }
+    GROUP BY ?graph ?annotation_depth
+    ORDER BY DESC(?graph) ?annotation_depth
+    """
+    
+    results = run_sparql_query(query)
+    if not results:
+        return create_fallback_plot("KE Annotation Depth", "No annotation data available")
+    
+    # Get latest version data
+    latest_version = results[0]["graph"]["value"].split("/")[-1]
+    latest_data = [r for r in results if latest_version in r["graph"]["value"]]
+    
+    data = []
+    for r in latest_data:
+        depth = int(r["annotation_depth"]["value"])
+        count = int(r["ke_count"]["value"])
+        depth_label = f"{depth} components" if depth > 0 else "No annotations"
+        data.append({"Depth": depth_label, "KE Count": count, "Sort": depth})
+    
+    if not data:
+        return create_fallback_plot("KE Annotation Depth", "No annotation depth data found")
+    
+    df = pd.DataFrame(data)
+    df = df.sort_values("Sort")
+    
+    fig = px.pie(
+        df, values="KE Count", names="Depth",
+        title=f"KE Annotation Depth Distribution ({latest_version})",
+        color_discrete_sequence=BRAND_COLORS['palette']
     )
     
     fig.update_traces(textposition='inside', textinfo='percent+label')
