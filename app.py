@@ -28,7 +28,9 @@ from plots import (
     plot_aop_lifetime,
     plot_aop_property_presence,
     plot_database_size,
-    plot_kes_by_kec_count
+    plot_kes_by_kec_count,
+    plot_latest_entity_counts,
+    plot_latest_ke_components
 )
 
 # --- Precompute plots at startup ---
@@ -45,6 +47,10 @@ graph_created, graph_modified, graph_scatter = plot_aop_lifetime()
 graph_prop_abs, graph_prop_pct = plot_aop_property_presence()
 graph_db_size_abs, graph_db_size_delta = plot_database_size()
 graph_kec_count_abs, graph_kec_count_delta = plot_kes_by_kec_count()
+
+# --- Latest data plots ---
+latest_entity_counts = plot_latest_entity_counts()
+latest_ke_components = plot_latest_ke_components()
 # --- End of precomputed plots ---
 
 # Set Plotly configuration for static images
@@ -77,7 +83,9 @@ def index():
         graph_db_size_abs=graph_db_size_abs,
         graph_db_size_delta=graph_db_size_delta,
         graph_kec_count_abs=graph_kec_count_abs,
-        graph_kec_count_delta=graph_kec_count_delta
+        graph_kec_count_delta=graph_kec_count_delta,
+        latest_entity_counts=latest_entity_counts,
+        latest_ke_components=latest_ke_components
     )
 
 
