@@ -2,10 +2,29 @@ import os
 import pandas as pd
 import plotly.express as px
 import plotly.io as pio
-from SPARQLWrapper import SPARQLWrapper, JSON
+from SPARQLWrapper import SPARQLWrapper, JSON, SPARQLExceptions
 from functools import reduce
+import time
+import logging
+import requests
+from typing import List, Dict, Any, Optional, Tuple
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from urllib.parse import urlparse
+from config import Config
 
-SPARQL_ENDPOINT = os.getenv("SPARQL_ENDPOINT", "http://localhost:8890/sparql")
+# Configure logging
+logging.basicConfig(level=getattr(logging, Config.LOG_LEVEL), 
+                    format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+# Validate configuration on import
+if not Config.validate_config():
+    logger.error("Invalid configuration detected, using defaults")
+
+SPARQL_ENDPOINT = Config.SPARQL_ENDPOINT
+MAX_RETRIES = Config.SPARQL_MAX_RETRIES
+RETRY_DELAY = Config.SPARQL_RETRY_DELAY
+TIMEOUT = Config.SPARQL_TIMEOUT
 
 config = {
     "responsive": True,
@@ -19,17 +38,164 @@ config = {
 }
 
 
-def run_sparql_query(query: str) -> list:
-    sparql = SPARQLWrapper(SPARQL_ENDPOINT)
-    sparql.setReturnFormat(JSON)
-    sparql.setQuery(query)
-    return sparql.query().convert()["results"]["bindings"]
+def check_sparql_endpoint_health() -> bool:
+    """Check if SPARQL endpoint is accessible and responsive."""
+    try:
+        parsed_url = urlparse(SPARQL_ENDPOINT)
+        if parsed_url.scheme not in ['http', 'https']:
+            logger.error(f"Invalid SPARQL endpoint URL: {SPARQL_ENDPOINT}")
+            return False
+            
+        # Simple health check query
+        test_query = "SELECT (COUNT(*) as ?count) WHERE { ?s ?p ?o } LIMIT 1"
+        sparql = SPARQLWrapper(SPARQL_ENDPOINT)
+        sparql.setTimeout(10)
+        sparql.setReturnFormat(JSON)
+        sparql.setQuery(test_query)
+        
+        result = sparql.query().convert()
+        logger.info(f"SPARQL endpoint {SPARQL_ENDPOINT} is healthy")
+        return True
+        
+    except Exception as e:
+        logger.error(f"SPARQL endpoint health check failed: {str(e)}")
+        return False
 
-def extract_counts(results, var_name="count"):
-    return pd.DataFrame([{
-        "version": r["graph"]["value"].split("/")[-1],
-        var_name: int(r[var_name]["value"])
-    } for r in results])
+
+def run_sparql_query_with_retry(query: str, max_retries: int = MAX_RETRIES) -> List[Dict[str, Any]]:
+    """Execute SPARQL query with retry logic and error handling."""
+    last_exception = None
+    
+    for attempt in range(max_retries):
+        try:
+            start_time = time.time()
+            sparql = SPARQLWrapper(SPARQL_ENDPOINT)
+            sparql.setTimeout(TIMEOUT)
+            sparql.setReturnFormat(JSON)
+            sparql.setQuery(query)
+            
+            result = sparql.query().convert()
+            execution_time = time.time() - start_time
+            
+            if execution_time > 10:
+                logger.warning(f"Slow query execution: {execution_time:.2f}s")
+            
+            bindings = result.get("results", {}).get("bindings", [])
+            logger.info(f"Query executed successfully, returned {len(bindings)} results")
+            return bindings
+            
+        except SPARQLExceptions.QueryBadFormed as e:
+            logger.error(f"Bad SPARQL query: {str(e)}")
+            break  # Don't retry for syntax errors
+            
+        except SPARQLExceptions.EndPointNotFound as e:
+            logger.error(f"SPARQL endpoint not found: {str(e)}")
+            last_exception = e
+            break  # Don't retry for endpoint errors
+            
+        except (SPARQLExceptions.SPARQLWrapperException, requests.exceptions.RequestException) as e:
+            last_exception = e
+            logger.warning(f"Query attempt {attempt + 1}/{max_retries} failed: {str(e)}")
+            
+            if attempt < max_retries - 1:
+                time.sleep(RETRY_DELAY * (attempt + 1))  # Exponential backoff
+            
+        except Exception as e:
+            logger.error(f"Unexpected error in SPARQL query: {str(e)}")
+            last_exception = e
+            break
+    
+    logger.error(f"All {max_retries} query attempts failed. Last error: {str(last_exception)}")
+    return []
+
+
+def run_sparql_query(query: str) -> List[Dict[str, Any]]:
+    """Legacy function for backward compatibility."""
+    return run_sparql_query_with_retry(query)
+
+def extract_counts(results: List[Dict[str, Any]], var_name: str = "count") -> pd.DataFrame:
+    """Extract version and count data with error handling."""
+    if not results:
+        logger.warning(f"No results to extract for {var_name}")
+        return pd.DataFrame(columns=["version", var_name])
+    
+    try:
+        data = []
+        for r in results:
+            if "graph" not in r or var_name not in r:
+                logger.warning(f"Missing required fields in result: {r}")
+                continue
+                
+            try:
+                version = r["graph"]["value"].split("/")[-1]
+                count = int(r[var_name]["value"])
+                data.append({"version": version, var_name: count})
+            except (KeyError, ValueError, IndexError) as e:
+                logger.warning(f"Error processing result {r}: {str(e)}")
+                continue
+        
+        if not data:
+            logger.warning(f"No valid data extracted for {var_name}")
+            return pd.DataFrame(columns=["version", var_name])
+            
+        return pd.DataFrame(data)
+        
+    except Exception as e:
+        logger.error(f"Error in extract_counts: {str(e)}")
+        return pd.DataFrame(columns=["version", var_name])
+
+
+def create_fallback_plot(title: str, error_message: str) -> str:
+    """Create a fallback plot when data is unavailable."""
+    fig = px.scatter(x=[0], y=[0], title=f"{title} - Data Unavailable")
+    fig.add_annotation(
+        x=0, y=0,
+        text=f"Unable to load data: {error_message}",
+        showarrow=False,
+        font=dict(size=16, color="red"),
+        bgcolor="white",
+        bordercolor="red",
+        borderwidth=2
+    )
+    fig.update_layout(
+        template="plotly_white",
+        showlegend=False,
+        xaxis=dict(visible=False),
+        yaxis=dict(visible=False),
+        autosize=True,
+        margin=dict(l=50, r=20, t=50, b=50)
+    )
+    return pio.to_html(fig, full_html=False, include_plotlyjs="cdn", config={"responsive": True})
+
+
+def safe_plot_execution(plot_func, *args, **kwargs) -> Any:
+    """Safely execute a plot function with error handling."""
+    try:
+        start_time = time.time()
+        result = plot_func(*args, **kwargs)
+        execution_time = time.time() - start_time
+        
+        logger.info(f"Plot function {plot_func.__name__} executed in {execution_time:.2f}s")
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error in plot function {plot_func.__name__}: {str(e)}")
+        
+        # Return appropriate fallback based on expected return type
+        if hasattr(plot_func, '__annotations__'):
+            return_type = plot_func.__annotations__.get('return', str)
+            if return_type == str:
+                return create_fallback_plot(plot_func.__name__, str(e))
+            elif 'tuple' in str(return_type):
+                fallback = create_fallback_plot(plot_func.__name__, str(e))
+                # Return tuple of fallbacks based on expected length
+                if 'plot_main_graph' in plot_func.__name__:
+                    return fallback, fallback, pd.DataFrame()
+                else:
+                    return fallback, fallback
+        
+        # Default fallback
+        return create_fallback_plot(plot_func.__name__, str(e))
 
 def plot_main_graph() -> tuple[str, str, pd.DataFrame]:
     sparql_queries = {
