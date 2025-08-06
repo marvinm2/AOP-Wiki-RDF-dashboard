@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AOP-Wiki Dashboard Status</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <script>
+        function refreshStatus() {
+            fetch('/health')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('status').textContent = data.status;
+                    document.getElementById('sparql-status').textContent = data.sparql_endpoint;
+                    document.getElementById('plots-status').textContent = data.plots_loaded;
+                    document.getElementById('timestamp').textContent = new Date(data.timestamp * 1000).toLocaleString();
+                    
+                    // Update status color
+                    const statusElement = document.getElementById('status');
+                    statusElement.className = data.status === 'healthy' ? 'status-healthy' : 'status-degraded';
+                })
+                .catch(error => {
+                    console.error('Error fetching status:', error);
+                    document.getElementById('status').textContent = 'error';
+                    document.getElementById('status').className = 'status-error';
+                });
+        }
+        
+        // Refresh every 30 seconds
+        setInterval(refreshStatus, 30000);
+        
+        // Initial load
+        document.addEventListener('DOMContentLoaded', refreshStatus);
+    </script>
+    <style>
+        .status-healthy { color: #28a745; font-weight: bold; }
+        .status-degraded { color: #ffc107; font-weight: bold; }
+        .status-error { color: #dc3545; font-weight: bold; }
+        .status-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            margin: 20px;
+            max-width: 600px;
+            margin: 20px auto;
+        }
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .status-item:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>AOP-Wiki Dashboard Status</h1>
+        <p>Real-time system health and performance monitoring</p>
+    </header>
+
+    <div class="status-card">
+        <h2>System Status</h2>
+        <div class="status-item">
+            <span>Overall Status:</span>
+            <span id="status" class="status-healthy">Loading...</span>
+        </div>
+        <div class="status-item">
+            <span>SPARQL Endpoint:</span>
+            <span id="sparql-status">Loading...</span>
+        </div>
+        <div class="status-item">
+            <span>Plots Loaded:</span>
+            <span id="plots-status">Loading...</span>
+        </div>
+        <div class="status-item">
+            <span>Last Updated:</span>
+            <span id="timestamp">Loading...</span>
+        </div>
+    </div>
+
+    <div style="text-align: center; margin: 20px;">
+        <button onclick="refreshStatus()" class="nav-button">Refresh Status</button>
+        <a href="/" class="nav-button" style="text-decoration: none; display: inline-block;">Back to Dashboard</a>
+    </div>
+
+    <footer>
+        <div class="footer-content">
+            AOP-Wiki RDF Monitoring Service — Built for VHP4Safety
+        </div>
+    </footer>
+</body>
+</html>
