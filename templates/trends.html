@@ -36,7 +36,11 @@
     <div class="plot-box" id="main-trends">
         <div class="plot-header">
             <h2>AOP Entity Counts</h2>
-            <label><input type="checkbox" class="plot-toggle"> Show Deltas</label>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <a href="/download/main_graph_absolute" class="download-button" title="Download Absolute CSV data">CSV (Abs)</a>
+                <a href="/download/main_graph_delta" class="download-button" title="Download Delta CSV data">CSV (Δ)</a>
+                <label><input type="checkbox" class="plot-toggle"> Show Deltas</label>
+            </div>
         </div>
         <p class="plot-description">
             Tracks the total number of AOPs, Key Events (KEs), Key Event Relationships (KERs), 
