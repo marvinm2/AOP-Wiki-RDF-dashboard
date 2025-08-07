@@ -231,6 +231,8 @@ def safe_plot_execution(plot_func, *args, **kwargs) -> Any:
         return create_fallback_plot(plot_func.__name__, str(e))
 
 def plot_main_graph() -> tuple[str, str, pd.DataFrame]:
+    global _plot_data_cache
+    
     sparql_queries = {
         "AOPs": """
             SELECT ?graph (COUNT(?aop) AS ?count)
@@ -335,6 +337,10 @@ def plot_main_graph() -> tuple[str, str, pd.DataFrame]:
         ticktext=df_all["version"],
         tickangle=-45
     )
+
+    # Store absolute and delta data in cache for CSV download
+    _plot_data_cache['main_graph_absolute'] = df_abs_melted
+    _plot_data_cache['main_graph_delta'] = df_delta_melted
 
     return (
         pio.to_html(fig_abs, full_html=False, include_plotlyjs="cdn", config={"responsive": True}),
@@ -1339,8 +1345,13 @@ def plot_kes_by_kec_count() -> tuple[str, str]:
     )
 
 
+# Global data cache for CSV downloads
+_plot_data_cache = {}
+
 def plot_latest_entity_counts() -> str:
     """Create a bar chart showing the latest version's entity counts."""
+    global _plot_data_cache
+    
     sparql_queries = {
         "AOPs": """
             SELECT ?graph (COUNT(?aop) AS ?count)
@@ -1420,6 +1431,10 @@ def plot_latest_entity_counts() -> str:
         return "<p>No data available</p>"
     
     df = pd.DataFrame(data)
+    df["Version"] = latest_version  # Add version column for context
+    
+    # Store in global cache for CSV download
+    _plot_data_cache['latest_entity_counts'] = df
     
     fig = px.bar(
         df,
@@ -1446,6 +1461,8 @@ def plot_latest_entity_counts() -> str:
 
 def plot_latest_ke_components() -> str:
     """Create a pie chart showing the latest version's KE component distribution."""
+    global _plot_data_cache
+    
     query_components = """
     SELECT ?graph 
            (COUNT(?process) AS ?process_count)
@@ -1485,6 +1502,10 @@ def plot_latest_ke_components() -> str:
     if df.empty:
         return "<p>No component data available</p>"
     
+    # Add version for context and cache data
+    df["Version"] = latest_version
+    _plot_data_cache['latest_ke_components'] = df
+    
     fig = px.pie(
         df,
         values="Count",
@@ -1505,6 +1526,7 @@ def plot_latest_ke_components() -> str:
 
 def plot_latest_network_density() -> str:
     """Analyze AOP connectivity based on shared Key Events - simplified approach."""
+    global _plot_data_cache
     
     # First, get total AOPs in latest version
     query_total = """
@@ -1558,6 +1580,11 @@ def plot_latest_network_density() -> str:
         {"Type": "Isolated AOPs", "Count": isolated_aops, "Description": "Have unique Key Events"}
     ]
     df = pd.DataFrame(data)
+    df["Version"] = latest_version  # Add version for context
+    df["Total_AOPs"] = total_aops   # Add total for reference
+    
+    # Store in global cache for CSV download
+    _plot_data_cache['latest_network_density'] = df
     
     fig = px.pie(
         df, values="Count", names="Type",
@@ -1581,6 +1608,8 @@ def plot_latest_network_density() -> str:
 
 def plot_latest_avg_per_aop() -> str:
     """Create a bar chart showing average KEs and KERs per AOP in latest version."""
+    global _plot_data_cache
+    
     query_aops = """
         SELECT ?graph (COUNT(?aop) AS ?count)
         WHERE {
@@ -1639,6 +1668,13 @@ def plot_latest_avg_per_aop() -> str:
         {"Metric": "Avg KERs per AOP", "Value": avg_kers}
     ]
     df = pd.DataFrame(data)
+    df["Version"] = latest_version  # Add version for context
+    df["AOP_Count"] = aop_count     # Add total AOPs for reference
+    df["KE_Count"] = [ke_count, ke_count]    # Add raw counts for reference
+    df["KER_Count"] = [ker_count, ker_count]  # Add raw counts for reference
+    
+    # Store in global cache for CSV download
+    _plot_data_cache['latest_avg_per_aop'] = df
 
     fig = px.bar(
         df, x="Metric", y="Value",
@@ -1729,6 +1765,8 @@ def plot_latest_ontology_usage() -> str:
 
 def plot_latest_process_usage() -> str:
     """Create a pie chart showing ontology source distribution for biological processes."""
+    global _plot_data_cache
+    
     query = """
     SELECT ?graph ?ontology (COUNT(DISTINCT ?process) AS ?count)
     WHERE {
@@ -1773,6 +1811,11 @@ def plot_latest_process_usage() -> str:
         return create_fallback_plot("Process Ontology Sources", "No ontology source data found")
     
     df = pd.DataFrame(data).sort_values("Count", ascending=False)
+    df["Version"] = latest_version  # Add version for context
+    df["Component_Type"] = "Process"  # Add component type for clarity
+    
+    # Store in global cache for CSV download
+    _plot_data_cache['latest_process_usage'] = df
     
     fig = px.pie(
         df, values="Count", names="Ontology",
@@ -1792,6 +1835,8 @@ def plot_latest_process_usage() -> str:
 
 def plot_latest_object_usage() -> str:
     """Create a pie chart showing ontology source distribution for biological objects."""
+    global _plot_data_cache
+    
     query = """
     SELECT ?graph ?ontology (COUNT(DISTINCT ?object) AS ?count)
     WHERE {
@@ -1837,6 +1882,11 @@ def plot_latest_object_usage() -> str:
         return create_fallback_plot("Object Ontology Sources", "No ontology source data found")
     
     df = pd.DataFrame(data).sort_values("Count", ascending=False)
+    df["Version"] = latest_version  # Add version for context
+    df["Component_Type"] = "Object"  # Add component type for clarity
+    
+    # Store in global cache for CSV download
+    _plot_data_cache['latest_object_usage'] = df
     
     fig = px.pie(
         df, values="Count", names="Ontology",
@@ -1856,6 +1906,7 @@ def plot_latest_object_usage() -> str:
 
 def plot_latest_aop_completeness() -> str:
     """Create a chart showing AOP data completeness for all properties in the CSV spreadsheet."""
+    global _plot_data_cache
 
     # Default fallback properties for essential AOP completeness
     default_properties = [
@@ -1911,10 +1962,17 @@ def plot_latest_aop_completeness() -> str:
         completeness_data.append({
             "Property": label,
             "Completeness": completeness,
-            "Type": ptype
+            "Type": ptype,
+            "URI": uri,
+            "Count": count
         })
 
     df = pd.DataFrame(completeness_data)
+    df["Version"] = latest_version  # Add version for context
+    df["Total_AOPs"] = total_aops   # Add total AOPs for reference
+    
+    # Store in global cache for CSV download
+    _plot_data_cache['latest_aop_completeness'] = df
 
     # Use centralized brand colors for consistency
     color_map = BRAND_COLORS['type_colors'].copy()
@@ -2016,6 +2074,8 @@ def plot_latest_database_summary() -> str:
 
 def plot_latest_ke_annotation_depth() -> str:
     """Show distribution of Key Events by annotation depth (number of components)."""
+    global _plot_data_cache
+    
     query = """
     SELECT ?graph ?annotation_depth (COUNT(DISTINCT ?ke) AS ?ke_count)
     WHERE {
@@ -2059,6 +2119,11 @@ def plot_latest_ke_annotation_depth() -> str:
     
     df = pd.DataFrame(data)
     df = df.sort_values("Sort")
+    df["Version"] = latest_version  # Add version for context
+    df["Numeric_Depth"] = df["Sort"]  # Add numeric depth for analysis
+    
+    # Store in global cache for CSV download
+    _plot_data_cache['latest_ke_annotation_depth'] = df
     
     fig = px.pie(
         df, values="KE Count", names="Depth",

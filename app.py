@@ -20,7 +20,7 @@ if not Config.validate_config():
     logger.error("Invalid configuration detected, using defaults")
 
 # Set default Plotly renderer
-from flask import Flask, render_template, url_for
+from flask import Flask, render_template, url_for, Response
 
 app = Flask(
     __name__,
@@ -52,7 +52,8 @@ from plots import (
     plot_latest_database_summary,
     plot_latest_ke_annotation_depth,
     check_sparql_endpoint_health,
-    safe_plot_execution
+    safe_plot_execution,
+    _plot_data_cache
 )
 
 def compute_plots_parallel() -> dict:
@@ -184,6 +185,196 @@ def health_check():
 def status_page():
     """Status page with real-time monitoring."""
     return render_template("status.html")
+
+@app.route("/download/latest_entity_counts")
+def download_latest_entity_counts():
+    """Download CSV data for Latest Entity Counts plot."""
+    try:
+        if 'latest_entity_counts' not in _plot_data_cache:
+            return "No data available for download", 404
+        
+        df = _plot_data_cache['latest_entity_counts']
+        csv_data = df.to_csv(index=False)
+        
+        return Response(
+            csv_data,
+            mimetype='text/csv',
+            headers={'Content-Disposition': 'attachment; filename=latest_entity_counts.csv'}
+        )
+    except Exception as e:
+        logger.error(f"CSV download failed: {str(e)}")
+        return f"Download failed: {str(e)}", 500
+
+@app.route("/download/latest_ke_components")
+def download_latest_ke_components():
+    """Download CSV data for Latest KE Components plot."""
+    try:
+        if 'latest_ke_components' not in _plot_data_cache:
+            return "No data available for download", 404
+        
+        df = _plot_data_cache['latest_ke_components']
+        csv_data = df.to_csv(index=False)
+        
+        return Response(
+            csv_data,
+            mimetype='text/csv',
+            headers={'Content-Disposition': 'attachment; filename=latest_ke_components.csv'}
+        )
+    except Exception as e:
+        logger.error(f"CSV download failed: {str(e)}")
+        return f"Download failed: {str(e)}", 500
+
+@app.route("/download/latest_network_density")
+def download_latest_network_density():
+    """Download CSV data for Latest Network Density plot."""
+    try:
+        if 'latest_network_density' not in _plot_data_cache:
+            return "No data available for download", 404
+        
+        df = _plot_data_cache['latest_network_density']
+        csv_data = df.to_csv(index=False)
+        
+        return Response(
+            csv_data,
+            mimetype='text/csv',
+            headers={'Content-Disposition': 'attachment; filename=latest_network_density.csv'}
+        )
+    except Exception as e:
+        logger.error(f"CSV download failed: {str(e)}")
+        return f"Download failed: {str(e)}", 500
+
+@app.route("/download/latest_avg_per_aop")
+def download_latest_avg_per_aop():
+    """Download CSV data for Latest Avg per AOP plot."""
+    try:
+        if 'latest_avg_per_aop' not in _plot_data_cache:
+            return "No data available for download", 404
+        
+        df = _plot_data_cache['latest_avg_per_aop']
+        csv_data = df.to_csv(index=False)
+        
+        return Response(
+            csv_data,
+            mimetype='text/csv',
+            headers={'Content-Disposition': 'attachment; filename=latest_avg_per_aop.csv'}
+        )
+    except Exception as e:
+        logger.error(f"CSV download failed: {str(e)}")
+        return f"Download failed: {str(e)}", 500
+
+@app.route("/download/latest_process_usage")
+def download_latest_process_usage():
+    """Download CSV data for Latest Process Usage plot."""
+    try:
+        if 'latest_process_usage' not in _plot_data_cache:
+            return "No data available for download", 404
+        
+        df = _plot_data_cache['latest_process_usage']
+        csv_data = df.to_csv(index=False)
+        
+        return Response(
+            csv_data,
+            mimetype='text/csv',
+            headers={'Content-Disposition': 'attachment; filename=latest_process_usage.csv'}
+        )
+    except Exception as e:
+        logger.error(f"CSV download failed: {str(e)}")
+        return f"Download failed: {str(e)}", 500
+
+@app.route("/download/latest_object_usage")
+def download_latest_object_usage():
+    """Download CSV data for Latest Object Usage plot."""
+    try:
+        if 'latest_object_usage' not in _plot_data_cache:
+            return "No data available for download", 404
+        
+        df = _plot_data_cache['latest_object_usage']
+        csv_data = df.to_csv(index=False)
+        
+        return Response(
+            csv_data,
+            mimetype='text/csv',
+            headers={'Content-Disposition': 'attachment; filename=latest_object_usage.csv'}
+        )
+    except Exception as e:
+        logger.error(f"CSV download failed: {str(e)}")
+        return f"Download failed: {str(e)}", 500
+
+@app.route("/download/latest_aop_completeness")
+def download_latest_aop_completeness():
+    """Download CSV data for Latest AOP Completeness plot."""
+    try:
+        if 'latest_aop_completeness' not in _plot_data_cache:
+            return "No data available for download", 404
+        
+        df = _plot_data_cache['latest_aop_completeness']
+        csv_data = df.to_csv(index=False)
+        
+        return Response(
+            csv_data,
+            mimetype='text/csv',
+            headers={'Content-Disposition': 'attachment; filename=latest_aop_completeness.csv'}
+        )
+    except Exception as e:
+        logger.error(f"CSV download failed: {str(e)}")
+        return f"Download failed: {str(e)}", 500
+
+@app.route("/download/latest_ke_annotation_depth")
+def download_latest_ke_annotation_depth():
+    """Download CSV data for Latest KE Annotation Depth plot."""
+    try:
+        if 'latest_ke_annotation_depth' not in _plot_data_cache:
+            return "No data available for download", 404
+        
+        df = _plot_data_cache['latest_ke_annotation_depth']
+        csv_data = df.to_csv(index=False)
+        
+        return Response(
+            csv_data,
+            mimetype='text/csv',
+            headers={'Content-Disposition': 'attachment; filename=latest_ke_annotation_depth.csv'}
+        )
+    except Exception as e:
+        logger.error(f"CSV download failed: {str(e)}")
+        return f"Download failed: {str(e)}", 500
+
+@app.route("/download/main_graph_absolute")
+def download_main_graph_absolute():
+    """Download CSV data for Main Graph Absolute plot."""
+    try:
+        if 'main_graph_absolute' not in _plot_data_cache:
+            return "No data available for download", 404
+        
+        df = _plot_data_cache['main_graph_absolute']
+        csv_data = df.to_csv(index=False)
+        
+        return Response(
+            csv_data,
+            mimetype='text/csv',
+            headers={'Content-Disposition': 'attachment; filename=main_graph_absolute.csv'}
+        )
+    except Exception as e:
+        logger.error(f"CSV download failed: {str(e)}")
+        return f"Download failed: {str(e)}", 500
+
+@app.route("/download/main_graph_delta")
+def download_main_graph_delta():
+    """Download CSV data for Main Graph Delta plot."""
+    try:
+        if 'main_graph_delta' not in _plot_data_cache:
+            return "No data available for download", 404
+        
+        df = _plot_data_cache['main_graph_delta']
+        csv_data = df.to_csv(index=False)
+        
+        return Response(
+            csv_data,
+            mimetype='text/csv',
+            headers={'Content-Disposition': 'attachment; filename=main_graph_delta.csv'}
+        )
+    except Exception as e:
+        logger.error(f"CSV download failed: {str(e)}")
+        return f"Download failed: {str(e)}", 500
 
 # Set Plotly configuration for static images
 @app.route("/")
