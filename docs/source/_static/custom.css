@@ -1,0 +1,135 @@
+/* Custom CSS for AOP-Wiki RDF Dashboard Documentation */
+
+/* Official house style color scheme */
+:root {
+    --house-primary: #29235C;      /* Primary Dark - Main brand color */
+    --house-magenta: #E6007E;      /* Primary Magenta - Accent color */
+    --house-blue: #307BBF;         /* Primary Blue - Supporting blue */
+    --house-light-blue: #009FE3;   /* Light Blue */
+    --house-orange: #EB5B25;       /* Orange - Content highlight */
+    --house-sky: #93D5F6;          /* Sky Blue - Light accent */
+    --house-deep-magenta: #9A1C57; /* Deep Magenta */
+    --house-teal: #45A6B2;         /* Teal */
+    --house-purple: #B81178;       /* Purple */
+    --house-dark-teal: #005A6C;    /* Dark Teal */
+    --house-violet: #64358C;       /* Violet */
+}
+
+/* Navigation header with house style branding */
+.wy-nav-top {
+    background: var(--house-primary) !important;
+}
+
+/* Sidebar navigation styling */
+.wy-nav-side {
+    background: #fcfcfc;
+}
+
+.wy-menu-vertical a {
+    color: var(--house-primary);
+}
+
+.wy-menu-vertical a:hover {
+    background-color: var(--house-sky);
+    color: var(--house-primary);
+}
+
+.wy-menu-vertical li.current > a {
+    background-color: var(--house-blue);
+    border-right: 3px solid var(--house-magenta);
+}
+
+/* Code blocks and inline code styling */
+.highlight {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+}
+
+code.literal {
+    background-color: #f1f3f4;
+    color: var(--house-primary);
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+/* Link styling with brand colors */
+a {
+    color: var(--house-blue);
+}
+
+a:hover {
+    color: var(--house-magenta);
+}
+
+/* Section headers */
+.rst-content h1,
+.rst-content h2,
+.rst-content h3,
+.rst-content h4,
+.rst-content h5,
+.rst-content h6 {
+    color: var(--house-primary);
+}
+
+/* API documentation improvements */
+.rst-content dl:not(.docutils) dt {
+    background-color: var(--house-sky);
+    color: var(--house-primary);
+    border-left: 3px solid var(--house-blue);
+}
+
+.rst-content .admonition-title {
+    background-color: var(--house-blue);
+}
+
+.rst-content .note .admonition-title {
+    background-color: var(--house-orange);
+}
+
+.rst-content .warning .admonition-title {
+    background-color: var(--house-magenta);
+}
+
+/* Table styling */
+.rst-content table.docutils {
+    border: none;
+}
+
+.rst-content table.docutils th {
+    background-color: var(--house-blue);
+    color: white;
+    border: 1px solid var(--house-blue);
+}
+
+.rst-content table.docutils td {
+    border: 1px solid #e9ecef;
+}
+
+/* Search box styling */
+.wy-side-nav-search input[type=text] {
+    border: 2px solid var(--house-sky);
+}
+
+.wy-side-nav-search input[type=text]:focus {
+    border-color: var(--house-blue);
+}
+
+/* Version selector */
+.wy-side-nav-search > div.version {
+    color: var(--house-primary);
+}
+
+/* Footer customization */
+footer p {
+    color: var(--house-primary);
+}
+
+/* Breadcrumb styling */
+.wy-breadcrumbs li a {
+    color: var(--house-blue);
+}
+
+.wy-breadcrumbs li a:hover {
+    color: var(--house-magenta);
+}
