@@ -1,3 +1,43 @@
+"""AOP-Wiki RDF Dashboard Flask Application.
+
+This is the main Flask application that serves the AOP-Wiki RDF Dashboard. It provides
+a web-based interface for visualizing AOP (Adverse Outcome Pathway) data evolution
+over time, with comprehensive CSV export capabilities for all visualizations.
+
+The application features:
+    - Interactive web dashboard with tabbed navigation
+    - Real-time visualization of RDF data evolution
+    - Parallel plot computation for optimal performance
+    - Comprehensive CSV data export system
+    - Health monitoring and status endpoints
+    - Professional branding and responsive design
+
+Key Components:
+    - Parallel plot computation system using ThreadPoolExecutor
+    - Global data caching for CSV exports
+    - Health monitoring with SPARQL endpoint checking
+    - Professional web interface with brand-consistent styling
+    - Comprehensive error handling and fallback mechanisms
+
+Web Endpoints:
+    /: Main dashboard with interactive visualizations
+    /health: Health check endpoint for monitoring
+    /status: Real-time status monitoring page
+    /download/*: CSV download endpoints for all plots
+
+Performance Features:
+    - Parallel plot generation at startup
+    - Global data caching to prevent recomputation
+    - Configurable timeout and retry mechanisms
+    - Real-time performance monitoring
+
+The application integrates with a SPARQL endpoint to query RDF data and generates
+interactive Plotly visualizations with consistent VHP4Safety branding.
+
+Author:
+    Generated with Claude Code (https://claude.ai/code)
+
+"""
 from flask import Flask, render_template
 import pandas as pd
 from SPARQLWrapper import SPARQLWrapper, JSON
@@ -57,7 +97,46 @@ from plots import (
 )
 
 def compute_plots_parallel() -> dict:
-    """Compute all plots in parallel for better performance."""
+    """Compute all visualization plots in parallel for optimal startup performance.
+    
+    This function orchestrates the parallel generation of all dashboard plots using
+    ThreadPoolExecutor. It manages the execution of 22 different plot functions,
+    handles timeouts, and provides comprehensive error handling for individual
+    plot failures.
+    
+    The function first performs a SPARQL endpoint health check, then executes all
+    plot generation tasks concurrently with configurable parallelism and timeout
+    settings. Each plot function is wrapped in safe execution to prevent individual
+    failures from affecting the overall system.
+    
+    Plot Categories:
+        - Historical trends: Main graph, averages, network density, components
+        - Latest data snapshots: Entity counts, component analysis, completeness
+        - Specialized analysis: Author counts, AOP lifetime, property presence
+        - Ontology usage: Biological processes and objects analysis
+    
+    Returns:
+        dict: Dictionary mapping plot names to their generated HTML content.
+            Successful plots contain HTML strings, failed plots contain None.
+            Keys include: 'main_graph', 'avg_per_aop', 'network_density',
+            'latest_entity_counts', 'latest_ke_components', etc.
+    
+    Performance:
+        - Uses configurable parallel workers (Config.PARALLEL_WORKERS)
+        - Individual plot timeout protection (Config.PLOT_TIMEOUT)
+        - Comprehensive timing and success rate logging
+        - Graceful degradation for individual plot failures
+    
+    Example:
+        >>> results = compute_plots_parallel()
+        >>> successful_plots = sum(1 for v in results.values() if v is not None)
+        >>> print(f"Generated {successful_plots}/{len(results)} plots successfully")
+    
+    Note:
+        This function is called once at application startup to precompute all
+        visualizations. The results are stored in global variables for serving
+        to web requests.
+    """
     logger.info("Starting parallel plot computation...")
     start_time = time.time()
     
@@ -162,7 +241,60 @@ latest_ke_annotation_depth = plot_results.get('latest_ke_annotation_depth') or "
 
 @app.route("/health")
 def health_check():
-    """Health check endpoint for monitoring."""
+    """Health check endpoint for application and service monitoring.
+    
+    Provides a RESTful health check endpoint that monitors both the application
+    state and the underlying SPARQL endpoint connectivity. Returns structured
+    JSON with health status information suitable for monitoring systems,
+    load balancers, and health checks.
+    
+    Health Checks:
+        - SPARQL endpoint connectivity and responsiveness
+        - Plot generation success rate from startup
+        - Overall application health assessment
+        - Timestamp for monitoring freshness
+    
+    Returns:
+        tuple: (dict, int) containing:
+            - dict: JSON response with health status information including:
+                - status: "healthy", "degraded", or "error"
+                - sparql_endpoint: "up" or "down"
+                - plots_loaded: "X/Y" format showing successful plot ratio
+                - timestamp: Unix timestamp of health check
+            - int: HTTP status code (200 for healthy, 503 for degraded, 500 for error)
+    
+    HTTP Status Codes:
+        200: Application is fully healthy (endpoint up, plots loaded)
+        503: Application is degraded (endpoint down or no plots loaded)
+        500: Health check itself failed (unexpected error)
+    
+    Example Response:
+        >>> # Healthy response
+        {
+            "status": "healthy",
+            "sparql_endpoint": "up", 
+            "plots_loaded": "22/22",
+            "timestamp": 1640995200.0
+        }
+        
+        >>> # Degraded response  
+        {
+            "status": "degraded",
+            "sparql_endpoint": "down",
+            "plots_loaded": "0/22", 
+            "timestamp": 1640995200.0
+        }
+    
+    Usage:
+        This endpoint is designed for automated monitoring systems:
+        
+        >>> import requests
+        >>> response = requests.get("http://localhost:5000/health")
+        >>> if response.status_code == 200:
+        ...     print("Application is healthy")
+        ... else:
+        ...     print(f"Application is degraded: {response.json()}")
+    """
     try:
         endpoint_healthy = check_sparql_endpoint_health()
         successful_plots = sum(1 for v in plot_results.values() if v is not None)
@@ -181,14 +313,81 @@ def health_check():
         logger.error(f"Health check failed: {str(e)}")
         return {"status": "error", "message": str(e)}, 500
 
-@app.route("/status")
+@app.route("/status")  
 def status_page():
-    """Status page with real-time monitoring."""
+    """Serve the real-time status monitoring dashboard page.
+    
+    Renders the status.html template that provides a web-based interface for
+    monitoring application health, performance metrics, and system status.
+    This page complements the /health endpoint by providing human-readable
+    monitoring information.
+    
+    The status page includes:
+        - Real-time health status indicators
+        - SPARQL endpoint connectivity status  
+        - Plot generation success rates
+        - Performance metrics and timing information
+        - System resource utilization
+        - Interactive monitoring dashboard
+    
+    Returns:
+        str: Rendered HTML template for the status monitoring page
+    
+    Template:
+        Uses templates/status.html for the monitoring interface
+        
+    Example:
+        Access via browser: http://localhost:5000/status
+        
+    Note:
+        This endpoint is intended for human monitoring and debugging,
+        while /health is designed for automated systems.
+    """
     return render_template("status.html")
 
 @app.route("/download/latest_entity_counts")
 def download_latest_entity_counts():
-    """Download CSV data for Latest Entity Counts plot."""
+    """Download CSV data for the Latest Entity Counts visualization.
+    
+    Provides CSV export functionality for the latest entity counts data,
+    allowing users to download the raw data behind the bar chart visualization
+    for further analysis or reporting purposes.
+    
+    The CSV includes:
+        - Entity types (AOPs, KEs, KERs, Stressors, Authors)
+        - Current counts for each entity type
+        - Version information for data context
+        - Metadata columns for reference
+    
+    Returns:
+        Response: Flask Response object with CSV data as attachment
+            - Content-Type: text/csv
+            - Content-Disposition: attachment with filename
+            - HTTP 200 on success, 404 if data unavailable, 500 on error
+    
+    CSV Format:
+        Entity,Count,Version
+        AOPs,245,2024-01-15
+        KEs,1580,2024-01-15
+        ...
+        
+    Error Handling:
+        - 404: Data not available in cache (plot generation failed)
+        - 500: Server error during CSV generation or file serving
+    
+    Example Usage:
+        >>> import requests
+        >>> response = requests.get("http://localhost:5000/download/latest_entity_counts")
+        >>> if response.status_code == 200:
+        ...     with open("entity_counts.csv", "wb") as f:
+        ...         f.write(response.content)
+        
+        Or via browser: Direct download link in the dashboard interface
+    
+    Note:
+        Data is cached from plot generation during application startup.
+        If plots failed to generate, this endpoint returns 404.
+    """
     try:
         if 'latest_entity_counts' not in _plot_data_cache:
             return "No data available for download", 404
@@ -379,6 +578,58 @@ def download_main_graph_delta():
 # Set Plotly configuration for static images
 @app.route("/")
 def index():
+    """Serve the main dashboard page with all visualizations.
+    
+    Renders the primary dashboard interface containing all precomputed
+    visualizations in a professional tabbed layout. This is the main
+    entry point for users accessing the AOP-Wiki RDF Dashboard.
+    
+    The dashboard includes:
+        - Latest Data tab: Current snapshot visualizations
+        - Historical Trends tab: Time-series analysis 
+        - Professional navigation with VHP4Safety branding
+        - Interactive Plotly charts with download capabilities
+        - Responsive design for desktop and mobile
+        - CSV export buttons for all visualizations
+    
+    Visualization Categories:
+        Latest Data:
+            - Entity counts (bar chart)
+            - KE component distribution (pie chart)
+            - Network connectivity analysis
+            - Ontology usage statistics
+            - Data completeness metrics
+            
+        Historical Trends:
+            - Main entity evolution over time
+            - Average components per AOP trends
+            - Network density changes
+            - Author contribution patterns
+            - Component annotation trends
+    
+    Returns:
+        str: Rendered HTML template with all visualizations embedded
+    
+    Template Variables:
+        Passes 20+ visualization HTML strings to index.html template:
+        - graph_main_abs, graph_main_delta: Main entity trends
+        - latest_entity_counts: Current entity statistics
+        - latest_ke_components: Component distribution
+        - And many more visualization variables
+    
+    Performance:
+        - All plots are precomputed at startup for fast serving
+        - Uses CDN-hosted Plotly.js for optimal loading
+        - Responsive configuration for all chart types
+        - Global caching prevents recomputation on each request
+    
+    Example:
+        Access the dashboard: http://localhost:5000/
+        
+    Note:
+        If plot generation failed during startup, some visualizations
+        may display error messages or fallback content.
+    """
     return render_template(
         "index.html",
         graph_main_abs=graph_main_abs,

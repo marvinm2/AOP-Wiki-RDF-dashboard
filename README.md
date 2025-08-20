@@ -115,6 +115,15 @@ open http://localhost:5000/status
 │   └── status.html       # System monitoring page
 ├── static/
 │   └── css/main.css      # Styling and responsive design
+├── docs/                  # Comprehensive Sphinx documentation
+│   ├── source/           # Documentation source files
+│   │   ├── conf.py      # Sphinx configuration
+│   │   ├── index.rst    # Main documentation page
+│   │   ├── modules.rst  # API reference
+│   │   ├── quickstart.rst # Quick start guide
+│   │   ├── configuration.rst # Configuration guide
+│   │   └── api.rst      # Detailed API documentation
+│   └── build/            # Generated documentation
 └── requirements.txt      # Python dependencies
 ```
 
@@ -180,9 +189,32 @@ Use the built-in monitoring endpoints:
 
 ### **Code Standards**
 - Follow PEP 8 for Python code
-- Include type hints and docstrings
+- Include comprehensive Google/Sphinx style docstrings
+- Use type hints for all functions and methods
 - Test all SPARQL queries and visualizations
 - Ensure responsive design for new UI elements
+
+### **Documentation**
+The project includes comprehensive Google/Sphinx format documentation:
+
+#### **Building Documentation**
+```bash
+# Install Sphinx dependencies
+pip install sphinx sphinx-rtd-theme
+
+# Build HTML documentation
+cd docs && make html
+
+# View documentation
+open docs/build/html/index.html
+```
+
+#### **Documentation Features**
+- **Professional Sphinx Documentation**: Complete API reference with VHP4Safety branding
+- **Google-Style Docstrings**: All functions documented with comprehensive examples
+- **Interactive API Reference**: Auto-generated from docstrings with cross-references
+- **Configuration Guides**: Detailed environment variable and deployment documentation
+- **Quick Start Guides**: Step-by-step setup and usage instructions
 
 ## License
 

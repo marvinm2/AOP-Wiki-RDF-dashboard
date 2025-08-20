@@ -1,3 +1,103 @@
+"""Data visualization and SPARQL query functions for AOP-Wiki RDF Dashboard.
+
+This module contains all visualization generation and data processing functions for the
+AOP-Wiki RDF Dashboard. It provides a comprehensive suite of plotting functions that
+query SPARQL endpoints, process RDF data, and generate interactive Plotly visualizations
+with consistent VHP4Safety branding.
+
+Key Features:
+    - SPARQL endpoint integration with retry logic and error handling
+    - Interactive Plotly visualizations with professional branding
+    - Global data caching system for CSV exports
+    - Comprehensive error handling and fallback mechanisms
+    - Performance monitoring and optimization
+    - Brand-consistent color palette and styling
+
+Module Architecture:
+    - SPARQL Utilities: Connection, querying, and error handling
+    - Data Processing: RDF data extraction and transformation
+    - Visualization Engine: Plotly chart generation with branding
+    - Caching System: Global data cache for CSV export functionality
+    - Error Handling: Fallback plots and graceful degradation
+
+Visualization Categories:
+    
+    Historical Trends (Time Series Analysis):
+        - plot_main_graph(): Core entity evolution over time
+        - plot_avg_per_aop(): Average components per AOP trends
+        - plot_network_density(): Network connectivity evolution  
+        - plot_ke_components(): Component annotation trends
+        - plot_author_counts(): Author contribution patterns
+        - plot_aop_lifetime(): AOP lifecycle analysis
+        
+    Latest Data Snapshots (Current State):
+        - plot_latest_entity_counts(): Current entity statistics
+        - plot_latest_ke_components(): Component distribution analysis
+        - plot_latest_network_density(): Current connectivity metrics
+        - plot_latest_aop_completeness(): Data completeness assessment
+        - plot_latest_ontology_usage(): Ontology source distribution
+        
+    Specialized Analysis:
+        - plot_bio_processes(): Biological process ontology usage
+        - plot_bio_objects(): Biological object ontology analysis
+        - plot_aop_property_presence(): Property presence analysis
+        - plot_kes_by_kec_count(): KE annotation depth distribution
+
+Brand Identity:
+    All visualizations use the official house style color palette for consistency:
+    
+    Primary Colors:
+    - Primary Dark: #29235C (Main brand color)
+    - Primary Magenta: #E6007E (Accent color)
+    - Primary Blue: #307BBF (Supporting blue)
+    
+    Secondary Colors:
+    - Light Blue: #009FE3
+    - Orange: #EB5B25 (Content highlight)
+    - Sky Blue: #93D5F6 (Light accent)
+    - Deep Magenta: #9A1C57, Teal: #45A6B2, Purple: #B81178
+    - Dark Teal: #005A6C, Violet: #64358C
+
+SPARQL Integration:
+    - Endpoint: Configurable via Config.SPARQL_ENDPOINT
+    - Retry Logic: Exponential backoff with configurable attempts
+    - Health Monitoring: Connection status and performance tracking
+    - Error Handling: Graceful degradation with fallback visualizations
+    - Query Optimization: Efficient RDF graph filtering and aggregation
+
+Performance Features:
+    - Global data caching for CSV exports (_plot_data_cache)
+    - Configurable timeouts and retry mechanisms  
+    - Parallel execution support via safe_plot_execution()
+    - Performance monitoring and logging
+    - Memory-efficient data processing
+
+Usage Examples:
+    Basic plot generation:
+    >>> html_plot = plot_latest_entity_counts()
+    >>> print("Generated plot HTML:", len(html_plot))
+    
+    Historical analysis:
+    >>> abs_plot, delta_plot, data = plot_main_graph()
+    >>> print("Historical data shape:", data.shape)
+    
+    CSV data access:
+    >>> from plots import _plot_data_cache
+    >>> if 'latest_entity_counts' in _plot_data_cache:
+    ...     df = _plot_data_cache['latest_entity_counts']
+    ...     df.to_csv('entity_counts.csv')
+
+Error Handling:
+    All plot functions include comprehensive error handling:
+    - SPARQL connection failures
+    - Data processing errors  
+    - Visualization generation issues
+    - Fallback plot generation for graceful degradation
+
+Author:
+    Generated with Claude Code (https://claude.ai/code)
+
+"""
 import os
 import pandas as pd
 import plotly.express as px
@@ -26,26 +126,86 @@ MAX_RETRIES = Config.SPARQL_MAX_RETRIES
 RETRY_DELAY = Config.SPARQL_RETRY_DELAY
 TIMEOUT = Config.SPARQL_TIMEOUT
 
-# Centralized Brand Color Palette
+# Official House Style Color Palette
 BRAND_COLORS = {
-    'primary': '#307BBF',      # Primary blue
-    'secondary': '#E6007E',    # Pink/magenta
-    'accent': '#29235C',       # Dark blue
-    'light': '#93D5F6',        # Light blue
-    'content': '#FF9500',      # Orange (from property_labels.csv)
-    'palette': ['#307BBF', '#E6007E', '#29235C', '#93D5F6', '#FF9500', '#4CAF50', '#FF5722'],
-    'type_colors': {           # For property type consistency
-        'Essential': '#307BBF',
-        'Metadata': '#E6007E', 
-        'Content': '#FF9500',
-        'Context': '#93D5F6',
-        'Assessment': '#29235C'
+    # Primary house style colors
+    'primary': '#29235C',      # Primary Dark (Main brand color)
+    'secondary': '#E6007E',    # Primary Magenta (Accent color)
+    'accent': '#307BBF',       # Primary Blue (Supporting blue)
+    'light': '#93D5F6',        # Sky Blue (Light accent)
+    'content': '#EB5B25',      # Orange (Content highlight)
+    
+    # Full palette using official house style colors
+    'palette': [
+        '#29235C',  # Primary Dark
+        '#E6007E',  # Primary Magenta  
+        '#307BBF',  # Primary Blue
+        '#009FE3',  # Light Blue
+        '#EB5B25',  # Orange
+        '#93D5F6',  # Sky Blue
+        '#9A1C57',  # Deep Magenta
+        '#45A6B2',  # Teal
+        '#B81178',  # Purple
+        '#005A6C',  # Dark Teal
+        '#64358C'   # Violet
+    ],
+    
+    # Property type colors using house style palette
+    'type_colors': {
+        'Essential': '#29235C',    # Primary Dark
+        'Metadata': '#E6007E',     # Primary Magenta
+        'Content': '#EB5B25',      # Orange
+        'Context': '#93D5F6',      # Sky Blue
+        'Assessment': '#307BBF',   # Primary Blue
+        'Structure': '#45A6B2'     # Teal
     }
 }
 
 # Safe file operations with error handling
 def safe_read_csv(filename: str, default_data: Optional[List[Dict]] = None) -> pd.DataFrame:
-    """Safely read CSV file with error handling and fallback."""
+    """Safely read CSV file with comprehensive error handling and fallback data.
+    
+    Provides robust CSV file reading with graceful error handling for missing files,
+    corrupted data, or permission issues. Uses fallback data when the primary file
+    cannot be read, ensuring the application continues to function even when
+    configuration files are unavailable.
+    
+    Args:
+        filename (str): Path to the CSV file to read. Can be relative or absolute.
+        default_data (Optional[List[Dict]]): Fallback data as list of dictionaries
+            to use if file reading fails. Each dictionary represents a row.
+            If None, returns empty DataFrame on failure.
+    
+    Returns:
+        pd.DataFrame: Loaded CSV data as DataFrame, fallback data, or empty DataFrame.
+            Column structure depends on the CSV content or default_data structure.
+    
+    Error Handling:
+        - FileNotFoundError: Logs warning and uses fallback data
+        - PermissionError: Logs error and uses fallback data  
+        - pd.errors.ParserError: Logs error and uses fallback data
+        - UnicodeDecodeError: Logs error and uses fallback data
+        - Any other Exception: Logs error and uses fallback data
+        
+    Example:
+        >>> # Read property labels with fallback
+        >>> default_props = [
+        ...     {"uri": "http://purl.org/dc/elements/1.1/title", 
+        ...      "label": "Title", "type": "Essential"}
+        ... ]
+        >>> df = safe_read_csv("property_labels.csv", default_props)
+        >>> print(f"Loaded {len(df)} properties")
+        
+        >>> # Read without fallback
+        >>> df = safe_read_csv("optional_config.csv")
+        >>> if df.empty:
+        ...     print("No configuration data available")
+    
+    Note:
+        This function is designed for configuration files that may not always
+        be present. It prioritizes application stability over strict file
+        requirements.
+    """
     try:
         return pd.read_csv(filename)
     except FileNotFoundError:
@@ -72,7 +232,58 @@ config = {
 
 
 def check_sparql_endpoint_health() -> bool:
-    """Check if SPARQL endpoint is accessible and responsive."""
+    """Check if SPARQL endpoint is accessible and responsive.
+    
+    Performs a lightweight health check on the configured SPARQL endpoint by
+    executing a simple test query. This function validates both connectivity
+    and basic query functionality, providing essential health monitoring
+    capabilities for the application.
+    
+    Health Check Process:
+        1. Validates SPARQL endpoint URL format and scheme
+        2. Executes a minimal test query (COUNT of any triple)
+        3. Verifies response within timeout period
+        4. Confirms valid JSON response format
+    
+    Returns:
+        bool: True if endpoint is healthy and responsive, False otherwise.
+            Logs appropriate messages for both success and failure cases.
+    
+    Test Query:
+        Executes: "SELECT (COUNT(*) as ?count) WHERE { ?s ?p ?o } LIMIT 1"
+        - Lightweight query that works on any RDF store
+        - Tests connectivity, query processing, and response format
+        - Uses short timeout (10 seconds) for quick health checks
+    
+    Error Conditions:
+        - Invalid URL format or scheme
+        - Network connectivity issues  
+        - SPARQL endpoint not responding
+        - Query execution timeout
+        - Invalid response format
+        - Server errors (500, 503, etc.)
+    
+    Example:
+        >>> if check_sparql_endpoint_health():
+        ...     print("SPARQL endpoint is ready")
+        ...     # Proceed with data queries
+        ... else:
+        ...     print("SPARQL endpoint is unavailable")
+        ...     # Use fallback data or cached results
+    
+    Usage:
+        Called during application startup and by health check endpoints
+        to ensure SPARQL connectivity before attempting data queries.
+        
+    Performance:
+        - Uses 10-second timeout for quick response
+        - Minimal query load on the SPARQL endpoint
+        - Designed for frequent health monitoring
+    
+    Note:
+        This function logs all outcomes (success/failure) and is safe
+        to call repeatedly for monitoring purposes.
+    """
     try:
         parsed_url = urlparse(SPARQL_ENDPOINT)
         if parsed_url.scheme not in ['http', 'https']:
@@ -96,7 +307,80 @@ def check_sparql_endpoint_health() -> bool:
 
 
 def run_sparql_query_with_retry(query: str, max_retries: int = MAX_RETRIES) -> List[Dict[str, Any]]:
-    """Execute SPARQL query with retry logic and error handling."""
+    """Execute SPARQL query with comprehensive retry logic and error handling.
+    
+    Provides robust SPARQL query execution with exponential backoff retry logic,
+    comprehensive error classification, and performance monitoring. This is the
+    primary interface for all SPARQL operations in the application.
+    
+    Args:
+        query (str): SPARQL query string to execute. Should be valid SPARQL syntax.
+        max_retries (int, optional): Maximum number of retry attempts. 
+            Defaults to Config.SPARQL_MAX_RETRIES (typically 3).
+    
+    Returns:
+        List[Dict[str, Any]]: List of result bindings from the SPARQL query.
+            Each dictionary represents one result row with variable bindings.
+            Returns empty list if query fails after all retries.
+    
+    Query Execution Process:
+        1. Validates and prepares SPARQL query
+        2. Configures SPARQLWrapper with timeout settings
+        3. Executes query with performance monitoring
+        4. Handles various error conditions with appropriate retry logic
+        5. Returns parsed JSON results or empty list on failure
+    
+    Retry Logic:
+        - Exponential backoff: delay increases with each retry attempt
+        - Syntax errors (QueryBadFormed): No retry, immediate failure
+        - Endpoint errors (EndPointNotFound): No retry, immediate failure  
+        - Network/timeout errors: Full retry with backoff
+        - Other exceptions: Single retry attempt
+    
+    Error Classification:
+        - SPARQLExceptions.QueryBadFormed: Query syntax errors (no retry)
+        - SPARQLExceptions.EndPointNotFound: Endpoint unavailable (no retry)
+        - SPARQLWrapperException: SPARQL-specific errors (retry with backoff)
+        - requests.exceptions.RequestException: Network issues (retry with backoff)
+        - Exception: Unexpected errors (single retry)
+    
+    Performance Monitoring:
+        - Execution time tracking and logging
+        - Slow query detection (>10 seconds)
+        - Success/failure rate monitoring
+        - Retry attempt logging
+    
+    Example:
+        >>> # Basic query execution
+        >>> query = '''
+        ... SELECT ?graph (COUNT(?aop) AS ?count)
+        ... WHERE {
+        ...     GRAPH ?graph { ?aop a aopo:AdverseOutcomePathway . }
+        ... }
+        ... GROUP BY ?graph
+        ... '''
+        >>> results = run_sparql_query_with_retry(query)
+        >>> print(f"Retrieved {len(results)} results")
+        
+        >>> # With custom retry count
+        >>> results = run_sparql_query_with_retry(query, max_retries=5)
+    
+    Configuration:
+        Uses Config parameters for:
+        - SPARQL_TIMEOUT: Query timeout in seconds
+        - SPARQL_RETRY_DELAY: Base delay between retries
+        - SPARQL_ENDPOINT: Target SPARQL endpoint URL
+    
+    Logging:
+        - Info: Successful queries with execution time and result count
+        - Warning: Individual retry attempts with error details
+        - Error: Final failure after all retries exhausted
+    
+    Note:
+        This function is the foundation for all SPARQL operations and is
+        designed to be resilient against temporary network issues while
+        failing fast for permanent errors like syntax problems.
+    """
     last_exception = None
     
     for attempt in range(max_retries):
@@ -147,7 +431,78 @@ def run_sparql_query(query: str) -> List[Dict[str, Any]]:
     return run_sparql_query_with_retry(query)
 
 def extract_counts(results: List[Dict[str, Any]], var_name: str = "count") -> pd.DataFrame:
-    """Extract version and count data with error handling."""
+    """Extract version and count data from SPARQL query results with robust error handling.
+    
+    Processes SPARQL query results to extract version information and count data,
+    transforming the raw RDF query results into a clean pandas DataFrame suitable
+    for visualization and analysis. Handles various data quality issues and
+    provides comprehensive error recovery.
+    
+    Args:
+        results (List[Dict[str, Any]]): Raw SPARQL query results as returned by
+            run_sparql_query_with_retry(). Each dict contains variable bindings.
+        var_name (str, optional): Name of the count variable in query results.
+            Defaults to "count". Must match the variable name in the SPARQL query.
+    
+    Returns:
+        pd.DataFrame: Cleaned DataFrame with columns:
+            - version (str): RDF graph version extracted from graph URI
+            - {var_name} (int): Converted count values
+            Returns empty DataFrame if no valid results found.
+    
+    Data Processing:
+        1. Validates presence of required fields (graph, count variable)
+        2. Extracts version from graph URI (last path component)
+        3. Converts count strings to integers with validation
+        4. Filters out invalid or incomplete records
+        5. Returns structured DataFrame or empty DataFrame
+    
+    Error Handling:
+        - Missing required fields: Logs warning, skips record
+        - Invalid URI format: Logs warning, skips record  
+        - Non-numeric counts: Logs warning, skips record
+        - Empty results: Logs warning, returns empty DataFrame
+        - Any processing error: Logs error, returns empty DataFrame
+    
+    Expected Input Format:
+        Each result dict should contain:
+        >>> {
+        ...     "graph": {"value": "http://aopwiki.org/graph/2024-01-15"},
+        ...     "count": {"value": "42"}
+        ... }
+    
+    Example:
+        >>> # Process AOP count results
+        >>> sparql_results = run_sparql_query_with_retry(aop_query)
+        >>> df = extract_counts(sparql_results, "count")
+        >>> print(df.head())
+           version  count
+        0  2023-01-15     120
+        1  2023-06-01     135
+        2  2024-01-15     142
+        
+        >>> # Process with custom variable name
+        >>> df = extract_counts(results, "author_count")
+        >>> print(df.columns.tolist())
+        ['version', 'author_count']
+    
+    Version Extraction:
+        - Extracts version from graph URIs like:
+          "http://aopwiki.org/graph/2024-01-15" → "2024-01-15"
+        - Handles various URI formats robustly
+        - Uses the last path component as version identifier
+    
+    Data Quality:
+        - Validates numeric conversion for all counts
+        - Ensures all records have required fields
+        - Provides detailed logging for data quality issues
+        - Returns consistent DataFrame structure even for edge cases
+    
+    Note:
+        This function is a critical data processing component used by most
+        visualization functions. It ensures data consistency and handles
+        the common pattern of version-based count queries.
+    """
     if not results:
         logger.warning(f"No results to extract for {var_name}")
         return pd.DataFrame(columns=["version", var_name])
@@ -179,7 +534,83 @@ def extract_counts(results: List[Dict[str, Any]], var_name: str = "count") -> pd
 
 
 def create_fallback_plot(title: str, error_message: str) -> str:
-    """Create a fallback plot when data is unavailable."""
+    """Create a professional fallback visualization when primary data is unavailable.
+    
+    Generates a styled error visualization that maintains the dashboard's professional
+    appearance when data queries fail or return empty results. This ensures users
+    receive clear feedback about data availability issues while preserving the
+    overall dashboard layout and user experience.
+    
+    Args:
+        title (str): Title for the fallback plot, typically describing what
+            visualization was attempted. Should be descriptive for user clarity.
+        error_message (str): Specific error message explaining why data is
+            unavailable. Can be technical (for debugging) or user-friendly.
+    
+    Returns:
+        str: Complete HTML string containing a styled Plotly error visualization.
+            Includes error message, professional styling, and responsive configuration.
+    
+    Visualization Features:
+        - Clean scatter plot with single point (visually minimal)
+        - Prominent error message annotation with styling
+        - Professional white template matching dashboard theme
+        - Red color scheme indicating error state
+        - Hidden axes for clean appearance
+        - Responsive configuration for mobile compatibility
+        
+    Styling Elements:
+        - Large, readable error text (16pt font)
+        - Red border and background for error indication
+        - Centered annotation positioned prominently
+        - Hidden legend and axes for minimalist design
+        - Proper margins matching other dashboard plots
+        
+    Example Usage:
+        >>> # In plot function error handling
+        >>> try:
+        ...     # Attempt data query and visualization
+        ...     results = run_sparql_query(query)
+        ...     return generate_plot(results)
+        ... except Exception as e:
+        ...     return create_fallback_plot("Entity Counts", str(e))
+        
+        >>> # Usage with descriptive errors
+        >>> if not data_available:
+        ...     return create_fallback_plot(
+        ...         "AOP Timeline Analysis",
+        ...         "SPARQL endpoint unavailable - using cached data"
+        ...     )
+    
+    Error Message Guidelines:
+        - Keep messages informative but not overly technical for end users
+        - Include enough detail for debugging when necessary
+        - Suggest potential solutions when applicable
+        - Maintain professional tone consistent with dashboard
+        
+    Integration:
+        - Used by safe_plot_execution() for automatic error handling
+        - Maintains consistent dashboard layout during failures  
+        - Preserves user experience with graceful degradation
+        - Enables debugging through visible error messages
+        
+    Performance:
+        - Minimal overhead (single scatter point)
+        - Fast rendering with CDN Plotly.js
+        - Responsive configuration for all devices
+        - No data processing requirements
+        
+    Dashboard Consistency:
+        - Uses plotly_white template matching other plots
+        - Maintains responsive configuration standards
+        - Preserves dashboard grid layout and spacing
+        - Provides visual continuity during error states
+        
+    Note:
+        This function is critical for application resilience. It ensures
+        that individual plot failures don't break the entire dashboard
+        and provides users with clear information about data availability.
+    """
     fig = px.scatter(x=[0], y=[0], title=f"{title} - Data Unavailable")
     fig.add_annotation(
         x=0, y=0,
@@ -202,7 +633,97 @@ def create_fallback_plot(title: str, error_message: str) -> str:
 
 
 def safe_plot_execution(plot_func, *args, **kwargs) -> Any:
-    """Safely execute a plot function with error handling."""
+    """Execute plot functions with comprehensive error handling and performance monitoring.
+    
+    Provides a robust wrapper for all visualization functions that ensures graceful
+    error handling, performance monitoring, and consistent fallback behavior. This
+    function is essential for application stability and enables the parallel plot
+    generation system to handle individual failures without affecting overall
+    dashboard functionality.
+    
+    Args:
+        plot_func: The plot function to execute. Should be a callable that
+            generates visualizations (e.g., plot_latest_entity_counts).
+        *args: Positional arguments to pass to the plot function.
+        **kwargs: Keyword arguments to pass to the plot function.
+    
+    Returns:
+        Any: The result of the plot function execution, typically:
+            - str: HTML for single visualizations
+            - tuple: Multiple HTML strings for functions with variants
+            - tuple with DataFrame: For functions that also return data
+        Returns appropriate fallback content if execution fails.
+    
+    Error Handling Strategy:
+        1. Wraps plot function execution in comprehensive try-catch
+        2. Monitors execution time and logs performance warnings
+        3. Analyzes function signature to determine expected return type
+        4. Generates appropriate fallback content based on expected format
+        5. Logs detailed error information for debugging
+        
+    Performance Monitoring:
+        - Tracks execution time for each plot function
+        - Logs function name and timing information
+        - Identifies slow-running visualizations (useful for optimization)
+        - Provides performance visibility for dashboard tuning
+        
+    Fallback Generation:
+        Single HTML (str):
+            - Returns create_fallback_plot() with error message
+            
+        Multiple HTML (tuple of str):
+            - Returns tuple of fallback plots matching expected count
+            - For functions like plot_main_graph() returning (abs, delta)
+            
+        Data + HTML (tuple with DataFrame):
+            - Returns fallback plots plus empty DataFrame
+            - Maintains expected return structure for data processing
+            
+    Function Signature Analysis:
+        - Uses function annotations to determine expected return types
+        - Handles functions with tuple[str, str] annotations  
+        - Provides intelligent fallbacks for complex return structures
+        - Supports both annotated and non-annotated functions
+        
+    Example Usage:
+        >>> # Direct execution with error handling
+        >>> result = safe_plot_execution(plot_latest_entity_counts)
+        >>> if "Data Unavailable" in result:
+        ...     print("Plot generation failed")
+        
+        >>> # In parallel execution system  
+        >>> with ThreadPoolExecutor() as executor:
+        ...     future = executor.submit(safe_plot_execution, plot_func)
+        ...     result = future.result(timeout=60)
+        
+    Integration with Parallel System:
+        - Used by compute_plots_parallel() for all plot generation
+        - Enables individual plot failures without system-wide crashes
+        - Supports timeout protection at the wrapper level
+        - Provides consistent error handling across all visualizations
+        
+    Logging Output:
+        Success: "Plot function plot_name executed in 2.34s"
+        Failure: "Error in plot function plot_name: connection timeout"
+        
+    Performance Considerations:
+        - Minimal overhead when plots execute successfully
+        - Fast fallback generation for failed plots
+        - Detailed timing for performance optimization
+        - Memory-efficient error handling
+        
+    Return Type Detection:
+        Analyzes __annotations__ to determine expected return format:
+        - str → single HTML fallback
+        - tuple[str, str] → dual HTML fallbacks
+        - tuple[str, str, pd.DataFrame] → dual HTML + empty DataFrame
+        - Default → single HTML fallback
+        
+    Note:
+        This function is the cornerstone of the application's error resilience.
+        It ensures that the dashboard can start and operate even when some
+        visualizations fail, providing users with maximum available content.
+    """
     try:
         start_time = time.time()
         result = plot_func(*args, **kwargs)
@@ -231,6 +752,87 @@ def safe_plot_execution(plot_func, *args, **kwargs) -> Any:
         return create_fallback_plot(plot_func.__name__, str(e))
 
 def plot_main_graph() -> tuple[str, str, pd.DataFrame]:
+    """Generate the main AOP entity evolution visualization with absolute and delta views.
+    
+    Creates comprehensive time-series visualizations showing the evolution of core
+    AOP-Wiki entities (AOPs, Key Events, Key Event Relationships, and Stressors)
+    across different RDF graph versions. Provides both absolute counts and 
+    delta changes between versions with global data caching for CSV exports.
+    
+    The function executes multiple SPARQL queries to gather entity counts across
+    all available graph versions, processes the data into time-series format,
+    and generates interactive Plotly visualizations with VHP4Safety branding.
+    
+    SPARQL Queries:
+        - AOPs: Counts AdverseOutcomePathway instances per graph
+        - KEs: Counts KeyEvent instances per graph  
+        - KERs: Counts KeyEventRelationship instances per graph
+        - Stressors: Counts Stressor (nci:C54571) instances per graph
+        
+    Returns:
+        tuple[str, str, pd.DataFrame]: A 3-tuple containing:
+            - str: HTML for absolute counts line chart
+            - str: HTML for delta changes line chart  
+            - pd.DataFrame: Processed data with all entity counts by version
+            
+    Data Processing:
+        1. Executes 4 parallel SPARQL queries for entity types
+        2. Extracts and validates count data using extract_counts()
+        3. Merges results into unified DataFrame with outer join
+        4. Sorts by datetime-converted version strings
+        5. Computes delta changes between consecutive versions
+        6. Caches data globally for CSV export functionality
+        
+    Visualizations:
+        Absolute Plot:
+            - Multi-line chart showing entity counts over time
+            - Uses VHP4Safety color palette for consistency
+            - Interactive hover with unified mode
+            - Responsive design with proper margins
+            
+        Delta Plot:  
+            - Shows changes between consecutive versions
+            - Highlights growth/decline patterns
+            - Same styling and interactivity as absolute plot
+            - Useful for identifying update patterns
+    
+    Global Caching:
+        Stores processed data in _plot_data_cache for CSV downloads:
+        - 'main_graph_absolute': Melted absolute data
+        - 'main_graph_delta': Melted delta data
+        
+    Example Data Structure:
+        >>> abs_html, delta_html, df = plot_main_graph()
+        >>> print(df.head())
+           version  AOPs  KEs  KERs  Stressors
+        0  2023-01-15   120  800   650        45
+        1  2023-06-01   135  850   720        48  
+        2  2024-01-15   142  890   780        52
+        
+    Error Handling:
+        - Empty query results: Logs warnings, continues with available data
+        - Invalid data formats: Uses extract_counts() error handling
+        - Merge failures: Returns empty DataFrame and fallback plots
+        - Visualization errors: Handled by safe_plot_execution wrapper
+        
+    Performance:
+        - Parallel query execution for optimal speed
+        - Efficient DataFrame operations with pandas
+        - Cached results prevent recomputation
+        - Optimized for time-series data processing
+        
+    Usage:
+        Called during application startup for dashboard generation:
+        >>> # In app.py startup
+        >>> abs_plot, delta_plot, data = plot_main_graph()
+        >>> # Data automatically cached for CSV downloads
+        
+    Note:
+        This is the primary historical analysis function and forms the
+        foundation for understanding AOP-Wiki data evolution patterns.
+        The function assumes RDF graphs follow the naming pattern:
+        "http://aopwiki.org/graph/{version}"
+    """
     global _plot_data_cache
     
     sparql_queries = {
@@ -1045,12 +1647,16 @@ def plot_bio_objects() -> tuple[str, str]:
 
         BIND(
           IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/GO_"), "GO",
+          IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/PR_"), "PR",
+          IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/CHEBI_"), "CHEBI",
+          IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/UBERON_"), "UBERON",
+          IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/CL_"), "CL",
           IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/MP_"), "MP",
           IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/NBO_"), "NBO",
           IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/MI_"), "MI",
           IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/VT_"), "VT",
           IF(STRSTARTS(STR(?object), "http://purl.org/commons/record/mesh/"), "MESH",
-          IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/HP_"), "HP", "OTHER"))))))) AS ?ontology)
+          IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/HP_"), "HP", "OTHER"))))))))))) AS ?ontology)
       }
       FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
     }
@@ -1076,7 +1682,8 @@ def plot_bio_objects() -> tuple[str, str]:
         color="ontology",
         barmode="group",
         title="KEs Annotated with Biological Objects by Ontology (Absolute)",
-        labels={"count": "Annotated KEs", "ontology": "Ontology"}
+        labels={"count": "Annotated KEs", "ontology": "Ontology"},
+        color_discrete_sequence=BRAND_COLORS['palette']
     )
     fig_abs.update_layout(template="plotly_white", hovermode="x unified", autosize=True)
     fig_abs.update_xaxes(tickmode='array', tickvals=df_obj["version"], ticktext=df_obj["version"], tickangle=-45)
@@ -1092,7 +1699,8 @@ def plot_bio_objects() -> tuple[str, str]:
         color="ontology",
         barmode="group",
         title="Change in Biological Object Annotations by Ontology (Delta)",
-        labels={"count": "Change in Annotated KEs", "ontology": "Ontology"}
+        labels={"count": "Change in Annotated KEs", "ontology": "Ontology"},
+        color_discrete_sequence=BRAND_COLORS['palette']
     )
     fig_delta.update_layout(template="plotly_white", hovermode="x unified", autosize=True)
     fig_delta.update_xaxes(tickmode='array', tickvals=df_obj["version"], ticktext=df_obj["version"], tickangle=-45)
@@ -1180,7 +1788,8 @@ def plot_aop_property_presence(label_file="property_labels.csv") -> tuple[str, s
         color="display_label",
         markers=True,
         title="Presence of Properties in AOPs Over Time (Distinct Count)",
-        labels={"count": "Number of AOPs", "display_label": "Property"}
+        labels={"count": "Number of AOPs", "display_label": "Property"},
+        color_discrete_sequence=BRAND_COLORS['palette']
     )
     fig_abs.update_layout(
     template="plotly_white",
@@ -1197,7 +1806,8 @@ def plot_aop_property_presence(label_file="property_labels.csv") -> tuple[str, s
         color="display_label",
         markers=True,
         title="Presence of Properties in AOPs Over Time (Percentage)",
-        labels={"percentage": "Percentage (%)", "display_label": "Property"}
+        labels={"percentage": "Percentage (%)", "display_label": "Property"},
+        color_discrete_sequence=BRAND_COLORS['palette']
     )
     fig_delta.update_layout(
         template="plotly_white",
@@ -1349,7 +1959,97 @@ def plot_kes_by_kec_count() -> tuple[str, str]:
 _plot_data_cache = {}
 
 def plot_latest_entity_counts() -> str:
-    """Create a bar chart showing the latest version's entity counts."""
+    """Create a bar chart visualization of current AOP entity counts from the latest RDF version.
+    
+    Generates an interactive bar chart showing the current state of all major AOP-Wiki
+    entities in the most recent RDF graph version. This provides a snapshot view of
+    the database size and composition, complementing the historical trend analysis.
+    
+    The function queries the latest RDF graph to count different entity types and
+    creates a professionally styled bar chart with VHP4Safety branding. Data is
+    automatically cached for CSV export functionality.
+    
+    Entity Types Analyzed:
+        - AOPs (AdverseOutcomePathway): Complete adverse outcome pathways
+        - KEs (KeyEvent): Individual key events within pathways
+        - KERs (KeyEventRelationship): Relationships between key events
+        - Stressors (nci:C54571): Chemical and physical stressors
+        - Authors: Unique contributors to AOP content
+    
+    SPARQL Query Strategy:
+        - Executes 5 separate queries for each entity type
+        - Uses ORDER BY DESC(?graph) LIMIT 1 to get latest version
+        - Ensures consistent version across all entity counts
+        - Handles missing entities gracefully (returns 0 counts)
+        
+    Returns:
+        str: Complete HTML string containing the interactive Plotly bar chart.
+            Returns fallback HTML with error message if data unavailable.
+    
+    Data Processing:
+        1. Executes entity-specific SPARQL queries for latest version
+        2. Extracts counts and validates data integrity  
+        3. Creates structured DataFrame with entity types and counts
+        4. Adds version and metadata columns for context
+        5. Caches complete dataset in global _plot_data_cache
+        
+    Visualization Features:
+        - Interactive bar chart with hover details
+        - VHP4Safety color palette for brand consistency
+        - Text labels on bars showing exact counts
+        - Responsive design for mobile and desktop
+        - Professional styling with proper margins
+        - No legend (entity names on x-axis are self-explanatory)
+        
+    Global Caching:
+        Stores complete dataset in _plot_data_cache['latest_entity_counts']:
+        >>> {
+        ...     'Entity': ['AOPs', 'KEs', 'KERs', 'Stressors', 'Authors'],
+        ...     'Count': [142, 890, 780, 52, 28],
+        ...     'Version': ['2024-01-15', '2024-01-15', ...]
+        ... }
+        
+    Example Usage:
+        >>> # Generate current entity snapshot
+        >>> html_chart = plot_latest_entity_counts()
+        >>> print(f"Generated chart HTML: {len(html_chart)} characters")
+        
+        >>> # Access cached data for analysis
+        >>> from plots import _plot_data_cache
+        >>> if 'latest_entity_counts' in _plot_data_cache:
+        ...     df = _plot_data_cache['latest_entity_counts'] 
+        ...     total_entities = df['Count'].sum()
+        ...     print(f"Total entities in latest version: {total_entities}")
+        
+    Error Handling:
+        - No query results: Returns "No data available" message
+        - SPARQL failures: Handled by run_sparql_query_with_retry()
+        - Version inconsistencies: Uses first available version
+        - Visualization errors: Returns fallback HTML content
+        
+    Performance:
+        - Single-pass data collection for efficiency
+        - Minimal SPARQL query load (5 simple COUNT queries)
+        - Cached results prevent recomputation
+        - Optimized for dashboard loading speed
+        
+    Dashboard Integration:
+        - Displayed in "Latest Data" tab of main dashboard
+        - Provides immediate overview of database size
+        - Links to CSV download functionality
+        - Updates automatically with new RDF versions
+        
+    Version Handling:
+        - Automatically detects most recent RDF graph version
+        - Handles version string extraction from graph URIs
+        - Ensures data consistency across all entity types
+        - Adapts to new versions without code changes
+        
+    Note:
+        This function provides the "current state" complement to historical
+        trend analysis. It's designed to give users an immediate understanding
+        of the AOP-Wiki's current scale and composition.
+    """
     global _plot_data_cache
     
     sparql_queries = {
