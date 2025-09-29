@@ -69,17 +69,18 @@ app = Flask(
 )
 
 from plots import (
-    plot_main_graph, 
-    plot_avg_per_aop, 
+    plot_main_graph,
+    plot_avg_per_aop,
     plot_network_density,
     plot_ke_components,
     plot_ke_components_percentage,
     plot_unique_ke_components,
     plot_bio_processes,
     plot_bio_objects,
-    plot_author_counts, 
+    plot_author_counts,
     plot_aop_lifetime,
     plot_aop_property_presence,
+    plot_aop_property_presence_unique_colors,
     plot_kes_by_kec_count,
     plot_latest_entity_counts,
     plot_latest_ke_components,
@@ -89,6 +90,7 @@ from plots import (
     plot_latest_process_usage,
     plot_latest_object_usage,
     plot_latest_aop_completeness,
+    plot_latest_aop_completeness_unique_colors,
     plot_latest_database_summary,
     plot_latest_ke_annotation_depth,
     check_sparql_endpoint_health,
@@ -157,6 +159,7 @@ def compute_plots_parallel() -> dict:
         ('author_counts', lambda: safe_plot_execution(plot_author_counts)),
         ('aop_lifetime', lambda: safe_plot_execution(plot_aop_lifetime)),
         ('aop_property_presence', lambda: safe_plot_execution(plot_aop_property_presence)),
+        ('aop_property_presence_unique', lambda: safe_plot_execution(plot_aop_property_presence_unique_colors)),
         ('kes_by_kec_count', lambda: safe_plot_execution(plot_kes_by_kec_count)),
         ('latest_entity_counts', lambda: safe_plot_execution(plot_latest_entity_counts)),
         ('latest_ke_components', lambda: safe_plot_execution(plot_latest_ke_components)),
@@ -166,8 +169,9 @@ def compute_plots_parallel() -> dict:
         ('latest_process_usage', lambda: safe_plot_execution(plot_latest_process_usage)),
         ('latest_object_usage', lambda: safe_plot_execution(plot_latest_object_usage)),
         ('latest_aop_completeness', lambda: safe_plot_execution(plot_latest_aop_completeness)),
+        ('latest_aop_completeness_unique', lambda: safe_plot_execution(plot_latest_aop_completeness_unique_colors)),
         ('latest_database_summary', lambda: safe_plot_execution(plot_latest_database_summary)),
-        ('latest_ke_annotation_depth', lambda: safe_plot_execution(plot_latest_ke_annotation_depth))
+        ('latest_ke_annotation_depth', lambda: safe_plot_execution(plot_latest_ke_annotation_depth)),
     ]
     
     results = {}
@@ -224,6 +228,7 @@ graph_bio_objects_abs, graph_bio_objects_delta = plot_results.get('bio_objects',
 graph_authors_abs, graph_authors_delta = plot_results.get('author_counts', ("", ""))
 graph_created, graph_modified, graph_scatter = plot_results.get('aop_lifetime', ("", "", ""))
 graph_prop_abs, graph_prop_pct = plot_results.get('aop_property_presence', ("", ""))
+graph_prop_unique_abs, graph_prop_unique_pct = plot_results.get('aop_property_presence_unique', ("", ""))
 graph_kec_count_abs, graph_kec_count_delta = plot_results.get('kes_by_kec_count', ("", ""))
 
 # Latest data plots
@@ -235,6 +240,7 @@ latest_ontology_usage = plot_results.get('latest_ontology_usage') or ""
 latest_process_usage = plot_results.get('latest_process_usage') or ""
 latest_object_usage = plot_results.get('latest_object_usage') or ""
 latest_aop_completeness = plot_results.get('latest_aop_completeness') or ""
+latest_aop_completeness_unique = plot_results.get('latest_aop_completeness_unique') or ""
 latest_database_summary = plot_results.get('latest_database_summary') or ""
 latest_ke_annotation_depth = plot_results.get('latest_ke_annotation_depth') or ""
 # --- End of precomputed plots ---
@@ -518,6 +524,63 @@ def download_latest_aop_completeness():
         logger.error(f"CSV download failed: {str(e)}")
         return f"Download failed: {str(e)}", 500
 
+@app.route("/download/latest_aop_completeness_unique")
+def download_latest_aop_completeness_unique():
+    """Download CSV data for Latest AOP Completeness (Unique Colors) plot."""
+    try:
+        if 'latest_aop_completeness_unique' not in _plot_data_cache:
+            return "No data available for download", 404
+        
+        df = _plot_data_cache['latest_aop_completeness_unique']
+        csv_data = df.to_csv(index=False)
+        
+        return Response(
+            csv_data,
+            mimetype='text/csv',
+            headers={'Content-Disposition': 'attachment; filename=latest_aop_completeness_unique_colors.csv'}
+        )
+    except Exception as e:
+        logger.error(f"CSV download failed: {str(e)}")
+        return f"Download failed: {str(e)}", 500
+
+@app.route("/download/aop_property_presence_unique_absolute")
+def download_aop_property_presence_unique_absolute():
+    """Download CSV data for AOP Property Presence Unique Colors (Absolute Count) plot."""
+    try:
+        if 'aop_property_presence_unique_absolute' not in _plot_data_cache:
+            return "No data available for download", 404
+        
+        df = _plot_data_cache['aop_property_presence_unique_absolute']
+        csv_data = df.to_csv(index=False)
+        
+        return Response(
+            csv_data,
+            mimetype='text/csv',
+            headers={'Content-Disposition': 'attachment; filename=aop_property_presence_unique_absolute.csv'}
+        )
+    except Exception as e:
+        logger.error(f"CSV download failed: {str(e)}")
+        return f"Download failed: {str(e)}", 500
+
+@app.route("/download/aop_property_presence_unique_percentage")
+def download_aop_property_presence_unique_percentage():
+    """Download CSV data for AOP Property Presence Unique Colors (Percentage) plot."""
+    try:
+        if 'aop_property_presence_unique_percentage' not in _plot_data_cache:
+            return "No data available for download", 404
+        
+        df = _plot_data_cache['aop_property_presence_unique_percentage']
+        csv_data = df.to_csv(index=False)
+        
+        return Response(
+            csv_data,
+            mimetype='text/csv',
+            headers={'Content-Disposition': 'attachment; filename=aop_property_presence_unique_percentage.csv'}
+        )
+    except Exception as e:
+        logger.error(f"CSV download failed: {str(e)}")
+        return f"Download failed: {str(e)}", 500
+
 @app.route("/download/latest_ke_annotation_depth")
 def download_latest_ke_annotation_depth():
     """Download CSV data for Latest KE Annotation Depth plot."""
@@ -574,6 +637,10 @@ def download_main_graph_delta():
     except Exception as e:
         logger.error(f"CSV download failed: {str(e)}")
         return f"Download failed: {str(e)}", 500
+
+
+
+
 
 # Set Plotly configuration for static images
 @app.route("/")
@@ -654,6 +721,8 @@ def index():
         graph_scatter=graph_scatter,
         graph_prop_abs=graph_prop_abs,
         graph_prop_pct=graph_prop_pct,
+        graph_prop_unique_abs=graph_prop_unique_abs,
+        graph_prop_unique_pct=graph_prop_unique_pct,
         graph_kec_count_abs=graph_kec_count_abs,
         graph_kec_count_delta=graph_kec_count_delta,
         latest_entity_counts=latest_entity_counts,
@@ -664,9 +733,11 @@ def index():
         latest_process_usage=latest_process_usage,
         latest_object_usage=latest_object_usage,
         latest_aop_completeness=latest_aop_completeness,
+        latest_aop_completeness_unique=latest_aop_completeness_unique,
         latest_database_summary=latest_database_summary,
-        latest_ke_annotation_depth=latest_ke_annotation_depth
+        latest_ke_annotation_depth=latest_ke_annotation_depth,
     )
+
 
 
 
