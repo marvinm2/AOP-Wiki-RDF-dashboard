@@ -1,0 +1,155 @@
+/* Lazy Loading and Skeleton Styles for AOP-Wiki Dashboard */
+
+.lazy-plot {
+    min-height: 400px;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+/* Skeleton Loading Placeholder */
+.plot-skeleton {
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.skeleton-header {
+    height: 24px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.5s infinite;
+    border-radius: 4px;
+    margin-bottom: 15px;
+    width: 60%;
+}
+
+.skeleton-chart {
+    height: 350px;
+    background: linear-gradient(90deg, #f8f8f8 25%, #e8e8e8 50%, #f8f8f8 75%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.5s infinite;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+    position: relative;
+}
+
+/* Loading Spinner */
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #307BBF;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 10px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes skeleton-shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+/* Error State */
+.plot-error {
+    padding: 40px 20px;
+    text-align: center;
+    background: #fff5f5;
+    border: 1px solid #fed7d7;
+    border-radius: 8px;
+    color: #c53030;
+}
+
+.plot-error button {
+    background-color: #e53e3e;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: background-color 0.3s ease;
+}
+
+.plot-error button:hover {
+    background-color: #c53030;
+}
+
+/* Plot loading states for different sizes */
+.lazy-plot.full-width {
+    min-height: 500px;
+}
+
+.lazy-plot.small {
+    min-height: 300px;
+}
+
+/* Fade-in animation for loaded plots */
+.plot-loaded {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Progress indicator for multiple loading plots */
+.loading-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: #f3f3f3;
+    z-index: 1000;
+}
+
+.loading-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #307BBF, #E6007E);
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+/* Mobile responsive skeleton */
+@media (max-width: 768px) {
+    .skeleton-chart {
+        height: 280px;
+    }
+
+    .lazy-plot {
+        min-height: 320px;
+    }
+}
+
+/* Performance indicators */
+.plot-load-time {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: rgba(0,0,0,0.7);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.lazy-plot:hover .plot-load-time {
+    opacity: 1;
+}
