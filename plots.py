@@ -1832,8 +1832,149 @@ def plot_aop_property_presence(label_file="property_labels.csv") -> tuple[str, s
         pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config=config)
     )
 
+def plot_aop_property_presence_unique_colors(label_file="property_labels.csv") -> tuple[str, str]:
+    """
+    Create AOP property presence over time plots with unique colors for each property line.
+    Generates colors programmatically to ensure all properties have distinct colors.
+    """
+    global _plot_data_cache
+    
+    query_props = """
+    SELECT ?graph ?p (COUNT(DISTINCT ?AOP) AS ?count)
+    WHERE {
+      GRAPH ?graph {
+        ?AOP a aopo:AdverseOutcomePathway ;
+             ?p ?o .
+      }
+      FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+    }
+    GROUP BY ?graph ?p
+    ORDER BY ?graph ?p
+    """
 
+    query_total = """
+    SELECT ?graph (COUNT(DISTINCT ?AOP) AS ?total)
+    WHERE {
+      GRAPH ?graph {
+        ?AOP a aopo:AdverseOutcomePathway .
+      }
+      FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+    }
+    GROUP BY ?graph
+    ORDER BY ?graph
+    """
 
+    results_props = run_sparql_query(query_props)
+    results_total = run_sparql_query(query_total)
+
+    df_props = pd.DataFrame([{
+        "version": r["graph"]["value"].split("/")[-1],
+        "property": r["p"]["value"],
+        "count": int(r["count"]["value"])
+    } for r in results_props])
+
+    df_total = pd.DataFrame([{
+        "version": r["graph"]["value"].split("/")[-1],
+        "total_aops": int(r["total"]["value"])
+    } for r in results_total])
+
+    # Merge
+    df = df_props.merge(df_total, on="version", how="left")
+    df["percentage"] = (df["count"] / df["total_aops"]) * 100
+
+    # Remove properties that are 100% in all versions
+    props_to_keep = (
+        df.groupby("property")["percentage"]
+          .max()
+          .loc[lambda x: x < 100]
+          .index
+    )
+    df = df[df["property"].isin(props_to_keep)]
+
+    # Label mapping with safe file reading
+    default_labels = [
+        {"uri": "http://purl.org/dc/elements/1.1/title", "label": "Title", "type": "Essential"},
+        {"uri": "http://purl.org/dc/elements/1.1/creator", "label": "Creator", "type": "Metadata"}
+    ]
+    df_labels = safe_read_csv(label_file, default_labels)
+    
+    if not df_labels.empty:
+        df = df.merge(df_labels, how="left", left_on="property", right_on="uri")
+        df["display_label"] = df["label"].fillna(df["property"])
+    else:
+        df["display_label"] = df["property"]
+
+    # Sort
+    df["version_dt"] = pd.to_datetime(df["version"], errors="coerce")
+    df = df.sort_values("version_dt")
+
+    # Store data in cache for CSV downloads
+    _plot_data_cache['aop_property_presence_unique_absolute'] = df.copy()
+    _plot_data_cache['aop_property_presence_unique_percentage'] = df.copy()
+
+    # Generate unique colors for each property
+    unique_properties = sorted(df["display_label"].unique())
+    import colorsys
+    
+    # Generate distinct colors using HSV color space
+    num_colors = len(unique_properties)
+    colors = []
+    for i in range(num_colors):
+        hue = i / num_colors
+        # Use varying saturation and value for more distinction
+        saturation = 0.7 + (i % 3) * 0.1  # 0.7, 0.8, 0.9
+        value = 0.8 + (i % 2) * 0.1       # 0.8, 0.9
+        rgb = colorsys.hsv_to_rgb(hue, saturation, value)
+        hex_color = '#{:02x}{:02x}{:02x}'.format(int(rgb[0]*255), int(rgb[1]*255), int(rgb[2]*255))
+        colors.append(hex_color)
+    
+    # Create color mapping
+    color_map = dict(zip(unique_properties, colors))
+
+    # Absolute presence with unique colors
+    fig_abs = px.line(
+        df,
+        x="version",
+        y="count",
+        color="display_label",
+        markers=True,
+        title="AOP Property Presence Over Time - Unique Colors (Absolute Count)",
+        labels={"count": "Number of AOPs", "display_label": "Property"},
+        color_discrete_map=color_map
+    )
+    fig_abs.update_layout(
+        template="plotly_white",
+        hovermode="x unified",
+        autosize=True,
+        height=700,  # Larger height for better visibility
+        margin=dict(l=50, r=20, t=70, b=50)
+    )
+
+    # Percentage presence with unique colors
+    fig_delta = px.line(
+        df,
+        x="version",
+        y="percentage",
+        color="display_label",
+        markers=True,
+        title="AOP Property Presence Over Time - Unique Colors (Percentage)",
+        labels={"percentage": "Percentage (%)", "display_label": "Property"},
+        color_discrete_map=color_map
+    )
+    fig_delta.update_layout(
+        template="plotly_white",
+        hovermode="x unified",
+        autosize=True,
+        height=700,  # Larger height for better visibility
+        margin=dict(l=50, r=20, t=70, b=50)
+    )
+
+    config = {"responsive": True}
+
+    return (
+        pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config=config),
+        pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config=config)
+    )
 
 def plot_kes_by_kec_count() -> tuple[str, str]:
     query_kec_count = """
@@ -2697,6 +2838,103 @@ def plot_latest_aop_completeness() -> str:
 
     return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
 
+def plot_latest_aop_completeness_unique_colors() -> str:
+    """Create a chart showing AOP data completeness with unique colors for each property (larger panel)."""
+    global _plot_data_cache
+
+    # Default fallback properties for essential AOP completeness
+    default_properties = [
+        {"uri": "http://purl.org/dc/elements/1.1/title", "label": "Title", "type": "Essential"},
+        {"uri": "http://purl.org/dc/terms/abstract", "label": "Abstract", "type": "Essential"},
+        {"uri": "http://purl.org/dc/elements/1.1/creator", "label": "Creator", "type": "Metadata"},
+        {"uri": "http://aopkb.org/aop_ontology#has_key_event", "label": "Has Key Event", "type": "Content"},
+        {"uri": "http://aopkb.org/aop_ontology#has_adverse_outcome", "label": "Has Adverse Outcome", "type": "Content"}
+    ]
+    properties_df = safe_read_csv("property_labels.csv", default_properties)
+    properties = properties_df.to_dict(orient="records")
+
+    # Query total number of AOPs
+    total_query = """
+    SELECT ?graph (COUNT(DISTINCT ?aop) AS ?total_aops)
+    WHERE {
+        GRAPH ?graph { ?aop a aopo:AdverseOutcomePathway . }
+        FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+    }
+    GROUP BY ?graph
+    ORDER BY DESC(?graph)
+    LIMIT 1
+    """
+    total_results = run_sparql_query(total_query)
+    if not total_results:
+        return create_fallback_plot("AOP Completeness (Unique Colors)", "No AOP data available")
+
+    total_aops = int(total_results[0]["total_aops"]["value"])
+    latest_version = total_results[0]["graph"]["value"].split("/")[-1]
+
+    completeness_data = []
+
+    for prop in properties:
+        uri = prop["uri"]
+        label = prop["label"]
+        ptype = prop["type"]
+
+        query = f"""
+        SELECT ?graph (COUNT(DISTINCT ?aop) AS ?count)
+        WHERE {{
+            GRAPH ?graph {{
+                ?aop a aopo:AdverseOutcomePathway ;
+                     <{uri}> ?value .
+            }}
+            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }}
+        GROUP BY ?graph ORDER BY DESC(?graph) LIMIT 1
+        """
+        results = run_sparql_query(query)
+        count = int(results[0]["count"]["value"]) if results else 0
+        completeness = (count / total_aops) * 100
+
+        completeness_data.append({
+            "Property": label,
+            "Completeness": completeness,
+            "Type": ptype,
+            "URI": uri,
+            "Count": count
+        })
+
+    df = pd.DataFrame(completeness_data)
+    df["Version"] = latest_version  # Add version for context
+    df["Total_AOPs"] = total_aops   # Add total AOPs for reference
+    
+    # Store in global cache for CSV download with unique key
+    _plot_data_cache['latest_aop_completeness_unique'] = df
+
+    # Create unique color mapping using the full brand palette
+    unique_properties = df["Property"].unique()
+    # Use the brand palette, cycling through if more properties than colors
+    palette = BRAND_COLORS['palette']
+    color_map = {}
+    for i, prop in enumerate(unique_properties):
+        color_map[prop] = palette[i % len(palette)]
+
+    fig = px.bar(
+        df, x="Property", y="Completeness", color="Property",
+        title=f"AOP Data Completeness - Unique Colors ({latest_version})",
+        text="Completeness",
+        color_discrete_map=color_map
+    )
+    fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
+    fig.update_layout(
+        template="plotly_white",
+        autosize=True,
+        height=600,  # Larger height for better visibility
+        margin=dict(l=50, r=20, t=70, b=120),  # More space for labels
+        yaxis=dict(title="Completeness (%)", range=[0, 105]),
+        xaxis=dict(title="AOP Properties", tickangle=45),
+        showlegend=False  # Hide legend since colors are unique per property
+    )
+
+    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+
 def plot_latest_database_summary() -> str:
     """Create a simple summary chart of main entities in latest version using separate queries."""
     
@@ -2839,3 +3077,952 @@ def plot_latest_ke_annotation_depth() -> str:
     )
     
     return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+
+
+def plot_aop_network() -> str:
+    """Generate interactive AOP network visualization using Cytoscape.js.
+    
+    Creates a comprehensive network visualization showing all AOPs, Key Events (KEs),
+    and Key Event Relationships (KERs) from the latest database version.
+    
+    Network Structure:
+        - Nodes: AOPs and KEs (with ID and title attributes only)
+        - Edges: KERs showing upstream→downstream relationships
+        - Interactive features: pan/zoom, node selection, hover tooltips
+        
+    Data Caching:
+        - Nodes DataFrame: Contains all network nodes with attributes
+        - Edges DataFrame: Contains all network edges with relationships
+        - Network metrics: KE frequency counts for future scaling features
+        
+    Returns:
+        str: HTML containing Cytoscape.js network visualization
+        
+    Future Enhancements:
+        - Node sizing based on KE frequency across AOPs
+        - Centrality metrics for important pathway nodes
+        - Filtering by AOP properties or pathway types
+    """
+    global _plot_data_cache
+    
+    def extract_sparql_value(field):
+        """Helper function to safely extract values from SPARQL dictionary results."""
+        if isinstance(field, dict) and 'value' in field:
+            return field['value']
+        return str(field)
+    
+    try:
+        # Get latest version
+        latest_version_query = """
+        SELECT ?graph
+        WHERE {
+            GRAPH ?graph { ?aop a aopo:AdverseOutcomePathway . }
+            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        GROUP BY ?graph
+        ORDER BY DESC(?graph)
+        LIMIT 1
+        """
+        
+        latest_results = run_sparql_query_with_retry(latest_version_query)
+        if not latest_results:
+            return create_fallback_plot("AOP Network", "No AOP data available for network visualization")
+        
+        latest_graph_result = latest_results[0]['graph']
+        # Handle both string URIs and dictionary objects from SPARQL results
+        if isinstance(latest_graph_result, dict) and 'value' in latest_graph_result:
+            latest_graph = latest_graph_result['value']
+        else:
+            latest_graph = str(latest_graph_result)
+        
+        latest_version = latest_graph.split('/')[-1]
+        
+        # Query 1: Get all AOPs with basic info (simplified)
+        aop_query = f"""
+        SELECT DISTINCT ?aop ?aop_id ?title
+        WHERE {{
+            GRAPH <{latest_graph}> {{
+                ?aop a aopo:AdverseOutcomePathway ;
+                     rdfs:label ?aop_id ;
+                     dc:title ?title .
+            }}
+        }}
+        ORDER BY ?aop_id
+        """
+        
+        # Query 2: Get all KEs with descriptive titles and basic info
+        ke_query = f"""
+        SELECT DISTINCT ?ke ?ke_id ?descriptive_title
+        WHERE {{
+            GRAPH <{latest_graph}> {{
+                ?ke a aopo:KeyEvent ;
+                    rdfs:label ?ke_id .
+                OPTIONAL {{ ?ke dc:title ?descriptive_title }}
+            }}
+        }}
+        """
+        
+        # Query 4: Get MIEs (optimized separate query)
+        mie_query = f"""
+        SELECT DISTINCT ?ke
+        WHERE {{
+            GRAPH <{latest_graph}> {{
+                ?aop aopo:has_molecular_initiating_event ?ke .
+            }}
+        }}
+        """
+        
+        # Query 5: Get AOs (optimized separate query)  
+        ao_query = f"""
+        SELECT DISTINCT ?ke
+        WHERE {{
+            GRAPH <{latest_graph}> {{
+                ?aop aopo:has_adverse_outcome ?ke .
+            }}
+        }}
+        """
+        
+        # Query 3: Get all KERs (edges) - simplified
+        ker_query = f"""
+        SELECT DISTINCT ?ker ?ker_id ?upstream_ke ?downstream_ke
+        WHERE {{
+            GRAPH <{latest_graph}> {{
+                ?ker a aopo:KeyEventRelationship ;
+                     aopo:has_upstream_key_event ?upstream_ke ;
+                     aopo:has_downstream_key_event ?downstream_ke ;
+                     rdfs:label ?ker_id .
+            }}
+        }}
+        ORDER BY ?ker_id
+        """
+        
+        # Query 4: Get AOP-KE relationships for context - simplified
+        aop_ke_query = f"""
+        SELECT DISTINCT ?aop ?aop_id ?ke ?ke_id
+        WHERE {{
+            GRAPH <{latest_graph}> {{
+                ?aop a aopo:AdverseOutcomePathway ;
+                     rdfs:label ?aop_id ;
+                     aopo:has_key_event ?ke .
+                BIND(REPLACE(STR(?ke), ".*[/#]([0-9]+)$", "$1") AS ?ke_id)
+            }}
+        }}
+        ORDER BY ?aop_id ?ke_id
+        """
+        
+        # Query 5: Get AOP-KER relationships for edge thickness calculation
+        aop_ker_query = f"""
+        SELECT DISTINCT ?aop ?ker
+        WHERE {{
+            GRAPH <{latest_graph}> {{
+                ?aop a aopo:AdverseOutcomePathway ;
+                     aopo:has_key_event_relationship ?ker .
+            }}
+        }}
+        """
+        
+        # Execute queries
+        logging.info("Fetching AOP network data...")
+        aop_results = run_sparql_query_with_retry(aop_query)  # Still needed for some stats
+        ke_results = run_sparql_query_with_retry(ke_query)
+        mie_results = run_sparql_query_with_retry(mie_query) 
+        ao_results = run_sparql_query_with_retry(ao_query)
+        ker_results = run_sparql_query_with_retry(ker_query)
+        aop_ke_results = run_sparql_query_with_retry(aop_ke_query)
+        aop_ker_results = run_sparql_query_with_retry(aop_ker_query)
+        
+        # Create fast lookup sets for MIE and AO classification
+        mie_uris = set()
+        if mie_results:
+            for mie in mie_results:
+                mie_uri = extract_sparql_value(mie.get('ke', ''))
+                if mie_uri:
+                    mie_uris.add(mie_uri)
+                    
+        ao_uris = set()
+        if ao_results:
+            for ao in ao_results:
+                ao_uri = extract_sparql_value(ao.get('ke', ''))
+                if ao_uri:
+                    ao_uris.add(ao_uri)
+        
+        # Debug logging
+        logging.info(f"AOP query returned {len(aop_results) if aop_results else 0} results")
+        logging.info(f"KE query returned {len(ke_results) if ke_results else 0} results")
+        logging.info(f"MIE query returned {len(mie_results) if mie_results else 0} results ({len(mie_uris)} unique MIEs)")
+        logging.info(f"AO query returned {len(ao_results) if ao_results else 0} results ({len(ao_uris)} unique AOs)")
+        logging.info(f"KER query returned {len(ker_results) if ker_results else 0} results")
+        logging.info(f"AOP-KE query returned {len(aop_ke_results) if aop_ke_results else 0} results")
+        
+        if aop_results:
+            logging.info(f"Sample AOP result: {aop_results[0] if aop_results else 'None'}")
+        if ke_results:
+            logging.info(f"Sample KE result: {ke_results[0] if ke_results else 'None'}")
+        
+        if not ke_results:
+            logging.warning(f"Insufficient data - KEs: {len(ke_results) if ke_results else 0}")
+            return create_fallback_plot("AOP Network", "Insufficient data for network visualization")
+        
+        # Calculate AOP frequencies for each KE
+        ke_aop_frequency = {}  # Maps KE URI to count of AOPs containing it
+        if aop_ke_results:
+            for aop_ke in aop_ke_results:
+                ke_uri = extract_sparql_value(aop_ke.get('ke', ''))
+                if ke_uri:
+                    ke_aop_frequency[ke_uri] = ke_aop_frequency.get(ke_uri, 0) + 1
+            logging.info(f"Calculated AOP frequencies for {len(ke_aop_frequency)} KEs")
+        
+        # Identify dual-role nodes (MIEs that also appear as regular KEs, or AOs that also appear as regular KEs)
+        # A node is dual-role if it's an MIE/AO but appears in more AOPs than just its MIE/AO role
+        dual_role_uris = set()
+        
+        # Check MIEs that appear in multiple AOPs (suggesting they're also regular KEs)
+        for mie_uri in mie_uris:
+            if ke_aop_frequency.get(mie_uri, 0) > 1:  # Appears in more than 1 AOP
+                dual_role_uris.add(mie_uri)
+                
+        # Check AOs that appear in multiple AOPs (suggesting they're also regular KEs)  
+        for ao_uri in ao_uris:
+            if ke_aop_frequency.get(ao_uri, 0) > 1:  # Appears in more than 1 AOP
+                dual_role_uris.add(ao_uri)
+                
+        logging.info(f"Identified {len(dual_role_uris)} dual-role nodes (MIE/AO also serving as KE)")
+        
+        # Calculate KER frequencies for edge thickness
+        ker_aop_frequency = {}  # Maps KER URI to count of AOPs containing it
+        if aop_ker_results:
+            for aop_ker in aop_ker_results:
+                ker_uri = extract_sparql_value(aop_ker.get('ker', ''))
+                if ker_uri:
+                    ker_aop_frequency[ker_uri] = ker_aop_frequency.get(ker_uri, 0) + 1
+            logging.info(f"Calculated KER frequencies for {len(ker_aop_frequency)} KERs")
+        
+        # Build nodes DataFrame (KE nodes only - no AOP nodes per user request)
+        nodes_data = []
+        
+        # Add KE nodes with MIE/AO classification
+        ke_count = 0
+        mie_count = 0
+        ao_count = 0
+        for ke in ke_results:
+            # Extract KE information using helper functions  
+            ke_uri = extract_sparql_value(ke.get('ke', ''))
+            ke_id_label = extract_sparql_value(ke.get('ke_id', ''))
+            descriptive_title = extract_sparql_value(ke.get('descriptive_title', ''))
+            
+            if ke_uri and ke_id_label:
+                # Extract KE ID from URI for consistency
+                import re
+                ke_id_match = re.search(r'[/#](\d+)$', ke_uri)
+                ke_id = ke_id_match.group(1) if ke_id_match else str(ke_count + 1)
+                
+                # Calculate real AOP frequency for this KE
+                aop_freq = ke_aop_frequency.get(ke_uri, 0)  # Real frequency from AOP-KE relationships
+                
+                # Use descriptive title if available, fallback to label
+                display_title = descriptive_title if descriptive_title else ke_id_label
+                
+                # Create truncated label for display (max 25 chars)
+                truncated_label = display_title[:25] + "..." if len(display_title) > 25 else display_title
+                
+                # Classify KE as MIE, AO, or regular KE using fast lookup sets
+                is_dual_role = ke_uri in dual_role_uris
+                if ke_uri in mie_uris:
+                    node_subtype = 'MIE+KE' if is_dual_role else 'MIE'
+                    group = 'mie'
+                    mie_count += 1
+                elif ke_uri in ao_uris:
+                    node_subtype = 'AO+KE' if is_dual_role else 'AO'
+                    group = 'ao'
+                    ao_count += 1
+                else:
+                    node_subtype = 'KE'
+                    group = 'ke'
+                
+                nodes_data.append({
+                    'id': f"ke_{ke_id}",
+                    'label': ke_id_label,  # Short label (e.g., "KE 10")
+                    'truncated_label': truncated_label,  # Truncated title for display
+                    'display_title': display_title,  # Descriptive title for display
+                    'descriptive_title': descriptive_title or '',  # Raw descriptive title 
+                    'type': 'KE',
+                    'node_subtype': node_subtype,
+                    'original_id': ke_id,
+                    'aop_frequency': aop_freq,
+                    'group': group,
+                    'is_dual_role': is_dual_role
+                })
+                ke_count += 1
+        
+        logging.info(f"Created {ke_count} KE nodes from {len(ke_results)} KE results: {mie_count} MIEs, {ao_count} AOs, {ke_count - mie_count - ao_count} regular KEs")
+        
+        # Build edges DataFrame
+        edges_data = []
+        
+        # Add KER edges (KE to KE relationships)
+        for ker in ker_results:
+            # Extract IDs using helper function
+            ker_id = extract_sparql_value(ker.get('ker_id', ''))
+            ker_uri = extract_sparql_value(ker.get('ker', ''))
+            upstream_ke_uri = extract_sparql_value(ker.get('upstream_ke', ''))
+            downstream_ke_uri = extract_sparql_value(ker.get('downstream_ke', ''))
+            
+            # Extract final ID from URIs
+            upstream_id = upstream_ke_uri.split('/')[-1] if upstream_ke_uri else ''
+            downstream_id = downstream_ke_uri.split('/')[-1] if downstream_ke_uri else ''
+            
+            # Calculate KER frequency for thickness
+            ker_freq = ker_aop_frequency.get(ker_uri, 1)  # Default to 1 if not found
+            
+            if ker_id and upstream_id and downstream_id:
+                edges_data.append({
+                    'id': f"ker_{ker_id}",
+                    'source': f"ke_{upstream_id}",
+                    'target': f"ke_{downstream_id}",
+                    'type': 'KER',
+                    'original_id': ker_id,
+                    'aop_frequency': ker_freq
+                })
+        
+        # Note: AOP-KE edges (contains relationships) are not included in KE-only network visualization
+        # This section is disabled to focus on KE-to-KE relationships only
+        
+        # Create DataFrames for caching
+        nodes_df = pd.DataFrame(nodes_data)
+        edges_df = pd.DataFrame(edges_data)
+        
+        # Add version info for context
+        nodes_df['Version'] = latest_version
+        edges_df['Version'] = latest_version
+        
+        # Cache for CSV download
+        _plot_data_cache['aop_network_nodes'] = nodes_df
+        _plot_data_cache['aop_network_edges'] = edges_df
+        
+        # Prepare data for Cytoscape.js - COMPLETE NETWORK
+        cytoscape_elements = []
+        
+        # Add ALL KE nodes to Cytoscape format (exclude AOP nodes)
+        for _, node in nodes_df.iterrows():
+            if node['type'] == 'KE':  # Include ALL KE nodes
+                element = {
+                    'data': {
+                        'id': node['id'],
+                        'label': node['label'],  # Short label (KE ID)
+                        'truncated_label': node['truncated_label'],  # Truncated descriptive title
+                        'display_title': node['display_title'],  # Full descriptive title
+                        'descriptive_title': node['descriptive_title'],  # Raw descriptive title
+                        'type': node['type'],
+                        'node_subtype': node['node_subtype'],
+                        'group': node['group'],
+                        'frequency': node['aop_frequency'],
+                        'aop_frequency': node['aop_frequency'],  # For sizing calculations
+                        'is_dual_role': node['is_dual_role']  # For visual styling
+                    }
+                }
+                cytoscape_elements.append(element)
+        
+        # Add ALL KER edges to Cytoscape format (exclude AOP-KE contains edges)
+        for _, edge in edges_df.iterrows():
+            if edge['type'] == 'KER':  # Include ALL KE-to-KE relationships
+                # Calculate edge thickness based on frequency (1-4px)
+                thickness = min(4, max(1, edge['aop_frequency']))
+                cytoscape_elements.append({
+                    'data': {
+                        'id': edge['id'],
+                        'source': edge['source'],
+                        'target': edge['target'],
+                        'type': edge['type'],
+                        'aop_frequency': edge['aop_frequency'],
+                        'thickness': thickness
+                    }
+                })
+        
+        # Calculate statistics for display
+        mie_count = len([n for n in nodes_data if n.get('node_subtype') == 'MIE'])
+        ao_count = len([n for n in nodes_data if n.get('node_subtype') == 'AO']) 
+        regular_ke_count = len([n for n in nodes_data if n.get('node_subtype') == 'KE'])
+        ker_count = len([e for e in edges_data if e['type'] == 'KER'])
+        total_elements = len(cytoscape_elements)
+        total_nodes = len([e for e in cytoscape_elements if 'source' not in e.get('data', {})])
+        total_edges = len([e for e in cytoscape_elements if 'source' in e.get('data', {})])
+        
+        # Generate hybrid network visualization - works with or without JavaScript
+        cytoscape_html = f"""
+        <!-- Interactive Network Container -->
+        <div id="cy" style="width: 100%; height: 800px; border: 1px solid #ccc; background: #f8f9fa; position: relative;">
+            
+            <!-- Network Control Panel -->
+            <div id="network-controls" style="position: absolute; top: 10px; right: 10px; z-index: 1000; 
+                 background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 8px; 
+                 padding: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); border: 1px solid rgba(255, 255, 255, 0.3);">
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <div style="display: flex; gap: 4px;">
+                        <button id="zoom-in-btn" class="control-btn" title="Zoom In (+)">🔍+</button>
+                        <button id="zoom-out-btn" class="control-btn" title="Zoom Out (-)">🔍-</button>
+                        <button id="fit-btn" class="control-btn" title="Fit to View (R)">⌂</button>
+                    </div>
+                    <div style="display: flex; gap: 4px;">
+                        <button id="center-btn" class="control-btn" title="Center Network">⊙</button>
+                        <button id="layout-btn" class="control-btn" title="Re-layout Network">⟲</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Node Sizing Controls -->
+            <div id="sizing-controls" style="position: absolute; top: 10px; left: 10px; z-index: 1000;
+                 background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 8px;
+                 padding: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); border: 1px solid rgba(255, 255, 255, 0.3);">
+                <div style="font-size: 12px; font-weight: bold; margin-bottom: 8px; color: {BRAND_COLORS['primary']};">Node Size</div>
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <label style="font-size: 11px; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                        <input type="radio" name="node-size" value="fixed" checked> Fixed
+                    </label>
+                    <label style="font-size: 11px; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                        <input type="radio" name="node-size" value="frequency"> AOP Frequency
+                    </label>
+                    <label style="font-size: 11px; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                        <input type="radio" name="node-size" value="degree"> Connections
+                    </label>
+                </div>
+            </div>
+
+            <!-- Network Statistics -->
+            <div id="network-stats" style="position: absolute; bottom: 10px; left: 10px; z-index: 1000;
+                 background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 8px;
+                 padding: 8px 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); border: 1px solid rgba(255, 255, 255, 0.3);
+                 font-size: 11px; color: #666; min-width: 200px;">
+                <div id="stats-content">
+                    <div>Nodes: <span id="visible-nodes">{total_nodes}</span> / {total_nodes}</div>
+                    <div>Edges: <span id="visible-edges">{total_edges}</span> / {total_edges}</div>
+                    <div>Zoom: <span id="current-zoom">100%</span></div>
+                </div>
+            </div>
+            
+            <!-- Fallback content for when JavaScript is blocked -->
+            <div id="fallback-content" style="text-align: center; padding: 20px;">
+                <h3 style="color: #29235C; margin-top: 0;">Complete AOP Network Summary</h3>
+                
+                <div style="background: white; margin: 15px 0; padding: 15px; border: 1px solid #e9ecef; border-radius: 4px;">
+                    <h4 style="color: #307BBF; margin-top: 0;">Network Statistics</h4>
+                    <div style="display: inline-block; margin: 0 20px; text-align: center;">
+                        <div style="font-size: 24px; font-weight: bold; color: #29235C;">{mie_count}</div>
+                        <div style="font-size: 12px; color: #666;">MIEs</div>
+                    </div>
+                    <div style="display: inline-block; margin: 0 20px; text-align: center;">
+                        <div style="font-size: 24px; font-weight: bold; color: #29235C;">{ao_count}</div>
+                        <div style="font-size: 12px; color: #666;">AOs</div>
+                    </div>
+                    <div style="display: inline-block; margin: 0 20px; text-align: center;">
+                        <div style="font-size: 24px; font-weight: bold; color: #29235C;">{regular_ke_count}</div>
+                        <div style="font-size: 12px; color: #666;">Regular KEs</div>
+                    </div>
+                    <div style="display: inline-block; margin: 0 20px; text-align: center;">
+                        <div style="font-size: 24px; font-weight: bold; color: #29235C;">{ker_count}</div>
+                        <div style="font-size: 12px; color: #666;">KERs</div>
+                    </div>
+                </div>
+                
+                <div style="background: white; margin: 15px 0; padding: 15px; border: 1px solid #e9ecef; border-radius: 4px;">
+                    <h4 style="color: #28a745; margin-top: 0;">✅ Complete Network Data Available</h4>
+                    <p style="margin: 5px 0; color: #666;">Full network contains {total_elements} elements ({total_nodes} nodes, {total_edges} edges)</p>
+                    <div style="margin: 10px 0;">
+                        <a href="/download/aop_network_nodes" style="display: inline-block; margin: 5px; padding: 8px 16px; background: #29235C; color: white; text-decoration: none; border-radius: 4px;">Download Nodes CSV</a>
+                        <a href="/download/aop_network_edges" style="display: inline-block; margin: 5px; padding: 8px 16px; background: #29235C; color: white; text-decoration: none; border-radius: 4px;">Download Edges CSV</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Enhanced Cytoscape.js Network with Complete Data -->
+        <script src="https://unpkg.com/cytoscape@3.26.0/dist/cytoscape.min.js"></script>
+        
+        <style>
+        .control-btn {{
+            background: {BRAND_COLORS['primary']};
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 8px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 32px;
+            height: 28px;
+        }}
+        .control-btn:hover {{
+            background: {BRAND_COLORS['accent']};
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }}
+        .control-btn:active {{
+            transform: translateY(0);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }}
+        
+        #network-controls, #sizing-controls, #network-stats {{
+            user-select: none;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }}
+        
+        input[type="radio"] {{
+            accent-color: {BRAND_COLORS['primary']};
+        }}
+        
+        /* Smooth transitions for network interactions */
+        #cy {{
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }}
+        
+        /* Node highlighting styles will be handled by Cytoscape.js styling */
+        </style>
+        
+        <script>
+        // Initialize complete network when Cytoscape.js loads
+        function initCompleteNetwork() {{
+            if (typeof cytoscape === 'undefined') {{
+                console.log('Cytoscape.js not available, using fallback display');
+                return;
+            }}
+            
+            var container = document.getElementById('cy');
+            if (!container) return;
+            
+            // Show loading message
+            container.innerHTML = '<div style="text-align: center; padding: 50px; color: #666;">Loading network data...</div>';
+            
+            // Load network data via AJAX
+            fetch('/api/network_data')
+                .then(response => response.json())
+                .then(data => {{
+                    if (!data.success) {{
+                        throw new Error(data.error || 'Failed to load network data');
+                    }}
+                    
+                    // Hide fallback content
+                    var fallback = document.getElementById('fallback-content');
+                    if (fallback) fallback.style.display = 'none';
+                    
+                    // Clear loading message but preserve control structure
+                    container.innerHTML = '';
+                    
+                    initializeCytoscapeNetwork(data.elements, data.stats);
+                }})
+                .catch(error => {{
+                    console.error('Error loading network data:', error);
+                    container.innerHTML = '<div style="text-align: center; padding: 50px; color: #d32f2f;">Error loading network: ' + error.message + '</div>';
+                }});
+        }}
+        
+        function initializeCytoscapeNetwork(elements, stats) {{
+            var container = document.getElementById('cy');
+            
+            try {{
+                var cy = cytoscape({{
+                    container: container,
+                    
+                    elements: elements,
+                    
+                    style: [
+                        {{
+                            selector: 'node[group="ke"]',
+                            style: {{
+                                'background-color': '{BRAND_COLORS["secondary"]}',
+                                'label': 'data(truncated_label)',
+                                'color': 'white',
+                                'text-valign': 'center',
+                                'text-halign': 'center',
+                                'font-size': '8px',
+                                'width': '20px',
+                                'height': '20px',
+                                'shape': 'ellipse'
+                            }}
+                        }},
+                        {{
+                            selector: 'node[group="mie"]',
+                            style: {{
+                                'background-color': '{BRAND_COLORS["content"]}',
+                                'label': 'data(truncated_label)',
+                                'color': 'white',
+                                'text-valign': 'center',
+                                'text-halign': 'center',
+                                'font-size': '8px',
+                                'width': '20px',
+                                'height': '20px',
+                                'shape': 'ellipse'
+                            }}
+                        }},
+                        {{
+                            selector: 'node[group="ao"]',
+                            style: {{
+                                'background-color': '{BRAND_COLORS["primary"]}',
+                                'label': 'data(truncated_label)',
+                                'color': 'white',
+                                'text-valign': 'center',
+                                'text-halign': 'center',
+                                'font-size': '8px',
+                                'width': '20px',
+                                'height': '20px',
+                                'shape': 'ellipse'
+                            }}
+                        }},
+                        {{
+                            selector: 'edge[type="KER"]',
+                            style: {{
+                                'width': 'data(thickness)',
+                                'line-color': '{BRAND_COLORS["accent"]}',
+                                'target-arrow-color': '{BRAND_COLORS["accent"]}',
+                                'target-arrow-shape': 'triangle',
+                                'arrow-scale': 0.8,
+                                'curve-style': 'straight'
+                            }}
+                        }},
+                        {{
+                            selector: 'node:selected',
+                            style: {{
+                                'border-width': 2,
+                                'border-color': '{BRAND_COLORS["content"]}'
+                            }}
+                        }},
+                        {{
+                            selector: 'node.highlighted',
+                            style: {{
+                                'border-width': 3,
+                                'border-color': '{BRAND_COLORS["accent"]}',
+                                'border-opacity': 0.8,
+                                'z-index': 10
+                            }}
+                        }},
+                        {{
+                            selector: 'edge.highlighted',
+                            style: {{
+                                'width': 3,
+                                'line-color': '{BRAND_COLORS["accent"]}',
+                                'target-arrow-color': '{BRAND_COLORS["accent"]}',
+                                'opacity': 1,
+                                'z-index': 10
+                            }}
+                        }},
+                        {{
+                            selector: 'node.faded',
+                            style: {{
+                                'opacity': 0.3
+                            }}
+                        }},
+                        {{
+                            selector: 'edge.faded',
+                            style: {{
+                                'opacity': 0.1
+                            }}
+                        }},
+                        {{
+                            selector: 'node[is_dual_role = true]',
+                            style: {{
+                                'border-width': 2,
+                                'border-color': '#FFD700',
+                                'border-style': 'dashed'
+                            }}
+                        }}
+                    ],
+                    
+                    layout: {{
+                        name: 'cose',
+                        idealEdgeLength: 50,
+                        nodeOverlap: 10,
+                        refresh: 10,
+                        fit: true,
+                        padding: 20,
+                        randomize: false,
+                        componentSpacing: 80,
+                        nodeRepulsion: 100000,
+                        edgeElasticity: 32,
+                        nestingFactor: 5,
+                        gravity: 40,
+                        numIter: 1000,
+                        initialTemp: 100,
+                        coolingFactor: 0.95,
+                        minTemp: 1.0
+                    }}
+                }});
+                
+                // Enhanced tooltip system using native Cytoscape events
+                var tooltipDiv = document.createElement('div');
+                tooltipDiv.style.position = 'absolute';
+                tooltipDiv.style.display = 'none';
+                tooltipDiv.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+                tooltipDiv.style.color = 'white';
+                tooltipDiv.style.padding = '8px 12px';
+                tooltipDiv.style.borderRadius = '4px';
+                tooltipDiv.style.fontSize = '12px';
+                tooltipDiv.style.pointerEvents = 'none';
+                tooltipDiv.style.zIndex = '1000';
+                tooltipDiv.style.maxWidth = '250px';
+                tooltipDiv.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
+                document.body.appendChild(tooltipDiv);
+                
+                cy.on('mouseover', 'node', function(event) {{
+                    var node = event.target;
+                    var data = node.data();
+                    var degree = node.degree();
+                    
+                    var descriptive = data.descriptive_title ? '<br><em>' + data.descriptive_title + '</em>' : '';
+                    var dualRole = data.is_dual_role ? '<br><span style="color: #FFD700;">⭐ Dual Role</span>' : '';
+                    tooltipDiv.innerHTML = '<strong>' + data.label + '</strong>' + descriptive +
+                                          '<br>Type: ' + data.node_subtype + dualRole +
+                                          '<br>AOP Frequency: ' + data.aop_frequency +
+                                          '<br>Connections: ' + degree;
+                    
+                    tooltipDiv.style.display = 'block';
+                }});
+                
+                cy.on('mouseout', 'node', function(event) {{
+                    tooltipDiv.style.display = 'none';
+                }});
+                
+                cy.on('mousemove', function(event) {{
+                    tooltipDiv.style.left = (event.originalEvent.pageX + 10) + 'px';
+                    tooltipDiv.style.top = (event.originalEvent.pageY - 10) + 'px';
+                }});
+
+                // Node selection highlighting
+                cy.on('tap', 'node', function(evt) {{
+                    var node = evt.target;
+                    var neighbors = node.neighborhood();
+                    
+                    // Reset all nodes and edges
+                    cy.elements().removeClass('highlighted faded');
+                    
+                    // Highlight selected node and neighbors
+                    node.addClass('highlighted');
+                    neighbors.addClass('highlighted');
+                    
+                    // Fade non-connected elements
+                    cy.elements().difference(node.union(neighbors)).addClass('faded');
+                    
+                    console.log('Selected:', node.data('label'), '(' + node.data('node_subtype') + ')');
+                    console.log('Neighbors:', neighbors.nodes().length);
+                }});
+                
+                // Click background to reset selection
+                cy.on('tap', function(event) {{
+                    if (event.target === cy) {{
+                        cy.elements().removeClass('highlighted faded');
+                    }}
+                }});
+                
+                // Navigation controls
+                var currentNodeSizing = 'fixed';
+                
+                // Control button event handlers
+                // Add event listeners with null checks
+                var zoomInBtn = document.getElementById('zoom-in-btn');
+                if (zoomInBtn) {{
+                    zoomInBtn.addEventListener('click', function() {{
+                        cy.zoom({{
+                            level: cy.zoom() * 1.5,
+                            renderedPosition: {{ x: cy.width()/2, y: cy.height()/2 }}
+                        }});
+                        updateZoomDisplay();
+                    }});
+                }}
+                
+                var zoomOutBtn = document.getElementById('zoom-out-btn');
+                if (zoomOutBtn) {{
+                    zoomOutBtn.addEventListener('click', function() {{
+                        cy.zoom({{
+                            level: cy.zoom() * 0.67,
+                            renderedPosition: {{ x: cy.width()/2, y: cy.height()/2 }}
+                        }});
+                        updateZoomDisplay();
+                    }});
+                }}
+                
+                var fitBtn = document.getElementById('fit-btn');
+                if (fitBtn) {{
+                    fitBtn.addEventListener('click', function() {{
+                        cy.animate({{
+                            fit: {{
+                                eles: cy.elements(),
+                                padding: 20
+                            }}
+                        }}, {{
+                            duration: 500,
+                            easing: 'ease-in-out-cubic'
+                        }});
+                        setTimeout(updateZoomDisplay, 500);
+                    }});
+                }}
+                
+                var centerBtn = document.getElementById('center-btn');
+                if (centerBtn) {{
+                    centerBtn.addEventListener('click', function() {{
+                        // Center the viewport on the network without changing zoom level
+                        cy.center();
+                    }});
+                }}
+                
+                var layoutBtn = document.getElementById('layout-btn');
+                if (layoutBtn) {{
+                    layoutBtn.addEventListener('click', function() {{
+                    var layout = cy.layout({{
+                        name: 'cose',
+                        animate: true,
+                        animationDuration: 1000,
+                        idealEdgeLength: 50,
+                        nodeOverlap: 10,
+                        refresh: 10,
+                        fit: true,
+                        padding: 20,
+                        randomize: false,
+                        componentSpacing: 80,
+                        nodeRepulsion: 100000,
+                        edgeElasticity: 32,
+                        nestingFactor: 5,
+                        gravity: 40,
+                        numIter: 1000,
+                        initialTemp: 100,
+                        coolingFactor: 0.95,
+                        minTemp: 1.0
+                    }});
+                    layout.run();
+                    }});
+                }}
+                
+                // Node sizing controls
+                var sizeControls = document.querySelectorAll('input[name="node-size"]');
+                sizeControls.forEach(function(control) {{
+                    control.addEventListener('change', function() {{
+                        if (this.checked) {{
+                            currentNodeSizing = this.value;
+                            updateNodeSizing();
+                        }}
+                    }});
+                }});
+                
+                function updateNodeSizing() {{
+                    var nodes = cy.nodes();
+                    var maxFreq = Math.max.apply(Math, nodes.map(function(n) {{ return n.data('aop_frequency'); }}));
+                    var maxDegree = Math.max.apply(Math, nodes.map(function(n) {{ return n.degree(); }}));
+                    
+                    nodes.forEach(function(node) {{
+                        var size = 20; // default size
+                        
+                        if (currentNodeSizing === 'frequency') {{
+                            var freq = node.data('aop_frequency');
+                            size = Math.max(8, Math.min(40, 10 + (freq / maxFreq) * 30));
+                        }} else if (currentNodeSizing === 'degree') {{
+                            var degree = node.degree();
+                            size = Math.max(8, Math.min(40, 10 + (degree / maxDegree) * 30));
+                        }}
+                        
+                        node.style('width', size + 'px');
+                        node.style('height', size + 'px');
+                        node.style('font-size', Math.max(6, size * 0.4) + 'px');
+                    }});
+                }}
+                
+                // Zoom level tracking - now tracks ALL zoom events
+                function updateZoomDisplay() {{
+                    var zoomPercent = Math.round(cy.zoom() * 100);
+                    var currentZoomEl = document.getElementById('current-zoom');
+                    if (currentZoomEl) currentZoomEl.textContent = zoomPercent + '%';
+                }}
+                
+                // Track all zoom and viewport changes
+                cy.on('zoom viewport pan', function() {{
+                    updateZoomDisplay();
+                }});
+                
+                // Keyboard shortcuts
+                document.addEventListener('keydown', function(event) {{
+                    if (event.target.tagName.toLowerCase() !== 'input') {{
+                        switch(event.key) {{
+                            case 'r':
+                            case 'R':
+                                var fitBtn = document.getElementById('fit-btn');
+                                if (fitBtn) fitBtn.click();
+                                break;
+                            case '+':
+                            case '=':
+                                var zoomInBtn = document.getElementById('zoom-in-btn');
+                                if (zoomInBtn) zoomInBtn.click();
+                                break;
+                            case '-':
+                            case '_':
+                                var zoomOutBtn = document.getElementById('zoom-out-btn');
+                                if (zoomOutBtn) zoomOutBtn.click();
+                                break;
+                        }}
+                    }}
+                }});
+                
+                // Initial setup
+                cy.fit();
+                cy.center();
+                updateZoomDisplay();
+                
+                // Update stats display with actual loaded data
+                var visibleNodesEl = document.getElementById('visible-nodes');
+                if (visibleNodesEl) visibleNodesEl.textContent = cy.nodes().length;
+                
+                var visibleEdgesEl = document.getElementById('visible-edges');
+                if (visibleEdgesEl) visibleEdgesEl.textContent = cy.edges().length;
+                
+                console.log('Enhanced AOP network loaded: ' + cy.nodes().length + ' nodes, ' + cy.edges().length + ' edges');
+                
+            }} catch (error) {{
+                console.error('Error creating network:', error);
+                container.innerHTML = '<div style="text-align: center; padding: 50px; color: #d32f2f;">Error initializing network: ' + error.message + '</div>';
+            }}
+        }}
+        
+        // Initialize when DOM is ready
+        if (document.readyState === 'loading') {{
+            document.addEventListener('DOMContentLoaded', initCompleteNetwork);
+        }} else {{
+            initCompleteNetwork();
+        }}
+        </script>
+        
+        <style>
+        #cy {{
+            position: relative;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }}
+        </style>
+        
+        <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+            <h4>Network Legend</h4>
+            <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="width: 20px; height: 20px; background: {BRAND_COLORS["content"]}; border-radius: 50%;"></div>
+                    <span>Molecular Initiating Events ({len([n for n in nodes_data if n.get('node_subtype') == 'MIE'])})</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="width: 20px; height: 20px; background: {BRAND_COLORS["primary"]}; border-radius: 50%;"></div>
+                    <span>Adverse Outcomes ({len([n for n in nodes_data if n.get('node_subtype') == 'AO'])})</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="width: 20px; height: 20px; background: {BRAND_COLORS["secondary"]}; border-radius: 50%;"></div>
+                    <span>Key Events ({len([n for n in nodes_data if n.get('node_subtype') == 'KE'])})</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="width: 20px; height: 2px; background: {BRAND_COLORS["accent"]};"></div>
+                    <span>KE Relationships ({len([e for e in edges_data if e['type'] == 'KER'])})</span>
+                </div>
+            </div>
+            <p style="margin-top: 10px; font-size: 14px; color: #666;">
+                <strong>Interaction:</strong> Pan and zoom to explore. Click nodes to select. Hover for details.
+                <strong>Version:</strong> {latest_version}
+            </p>
+        </div>
+        """
+        
+        logging.info(f"Network visualization generated successfully with {len(nodes_data)} total nodes and {len(edges_data)} total edges")
+        logging.info(f"Cytoscape elements: {len(cytoscape_elements)} elements (complete network)")
+        return cytoscape_html
+        
+    except Exception as e:
+        logging.error(f"Error in plot_aop_network: {e}")
+        return create_fallback_plot("AOP Network", f"Error generating network visualization: {str(e)}")

@@ -139,6 +139,16 @@
             </div>
             <div class="plot-box">
                 <div class="plot-header">
+                    <h3>AOP Completeness - Unique Colors</h3>
+                    <a href="/download/latest_aop_completeness_unique" class="download-button" title="Download CSV data">Download CSV</a>
+                </div>
+                <p class="plot-description">
+                    Same AOP data completeness analysis with unique colors per property for better visual distinction (larger panel).
+                </p>
+                {{ latest_aop_completeness_unique | safe }}
+            </div>
+            <div class="plot-box">
+                <div class="plot-header">
                     <h3>Biological Process Usage</h3>
                     <a href="/download/latest_process_usage" class="download-button" title="Download CSV data">Download CSV</a>
                 </div>
@@ -166,7 +176,31 @@
     {% include 'trends.html' %}
 </div>
 
+
+<style>
+
+/* Cytoscape container styling */
+#cy {
+    width: 100% !important;
+    height: 600px !important;
+    display: block;
+    position: relative;
+}
+
+
+.error-message {
+    padding: 20px;
+    text-align: center;
+    color: #d32f2f;
+    background-color: #ffebee;
+    border-radius: 4px;
+    margin: 20px 0;
+}
+</style>
+
 <script>
+
+// Tab navigation functionality
 document.querySelectorAll(".tab-button").forEach(button => {
     button.addEventListener("click", () => {
         document.querySelectorAll(".tab-button").forEach(btn => btn.classList.remove("active"));

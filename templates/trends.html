@@ -65,6 +65,24 @@
         <div class="abs">{{ graph_prop_abs | safe }}</div>
         <div class="delta" style="display:none;">{{ graph_prop_pct | safe }}</div>
     </div>
+
+    <!-- AOP Property Presence - Unique Colors -->
+    <div class="plot-box full-width" id="aop-property-presence-unique">
+        <div class="plot-header">
+            <h2>AOP Property Presence Over Time - Unique Colors</h2>
+            <div class="download-buttons">
+                <a href="/download/aop_property_presence_unique_absolute" class="download-button" title="Download Absolute Count CSV">Download Absolute CSV</a>
+                <a href="/download/aop_property_presence_unique_percentage" class="download-button" title="Download Percentage CSV">Download Percentage CSV</a>
+            </div>
+            <label><input type="checkbox" class="plot-toggle"> Show Percentage</label>
+        </div>
+        <p class="plot-description">
+            Same AOP property presence trends with unique colors for each property line instead of repeating colors.
+            Larger panel for better visualization of all property trends.
+        </p>
+        <div class="abs">{{ graph_prop_unique_abs | safe }}</div>
+        <div class="delta" style="display:none;">{{ graph_prop_unique_pct | safe }}</div>
+    </div>
     </div>
 </section>
 
