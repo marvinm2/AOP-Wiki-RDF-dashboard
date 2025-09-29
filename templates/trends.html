@@ -46,8 +46,16 @@
             Tracks the total number of AOPs, Key Events (KEs), Key Event Relationships (KERs), 
             and Stressors over time.
         </p>
-        <div class="abs">{{ graph_main_abs | safe }}</div>
-        <div class="delta" style="display:none;">{{ graph_main_delta | safe }}</div>
+        <div class="abs">
+            <div class="lazy-plot" data-plot-name="graph_main_abs">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+        <div class="delta" style="display:none;">
+            <div class="lazy-plot" data-plot-name="graph_main_delta">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
     </div>
 
 
@@ -62,8 +70,16 @@
             Shows how many AOPs contain each property over time. 
             Properties always present (100%) are excluded for clarity.
         </p>
-        <div class="abs">{{ graph_prop_abs | safe }}</div>
-        <div class="delta" style="display:none;">{{ graph_prop_pct | safe }}</div>
+        <div class="abs">
+            <div class="lazy-plot" data-plot-name="graph_prop_abs">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+        <div class="delta" style="display:none;">
+            <div class="lazy-plot" data-plot-name="graph_prop_pct">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
     </div>
 
     <!-- AOP Property Presence - Unique Colors -->
@@ -80,8 +96,16 @@
             Same AOP property presence trends with unique colors for each property line instead of repeating colors.
             Larger panel for better visualization of all property trends.
         </p>
-        <div class="abs">{{ graph_prop_unique_abs | safe }}</div>
-        <div class="delta" style="display:none;">{{ graph_prop_unique_pct | safe }}</div>
+        <div class="abs">
+            <div class="lazy-plot" data-plot-name="graph_prop_unique_abs">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+        <div class="delta" style="display:none;">
+            <div class="lazy-plot" data-plot-name="graph_prop_unique_pct">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
     </div>
     </div>
 </section>
@@ -103,15 +127,25 @@
             Shows how densely connected each AOP is on average, 
             measured by the number of Key Events and Key Event Relationships per AOP.
         </p>
-        <div class="abs">{{ graph_avg_abs | safe }}</div>
-        <div class="delta" style="display:none;">{{ graph_avg_delta | safe }}</div>
+        <div class="abs">
+            <div class="lazy-plot" data-plot-name="graph_avg_abs">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+        <div class="delta" style="display:none;">
+            <div class="lazy-plot" data-plot-name="graph_avg_delta">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
     </div>
     <!-- AOP Network Density -->
     <div class="plot-box" id="density">
         <h2>AOP Network Density</h2>
         <p>Shows how densely connected the KE-KER graph is over time, 
         calculated as the ratio of edges to possible connections between nodes.</p>
-        {{ graph_density | safe }}
+        <div class="lazy-plot" data-plot-name="graph_density">
+            <!-- Plot will be loaded here via JavaScript -->
+        </div>
     </div>
 
     </div>
@@ -129,29 +163,43 @@
         <p class="plot-description">
             Tracks the number of unique authors contributing to AOPs over time.
         </p>
-        <div class="abs">{{ graph_authors_abs | safe }}</div>
-        <div class="delta" style="display:none;">{{ graph_authors_delta | safe }}</div>
+        <div class="abs">
+            <div class="lazy-plot" data-plot-name="graph_authors_abs">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+        <div class="delta" style="display:none;">
+            <div class="lazy-plot" data-plot-name="graph_authors_delta">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
     </div>
 
     <!-- AOPs Created -->
     <div class="plot-box" id="lifetime">
         <h2>AOPs Created Over Time</h2>
         <p>Number of unique AOPs first created in each year.</p>
-        {{ graph_created | safe }}
+        <div class="lazy-plot" data-plot-name="graph_created">
+            <!-- Plot will be loaded here via JavaScript -->
+        </div>
     </div>
 
     <!-- AOPs Modified -->
     <div class="plot-box">
         <h2>AOPs Modified Over Time</h2>
         <p>Tracks how many unique AOPs were last modified in each year.</p>
-        {{ graph_modified | safe }}
+        <div class="lazy-plot" data-plot-name="graph_modified">
+            <!-- Plot will be loaded here via JavaScript -->
+        </div>
     </div>
 
     <!-- Scatter plot -->
     <div class="plot-box">
         <h2>AOP Creation vs Modification</h2>
         <p>Scatter plot showing when each AOP was created versus when it was last updated.</p>
-        {{ graph_scatter | safe }}
+        <div class="lazy-plot" data-plot-name="graph_scatter">
+            <!-- Plot will be loaded here via JavaScript -->
+        </div>
     </div>
     </div>
 </section>
@@ -168,8 +216,16 @@
         <p class="plot-description">
             Tracks how many Key Event annotations include Process, Object, and Action elements over time.
         </p>
-        <div class="abs">{{ graph_components_abs | safe }}</div>
-        <div class="delta" style="display:none;">{{ graph_components_delta | safe }}</div>
+        <div class="abs">
+            <div class="lazy-plot" data-plot-name="graph_components_abs">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+        <div class="delta" style="display:none;">
+            <div class="lazy-plot" data-plot-name="graph_components_delta">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
     </div>
 
     <div class="plot-box" id="ke-components-pct">
@@ -180,8 +236,16 @@
         <p class="plot-description">
             Shows how many Key Events have Process, Object, and Action annotations as a percentage of all KEs per version.
         </p>
-        <div class="abs">{{ graph_components_pct_abs | safe }}</div>
-        <div class="delta" style="display:none;">{{ graph_components_pct_delta | safe }}</div>
+        <div class="abs">
+            <div class="lazy-plot" data-plot-name="graph_components_pct_abs">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+        <div class="delta" style="display:none;">
+            <div class="lazy-plot" data-plot-name="graph_components_pct_delta">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
     </div>
 
     <div class="plot-box" id="unique-ke-components">
@@ -192,8 +256,16 @@
         <p class="plot-description">
             Tracks the total number of unique Process, Object, and Action annotations used in Key Events over time.
         </p>
-        <div class="abs">{{ graph_unique_abs | safe }}</div>
-        <div class="delta" style="display:none;">{{ graph_unique_delta | safe }}</div>
+        <div class="abs">
+            <div class="lazy-plot" data-plot-name="graph_unique_abs">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+        <div class="delta" style="display:none;">
+            <div class="lazy-plot" data-plot-name="graph_unique_delta">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
     </div>
 
     <div class="plot-box" id="bio-processes">
@@ -204,8 +276,16 @@
         <p class="plot-description">
             Shows KE annotations with biological processes grouped by ontology.
         </p>
-        <div class="abs">{{ graph_bio_processes_abs | safe }}</div>
-        <div class="delta" style="display:none;">{{ graph_bio_processes_delta | safe }}</div>
+        <div class="abs">
+            <div class="lazy-plot" data-plot-name="graph_bio_processes_abs">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+        <div class="delta" style="display:none;">
+            <div class="lazy-plot" data-plot-name="graph_bio_processes_delta">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
     </div>
 
     <div class="plot-box" id="bio-objects">
@@ -216,8 +296,16 @@
         <p class="plot-description">
             Shows KE annotations with biological objects grouped by ontology.
         </p>
-        <div class="abs">{{ graph_bio_objects_abs | safe }}</div>
-        <div class="delta" style="display:none;">{{ graph_bio_objects_delta | safe }}</div>
+        <div class="abs">
+            <div class="lazy-plot" data-plot-name="graph_bio_objects_abs">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+        <div class="delta" style="display:none;">
+            <div class="lazy-plot" data-plot-name="graph_bio_objects_delta">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
     </div>
 
     <div class="plot-box" id="kes-by-kec">
@@ -229,8 +317,16 @@
             Tracks how many Key Events contain a specific number of Key Event Components (KECs) 
             over time, showing annotation completeness.
         </p>
-        <div class="abs">{{ graph_kec_count_abs | safe }}</div>
-        <div class="delta" style="display:none;">{{ graph_kec_count_delta | safe }}</div>
+        <div class="abs">
+            <div class="lazy-plot" data-plot-name="graph_kec_count_abs">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+        <div class="delta" style="display:none;">
+            <div class="lazy-plot" data-plot-name="graph_kec_count_delta">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
     </div>
 
     </div>

@@ -38,7 +38,7 @@ Author:
     Generated with Claude Code (https://claude.ai/code)
 
 """
-from flask import Flask, render_template
+from flask import Flask, render_template, jsonify
 import pandas as pd
 from SPARQLWrapper import SPARQLWrapper, JSON
 import plotly.express as px
@@ -642,6 +642,67 @@ def download_main_graph_delta():
 
 
 
+# Individual plot endpoints for lazy loading
+@app.route("/api/plot/<plot_name>")
+def get_plot(plot_name):
+    """API endpoint to serve individual plots on demand for lazy loading.
+
+    This endpoint allows individual plots to be loaded asynchronously,
+    significantly reducing initial page load time by only rendering plots
+    when they're actually viewed by the user.
+
+    Args:
+        plot_name (str): Name of the plot to render
+
+    Returns:
+        dict: JSON response with plot HTML or error message
+    """
+    # Map plot names to their corresponding variables
+    plot_map = {
+        'latest_entity_counts': latest_entity_counts,
+        'latest_ke_components': latest_ke_components,
+        'latest_network_density': latest_network_density,
+        'latest_avg_per_aop': latest_avg_per_aop,
+        'latest_process_usage': latest_process_usage,
+        'latest_object_usage': latest_object_usage,
+        'latest_aop_completeness': latest_aop_completeness,
+        'latest_aop_completeness_unique': latest_aop_completeness_unique,
+        'latest_ontology_usage': latest_ontology_usage,
+        'latest_database_summary': latest_database_summary,
+        'latest_ke_annotation_depth': latest_ke_annotation_depth,
+        'graph_main_abs': graph_main_abs,
+        'graph_main_delta': graph_main_delta,
+        'graph_avg_abs': graph_avg_abs,
+        'graph_avg_delta': graph_avg_delta,
+        'graph_density': graph_density,
+        'graph_components_abs': graph_components_abs,
+        'graph_components_delta': graph_components_delta,
+        'graph_components_pct_abs': graph_components_pct_abs,
+        'graph_components_pct_delta': graph_components_pct_delta,
+        'graph_unique_abs': graph_unique_abs,
+        'graph_unique_delta': graph_unique_delta,
+        'graph_bio_processes_abs': graph_bio_processes_abs,
+        'graph_bio_processes_delta': graph_bio_processes_delta,
+        'graph_bio_objects_abs': graph_bio_objects_abs,
+        'graph_bio_objects_delta': graph_bio_objects_delta,
+        'graph_authors_abs': graph_authors_abs,
+        'graph_authors_delta': graph_authors_delta,
+        'graph_created': graph_created,
+        'graph_modified': graph_modified,
+        'graph_scatter': graph_scatter,
+        'graph_prop_abs': graph_prop_abs,
+        'graph_prop_pct': graph_prop_pct,
+        'graph_prop_unique_abs': graph_prop_unique_abs,
+        'graph_prop_unique_pct': graph_prop_unique_pct,
+        'graph_kec_count_abs': graph_kec_count_abs,
+        'graph_kec_count_delta': graph_kec_count_delta
+    }
+
+    if plot_name in plot_map:
+        return jsonify({'html': plot_map[plot_name], 'success': True})
+    else:
+        return jsonify({'error': f'Plot {plot_name} not found', 'success': False}), 404
+
 # Set Plotly configuration for static images
 @app.route("/")
 def index():
@@ -697,46 +758,8 @@ def index():
         If plot generation failed during startup, some visualizations
         may display error messages or fallback content.
     """
-    return render_template(
-        "index.html",
-        graph_main_abs=graph_main_abs,
-        graph_main_delta=graph_main_delta,
-        graph_avg_abs=graph_avg_abs,
-        graph_avg_delta=graph_avg_delta,
-        graph_density=graph_density,
-        graph_components_abs=graph_components_abs,
-        graph_components_delta=graph_components_delta,
-        graph_components_pct_abs=graph_components_pct_abs,
-        graph_components_pct_delta=graph_components_pct_delta,
-        graph_unique_abs=graph_unique_abs,        # NEW
-        graph_unique_delta=graph_unique_delta,    # NEW
-        graph_bio_processes_abs=graph_bio_processes_abs,
-        graph_bio_processes_delta=graph_bio_processes_delta,
-        graph_bio_objects_abs=graph_bio_objects_abs,
-        graph_bio_objects_delta=graph_bio_objects_delta,
-        graph_authors_abs=graph_authors_abs,
-        graph_authors_delta=graph_authors_delta,
-        graph_created=graph_created,
-        graph_modified=graph_modified,
-        graph_scatter=graph_scatter,
-        graph_prop_abs=graph_prop_abs,
-        graph_prop_pct=graph_prop_pct,
-        graph_prop_unique_abs=graph_prop_unique_abs,
-        graph_prop_unique_pct=graph_prop_unique_pct,
-        graph_kec_count_abs=graph_kec_count_abs,
-        graph_kec_count_delta=graph_kec_count_delta,
-        latest_entity_counts=latest_entity_counts,
-        latest_ke_components=latest_ke_components,
-        latest_network_density=latest_network_density,
-        latest_avg_per_aop=latest_avg_per_aop,
-        latest_ontology_usage=latest_ontology_usage,
-        latest_process_usage=latest_process_usage,
-        latest_object_usage=latest_object_usage,
-        latest_aop_completeness=latest_aop_completeness,
-        latest_aop_completeness_unique=latest_aop_completeness_unique,
-        latest_database_summary=latest_database_summary,
-        latest_ke_annotation_depth=latest_ke_annotation_depth,
-    )
+    # Lazy loading: Only pass essential data, plots loaded on-demand
+    return render_template("index.html", lazy_loading=True)
 
 
 
