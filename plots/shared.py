@@ -708,3 +708,48 @@ def safe_plot_execution(plot_func, *args, **kwargs) -> Any:
 
         # Default fallback
         return create_fallback_plot(plot_func.__name__, str(e))
+
+def get_latest_version() -> str:
+    """Get the latest AOP-Wiki RDF database version.
+
+    Queries the SPARQL endpoint to get all graphs, then filters and sorts
+    in Python for better performance with Virtuoso triplestore.
+
+    Returns:
+        str: Latest version string (e.g., "2025-07-01")
+
+    Example:
+        >>> version = get_latest_version()
+        >>> print(f"Latest version: {version}")
+        Latest version: 2025-07-01
+    """
+    query = """
+    SELECT DISTINCT ?g
+    WHERE {
+        GRAPH ?g { ?s ?p ?o }
+    }
+    LIMIT 100
+    """
+
+    try:
+        results = run_sparql_query_with_retry(query)
+        if results and len(results) > 0:
+            # Filter for AOP-Wiki graphs
+            aop_graphs = [
+                r.get('g', {}).get('value', '')
+                for r in results
+                if 'aopwiki.org/graph' in r.get('g', {}).get('value', '')
+            ]
+
+            if aop_graphs:
+                # Sort in descending order and get the latest
+                aop_graphs.sort(reverse=True)
+                graph_uri = aop_graphs[0]
+                # Extract version from URI like http://aopwiki.org/graph/2025-07-01
+                version = graph_uri.split('/')[-1]
+                return version
+
+        return "Unknown"
+    except Exception as e:
+        logger.error(f"Error getting latest version: {e}")
+        return "Unknown"
