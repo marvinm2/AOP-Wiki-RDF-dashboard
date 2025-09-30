@@ -643,6 +643,19 @@ def download_main_graph_delta():
 
 
 # Individual plot endpoints for lazy loading
+@app.route("/api/latest-version")
+def get_latest_version():
+    """API endpoint to get the latest AOP-Wiki database version."""
+    try:
+        import importlib
+        import plots
+        importlib.reload(plots)
+        version = plots.get_latest_version()
+        return jsonify({"version": version})
+    except Exception as e:
+        logger.error(f"Error getting latest version: {e}")
+        return jsonify({"version": "Data available on dashboard", "error": str(e)}), 500
+
 @app.route("/api/plot/<plot_name>")
 def get_plot(plot_name):
     """API endpoint to serve individual plots on demand for lazy loading.
@@ -703,8 +716,10 @@ def get_plot(plot_name):
     else:
         return jsonify({'error': f'Plot {plot_name} not found', 'success': False}), 404
 
+
+
 # Set Plotly configuration for static images
-@app.route("/")
+@app.route("/old-dashboard")
 def index():
     """Serve the main dashboard page with all visualizations.
     
@@ -758,9 +773,49 @@ def index():
         If plot generation failed during startup, some visualizations
         may display error messages or fallback content.
     """
-    # Lazy loading: Only pass essential data, plots loaded on-demand
+    # Serve the original tabbed dashboard (for backward compatibility)
     return render_template("index.html", lazy_loading=True)
 
+
+@app.route("/")
+def landing():
+    """Serve the clean landing page with navigation buttons.
+
+    This is the new main entry point that provides a clean introduction
+    to the service with prominent navigation buttons to Latest Data and
+    Historical Trends pages.
+    """
+    return render_template("landing.html")
+
+
+@app.route("/latest")
+def latest_data():
+    """Serve the Latest Data page with current snapshot visualizations.
+
+    Displays key metrics and visualizations from the most recent version
+    of the AOP-Wiki database, providing a snapshot of the current state.
+    """
+    return render_template("latest.html")
+
+
+@app.route("/trends")
+def historical_trends():
+    """Serve the Historical Trends page with time-series analysis.
+
+    Displays evolution and growth patterns of the AOP-Wiki database
+    over time using quarterly releases.
+    """
+    return render_template("trends_page.html")
+
+
+@app.route("/dashboard")
+def dashboard():
+    """Serve the original tabbed dashboard (legacy route).
+
+    Maintains backward compatibility for users who may have bookmarked
+    the original tabbed interface.
+    """
+    return render_template("index.html", lazy_loading=True)
 
 
 

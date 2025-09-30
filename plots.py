@@ -2099,6 +2099,38 @@ def plot_kes_by_kec_count() -> tuple[str, str]:
 # Global data cache for CSV downloads
 _plot_data_cache = {}
 
+def get_latest_version() -> str:
+    """Get the latest AOP-Wiki RDF database version.
+
+    Queries the SPARQL endpoint to find the most recent graph version
+    available in the triplestore.
+
+    Returns:
+        str: Latest version identifier (e.g., "2024-10-01") or fallback message
+    """
+    query = """
+        SELECT DISTINCT ?graph
+        WHERE {
+            GRAPH ?graph { ?s ?p ?o . }
+            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        ORDER BY DESC(?graph)
+        LIMIT 1
+    """
+
+    try:
+        results = run_sparql_query(query)
+        if results:
+            latest_graph_uri = results[0]["graph"]["value"]
+            # Extract version from URI like "http://aopwiki.org/graph/2024-10-01"
+            version = latest_graph_uri.split("/")[-1]
+            return version
+        else:
+            return "No version data available"
+    except Exception as e:
+        logger.error(f"Error getting latest version: {e}")
+        return "Version query failed"
+
 def plot_latest_entity_counts() -> str:
     """Create a bar chart visualization of current AOP entity counts from the latest RDF version.
     

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AOP-Wiki RDF Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/lazy-loading.css') }}">
+</head>
+
+<body style="min-height: 100vh; display: flex; flex-direction: column;">
+<!-- Hero Section with Service Introduction -->
+<section class="hero-section">
+    <div class="hero-content">
+        <h2>AOP-Wiki RDF Monitoring Dashboard</h2>
+        <p class="hero-subtitle">
+            Comprehensive analytics and visualization platform for the Adverse Outcome Pathway knowledge base.
+            Monitor database evolution, explore entity relationships, and analyze data quality trends.
+        </p>
+
+        <div class="action-buttons">
+            <button class="action-btn primary" onclick="window.location.href='/latest'">
+                <div class="btn-icon">📊</div>
+                <div class="btn-content">
+                    <h3>Latest Data</h3>
+                    <p>Current database snapshot and key insights</p>
+                    <ul style="font-size: 0.9rem; margin: 8px 0 0 0; text-align: left; opacity: 0.9;">
+                        <li>Entity counts and database composition</li>
+                        <li>Network connectivity analysis</li>
+                        <li>Data quality and completeness metrics</li>
+                    </ul>
+                </div>
+            </button>
+
+            <button class="action-btn secondary" onclick="window.location.href='/trends'">
+                <div class="btn-icon">📈</div>
+                <div class="btn-content">
+                    <h3>Historical Trends</h3>
+                    <p>Evolution and growth patterns over time</p>
+                    <ul style="font-size: 0.9rem; margin: 8px 0 0 0; text-align: left; opacity: 0.9;">
+                        <li>Entity growth across database versions</li>
+                        <li>Author contributions and AOP lifecycle</li>
+                        <li>Component distribution changes</li>
+                    </ul>
+                </div>
+            </button>
+        </div>
+    </div>
+</section>
+
+<!-- Data Information Section -->
+<section class="data-info-section">
+    <div class="data-info-content">
+        <div class="info-card">
+            <h3>🔗 SPARQL-Powered Analytics</h3>
+            <p>All visualizations are generated using live SPARQL queries against the AOP-Wiki RDF knowledge graph, ensuring real-time accuracy and comprehensive data coverage.</p>
+            <ul>
+                <li>Direct queries to RDF triplestore with named graphs of all versions</li>
+                <li>Semantic data relationships</li>
+                <li>Real-time data synchronization</li>
+                <li>Standardized ontology integration</li>
+            </ul>
+        </div>
+
+        <div class="info-card">
+            <h3>📊 Data Versions & Coverage</h3>
+            <p>The dashboard tracks AOP-Wiki evolution across multiple database releases, providing both current snapshots and historical analysis.</p>
+            <ul>
+                <li><strong>Latest Version:</strong> <span id="latest-version">Loading...</span></li>
+                <li><strong>Coverage:</strong> Complete AOP-Wiki dataset</li>
+                <li><strong>Update Frequency:</strong> Quarterly releases</li>
+                <li><strong>Data Types:</strong> AOPs, Key Events, Relationships, KE Components, Stressors</li>
+            </ul>
+        </div>
+
+        <div class="info-card">
+            <h3>📈 Historical Timeline</h3>
+            <p>Historical trends analysis covers the complete evolution of the AOP-Wiki database from its early development to current state.</p>
+            <ul>
+                <li><strong>Start Date:</strong> April 1, 2018</li>
+                <li><strong>Release Cycle:</strong> Every 3 months</li>
+                <li><strong>Timeline Scope:</strong> 6+ years of data</li>
+                <li><strong>Analysis Types:</strong> Growth patterns, contributions, network evolution</li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<script>
+// Load latest version dynamically
+fetch('/api/latest-version')
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('latest-version').textContent = data.version;
+    })
+    .catch(() => {
+        document.getElementById('latest-version').textContent = 'Available on dashboard';
+    });
+</script>
+
+<footer>
+    <div class="footer-content">
+        AOP-Wiki RDF Monitoring Service — Built for VHP4Safety |
+        <a href="https://aopwiki.cloud.vhp4safety.nl" target="_blank">AOP-Wiki SPARQL Endpoint</a> |
+        <a href="https://github.com/marvinm2/AOP-Wiki-RDF-dashboard" target="_blank">GitHub Repository</a>
+    </div>
+</footer>
+
+</body>
+</html>

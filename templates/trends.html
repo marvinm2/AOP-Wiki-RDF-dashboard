@@ -26,16 +26,13 @@
     <button id="toggle-delta" class="toggle-button">Switch to Delta Mode</button>
 </div>
 
-
-
 <section class="section-block" id="main-trends">
-
     <!-- Main trends -->
     <h2 class="section-header">Main Entity Trends</h2>
     <div class="plot-grid">
     <div class="plot-box" id="main-trends">
         <div class="plot-header">
-            <h2>AOP Entity Counts</h2>
+            <h3>AOP Entity Counts</h3>
             <div style="display: flex; gap: 10px; align-items: center;">
                 <a href="/download/main_graph_absolute" class="download-button" title="Download Absolute CSV data">CSV (Abs)</a>
                 <a href="/download/main_graph_delta" class="download-button" title="Download Delta CSV data">CSV (Δ)</a>
@@ -63,7 +60,7 @@
     <!-- AOP Property Presence -->
     <div class="plot-box full-width" id="aop-property-presence">
         <div class="plot-header">
-            <h2>AOP Property Presence Over Time</h2>
+            <h3>AOP Property Presence Over Time</h3>
             <label><input type="checkbox" class="plot-toggle"> Show Percentage</label>
         </div>
         <p class="plot-description">
@@ -85,12 +82,12 @@
     <!-- AOP Property Presence - Unique Colors -->
     <div class="plot-box full-width" id="aop-property-presence-unique">
         <div class="plot-header">
-            <h2>AOP Property Presence Over Time - Unique Colors</h2>
-            <div class="download-buttons">
-                <a href="/download/aop_property_presence_unique_absolute" class="download-button" title="Download Absolute Count CSV">Download Absolute CSV</a>
-                <a href="/download/aop_property_presence_unique_percentage" class="download-button" title="Download Percentage CSV">Download Percentage CSV</a>
+            <h3>AOP Property Presence Over Time - Unique Colors</h3>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <a href="/download/aop_property_presence_unique_absolute" class="download-button" title="Download Absolute Count CSV">CSV (Abs)</a>
+                <a href="/download/aop_property_presence_unique_percentage" class="download-button" title="Download Percentage CSV">CSV (%)</a>
+                <label><input type="checkbox" class="plot-toggle"> Show Percentage</label>
             </div>
-            <label><input type="checkbox" class="plot-toggle"> Show Percentage</label>
         </div>
         <p class="plot-description">
             Same AOP property presence trends with unique colors for each property line instead of repeating colors.
@@ -110,17 +107,13 @@
     </div>
 </section>
 
-
-
 <section class="section-block" id="network-connectivity">
-
-    
     <!-- Average KEs/KERs -->
     <h2 class="section-header">AOP Connectivity and Network Structure</h2>
     <div class="plot-grid">
     <div class="plot-box" id="avg-per-aop">
         <div class="plot-header">
-            <h2>Average KEs and KERs per AOP</h2>
+            <h3>Average KEs and KERs per AOP</h3>
             <label><input type="checkbox" class="plot-toggle"> Show Deltas</label>
         </div>
         <p class="plot-description">
@@ -140,9 +133,13 @@
     </div>
     <!-- AOP Network Density -->
     <div class="plot-box" id="density">
-        <h2>AOP Network Density</h2>
-        <p>Shows how densely connected the KE-KER graph is over time, 
-        calculated as the ratio of edges to possible connections between nodes.</p>
+        <div class="plot-header">
+            <h3>AOP Network Density</h3>
+        </div>
+        <p class="plot-description">
+            Shows how densely connected the KE-KER graph is over time,
+            calculated as the ratio of edges to possible connections between nodes.
+        </p>
         <div class="lazy-plot" data-plot-name="graph_density">
             <!-- Plot will be loaded here via JavaScript -->
         </div>
@@ -157,7 +154,7 @@
     <div class="plot-grid">
     <div class="plot-box" id="authors">
         <div class="plot-header">
-            <h2>Authors of AOPs</h2>
+            <h3>Authors of AOPs</h3>
             <label><input type="checkbox" class="plot-toggle"> Show Deltas</label>
         </div>
         <p class="plot-description">
@@ -177,8 +174,12 @@
 
     <!-- AOPs Created -->
     <div class="plot-box" id="lifetime">
-        <h2>AOPs Created Over Time</h2>
-        <p>Number of unique AOPs first created in each year.</p>
+        <div class="plot-header">
+            <h3>AOPs Created Over Time</h3>
+        </div>
+        <p class="plot-description">
+            Number of unique AOPs first created in each year.
+        </p>
         <div class="lazy-plot" data-plot-name="graph_created">
             <!-- Plot will be loaded here via JavaScript -->
         </div>
@@ -186,8 +187,12 @@
 
     <!-- AOPs Modified -->
     <div class="plot-box">
-        <h2>AOPs Modified Over Time</h2>
-        <p>Tracks how many unique AOPs were last modified in each year.</p>
+        <div class="plot-header">
+            <h3>AOPs Modified Over Time</h3>
+        </div>
+        <p class="plot-description">
+            Tracks how many unique AOPs were last modified in each year.
+        </p>
         <div class="lazy-plot" data-plot-name="graph_modified">
             <!-- Plot will be loaded here via JavaScript -->
         </div>
@@ -195,8 +200,12 @@
 
     <!-- Scatter plot -->
     <div class="plot-box">
-        <h2>AOP Creation vs Modification</h2>
-        <p>Scatter plot showing when each AOP was created versus when it was last updated.</p>
+        <div class="plot-header">
+            <h3>AOP Creation vs Modification</h3>
+        </div>
+        <p class="plot-description">
+            Scatter plot showing when each AOP was created versus when it was last updated.
+        </p>
         <div class="lazy-plot" data-plot-name="graph_scatter">
             <!-- Plot will be loaded here via JavaScript -->
         </div>
@@ -210,7 +219,7 @@
     <div class="plot-grid">
     <div class="plot-box" id="ke-components">
         <div class="plot-header">
-            <h2>KE Component Annotations</h2>
+            <h3>KE Component Annotations</h3>
             <label><input type="checkbox" class="plot-toggle"> Show Deltas</label>
         </div>
         <p class="plot-description">
@@ -230,7 +239,7 @@
 
     <div class="plot-box" id="ke-components-pct">
         <div class="plot-header">
-            <h2>KE Components as % of Total KEs</h2>
+            <h3>KE Components as % of Total KEs</h3>
             <label><input type="checkbox" class="plot-toggle"> Show Deltas</label>
         </div>
         <p class="plot-description">
@@ -250,7 +259,7 @@
 
     <div class="plot-box" id="unique-ke-components">
         <div class="plot-header">
-            <h2>Unique KE Component Annotations</h2>
+            <h3>Unique KE Component Annotations</h3>
             <label><input type="checkbox" class="plot-toggle"> Show Deltas</label>
         </div>
         <p class="plot-description">
@@ -270,7 +279,7 @@
 
     <div class="plot-box" id="bio-processes">
         <div class="plot-header">
-            <h2>Biological Process Annotations</h2>
+            <h3>Biological Process Annotations</h3>
             <label><input type="checkbox" class="plot-toggle"> Show Deltas</label>
         </div>
         <p class="plot-description">
@@ -290,7 +299,7 @@
 
     <div class="plot-box" id="bio-objects">
         <div class="plot-header">
-            <h2>Biological Object Annotations</h2>
+            <h3>Biological Object Annotations</h3>
             <label><input type="checkbox" class="plot-toggle"> Show Deltas</label>
         </div>
         <p class="plot-description">
@@ -310,7 +319,7 @@
 
     <div class="plot-box" id="kes-by-kec">
         <div class="plot-header">
-            <h2>KEs by Number of KECs</h2>
+            <h3>KEs by Number of KECs</h3>
             <label><input type="checkbox" class="plot-toggle"> Show Deltas</label>
         </div>
         <p class="plot-description">
