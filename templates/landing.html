@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/lazy-loading.css') }}">
 </head>
 
-<body style="min-height: 100vh; display: flex; flex-direction: column;">
+<body style="min-height: 100vh; display: flex; flex-direction: column; background-color: #29235C; overflow-x: hidden;">
 <!-- Hero Section with Service Introduction -->
 <section class="hero-section">
     <div class="hero-content">
@@ -52,36 +52,18 @@
 <section class="data-info-section">
     <div class="data-info-content">
         <div class="info-card">
-            <h3>🔗 SPARQL-Powered Analytics</h3>
-            <p>All visualizations are generated using live SPARQL queries against the AOP-Wiki RDF knowledge graph, ensuring real-time accuracy and comprehensive data coverage.</p>
-            <ul>
-                <li>Direct queries to RDF triplestore with named graphs of all versions</li>
-                <li>Semantic data relationships</li>
-                <li>Real-time data synchronization</li>
-                <li>Standardized ontology integration</li>
-            </ul>
+            <h3>🔗 Live SPARQL Analytics</h3>
+            <p>Direct RDF triplestore queries with semantic relationships and standardized ontology integration for accurate, real-time insights.</p>
         </div>
 
         <div class="info-card">
-            <h3>📊 Data Versions & Coverage</h3>
-            <p>The dashboard tracks AOP-Wiki evolution across multiple database releases, providing both current snapshots and historical analysis.</p>
-            <ul>
-                <li><strong>Latest Version:</strong> <span id="latest-version">Loading...</span></li>
-                <li><strong>Coverage:</strong> Complete AOP-Wiki dataset</li>
-                <li><strong>Update Frequency:</strong> Quarterly releases</li>
-                <li><strong>Data Types:</strong> AOPs, Key Events, Relationships, KE Components, Stressors</li>
-            </ul>
+            <h3>📊 Database Coverage</h3>
+            <p><strong>Latest:</strong> <span id="latest-version">Loading...</span> | Quarterly releases tracking AOPs, Key Events, Relationships, Components, and Stressors across 30+ versions since April 2018.</p>
         </div>
 
         <div class="info-card">
-            <h3>📈 Historical Timeline</h3>
-            <p>Historical trends analysis covers the complete evolution of the AOP-Wiki database from its early development to current state.</p>
-            <ul>
-                <li><strong>Start Date:</strong> April 1, 2018</li>
-                <li><strong>Release Cycle:</strong> Every 3 months</li>
-                <li><strong>Timeline Scope:</strong> 6+ years of data</li>
-                <li><strong>Analysis Types:</strong> Growth patterns, contributions, network evolution</li>
-            </ul>
+            <h3>📈 Analysis Features</h3>
+            <p>Entity growth tracking, network connectivity analysis, author contributions, annotation completeness, and ontology usage patterns with CSV exports.</p>
         </div>
     </div>
 </section>
@@ -100,8 +82,8 @@ fetch('/api/latest-version')
 
 <footer>
     <div class="footer-content">
-        AOP-Wiki RDF Monitoring Service — Built for VHP4Safety |
-        <a href="https://aopwiki.cloud.vhp4safety.nl" target="_blank">AOP-Wiki SPARQL Endpoint</a> |
+        AOP-Wiki RDF Monitoring Service — Built for VHP4Safety  |
+        <a href="https://aopwiki.cloud.vhp4safety.nl" target="_blank">AOP-Wiki SPARQL Endpoint</a>  |
         <a href="https://github.com/marvinm2/AOP-Wiki-RDF-dashboard" target="_blank">GitHub Repository</a>
     </div>
 </footer>

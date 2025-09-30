@@ -106,6 +106,7 @@ from .shared import (
     run_sparql_query_with_retry,
     extract_counts,
     check_sparql_endpoint_health,
+    get_latest_version,
 
     # Utility functions
     safe_read_csv,
@@ -179,6 +180,7 @@ __all__ = [
     'run_sparql_query_with_retry',
     'extract_counts',
     'check_sparql_endpoint_health',
+    'get_latest_version',
     'safe_read_csv',
     'safe_plot_execution',
     'create_fallback_plot',

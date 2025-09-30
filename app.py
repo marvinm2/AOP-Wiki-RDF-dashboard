@@ -95,6 +95,7 @@ from plots import (
     plot_latest_ke_annotation_depth,
     check_sparql_endpoint_health,
     safe_plot_execution,
+    get_latest_version,
     _plot_data_cache
 )
 
@@ -644,13 +645,10 @@ def download_main_graph_delta():
 
 # Individual plot endpoints for lazy loading
 @app.route("/api/latest-version")
-def get_latest_version():
+def api_get_latest_version():
     """API endpoint to get the latest AOP-Wiki database version."""
     try:
-        import importlib
-        import plots
-        importlib.reload(plots)
-        version = plots.get_latest_version()
+        version = get_latest_version()
         return jsonify({"version": version})
     except Exception as e:
         logger.error(f"Error getting latest version: {e}")
