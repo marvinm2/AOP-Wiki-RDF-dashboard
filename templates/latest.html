@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Latest Data - AOP-Wiki RDF Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/lazy-loading.css') }}">
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+</head>
+
+<body>
+<header>
+    <h1>Latest Data Overview</h1>
+    <p style="text-align:center; max-width:800px; margin:10px auto; color:white;">
+        Key metrics and visualizations from the most recent version of the AOP-Wiki database.
+        These charts provide a snapshot of the current state of the knowledge base.
+    </p>
+</header>
+
+<!-- Navigation Bar -->
+<div class="page-navigation">
+    <a href="/" class="nav-link">← Back to Home</a>
+    <a href="/trends" class="nav-link">Historical Trends →</a>
+</div>
+
+<section class="tab-intro">
+    <h2>Current Database State</h2>
+    <p>
+        This section displays key metrics and visualizations from the most recent version of the AOP-Wiki database.
+        These charts provide a snapshot of the current state of the knowledge base, showing entity counts,
+        component distributions, and data quality metrics.
+    </p>
+    <ul>
+        <li><b>Current State:</b> View entity counts and database composition</li>
+        <li><b>Network Analysis:</b> Understand AOP connectivity and structural relationships</li>
+        <li><b>Data Quality:</b> Assess annotation completeness and ontology usage patterns</li>
+    </ul>
+</section>
+
+<!-- Navigation Buttons -->
+<div style="text-align:center; margin:20px;">
+    <button class="nav-button" onclick="document.getElementById('database-state').scrollIntoView({behavior:'smooth'});">Database State</button>
+    <button class="nav-button" onclick="document.getElementById('network-analysis').scrollIntoView({behavior:'smooth'});">Network Analysis</button>
+    <button class="nav-button" onclick="document.getElementById('ke-analysis').scrollIntoView({behavior:'smooth'});">Key Event Analysis</button>
+    <button class="nav-button" onclick="document.getElementById('data-quality').scrollIntoView({behavior:'smooth'});">Data Quality</button>
+</div>
+
+<section class="section-block" id="database-state">
+    <h2 class="section-header">Current Database State</h2>
+    <div class="plot-grid">
+        <div class="plot-box">
+            <div class="plot-header">
+                <h3>Entity Counts</h3>
+                <a href="/download/latest_entity_counts" class="download-button" title="Download CSV data">Download CSV</a>
+            </div>
+            <p class="plot-description">
+                Total number of each entity type and unique authors in the latest version of the AOP-Wiki database.
+            </p>
+            <div class="lazy-plot" data-plot-name="latest_entity_counts">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section-block" id="network-analysis">
+    <h2 class="section-header">Network Analysis</h2>
+    <div class="plot-grid">
+        <div class="plot-box">
+            <div class="plot-header">
+                <h3>AOP Connectivity</h3>
+                <a href="/download/latest_network_density" class="download-button" title="Download CSV data">Download CSV</a>
+            </div>
+            <p class="plot-description">
+                Analysis of AOP connectivity based on shared Key Events. Connected AOPs share at least one Key Event with other AOPs, while isolated AOPs have unique Key Events.
+            </p>
+            <div class="lazy-plot" data-plot-name="latest_network_density">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+        <div class="plot-box">
+            <div class="plot-header">
+                <h3>Average Components per AOP</h3>
+                <a href="/download/latest_avg_per_aop" class="download-button" title="Download CSV data">Download CSV</a>
+            </div>
+            <p class="plot-description">
+                Average number of Key Events and Key Event Relationships per AOP in the current database.
+            </p>
+            <div class="lazy-plot" data-plot-name="latest_avg_per_aop">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section-block" id="ke-analysis">
+    <h2 class="section-header">Key Event Analysis</h2>
+    <div class="plot-grid">
+        <div class="plot-box">
+            <div class="plot-header">
+                <h3>KE Component Distribution</h3>
+                <a href="/download/latest_ke_components" class="download-button" title="Download CSV data">Download CSV</a>
+            </div>
+            <p class="plot-description">
+                Distribution of Key Event component annotations (Process, Object, Action) in the current database.
+            </p>
+            <div class="lazy-plot" data-plot-name="latest_ke_components">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+        <div class="plot-box">
+            <div class="plot-header">
+                <h3>KE Annotation Depth</h3>
+                <a href="/download/latest_ke_annotation_depth" class="download-button" title="Download CSV data">Download CSV</a>
+            </div>
+            <p class="plot-description">
+                Distribution of annotation depth for Key Events, showing how thoroughly they are documented.
+            </p>
+            <div class="lazy-plot" data-plot-name="latest_ke_annotation_depth">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section-block" id="data-quality">
+    <h2 class="section-header">Data Quality & Completeness</h2>
+    <div class="plot-grid">
+        <div class="plot-box">
+            <div class="plot-header">
+                <h3>AOP Completeness</h3>
+                <a href="/download/latest_aop_completeness" class="download-button" title="Download CSV data">Download CSV</a>
+            </div>
+            <p class="plot-description">
+                Analysis of AOP data completeness showing the distribution of essential vs optional fields.
+            </p>
+            <div class="lazy-plot" data-plot-name="latest_aop_completeness">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+        <div class="plot-box">
+            <div class="plot-header">
+                <h3>AOP Completeness - Unique Colors</h3>
+                <a href="/download/latest_aop_completeness_unique" class="download-button" title="Download CSV data">Download CSV</a>
+            </div>
+            <p class="plot-description">
+                Same AOP data completeness analysis with unique colors per property for better visual distinction (larger panel).
+            </p>
+            <div class="lazy-plot" data-plot-name="latest_aop_completeness_unique">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+        <div class="plot-box">
+            <div class="plot-header">
+                <h3>Biological Process Usage</h3>
+                <a href="/download/latest_process_usage" class="download-button" title="Download CSV data">Download CSV</a>
+            </div>
+            <p class="plot-description">
+                Distribution of biological process ontology terms used in Key Event annotations.
+            </p>
+            <div class="lazy-plot" data-plot-name="latest_process_usage">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+        <div class="plot-box">
+            <div class="plot-header">
+                <h3>Biological Object Usage</h3>
+                <a href="/download/latest_object_usage" class="download-button" title="Download CSV data">Download CSV</a>
+            </div>
+            <p class="plot-description">
+                Distribution of biological object ontology terms used in Key Event annotations.
+            </p>
+            <div class="lazy-plot" data-plot-name="latest_object_usage">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+    </div>
+</section>
+
+<footer>
+    <div class="footer-content">
+        AOP-Wiki RDF Monitoring Service — Built for VHP4Safety |
+        <a href="https://aopwiki.cloud.vhp4safety.nl" target="_blank">AOP-Wiki SPARQL Endpoint</a> |
+        <a href="https://github.com/marvinm2/AOP-Wiki-RDF-dashboard" target="_blank">GitHub Repository</a>
+    </div>
+</footer>
+
+<script src="{{ url_for('static', filename='js/lazy-loading.js') }}"></script>
+</body>
+</html>
