@@ -38,7 +38,7 @@ Author:
     Generated with Claude Code (https://claude.ai/code)
 
 """
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request
 import pandas as pd
 from SPARQLWrapper import SPARQLWrapper, JSON
 import plotly.express as px
@@ -60,7 +60,7 @@ if not Config.validate_config():
     logger.error("Invalid configuration detected, using defaults")
 
 # Set default Plotly renderer
-from flask import Flask, render_template, url_for, Response
+from flask import Flask, render_template, url_for, Response, redirect
 
 app = Flask(
     __name__,
@@ -96,6 +96,7 @@ from plots import (
     check_sparql_endpoint_health,
     safe_plot_execution,
     get_latest_version,
+    get_all_versions,
     _plot_data_cache
 )
 
@@ -654,6 +655,37 @@ def api_get_latest_version():
         logger.error(f"Error getting latest version: {e}")
         return jsonify({"version": "Data available on dashboard", "error": str(e)}), 500
 
+@app.route("/api/versions")
+def api_get_all_versions():
+    """API endpoint to get all available AOP-Wiki database versions with metadata.
+
+    Returns:
+        JSON response with list of versions sorted by date (newest first).
+        Each version includes: version, graph_uri, and date.
+
+    Example Response:
+        {
+            "versions": [
+                {
+                    "version": "2024-10-01",
+                    "graph_uri": "http://aopwiki.org/graph/2024-10-01",
+                    "date": "2024-10-01"
+                },
+                ...
+            ],
+            "count": 30
+        }
+    """
+    try:
+        versions = get_all_versions()
+        return jsonify({
+            "versions": versions,
+            "count": len(versions)
+        })
+    except Exception as e:
+        logger.error(f"Error getting all versions: {e}")
+        return jsonify({"versions": [], "count": 0, "error": str(e)}), 500
+
 @app.route("/api/plot/<plot_name>")
 def get_plot(plot_name):
     """API endpoint to serve individual plots on demand for lazy loading.
@@ -662,25 +694,24 @@ def get_plot(plot_name):
     significantly reducing initial page load time by only rendering plots
     when they're actually viewed by the user.
 
+    Supports version parameter for latest_* plots to enable historical version viewing.
+
     Args:
         plot_name (str): Name of the plot to render
+
+    Query Parameters:
+        version (str, optional): Version string for latest_* plots (e.g., "2024-10-01")
 
     Returns:
         dict: JSON response with plot HTML or error message
     """
-    # Map plot names to their corresponding variables
+    # Get version parameter from query string (for latest_* plots only)
+    version = request.args.get('version', None)
+
+    # Map plot names to their corresponding variables or functions
+    # For latest_* plots that support version parameter, we'll regenerate them
+    # For historical trend plots, use pre-computed global variables
     plot_map = {
-        'latest_entity_counts': latest_entity_counts,
-        'latest_ke_components': latest_ke_components,
-        'latest_network_density': latest_network_density,
-        'latest_avg_per_aop': latest_avg_per_aop,
-        'latest_process_usage': latest_process_usage,
-        'latest_object_usage': latest_object_usage,
-        'latest_aop_completeness': latest_aop_completeness,
-        'latest_aop_completeness_unique': latest_aop_completeness_unique,
-        'latest_ontology_usage': latest_ontology_usage,
-        'latest_database_summary': latest_database_summary,
-        'latest_ke_annotation_depth': latest_ke_annotation_depth,
         'graph_main_abs': graph_main_abs,
         'graph_main_delta': graph_main_delta,
         'graph_avg_abs': graph_avg_abs,
@@ -709,8 +740,42 @@ def get_plot(plot_name):
         'graph_kec_count_delta': graph_kec_count_delta
     }
 
-    if plot_name in plot_map:
+    # Handle latest_* plots dynamically with version support
+    latest_plots_with_version = {
+        'latest_entity_counts': plot_latest_entity_counts,
+        'latest_ke_components': plot_latest_ke_components,
+        'latest_network_density': plot_latest_network_density,
+        'latest_avg_per_aop': plot_latest_avg_per_aop,
+        'latest_process_usage': plot_latest_process_usage,
+        'latest_object_usage': plot_latest_object_usage,
+        'latest_aop_completeness': plot_latest_aop_completeness,
+        'latest_aop_completeness_unique': plot_latest_aop_completeness_unique_colors,
+        'latest_ontology_usage': plot_latest_ontology_usage,
+        'latest_database_summary': plot_latest_database_summary,
+        'latest_ke_annotation_depth': plot_latest_ke_annotation_depth,
+    }
+
+    # Handle latest_* plots without version support yet (use pre-computed)
+    latest_plots_precomputed = {}
+
+    # Check if it's a versioned latest plot
+    if plot_name in latest_plots_with_version:
+        try:
+            plot_function = latest_plots_with_version[plot_name]
+            html = plot_function(version) if version else plot_function()
+            return jsonify({'html': html, 'success': True})
+        except Exception as e:
+            logger.error(f"Error generating plot {plot_name} with version {version}: {e}")
+            return jsonify({'error': str(e), 'success': False}), 500
+
+    # Check precomputed latest plots
+    elif plot_name in latest_plots_precomputed:
+        return jsonify({'html': latest_plots_precomputed[plot_name], 'success': True})
+
+    # Check historical trend plots
+    elif plot_name in plot_map:
         return jsonify({'html': plot_map[plot_name], 'success': True})
+
     else:
         return jsonify({'error': f'Plot {plot_name} not found', 'success': False}), 404
 
@@ -786,14 +851,20 @@ def landing():
     return render_template("landing.html")
 
 
-@app.route("/latest")
-def latest_data():
-    """Serve the Latest Data page with current snapshot visualizations.
+@app.route("/snapshot")
+def database_snapshot():
+    """Serve the Database Snapshot page with version-selectable visualizations.
 
-    Displays key metrics and visualizations from the most recent version
-    of the AOP-Wiki database, providing a snapshot of the current state.
+    Displays key metrics and visualizations from any version of the AOP-Wiki
+    database, allowing users to explore current and historical snapshots.
     """
     return render_template("latest.html")
+
+
+@app.route("/latest")
+def latest_redirect():
+    """Redirect /latest to /snapshot for backward compatibility."""
+    return redirect(url_for('database_snapshot'))
 
 
 @app.route("/trends")
