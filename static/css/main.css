@@ -645,3 +645,150 @@ footer img {
         padding: 25px;
     }
 }
+
+/* ============================================
+   Version Selector Styles
+   ============================================ */
+
+.version-selector-container {
+    background: linear-gradient(135deg, #29235C 0%, #3d3570 100%);
+    padding: 20px 40px;
+    margin: 0 auto 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.version-selector-label {
+    color: white;
+    font-weight: 500;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+}
+
+.label-icon {
+    font-size: 20px;
+}
+
+.version-selector {
+    padding: 10px 20px;
+    font-size: 15px;
+    border: 2px solid #E6007E;
+    border-radius: 8px;
+    background: white;
+    color: #29235C;
+    cursor: pointer;
+    font-weight: 500;
+    min-width: 200px;
+    transition: all 0.3s ease;
+}
+
+.version-selector:hover {
+    border-color: #ff1a99;
+    box-shadow: 0 2px 8px rgba(230, 0, 126, 0.3);
+}
+
+.version-selector:focus {
+    outline: none;
+    border-color: #E6007E;
+    box-shadow: 0 0 0 3px rgba(230, 0, 126, 0.2);
+}
+
+/* Version Banner (Historical Version Indicator) */
+.version-banner {
+    background: linear-gradient(135deg, #307BBF 0%, #4a94d4 100%);
+    color: white;
+    padding: 15px 30px;
+    margin: 0 auto 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.version-banner-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.version-banner-icon {
+    font-size: 20px;
+}
+
+.version-banner-text {
+    font-size: 15px;
+}
+
+.version-banner-text strong {
+    font-weight: 700;
+    text-decoration: underline;
+}
+
+.version-banner-reset {
+    background: white;
+    color: #307BBF;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+}
+
+.version-banner-reset:hover {
+    background: #f0f0f0;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.version-banner-reset:active {
+    transform: translateY(0);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .version-selector-container {
+        padding: 15px 20px;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .version-selector-label {
+        font-size: 15px;
+    }
+
+    .version-selector {
+        width: 100%;
+        min-width: unset;
+    }
+
+    .version-banner {
+        padding: 12px 20px;
+    }
+
+    .version-banner-content {
+        flex-direction: column;
+        gap: 10px;
+    }
+}

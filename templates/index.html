@@ -21,7 +21,7 @@
 
 <!-- Professional Tab Navigation -->
 <div class="tabs">
-    <button class="tab-button active" data-tab="latest">Latest Data</button>
+    <button class="tab-button active" data-tab="snapshot">Database Snapshot</button>
     <button class="tab-button" data-tab="trends">Historical Trends</button>
     <!-- Future tabs can be added here:
     <button class="tab-button" data-tab="analysis">Analysis Tools</button>
@@ -31,11 +31,11 @@
 </div>
 
 
-<div id="latest" class="tab-content active">
+<div id="snapshot" class="tab-content active">
     <section class="tab-intro">
-        <h2>Latest Data Overview</h2>
+        <h2>Database Snapshot Overview</h2>
         <p>
-            This section displays key metrics and visualizations from the most recent version of the AOP-Wiki database.  
+            This section displays key metrics and visualizations from the selected version of the AOP-Wiki database.  
             These charts provide a snapshot of the current state of the knowledge base, showing entity counts, 
             component distributions, and data quality metrics.
         </p>
@@ -63,7 +63,7 @@
                     <a href="/download/latest_entity_counts" class="download-button" title="Download CSV data">Download CSV</a>
                 </div>
                 <p class="plot-description">
-                    Total number of each entity type and unique authors in the latest version of the AOP-Wiki database.
+                    Total number of each entity type and unique authors in the selected version of the AOP-Wiki database.
                 </p>
                 <div class="lazy-plot" data-plot-name="latest_entity_counts">
                     <!-- Plot will be loaded here via JavaScript -->

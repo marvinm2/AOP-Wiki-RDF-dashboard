@@ -2131,8 +2131,93 @@ def get_latest_version() -> str:
         logger.error(f"Error getting latest version: {e}")
         return "Version query failed"
 
-def plot_latest_entity_counts() -> str:
-    """Create a bar chart visualization of current AOP entity counts from the latest RDF version.
+def get_all_versions() -> list[dict]:
+    """Get all available AOP-Wiki RDF database versions with metadata.
+
+    Queries the SPARQL endpoint to find all graph versions available in the
+    triplestore and returns them with metadata for use in version selectors.
+
+    Returns:
+        list[dict]: List of version dictionaries sorted by date (newest first).
+            Each dict contains:
+            - version (str): Version identifier (e.g., "2024-10-01")
+            - graph_uri (str): Full graph URI
+            - date (str): ISO formatted date
+            Empty list if query fails.
+
+    Example:
+        >>> versions = get_all_versions()
+        >>> print(versions[0])
+        {
+            'version': '2024-10-01',
+            'graph_uri': 'http://aopwiki.org/graph/2024-10-01',
+            'date': '2024-10-01'
+        }
+    """
+    query = """
+        SELECT DISTINCT ?graph
+        WHERE {
+            GRAPH ?graph { ?s ?p ?o . }
+            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        ORDER BY DESC(?graph)
+    """
+
+    try:
+        results = run_sparql_query(query)
+        if not results:
+            logger.warning("No versions found in SPARQL endpoint")
+            return []
+
+        versions = []
+        for result in results:
+            graph_uri = result["graph"]["value"]
+            version = graph_uri.split("/")[-1]
+            versions.append({
+                "version": version,
+                "graph_uri": graph_uri,
+                "date": version  # Version string is typically a date
+            })
+
+        logger.info(f"Found {len(versions)} versions in database")
+        return versions
+
+    except Exception as e:
+        logger.error(f"Error getting all versions: {e}")
+        return []
+
+def _build_graph_filter(version: str = None) -> str:
+    """Helper function to build SPARQL graph filter clause based on version.
+
+    Args:
+        version: Optional version string (e.g., "2024-10-01").
+                If None, returns filter for latest version.
+                If provided, returns filter for specific version.
+
+    Returns:
+        str: SPARQL filter and ordering clause to append to queries.
+
+    Examples:
+        >>> # Get latest version
+        >>> _build_graph_filter()
+        'ORDER BY DESC(?graph) LIMIT 1'
+
+        >>> # Get specific version
+        >>> _build_graph_filter("2024-10-01")
+        'FILTER(?graph = <http://aopwiki.org/graph/2024-10-01>)'
+    """
+    if version:
+        # Specific version requested
+        return f'FILTER(?graph = <http://aopwiki.org/graph/{version}>)'
+    else:
+        # Latest version (default behavior)
+        return 'ORDER BY DESC(?graph) LIMIT 1'
+
+def plot_latest_entity_counts(version: str = None) -> str:
+    """Create a bar chart visualization of current AOP entity counts from a specified or latest RDF version.
+
+    Args:
+        version: Optional version string (e.g., "2024-10-01"). If None, uses latest version.
     
     Generates an interactive bar chart showing the current state of all major AOP-Wiki
     entities in the most recent RDF graph version. This provides a snapshot view of
@@ -2224,66 +2309,64 @@ def plot_latest_entity_counts() -> str:
         of the AOP-Wiki's current scale and composition.
     """
     global _plot_data_cache
-    
+
+    # Build graph filter based on version parameter
+    graph_filter = _build_graph_filter(version)
+
     sparql_queries = {
-        "AOPs": """
+        "AOPs": f"""
             SELECT ?graph (COUNT(?aop) AS ?count)
-            WHERE {
-                GRAPH ?graph { ?aop a aopo:AdverseOutcomePathway . }
+            WHERE {{
+                GRAPH ?graph {{ ?aop a aopo:AdverseOutcomePathway . }}
                 FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-            }
+            }}
             GROUP BY ?graph
-            ORDER BY DESC(?graph)
-            LIMIT 1
+            {graph_filter}
         """,
-        "KEs": """
+        "KEs": f"""
             SELECT ?graph (COUNT(DISTINCT ?ke) AS ?count)
-            WHERE {
-                GRAPH ?graph {
+            WHERE {{
+                GRAPH ?graph {{
                     ?ke a aopo:KeyEvent .
-                }
+                }}
                 FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-            }
+            }}
             GROUP BY ?graph
-            ORDER BY DESC(?graph)
-            LIMIT 1
+            {graph_filter}
         """,
-        "KERs": """
+        "KERs": f"""
             SELECT ?graph (COUNT(DISTINCT ?ker) AS ?count)
-            WHERE {
-                GRAPH ?graph {
+            WHERE {{
+                GRAPH ?graph {{
                     ?ker a aopo:KeyEventRelationship  .
-                }
+                }}
                 FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-            }
+            }}
             GROUP BY ?graph
-            ORDER BY DESC(?graph)
-            LIMIT 1
+            {graph_filter}
         """,
-        "Stressors": """
+        "Stressors": f"""
             SELECT ?graph (COUNT(?s) AS ?count)
-            WHERE {
-                GRAPH ?graph {
+            WHERE {{
+                GRAPH ?graph {{
                     ?s a nci:C54571 .
-                }
+                }}
                 FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-            }
+            }}
             GROUP BY ?graph
-            ORDER BY DESC(?graph)
-            LIMIT 1
+            {graph_filter}
         """,
-        "Authors": """
+        "Authors": f"""
             SELECT ?graph (COUNT(DISTINCT ?c) AS ?count)
-            WHERE {
-                GRAPH ?graph {
+            WHERE {{
+                GRAPH ?graph {{
                     ?aop a aopo:AdverseOutcomePathway ;
                          dc:creator ?c .
-                }
+                }}
                 FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-            }
+            }}
             GROUP BY ?graph
-            ORDER BY DESC(?graph)
-            LIMIT 1
+            {graph_filter}
         """
     }
 
@@ -2332,28 +2415,34 @@ def plot_latest_entity_counts() -> str:
     return pio.to_html(fig, full_html=False, include_plotlyjs="cdn", config={"responsive": True})
 
 
-def plot_latest_ke_components() -> str:
-    """Create a pie chart showing the latest version's KE component distribution."""
+def plot_latest_ke_components(version: str = None) -> str:
+    """Create a pie chart showing the specified or latest version's KE component distribution.
+
+    Args:
+        version: Optional version string (e.g., "2024-10-01"). If None, uses latest version.
+    """
     global _plot_data_cache
-    
-    query_components = """
-    SELECT ?graph 
+
+    # Build graph filter based on version parameter
+    graph_filter = _build_graph_filter(version)
+
+    query_components = f"""
+    SELECT ?graph
            (COUNT(?process) AS ?process_count)
            (COUNT(?object) AS ?object_count)
            (COUNT(?action) AS ?action_count)
-    WHERE {
-      GRAPH ?graph {
+    WHERE {{
+      GRAPH ?graph {{
         ?ke a aopo:KeyEvent ;
             aopo:hasBiologicalEvent ?bioevent .
-        OPTIONAL { ?bioevent aopo:hasProcess ?process . }
-        OPTIONAL { ?bioevent aopo:hasObject ?object . }
-        OPTIONAL { ?bioevent aopo:hasAction ?action . }
-      }
+        OPTIONAL {{ ?bioevent aopo:hasProcess ?process . }}
+        OPTIONAL {{ ?bioevent aopo:hasObject ?object . }}
+        OPTIONAL {{ ?bioevent aopo:hasAction ?action . }}
+      }}
       FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-    }
+    }}
     GROUP BY ?graph
-    ORDER BY DESC(?graph)
-    LIMIT 1
+    {graph_filter}
     """
     
     results = run_sparql_query(query_components)
@@ -2397,40 +2486,44 @@ def plot_latest_ke_components() -> str:
     return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
 
 
-def plot_latest_network_density() -> str:
-    """Analyze AOP connectivity based on shared Key Events - simplified approach."""
-    global _plot_data_cache
-    
-    # First, get total AOPs in latest version
-    query_total = """
-    SELECT ?graph (COUNT(DISTINCT ?aop) AS ?total_aops)
-    WHERE {
-        GRAPH ?graph { 
-            ?aop a aopo:AdverseOutcomePathway .
-        }
-        FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-    }
-    GROUP BY ?graph
-    ORDER BY DESC(?graph)
-    LIMIT 1
+def plot_latest_network_density(version: str = None) -> str:
+    """Analyze AOP connectivity based on shared Key Events - simplified approach.
+
+    Args:
+        version: Optional version string (e.g., "2024-10-01"). If None, uses latest version.
     """
-    
+    global _plot_data_cache
+
+    graph_filter = _build_graph_filter(version)
+
+    # First, get total AOPs in specified or latest version
+    query_total = f"""
+    SELECT ?graph (COUNT(DISTINCT ?aop) AS ?total_aops)
+    WHERE {{
+        GRAPH ?graph {{
+            ?aop a aopo:AdverseOutcomePathway .
+        }}
+        FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+    }}
+    GROUP BY ?graph
+    {graph_filter}
+    """
+
     # Second, get AOPs that share at least one KE with another AOP
-    query_connected = """
+    query_connected = f"""
     SELECT ?graph (COUNT(DISTINCT ?aop1) AS ?connected_aops)
-    WHERE {
-        GRAPH ?graph {
+    WHERE {{
+        GRAPH ?graph {{
             ?aop1 a aopo:AdverseOutcomePathway ;
                   aopo:has_key_event ?ke .
             ?aop2 a aopo:AdverseOutcomePathway ;
                   aopo:has_key_event ?ke .
             FILTER(?aop1 != ?aop2)
-        }
+        }}
         FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-    }
+    }}
     GROUP BY ?graph
-    ORDER BY DESC(?graph)
-    LIMIT 1
+    {graph_filter}
     """
     
     total_results = run_sparql_query(query_total)
@@ -2479,43 +2572,46 @@ def plot_latest_network_density() -> str:
     return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
 
 
-def plot_latest_avg_per_aop() -> str:
-    """Create a bar chart showing average KEs and KERs per AOP in latest version."""
+def plot_latest_avg_per_aop(version: str = None) -> str:
+    """Create a bar chart showing average KEs and KERs per AOP in specified or latest version.
+
+    Args:
+        version: Optional version string (e.g., "2024-10-01"). If None, uses latest version.
+    """
     global _plot_data_cache
-    
-    query_aops = """
+
+    graph_filter = _build_graph_filter(version)
+
+    query_aops = f"""
         SELECT ?graph (COUNT(?aop) AS ?count)
-        WHERE {
-            GRAPH ?graph { ?aop a aopo:AdverseOutcomePathway . }
+        WHERE {{
+            GRAPH ?graph {{ ?aop a aopo:AdverseOutcomePathway . }}
             FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-        }
+        }}
         GROUP BY ?graph
-        ORDER BY DESC(?graph)
-        LIMIT 1
+        {graph_filter}
     """
-    query_kes = """
+    query_kes = f"""
         SELECT ?graph (COUNT(?ke) AS ?count)
-        WHERE {
-            GRAPH ?graph {
+        WHERE {{
+            GRAPH ?graph {{
                 ?ke a aopo:KeyEvent .
-            }
+            }}
             FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-        }
+        }}
         GROUP BY ?graph
-        ORDER BY DESC(?graph)
-        LIMIT 1
+        {graph_filter}
     """
-    query_kers = """
+    query_kers = f"""
         SELECT ?graph (COUNT(?ker) AS ?count)
-        WHERE {
-            GRAPH ?graph {
+        WHERE {{
+            GRAPH ?graph {{
                 ?ker a aopo:KeyEventRelationship .
-            }
+            }}
             FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-        }
+        }}
         GROUP BY ?graph
-        ORDER BY DESC(?graph)
-        LIMIT 1
+        {graph_filter}
     """
 
     results_aops = run_sparql_query(query_aops)
@@ -2569,22 +2665,28 @@ def plot_latest_avg_per_aop() -> str:
 
 
 
-def plot_latest_ontology_usage() -> str:
-    """Create a chart showing ontology usage in the latest version."""
-    query = """
+def plot_latest_ontology_usage(version: str = None) -> str:
+    """Create a chart showing ontology usage in the specified or latest version.
+
+    Args:
+        version: Optional version string (e.g., "2024-10-01"). If None, uses latest version.
+    """
+    graph_filter = _build_graph_filter(version)
+
+    query = f"""
     SELECT ?graph ?ontology (COUNT(DISTINCT ?term) AS ?count)
-    WHERE {
-      GRAPH ?graph {
+    WHERE {{
+      GRAPH ?graph {{
         ?ke a aopo:KeyEvent ;
             aopo:hasBiologicalEvent ?bioevent .
-        {
+        {{
           ?bioevent aopo:hasProcess ?term .
-        } UNION {
+        }} UNION {{
           ?bioevent aopo:hasObject ?term .
-        } UNION {
+        }} UNION {{
           ?bioevent aopo:hasAction ?term .
-        }
-        
+        }}
+
         BIND(
           IF(STRSTARTS(STR(?term), "http://purl.obolibrary.org/obo/GO_"), "GO",
           IF(STRSTARTS(STR(?term), "http://purl.obolibrary.org/obo/MP_"), "MP",
@@ -2593,11 +2695,11 @@ def plot_latest_ontology_usage() -> str:
           IF(STRSTARTS(STR(?term), "http://purl.obolibrary.org/obo/VT_"), "VT",
           IF(STRSTARTS(STR(?term), "http://purl.org/commons/record/mesh/"), "MESH",
           IF(STRSTARTS(STR(?term), "http://purl.obolibrary.org/obo/HP_"), "HP", "OTHER"))))))) AS ?ontology)
-      }
+      }}
       FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-    }
+    }}
     GROUP BY ?graph ?ontology
-    ORDER BY DESC(?graph) DESC(?count)
+    {graph_filter}
     """
     
     results = run_sparql_query(query)
@@ -2636,14 +2738,20 @@ def plot_latest_ontology_usage() -> str:
     return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
 
 
-def plot_latest_process_usage() -> str:
-    """Create a pie chart showing ontology source distribution for biological processes."""
+def plot_latest_process_usage(version: str = None) -> str:
+    """Create a pie chart showing ontology source distribution for biological processes.
+
+    Args:
+        version: Optional version string (e.g., "2024-10-01"). If None, uses latest version.
+    """
     global _plot_data_cache
-    
-    query = """
+
+    graph_filter = _build_graph_filter(version)
+
+    query = f"""
     SELECT ?graph ?ontology (COUNT(DISTINCT ?process) AS ?count)
-    WHERE {
-      GRAPH ?graph {
+    WHERE {{
+      GRAPH ?graph {{
         ?ke a aopo:KeyEvent ;
             aopo:hasBiologicalEvent ?bioevent .
         ?bioevent aopo:hasProcess ?process .
@@ -2656,11 +2764,11 @@ def plot_latest_process_usage() -> str:
           IF(STRSTARTS(STR(?process), "http://purl.obolibrary.org/obo/VT_"), "VT",
           IF(STRSTARTS(STR(?process), "http://purl.org/commons/record/mesh/"), "MESH",
           IF(STRSTARTS(STR(?process), "http://purl.obolibrary.org/obo/HP_"), "HP", "OTHER"))))))) AS ?ontology)
-      }
+      }}
       FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-    }
+    }}
     GROUP BY ?graph ?ontology
-    ORDER BY DESC(?graph) DESC(?count)
+    {graph_filter}
     """
     
     results = run_sparql_query(query)
@@ -2706,14 +2814,20 @@ def plot_latest_process_usage() -> str:
     return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
 
 
-def plot_latest_object_usage() -> str:
-    """Create a pie chart showing ontology source distribution for biological objects."""
+def plot_latest_object_usage(version: str = None) -> str:
+    """Create a pie chart showing ontology source distribution for biological objects.
+
+    Args:
+        version: Optional version string (e.g., "2024-10-01"). If None, uses latest version.
+    """
     global _plot_data_cache
-    
-    query = """
+
+    graph_filter = _build_graph_filter(version)
+
+    query = f"""
     SELECT ?graph ?ontology (COUNT(DISTINCT ?object) AS ?count)
-    WHERE {
-      GRAPH ?graph {
+    WHERE {{
+      GRAPH ?graph {{
         ?ke a aopo:KeyEvent ;
             aopo:hasBiologicalEvent ?bioevent .
         ?bioevent aopo:hasObject ?object .
@@ -2727,11 +2841,11 @@ def plot_latest_object_usage() -> str:
           IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/NCBITaxon_"), "NCBITaxon",
           IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/DOID_"), "DOID",
           IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/HP_"), "HP", "OTHER")))))))) AS ?ontology)
-      }
+      }}
       FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-    }
+    }}
     GROUP BY ?graph ?ontology
-    ORDER BY DESC(?graph) DESC(?count)
+    {graph_filter}
     """
     
     results = run_sparql_query(query)
@@ -2777,9 +2891,15 @@ def plot_latest_object_usage() -> str:
     return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
 
 
-def plot_latest_aop_completeness() -> str:
-    """Create a chart showing AOP data completeness for all properties in the CSV spreadsheet."""
+def plot_latest_aop_completeness(version: str = None) -> str:
+    """Create a chart showing AOP data completeness for all properties in the CSV spreadsheet.
+
+    Args:
+        version: Optional version string (e.g., "2024-10-01"). If None, uses latest version.
+    """
     global _plot_data_cache
+
+    graph_filter = _build_graph_filter(version)
 
     # Default fallback properties for essential AOP completeness
     default_properties = [
@@ -2793,15 +2913,14 @@ def plot_latest_aop_completeness() -> str:
     properties = properties_df.to_dict(orient="records")
 
     # Query total number of AOPs
-    total_query = """
+    total_query = f"""
     SELECT ?graph (COUNT(DISTINCT ?aop) AS ?total_aops)
-    WHERE {
-        GRAPH ?graph { ?aop a aopo:AdverseOutcomePathway . }
+    WHERE {{
+        GRAPH ?graph {{ ?aop a aopo:AdverseOutcomePathway . }}
         FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-    }
+    }}
     GROUP BY ?graph
-    ORDER BY DESC(?graph)
-    LIMIT 1
+    {graph_filter}
     """
     total_results = run_sparql_query(total_query)
     if not total_results:
@@ -2826,7 +2945,8 @@ def plot_latest_aop_completeness() -> str:
             }}
             FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
         }}
-        GROUP BY ?graph ORDER BY DESC(?graph) LIMIT 1
+        GROUP BY ?graph
+        {graph_filter}
         """
         results = run_sparql_query(query)
         count = int(results[0]["count"]["value"]) if results else 0
@@ -2870,9 +2990,15 @@ def plot_latest_aop_completeness() -> str:
 
     return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
 
-def plot_latest_aop_completeness_unique_colors() -> str:
-    """Create a chart showing AOP data completeness with unique colors for each property (larger panel)."""
+def plot_latest_aop_completeness_unique_colors(version: str = None) -> str:
+    """Create a chart showing AOP data completeness with unique colors for each property (larger panel).
+
+    Args:
+        version: Optional version string (e.g., "2024-10-01"). If None, uses latest version.
+    """
     global _plot_data_cache
+
+    graph_filter = _build_graph_filter(version)
 
     # Default fallback properties for essential AOP completeness
     default_properties = [
@@ -2886,15 +3012,14 @@ def plot_latest_aop_completeness_unique_colors() -> str:
     properties = properties_df.to_dict(orient="records")
 
     # Query total number of AOPs
-    total_query = """
+    total_query = f"""
     SELECT ?graph (COUNT(DISTINCT ?aop) AS ?total_aops)
-    WHERE {
-        GRAPH ?graph { ?aop a aopo:AdverseOutcomePathway . }
+    WHERE {{
+        GRAPH ?graph {{ ?aop a aopo:AdverseOutcomePathway . }}
         FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-    }
+    }}
     GROUP BY ?graph
-    ORDER BY DESC(?graph)
-    LIMIT 1
+    {graph_filter}
     """
     total_results = run_sparql_query(total_query)
     if not total_results:
@@ -2919,7 +3044,8 @@ def plot_latest_aop_completeness_unique_colors() -> str:
             }}
             FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
         }}
-        GROUP BY ?graph ORDER BY DESC(?graph) LIMIT 1
+        GROUP BY ?graph
+        {graph_filter}
         """
         results = run_sparql_query(query)
         count = int(results[0]["count"]["value"]) if results else 0
@@ -2967,40 +3093,42 @@ def plot_latest_aop_completeness_unique_colors() -> str:
 
     return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
 
-def plot_latest_database_summary() -> str:
-    """Create a simple summary chart of main entities in latest version using separate queries."""
-    
+def plot_latest_database_summary(version: str = None) -> str:
+    """Create a simple summary chart of main entities in specified or latest version using separate queries.
+
+    Args:
+        version: Optional version string (e.g., "2024-10-01"). If None, uses latest version.
+    """
+    graph_filter = _build_graph_filter(version)
+
     # Ultra-simple separate queries for each entity type
     queries = {
-        "AOPs": """
+        "AOPs": f"""
             SELECT ?graph (COUNT(?aop) AS ?count)
-            WHERE {
-                GRAPH ?graph { ?aop a aopo:AdverseOutcomePathway . }
+            WHERE {{
+                GRAPH ?graph {{ ?aop a aopo:AdverseOutcomePathway . }}
                 FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-            }
+            }}
             GROUP BY ?graph
-            ORDER BY DESC(?graph)
-            LIMIT 1
+            {graph_filter}
         """,
-        "Key Events": """
+        "Key Events": f"""
             SELECT ?graph (COUNT(?ke) AS ?count)
-            WHERE {
-                GRAPH ?graph { ?ke a aopo:KeyEvent . }
+            WHERE {{
+                GRAPH ?graph {{ ?ke a aopo:KeyEvent . }}
                 FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-            }
+            }}
             GROUP BY ?graph
-            ORDER BY DESC(?graph)
-            LIMIT 1
+            {graph_filter}
         """,
-        "KE Relationships": """
+        "KE Relationships": f"""
             SELECT ?graph (COUNT(?ker) AS ?count)
-            WHERE {
-                GRAPH ?graph { ?ker a aopo:KeyEventRelationship . }
+            WHERE {{
+                GRAPH ?graph {{ ?ker a aopo:KeyEventRelationship . }}
                 FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-            }
+            }}
             GROUP BY ?graph
-            ORDER BY DESC(?graph)
-            LIMIT 1
+            {graph_filter}
         """
     }
     
@@ -3042,31 +3170,37 @@ def plot_latest_database_summary() -> str:
     return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
 
 
-def plot_latest_ke_annotation_depth() -> str:
-    """Show distribution of Key Events by annotation depth (number of components)."""
+def plot_latest_ke_annotation_depth(version: str = None) -> str:
+    """Show distribution of Key Events by annotation depth (number of components).
+
+    Args:
+        version: Optional version string (e.g., "2024-10-01"). If None, uses latest version.
+    """
     global _plot_data_cache
-    
-    query = """
+
+    graph_filter = _build_graph_filter(version)
+
+    query = f"""
     SELECT ?graph ?annotation_depth (COUNT(DISTINCT ?ke) AS ?ke_count)
-    WHERE {
-      GRAPH ?graph {
+    WHERE {{
+      GRAPH ?graph {{
         ?ke a aopo:KeyEvent .
-        OPTIONAL { ?ke aopo:hasBiologicalEvent ?bioevent . }
-        {
+        OPTIONAL {{ ?ke aopo:hasBiologicalEvent ?bioevent . }}
+        {{
           SELECT ?ke (COUNT(DISTINCT ?bioevent) AS ?annotation_depth)
-          WHERE {
+          WHERE {{
             ?ke a aopo:KeyEvent .
-            OPTIONAL { 
+            OPTIONAL {{
               ?ke aopo:hasBiologicalEvent ?bioevent .
-                          }
-          }
+                          }}
+          }}
           GROUP BY ?ke
-        }
-      }
+        }}
+      }}
       FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-    }
+    }}
     GROUP BY ?graph ?annotation_depth
-    ORDER BY DESC(?graph) ?annotation_depth
+    {graph_filter}
     """
     
     results = run_sparql_query(query)

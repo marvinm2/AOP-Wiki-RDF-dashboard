@@ -753,3 +753,62 @@ def get_latest_version() -> str:
     except Exception as e:
         logger.error(f"Error getting latest version: {e}")
         return "Unknown"
+
+
+def get_all_versions() -> list[dict]:
+    """Get all available AOP-Wiki RDF database versions with metadata.
+
+    Queries the SPARQL endpoint to retrieve all historical versions of the
+    AOP-Wiki RDF database, sorted from newest to oldest.
+
+    Returns:
+        list[dict]: List of version dictionaries with keys:
+            - version: Version string (e.g., "2025-07-01")
+            - graph_uri: Full graph URI (e.g., "http://aopwiki.org/graph/2025-07-01")
+            - date: Human-readable date string
+
+    Example:
+        >>> versions = get_all_versions()
+        >>> print(f"Found {len(versions)} versions")
+        >>> print(f"Latest: {versions[0]['version']}")
+        Found 15 versions
+        Latest: 2025-07-01
+    """
+    query = """
+    SELECT DISTINCT ?g
+    WHERE {
+        GRAPH ?g { ?s ?p ?o }
+    }
+    LIMIT 100
+    """
+
+    try:
+        results = run_sparql_query_with_retry(query)
+        if results and len(results) > 0:
+            # Filter for AOP-Wiki graphs
+            aop_graphs = [
+                r.get('g', {}).get('value', '')
+                for r in results
+                if 'aopwiki.org/graph' in r.get('g', {}).get('value', '')
+            ]
+
+            if aop_graphs:
+                # Sort in descending order (newest first)
+                aop_graphs.sort(reverse=True)
+
+                # Build list of version dictionaries
+                versions = []
+                for graph_uri in aop_graphs:
+                    version = graph_uri.split('/')[-1]
+                    versions.append({
+                        'version': version,
+                        'graph_uri': graph_uri,
+                        'date': version  # Can be formatted differently if needed
+                    })
+
+                return versions
+
+        return []
+    except Exception as e:
+        logger.error(f"Error getting all versions: {e}")
+        return []

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Latest Data - AOP-Wiki RDF Dashboard</title>
+    <title>Database Snapshot - AOP-Wiki RDF Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/lazy-loading.css') }}">
@@ -11,10 +11,10 @@
 
 <body>
 <header>
-    <h1>Latest Data Overview</h1>
+    <h1>Database Snapshot</h1>
     <p style="text-align:center; max-width:800px; margin:10px auto; color:white;">
-        Key metrics and visualizations from the most recent version of the AOP-Wiki database.
-        These charts provide a snapshot of the current state of the knowledge base.
+        Key metrics and visualizations from the selected version of the AOP-Wiki database.
+        Use the version selector below to compare different database snapshots over time.
     </p>
 </header>
 
@@ -22,6 +22,30 @@
 <div class="page-navigation">
     <a href="/" class="nav-link">← Back to Home</a>
     <a href="/trends" class="nav-link">Historical Trends →</a>
+</div>
+
+<!-- Version Selector -->
+<div class="version-selector-container">
+    <label for="version-selector" class="version-selector-label">
+        <span class="label-icon">📅</span>
+        View Database Version:
+    </label>
+    <select id="version-selector" class="version-selector">
+        <option value="">Loading versions...</option>
+    </select>
+</div>
+
+<!-- Version Banner (shown when historical version selected) -->
+<div id="version-banner" class="version-banner" style="display: none;">
+    <div class="version-banner-content">
+        <span class="version-banner-icon">ℹ️</span>
+        <span class="version-banner-text">
+            Viewing historical version: <strong class="version-name"></strong>
+        </span>
+        <button class="version-banner-reset" onclick="document.getElementById('version-selector').value = ''; document.getElementById('version-selector').dispatchEvent(new Event('change'));">
+            Return to Current Version
+        </button>
+    </div>
 </div>
 
 <section class="tab-intro">
@@ -175,5 +199,6 @@
 </footer>
 
 <script src="{{ url_for('static', filename='js/lazy-loading.js') }}"></script>
+<script src="{{ url_for('static', filename='js/version-selector.js') }}"></script>
 </body>
 </html>
