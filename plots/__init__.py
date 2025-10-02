@@ -107,6 +107,7 @@ from .shared import (
     extract_counts,
     check_sparql_endpoint_health,
     get_latest_version,
+    get_all_versions,
 
     # Utility functions
     safe_read_csv,
@@ -181,6 +182,7 @@ __all__ = [
     'extract_counts',
     'check_sparql_endpoint_health',
     'get_latest_version',
+    'get_all_versions',
     'safe_read_csv',
     'safe_plot_execution',
     'create_fallback_plot',
