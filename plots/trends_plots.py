@@ -202,6 +202,8 @@ def plot_main_graph() -> tuple[str, str, pd.DataFrame]:
 
     # --- Absolute plot ---
     df_abs_melted = df_all.melt(id_vars="version", var_name="Entity", value_name="Count")
+    # Clean data: fill NaN with 0 and ensure numeric type
+    df_abs_melted["Count"] = pd.to_numeric(df_abs_melted["Count"], errors="coerce").fillna(0).astype(int)
     fig_abs = px.line(
         df_abs_melted, x="version", y="Count", color="Entity", markers=True,
         title="Entity Evolution Over Time",
