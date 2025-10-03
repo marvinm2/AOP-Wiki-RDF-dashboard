@@ -22,7 +22,7 @@ header {
 }
 
 .container {
-    max-width: 1200px;
+    max-width: 800px;
     margin: 20px auto;
     padding: 20px;
     background-color: white;
@@ -480,7 +480,7 @@ footer img {
 }
 
 .hero-content {
-    max-width: 1200px;
+    max-width: 800px;
     margin: 0 auto;
 }
 
@@ -644,7 +644,7 @@ footer img {
 }
 
 .data-info-content {
-    max-width: 1200px;
+    max-width: 800px;
     margin: 0 auto;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));

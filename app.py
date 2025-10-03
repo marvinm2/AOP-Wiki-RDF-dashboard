@@ -38,7 +38,7 @@ Author:
     Generated with Claude Code (https://claude.ai/code)
 
 """
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, Response
 import pandas as pd
 from SPARQLWrapper import SPARQLWrapper, JSON
 import plotly.express as px
@@ -1288,9 +1288,6 @@ def dashboard():
     the original tabbed interface.
     """
     return render_template("index.html", lazy_loading=True)
-
-
-
 
 
 # Run the Flask app
