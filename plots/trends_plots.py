@@ -58,7 +58,7 @@ import plotly.io as pio
 from functools import reduce
 import colorsys
 from .shared import (
-    BRAND_COLORS, config, _plot_data_cache, run_sparql_query, extract_counts, safe_read_csv
+    BRAND_COLORS, config, _plot_data_cache, _plot_figure_cache, run_sparql_query, extract_counts, safe_read_csv
 )
 
 
@@ -144,7 +144,7 @@ def plot_main_graph() -> tuple[str, str, pd.DataFrame]:
         The function assumes RDF graphs follow the naming pattern:
         "http://aopwiki.org/graph/{version}"
     """
-    global _plot_data_cache
+    global _plot_data_cache, _plot_figure_cache
 
     sparql_queries = {
         "AOPs": """
@@ -257,6 +257,10 @@ def plot_main_graph() -> tuple[str, str, pd.DataFrame]:
     _plot_data_cache['main_graph_absolute'] = df_abs_melted
     _plot_data_cache['main_graph_delta'] = df_delta_melted
 
+    # Cache figures for image export
+    _plot_figure_cache['aop_entity_counts_absolute'] = fig_abs
+    _plot_figure_cache['aop_entity_counts_delta'] = fig_delta
+
     return (
         pio.to_html(fig_abs, full_html=False, include_plotlyjs="cdn", config={"responsive": True}),
         pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config={"responsive": True}),
@@ -266,6 +270,8 @@ def plot_main_graph() -> tuple[str, str, pd.DataFrame]:
 
 def plot_avg_per_aop() -> tuple[str, str]:
     """Generate average components per AOP visualization with absolute and delta views."""
+    global _plot_figure_cache
+
     query_aops = """
         SELECT ?graph (COUNT(?aop) AS ?count)
         WHERE {
@@ -374,6 +380,10 @@ def plot_avg_per_aop() -> tuple[str, str]:
         tickangle=-45
     )
 
+    # Cache figures for image export
+    _plot_figure_cache['average_components_per_aop_absolute'] = fig_abs
+    _plot_figure_cache['average_components_per_aop_delta'] = fig_delta
+
     return (
         pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config={"responsive": True}),
         pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config={"responsive": True})
@@ -382,6 +392,8 @@ def plot_avg_per_aop() -> tuple[str, str]:
 
 def plot_network_density() -> str:
     """Generate network density evolution visualization."""
+    global _plot_figure_cache
+
     query_density = """
     SELECT ?graph (COUNT(DISTINCT ?ke) AS ?nodes) (COUNT(?ker) AS ?edges)
     WHERE {
@@ -434,11 +446,16 @@ def plot_network_density() -> str:
         tickangle=-45
     )
 
+    # Cache figure for image export
+    _plot_figure_cache['aop_network_density'] = fig
+
     return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
 
 
 def plot_author_counts() -> tuple[str, str]:
     """Generate author contribution visualization with absolute and delta views."""
+    global _plot_figure_cache
+
     query = """
     SELECT ?graph (COUNT(DISTINCT ?c) AS ?author_count)
     WHERE {
@@ -497,6 +514,10 @@ def plot_author_counts() -> tuple[str, str]:
         tickangle=-45
     )
 
+    # Cache figures for image export
+    _plot_figure_cache['aop_authors_absolute'] = fig_abs
+    _plot_figure_cache['aop_authors_delta'] = fig_delta
+
     return (
         pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config={"responsive": True}),
         pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config={"responsive": True})
@@ -505,6 +526,8 @@ def plot_author_counts() -> tuple[str, str]:
 
 def plot_aop_lifetime():
     """Generate AOP lifetime analysis visualizations."""
+    global _plot_figure_cache
+
     query_lifetime = """
     SELECT ?graph ?aop ?created ?modified
     WHERE {
@@ -557,11 +580,18 @@ def plot_aop_lifetime():
     fig3.update_layout(template="plotly_white", height=500)
     html3 = pio.to_html(fig3, full_html=False, include_plotlyjs=False)
 
+    # Cache figures for image export
+    _plot_figure_cache['aops_created_over_time'] = fig1
+    _plot_figure_cache['aops_modified_over_time'] = fig2
+    _plot_figure_cache['aop_creation_vs_modification_timeline'] = fig3
+
     return html1, html2, html3
 
 
 def plot_ke_components() -> tuple[str, str]:
     """Generate KE component annotation visualization with absolute and delta views."""
+    global _plot_figure_cache
+
     query_components = """
     SELECT ?graph
            (COUNT(?process) AS ?process_count)
@@ -654,6 +684,10 @@ def plot_ke_components() -> tuple[str, str]:
         tickangle=-45
     )
 
+    # Cache figures for image export
+    _plot_figure_cache['ke_component_annotations_absolute'] = fig_abs
+    _plot_figure_cache['ke_component_annotations_delta'] = fig_delta
+
     return (
         pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config={"responsive": True}),
         pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config={"responsive": True})
@@ -662,6 +696,8 @@ def plot_ke_components() -> tuple[str, str]:
 
 def plot_ke_components_percentage() -> tuple[str, str]:
     """Generate KE component percentage visualization with absolute and delta views."""
+    global _plot_figure_cache
+
     query_components = """
     SELECT ?graph
            (COUNT(?process) AS ?process_count)
@@ -782,6 +818,10 @@ def plot_ke_components_percentage() -> tuple[str, str]:
         tickangle=-45
     )
 
+    # Cache figures for image export
+    _plot_figure_cache['ke_components_percentage_absolute'] = fig_abs
+    _plot_figure_cache['ke_components_percentage_delta'] = fig_delta
+
     return (
         pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config=config),
         pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config=config)
@@ -790,6 +830,8 @@ def plot_ke_components_percentage() -> tuple[str, str]:
 
 def plot_unique_ke_components() -> tuple[str, str]:
     """Generate unique KE component visualization with absolute and delta views."""
+    global _plot_figure_cache
+
     query_unique_components = """
     SELECT ?graph
            (COUNT(DISTINCT ?process) AS ?process_count)
@@ -882,6 +924,10 @@ def plot_unique_ke_components() -> tuple[str, str]:
         tickangle=-45
     )
 
+    # Cache figures for image export
+    _plot_figure_cache['unique_ke_components_absolute'] = fig_abs
+    _plot_figure_cache['unique_ke_components_delta'] = fig_delta
+
     return (
         pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config={"responsive": True}),
         pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config={"responsive": True})
@@ -890,6 +936,8 @@ def plot_unique_ke_components() -> tuple[str, str]:
 
 def plot_bio_processes() -> tuple[str, str]:
     """Generate biological process ontology usage visualization with absolute and delta views."""
+    global _plot_figure_cache
+
     query_ontologies = """
     SELECT ?graph ?ontology (COUNT(DISTINCT ?process) AS ?count)
     WHERE {
@@ -955,6 +1003,10 @@ def plot_bio_processes() -> tuple[str, str]:
     fig_delta.update_layout(template="plotly_white", hovermode="x unified", autosize=True)
     fig_delta.update_xaxes(tickmode='array', tickvals=df_ont["version"], ticktext=df_ont["version"], tickangle=-45)
 
+    # Cache figures for image export
+    _plot_figure_cache['biological_process_annotations_absolute'] = fig_abs
+    _plot_figure_cache['biological_process_annotations_delta'] = fig_delta
+
     return (
         pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config={"responsive": True}),
         pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config={"responsive": True})
@@ -963,6 +1015,8 @@ def plot_bio_processes() -> tuple[str, str]:
 
 def plot_bio_objects() -> tuple[str, str]:
     """Generate biological object ontology usage visualization with absolute and delta views."""
+    global _plot_figure_cache
+
     query_objects = """
     SELECT ?graph ?ontology (COUNT(DISTINCT ?object) AS ?count)
     WHERE {
@@ -1031,6 +1085,10 @@ def plot_bio_objects() -> tuple[str, str]:
     fig_delta.update_layout(template="plotly_white", hovermode="x unified", autosize=True)
     fig_delta.update_xaxes(tickmode='array', tickvals=df_obj["version"], ticktext=df_obj["version"], tickangle=-45)
 
+    # Cache figures for image export
+    _plot_figure_cache['biological_object_annotations_absolute'] = fig_abs
+    _plot_figure_cache['biological_object_annotations_delta'] = fig_delta
+
     return (
         pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config={"responsive": True}),
         pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config={"responsive": True})
@@ -1039,6 +1097,8 @@ def plot_bio_objects() -> tuple[str, str]:
 
 def plot_aop_property_presence(label_file="property_labels.csv") -> tuple[str, str]:
     """Generate AOP property presence visualization with absolute and percentage views."""
+    global _plot_figure_cache
+
     query_props = """
     SELECT ?graph ?p (COUNT(DISTINCT ?AOP) AS ?count)
     WHERE {
@@ -1155,6 +1215,10 @@ def plot_aop_property_presence(label_file="property_labels.csv") -> tuple[str, s
         }
     }
 
+    # Cache figures for image export
+    _plot_figure_cache['aop_property_presence_absolute'] = fig_abs
+    _plot_figure_cache['aop_property_presence_percentage'] = fig_delta
+
     return (
         pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config=config),
         pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config=config)
@@ -1163,7 +1227,7 @@ def plot_aop_property_presence(label_file="property_labels.csv") -> tuple[str, s
 
 def plot_aop_property_presence_unique_colors(label_file="property_labels.csv") -> tuple[str, str]:
     """Generate AOP property presence visualization with unique colors for each property line."""
-    global _plot_data_cache
+    global _plot_data_cache, _plot_figure_cache
 
     query_props = """
     SELECT ?graph ?p (COUNT(DISTINCT ?AOP) AS ?count)
@@ -1296,6 +1360,10 @@ def plot_aop_property_presence_unique_colors(label_file="property_labels.csv") -
 
     config = {"responsive": True}
 
+    # Cache figures for image export
+    _plot_figure_cache['aop_property_presence_unique_absolute'] = fig_abs
+    _plot_figure_cache['aop_property_presence_unique_percentage'] = fig_delta
+
     return (
         pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config=config),
         pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config=config)
@@ -1304,6 +1372,8 @@ def plot_aop_property_presence_unique_colors(label_file="property_labels.csv") -
 
 def plot_kes_by_kec_count() -> tuple[str, str]:
     """Generate KE distribution by KEC count visualization with absolute and delta views."""
+    global _plot_figure_cache
+
     query_kec_count = """
     PREFIX aopo: <http://aopkb.org/aop_ontology#>
     PREFIX dc: <http://purl.org/dc/elements/1.1/>
@@ -1416,6 +1486,10 @@ def plot_kes_by_kec_count() -> tuple[str, str]:
             tickangle=-45
         )
     )
+
+    # Cache figures for image export
+    _plot_figure_cache['kes_by_kec_count_absolute'] = fig_abs
+    _plot_figure_cache['kes_by_kec_count_delta'] = fig_delta
 
     return (
         pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config={"responsive": True}),

@@ -15,6 +15,30 @@
     <button class="nav-button" onclick="document.getElementById('ke-components').scrollIntoView({behavior:'smooth'});">KE Components</button>
 </div>
 
+<!-- Bulk Download Section -->
+<div style="text-align:center; margin:20px; padding:15px; background-color: #f9f9f9; border-radius: 8px;">
+    <h3 style="margin-top:0; color:#29235C;">📦 Bulk Download</h3>
+    <p style="font-size:14px; color:#666; margin:10px 0;">Download all trend plots at once in multiple formats</p>
+    <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+        <a href="/download/bulk?category=trends-all&formats=csv,png,svg" class="nav-button" style="text-decoration:none; display:inline-block;">
+            📥 Download All (CSV + PNG + SVG)
+        </a>
+        <a href="/download/bulk?category=trends-all&formats=csv" class="nav-button" style="text-decoration:none; display:inline-block;">
+            📄 CSV Only
+        </a>
+        <a href="/download/bulk?category=trends-all&formats=png" class="nav-button" style="text-decoration:none; display:inline-block;">
+            🖼️ PNG Only
+        </a>
+    </div>
+    <p style="font-size:12px; color:#999; margin:10px 0;">Or download by category:</p>
+    <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap; font-size:13px;">
+        <a href="/download/bulk?category=trends-main&formats=png" style="color:#307BBF;">Main Trends</a>
+        <a href="/download/bulk?category=trends-network&formats=png" style="color:#307BBF;">Network</a>
+        <a href="/download/bulk?category=trends-components&formats=png" style="color:#307BBF;">Components</a>
+        <a href="/download/bulk?category=trends-ontology&formats=png" style="color:#307BBF;">Ontology</a>
+    </div>
+</div>
+
 <!-- Global Toggle -->
 <div style="text-align:center; padding: 20px;">
     <button id="toggle-delta" class="toggle-button">Switch to Delta Mode</button>
@@ -28,8 +52,22 @@
         <div class="plot-header">
             <h3>AOP Entity Counts</h3>
             <div style="display: flex; gap: 10px; align-items: center;">
-                <a href="/download/main_graph_absolute" class="download-button" title="Download Absolute CSV data">CSV (Abs)</a>
-                <a href="/download/main_graph_delta" class="download-button" title="Download Delta CSV data">CSV (Δ)</a>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download Absolute ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/aop_entity_counts_absolute?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/aop_entity_counts_absolute?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/aop_entity_counts_absolute?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download Delta ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/aop_entity_counts_delta?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/aop_entity_counts_delta?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/aop_entity_counts_delta?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
                 <label><input type="checkbox" class="plot-toggle"> Show Deltas</label>
             </div>
         </div>
@@ -38,12 +76,12 @@
             and Stressors over time.
         </p>
         <div class="abs">
-            <div class="lazy-plot" data-plot-name="graph_main_abs">
+            <div class="lazy-plot" data-plot-name="aop_entity_counts_absolute">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
         </div>
         <div class="delta" style="display:none;">
-            <div class="lazy-plot" data-plot-name="graph_main_delta">
+            <div class="lazy-plot" data-plot-name="aop_entity_counts_delta">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
         </div>
@@ -55,19 +93,37 @@
     <div class="plot-box full-width" id="aop-property-presence">
         <div class="plot-header">
             <h3>AOP Property Presence Over Time</h3>
-            <label><input type="checkbox" class="plot-toggle"> Show Percentage</label>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download Absolute ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/aop_property_presence_absolute?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/aop_property_presence_absolute?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/aop_property_presence_absolute?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download Percentage ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/aop_property_presence_percentage?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/aop_property_presence_percentage?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/aop_property_presence_percentage?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+                <label><input type="checkbox" class="plot-toggle"> Show Percentage</label>
+            </div>
         </div>
         <p class="plot-description">
             Shows how many AOPs contain each property over time. 
             Properties always present (100%) are excluded for clarity.
         </p>
         <div class="abs">
-            <div class="lazy-plot" data-plot-name="graph_prop_abs">
+            <div class="lazy-plot" data-plot-name="aop_property_presence_absolute">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
         </div>
         <div class="delta" style="display:none;">
-            <div class="lazy-plot" data-plot-name="graph_prop_pct">
+            <div class="lazy-plot" data-plot-name="aop_property_presence_percentage">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
         </div>
@@ -78,8 +134,22 @@
         <div class="plot-header">
             <h3>AOP Property Presence Over Time - Unique Colors</h3>
             <div style="display: flex; gap: 10px; align-items: center;">
-                <a href="/download/aop_property_presence_unique_absolute" class="download-button" title="Download Absolute Count CSV">CSV (Abs)</a>
-                <a href="/download/aop_property_presence_unique_percentage" class="download-button" title="Download Percentage CSV">CSV (%)</a>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download Absolute ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/aop_property_presence_unique_absolute?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/aop_property_presence_unique_absolute?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/aop_property_presence_unique_absolute?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download Percentage ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/aop_property_presence_unique_percentage?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/aop_property_presence_unique_percentage?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/aop_property_presence_unique_percentage?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
                 <label><input type="checkbox" class="plot-toggle"> Show Percentage</label>
             </div>
         </div>
@@ -88,12 +158,12 @@
             Larger panel for better visualization of all property trends.
         </p>
         <div class="abs">
-            <div class="lazy-plot" data-plot-name="graph_prop_unique_abs">
+            <div class="lazy-plot" data-plot-name="aop_property_presence_unique_absolute">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
         </div>
         <div class="delta" style="display:none;">
-            <div class="lazy-plot" data-plot-name="graph_prop_unique_pct">
+            <div class="lazy-plot" data-plot-name="aop_property_presence_unique_percentage">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
         </div>
@@ -108,19 +178,37 @@
     <div class="plot-box" id="avg-per-aop">
         <div class="plot-header">
             <h3>Average KEs and KERs per AOP</h3>
-            <label><input type="checkbox" class="plot-toggle"> Show Deltas</label>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download Absolute ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/average_components_per_aop_absolute?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/average_components_per_aop_absolute?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/average_components_per_aop_absolute?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download Delta ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/average_components_per_aop_delta?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/average_components_per_aop_delta?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/average_components_per_aop_delta?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+                <label><input type="checkbox" class="plot-toggle"> Show Deltas</label>
+            </div>
         </div>
         <p class="plot-description">
             Shows how densely connected each AOP is on average, 
             measured by the number of Key Events and Key Event Relationships per AOP.
         </p>
         <div class="abs">
-            <div class="lazy-plot" data-plot-name="graph_avg_abs">
+            <div class="lazy-plot" data-plot-name="average_components_per_aop_absolute">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
         </div>
         <div class="delta" style="display:none;">
-            <div class="lazy-plot" data-plot-name="graph_avg_delta">
+            <div class="lazy-plot" data-plot-name="average_components_per_aop_delta">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
         </div>
@@ -129,12 +217,20 @@
     <div class="plot-box" id="density">
         <div class="plot-header">
             <h3>AOP Network Density</h3>
+            <div class="download-dropdown">
+                <button class="download-button dropdown-toggle">Download ▼</button>
+                <div class="dropdown-menu">
+                    <a href="/download/trend/aop_network_density?format=csv" class="dropdown-item">📄 CSV</a>
+                    <a href="/download/trend/aop_network_density?format=png" class="dropdown-item">🖼️ PNG</a>
+                    <a href="/download/trend/aop_network_density?format=svg" class="dropdown-item">📐 SVG</a>
+                </div>
+            </div>
         </div>
         <p class="plot-description">
             Shows how densely connected the KE-KER graph is over time,
             calculated as the ratio of edges to possible connections between nodes.
         </p>
-        <div class="lazy-plot" data-plot-name="graph_density">
+        <div class="lazy-plot" data-plot-name="aop_network_density">
             <!-- Plot will be loaded here via JavaScript -->
         </div>
     </div>
@@ -149,18 +245,36 @@
     <div class="plot-box" id="authors">
         <div class="plot-header">
             <h3>Authors of AOPs</h3>
-            <label><input type="checkbox" class="plot-toggle"> Show Deltas</label>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download Absolute ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/aop_authors_absolute?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/aop_authors_absolute?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/aop_authors_absolute?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download Delta ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/aop_authors_delta?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/aop_authors_delta?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/aop_authors_delta?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+                <label><input type="checkbox" class="plot-toggle"> Show Deltas</label>
+            </div>
         </div>
         <p class="plot-description">
             Tracks the number of unique authors contributing to AOPs over time.
         </p>
         <div class="abs">
-            <div class="lazy-plot" data-plot-name="graph_authors_abs">
+            <div class="lazy-plot" data-plot-name="aop_authors_absolute">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
         </div>
         <div class="delta" style="display:none;">
-            <div class="lazy-plot" data-plot-name="graph_authors_delta">
+            <div class="lazy-plot" data-plot-name="aop_authors_delta">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
         </div>
@@ -170,11 +284,19 @@
     <div class="plot-box" id="lifetime">
         <div class="plot-header">
             <h3>AOPs Created Over Time</h3>
+            <div class="download-dropdown">
+                <button class="download-button dropdown-toggle">Download ▼</button>
+                <div class="dropdown-menu">
+                    <a href="/download/trend/aops_created_over_time?format=csv" class="dropdown-item">📄 CSV</a>
+                    <a href="/download/trend/aops_created_over_time?format=png" class="dropdown-item">🖼️ PNG</a>
+                    <a href="/download/trend/aops_created_over_time?format=svg" class="dropdown-item">📐 SVG</a>
+                </div>
+            </div>
         </div>
         <p class="plot-description">
             Number of unique AOPs first created in each year.
         </p>
-        <div class="lazy-plot" data-plot-name="graph_created">
+        <div class="lazy-plot" data-plot-name="aops_created_over_time">
             <!-- Plot will be loaded here via JavaScript -->
         </div>
     </div>
@@ -183,11 +305,19 @@
     <div class="plot-box">
         <div class="plot-header">
             <h3>AOPs Modified Over Time</h3>
+            <div class="download-dropdown">
+                <button class="download-button dropdown-toggle">Download ▼</button>
+                <div class="dropdown-menu">
+                    <a href="/download/trend/aops_modified_over_time?format=csv" class="dropdown-item">📄 CSV</a>
+                    <a href="/download/trend/aops_modified_over_time?format=png" class="dropdown-item">🖼️ PNG</a>
+                    <a href="/download/trend/aops_modified_over_time?format=svg" class="dropdown-item">📐 SVG</a>
+                </div>
+            </div>
         </div>
         <p class="plot-description">
             Tracks how many unique AOPs were last modified in each year.
         </p>
-        <div class="lazy-plot" data-plot-name="graph_modified">
+        <div class="lazy-plot" data-plot-name="aops_modified_over_time">
             <!-- Plot will be loaded here via JavaScript -->
         </div>
     </div>
@@ -196,11 +326,19 @@
     <div class="plot-box">
         <div class="plot-header">
             <h3>AOP Creation vs Modification</h3>
+            <div class="download-dropdown">
+                <button class="download-button dropdown-toggle">Download ▼</button>
+                <div class="dropdown-menu">
+                    <a href="/download/trend/aop_creation_vs_modification_timeline?format=csv" class="dropdown-item">📄 CSV</a>
+                    <a href="/download/trend/aop_creation_vs_modification_timeline?format=png" class="dropdown-item">🖼️ PNG</a>
+                    <a href="/download/trend/aop_creation_vs_modification_timeline?format=svg" class="dropdown-item">📐 SVG</a>
+                </div>
+            </div>
         </div>
         <p class="plot-description">
             Scatter plot showing when each AOP was created versus when it was last updated.
         </p>
-        <div class="lazy-plot" data-plot-name="graph_scatter">
+        <div class="lazy-plot" data-plot-name="aop_creation_vs_modification_timeline">
             <!-- Plot will be loaded here via JavaScript -->
         </div>
     </div>
@@ -214,18 +352,36 @@
     <div class="plot-box" id="ke-components">
         <div class="plot-header">
             <h3>KE Component Annotations</h3>
-            <label><input type="checkbox" class="plot-toggle"> Show Deltas</label>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download Absolute ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/ke_component_annotations_absolute?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/ke_component_annotations_absolute?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/ke_component_annotations_absolute?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download Delta ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/ke_component_annotations_delta?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/ke_component_annotations_delta?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/ke_component_annotations_delta?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+                <label><input type="checkbox" class="plot-toggle"> Show Deltas</label>
+            </div>
         </div>
         <p class="plot-description">
             Tracks how many Key Event annotations include Process, Object, and Action elements over time.
         </p>
         <div class="abs">
-            <div class="lazy-plot" data-plot-name="graph_components_abs">
+            <div class="lazy-plot" data-plot-name="ke_component_annotations_absolute">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
         </div>
         <div class="delta" style="display:none;">
-            <div class="lazy-plot" data-plot-name="graph_components_delta">
+            <div class="lazy-plot" data-plot-name="ke_component_annotations_delta">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
         </div>
@@ -234,18 +390,36 @@
     <div class="plot-box" id="ke-components-pct">
         <div class="plot-header">
             <h3>KE Components as % of Total KEs</h3>
-            <label><input type="checkbox" class="plot-toggle"> Show Deltas</label>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download Absolute ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/ke_components_percentage_absolute?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/ke_components_percentage_absolute?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/ke_components_percentage_absolute?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download Delta ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/ke_components_percentage_delta?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/ke_components_percentage_delta?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/ke_components_percentage_delta?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+                <label><input type="checkbox" class="plot-toggle"> Show Deltas</label>
+            </div>
         </div>
         <p class="plot-description">
             Shows how many Key Events have Process, Object, and Action annotations as a percentage of all KEs per version.
         </p>
         <div class="abs">
-            <div class="lazy-plot" data-plot-name="graph_components_pct_abs">
+            <div class="lazy-plot" data-plot-name="ke_components_percentage_absolute">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
         </div>
         <div class="delta" style="display:none;">
-            <div class="lazy-plot" data-plot-name="graph_components_pct_delta">
+            <div class="lazy-plot" data-plot-name="ke_components_percentage_delta">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
         </div>
@@ -254,18 +428,36 @@
     <div class="plot-box" id="unique-ke-components">
         <div class="plot-header">
             <h3>Unique KE Component Annotations</h3>
-            <label><input type="checkbox" class="plot-toggle"> Show Deltas</label>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download Absolute ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/unique_ke_components_absolute?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/unique_ke_components_absolute?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/unique_ke_components_absolute?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download Delta ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/unique_ke_components_delta?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/unique_ke_components_delta?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/unique_ke_components_delta?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+                <label><input type="checkbox" class="plot-toggle"> Show Deltas</label>
+            </div>
         </div>
         <p class="plot-description">
             Tracks the total number of unique Process, Object, and Action annotations used in Key Events over time.
         </p>
         <div class="abs">
-            <div class="lazy-plot" data-plot-name="graph_unique_abs">
+            <div class="lazy-plot" data-plot-name="unique_ke_components_absolute">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
         </div>
         <div class="delta" style="display:none;">
-            <div class="lazy-plot" data-plot-name="graph_unique_delta">
+            <div class="lazy-plot" data-plot-name="unique_ke_components_delta">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
         </div>
@@ -274,18 +466,36 @@
     <div class="plot-box" id="bio-processes">
         <div class="plot-header">
             <h3>Biological Process Annotations</h3>
-            <label><input type="checkbox" class="plot-toggle"> Show Deltas</label>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download Absolute ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/biological_process_annotations_absolute?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/biological_process_annotations_absolute?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/biological_process_annotations_absolute?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download Delta ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/biological_process_annotations_delta?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/biological_process_annotations_delta?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/biological_process_annotations_delta?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+                <label><input type="checkbox" class="plot-toggle"> Show Deltas</label>
+            </div>
         </div>
         <p class="plot-description">
             Shows KE annotations with biological processes grouped by ontology.
         </p>
         <div class="abs">
-            <div class="lazy-plot" data-plot-name="graph_bio_processes_abs">
+            <div class="lazy-plot" data-plot-name="biological_process_annotations_absolute">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
         </div>
         <div class="delta" style="display:none;">
-            <div class="lazy-plot" data-plot-name="graph_bio_processes_delta">
+            <div class="lazy-plot" data-plot-name="biological_process_annotations_delta">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
         </div>
@@ -294,18 +504,36 @@
     <div class="plot-box" id="bio-objects">
         <div class="plot-header">
             <h3>Biological Object Annotations</h3>
-            <label><input type="checkbox" class="plot-toggle"> Show Deltas</label>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download Absolute ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/biological_object_annotations_absolute?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/biological_object_annotations_absolute?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/biological_object_annotations_absolute?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download Delta ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/biological_object_annotations_delta?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/biological_object_annotations_delta?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/biological_object_annotations_delta?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+                <label><input type="checkbox" class="plot-toggle"> Show Deltas</label>
+            </div>
         </div>
         <p class="plot-description">
             Shows KE annotations with biological objects grouped by ontology.
         </p>
         <div class="abs">
-            <div class="lazy-plot" data-plot-name="graph_bio_objects_abs">
+            <div class="lazy-plot" data-plot-name="biological_object_annotations_absolute">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
         </div>
         <div class="delta" style="display:none;">
-            <div class="lazy-plot" data-plot-name="graph_bio_objects_delta">
+            <div class="lazy-plot" data-plot-name="biological_object_annotations_delta">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
         </div>
@@ -314,19 +542,37 @@
     <div class="plot-box" id="kes-by-kec">
         <div class="plot-header">
             <h3>KEs by Number of KECs</h3>
-            <label><input type="checkbox" class="plot-toggle"> Show Deltas</label>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download Absolute ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/kes_by_kec_count_absolute?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/kes_by_kec_count_absolute?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/kes_by_kec_count_absolute?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download Delta ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/kes_by_kec_count_delta?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/kes_by_kec_count_delta?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/kes_by_kec_count_delta?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+                <label><input type="checkbox" class="plot-toggle"> Show Deltas</label>
+            </div>
         </div>
         <p class="plot-description">
             Tracks how many Key Events contain a specific number of Key Event Components (KECs) 
             over time, showing annotation completeness.
         </p>
         <div class="abs">
-            <div class="lazy-plot" data-plot-name="graph_kec_count_abs">
+            <div class="lazy-plot" data-plot-name="kes_by_kec_count_absolute">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
         </div>
         <div class="delta" style="display:none;">
-            <div class="lazy-plot" data-plot-name="graph_kec_count_delta">
+            <div class="lazy-plot" data-plot-name="kes_by_kec_count_delta">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
         </div>
