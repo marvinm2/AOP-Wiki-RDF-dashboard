@@ -426,7 +426,7 @@ def plot_latest_network_density(version: str = None) -> str:
     df["Total_AOPs"] = total_aops   # Add total for reference
 
     # Store in global cache for CSV download
-    _plot_data_cache['latest_network_density'] = df
+    _plot_data_cache['latest_aop_connectivity'] = df
 
     fig = px.pie(
         df, values="Count", names="Type",
@@ -446,7 +446,7 @@ def plot_latest_network_density(version: str = None) -> str:
     )
 
     # Cache the figure object for image export (PNG/SVG/PDF)
-    _plot_figure_cache['latest_network_density'] = fig
+    _plot_figure_cache['latest_aop_connectivity'] = fig
 
     return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
 

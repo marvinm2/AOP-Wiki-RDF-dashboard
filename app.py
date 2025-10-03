@@ -169,7 +169,7 @@ def compute_plots_parallel() -> dict:
         ('kes_by_kec_count', lambda: safe_plot_execution(plot_kes_by_kec_count)),
         ('latest_entity_counts', lambda: safe_plot_execution(plot_latest_entity_counts)),
         ('latest_ke_components', lambda: safe_plot_execution(plot_latest_ke_components)),
-        ('latest_network_density', lambda: safe_plot_execution(plot_latest_network_density)),
+        ('latest_aop_connectivity', lambda: safe_plot_execution(plot_latest_network_density)),
         ('latest_avg_per_aop', lambda: safe_plot_execution(plot_latest_avg_per_aop)),
         ('latest_ontology_usage', lambda: safe_plot_execution(plot_latest_ontology_usage)),
         ('latest_process_usage', lambda: safe_plot_execution(plot_latest_process_usage)),
@@ -240,7 +240,7 @@ graph_kec_count_abs, graph_kec_count_delta = plot_results.get('kes_by_kec_count'
 # Latest data plots
 latest_entity_counts = plot_results.get('latest_entity_counts') or ""
 latest_ke_components = plot_results.get('latest_ke_components') or ""
-latest_network_density = plot_results.get('latest_network_density') or ""
+latest_network_density = plot_results.get('latest_aop_connectivity') or ""
 latest_avg_per_aop = plot_results.get('latest_avg_per_aop') or ""
 latest_ontology_usage = plot_results.get('latest_ontology_usage') or ""
 latest_process_usage = plot_results.get('latest_process_usage') or ""
@@ -476,7 +476,7 @@ def download_latest_ke_components():
 @app.route("/download/latest_network_density")
 def download_latest_network_density():
     """Download CSV data for Latest Network Density plot."""
-    plot_name = 'latest_network_density'
+    plot_name = 'latest_aop_connectivity'
     export_format = request.args.get('format', 'csv').lower()
     include_metadata = request.args.get('metadata', 'true').lower() == 'true'
 
@@ -891,6 +891,56 @@ def download_main_graph_delta():
         logger.error(f"Download failed for {plot_name}: {str(e)}")
         return f"Download failed: {str(e)}", 500
 
+@app.route("/download/trend/<plot_name>")
+def download_trend_plot(plot_name):
+    """Generic download route for all trend plots (supports CSV, PNG, SVG).
+
+    Args:
+        plot_name (str): The cache key for the trend plot (e.g., 'aop_entity_counts_absolute', 'aop_network_density')
+
+    Query Parameters:
+        format (str): Export format - 'csv', 'png', or 'svg' (default: 'csv')
+        metadata (bool): Include metadata in CSV (default: true)
+
+    Examples:
+        /download/trend/graph_main_abs?format=png
+        /download/trend/graph_density?format=svg
+        /download/trend/graph_components_abs?format=csv
+    """
+    export_format = request.args.get('format', 'csv').lower()
+    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
+
+    try:
+        if export_format == 'csv':
+            csv_data = get_csv_with_metadata(plot_name, include_metadata)
+            if not csv_data:
+                return "No data available for download", 404
+
+            return Response(
+                csv_data,
+                mimetype='text/csv',
+                headers={'Content-Disposition': f'attachment; filename={plot_name}.csv'}
+            )
+
+        elif export_format in ['png', 'svg']:
+            image_bytes = export_figure_as_image(plot_name, export_format)
+            if not image_bytes:
+                return "No figure available for export", 404
+
+            mimetype = f'image/{export_format}'
+            return Response(
+                image_bytes,
+                mimetype=mimetype,
+                headers={'Content-Disposition': f'attachment; filename={plot_name}.{export_format}'}
+            )
+
+        else:
+            return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
+
+    except Exception as e:
+        logger.error(f"Download failed for trend plot {plot_name}: {str(e)}")
+        return f"Download failed: {str(e)}", 500
+
 @app.route("/download/bulk")
 def download_bulk():
     """Bulk download multiple plots in a ZIP archive.
@@ -911,15 +961,47 @@ def download_bulk():
     try:
         # Predefined plot categories
         categories = {
-            'all': [
-                'latest_entity_counts', 'latest_ke_components', 'latest_network_density',
+            # Latest Data plots
+            'latest-all': [
+                'latest_entity_counts', 'latest_ke_components', 'latest_aop_connectivity',
                 'latest_avg_per_aop', 'latest_process_usage', 'latest_object_usage',
                 'latest_aop_completeness', 'latest_ke_annotation_depth'
             ],
             'database-state': ['latest_entity_counts'],
-            'network-analysis': ['latest_network_density', 'latest_avg_per_aop'],
+            'network-analysis': ['latest_aop_connectivity', 'latest_avg_per_aop'],
             'ke-analysis': ['latest_ke_components', 'latest_ke_annotation_depth'],
-            'data-quality': ['latest_aop_completeness', 'latest_process_usage', 'latest_object_usage']
+            'data-quality': ['latest_aop_completeness', 'latest_process_usage', 'latest_object_usage'],
+
+            # Trend plots (absolute views only to avoid duplication)
+            'trends-all': [
+                'aop_entity_counts_absolute', 'average_components_per_aop_absolute', 'aop_network_density', 'aop_authors_absolute',
+                'aops_created_over_time', 'aops_modified_over_time', 'aop_creation_vs_modification_timeline',
+                'ke_component_annotations_absolute', 'ke_components_percentage_absolute', 'unique_ke_components_absolute',
+                'biological_process_annotations_absolute', 'biological_object_annotations_absolute',
+                'aop_property_presence_absolute', 'aop_property_presence_unique_absolute', 'kes_by_kec_count_absolute'
+            ],
+            'trends-main': ['aop_entity_counts_absolute', 'aop_entity_counts_delta'],
+            'trends-network': ['average_components_per_aop_absolute', 'average_components_per_aop_delta', 'aop_network_density'],
+            'trends-authors': ['aop_authors_absolute', 'aop_authors_delta', 'aops_created_over_time', 'aops_modified_over_time', 'aop_creation_vs_modification_timeline'],
+            'trends-components': [
+                'ke_component_annotations_absolute', 'ke_component_annotations_delta',
+                'ke_components_percentage_absolute', 'ke_components_percentage_delta',
+                'unique_ke_components_absolute', 'unique_ke_components_delta'
+            ],
+            'trends-ontology': ['biological_process_annotations_absolute', 'biological_process_annotations_delta', 'biological_object_annotations_absolute', 'biological_object_annotations_delta'],
+            'trends-properties': ['aop_property_presence_absolute', 'aop_property_presence_percentage', 'aop_property_presence_unique_absolute', 'aop_property_presence_unique_percentage'],
+
+            # Combined: all plots from both pages
+            'all': [
+                'latest_entity_counts', 'latest_ke_components', 'latest_aop_connectivity',
+                'latest_avg_per_aop', 'latest_process_usage', 'latest_object_usage',
+                'latest_aop_completeness', 'latest_ke_annotation_depth',
+                'aop_entity_counts_absolute', 'average_components_per_aop_absolute', 'aop_network_density', 'aop_authors_absolute',
+                'aops_created_over_time', 'aops_modified_over_time', 'aop_creation_vs_modification_timeline',
+                'ke_component_annotations_absolute', 'ke_components_percentage_absolute', 'unique_ke_components_absolute',
+                'biological_process_annotations_absolute', 'biological_object_annotations_absolute',
+                'aop_property_presence_absolute', 'aop_property_presence_unique_absolute', 'kes_by_kec_count_absolute'
+            ]
         }
 
         # Get plot names from query params
@@ -1033,39 +1115,39 @@ def get_plot(plot_name):
     # For latest_* plots that support version parameter, we'll regenerate them
     # For historical trend plots, use pre-computed global variables
     plot_map = {
-        'graph_main_abs': graph_main_abs,
-        'graph_main_delta': graph_main_delta,
-        'graph_avg_abs': graph_avg_abs,
-        'graph_avg_delta': graph_avg_delta,
-        'graph_density': graph_density,
-        'graph_components_abs': graph_components_abs,
-        'graph_components_delta': graph_components_delta,
-        'graph_components_pct_abs': graph_components_pct_abs,
-        'graph_components_pct_delta': graph_components_pct_delta,
-        'graph_unique_abs': graph_unique_abs,
-        'graph_unique_delta': graph_unique_delta,
-        'graph_bio_processes_abs': graph_bio_processes_abs,
-        'graph_bio_processes_delta': graph_bio_processes_delta,
-        'graph_bio_objects_abs': graph_bio_objects_abs,
-        'graph_bio_objects_delta': graph_bio_objects_delta,
-        'graph_authors_abs': graph_authors_abs,
-        'graph_authors_delta': graph_authors_delta,
-        'graph_created': graph_created,
-        'graph_modified': graph_modified,
-        'graph_scatter': graph_scatter,
-        'graph_prop_abs': graph_prop_abs,
-        'graph_prop_pct': graph_prop_pct,
-        'graph_prop_unique_abs': graph_prop_unique_abs,
-        'graph_prop_unique_pct': graph_prop_unique_pct,
-        'graph_kec_count_abs': graph_kec_count_abs,
-        'graph_kec_count_delta': graph_kec_count_delta
+        'aop_entity_counts_absolute': graph_main_abs,
+        'aop_entity_counts_delta': graph_main_delta,
+        'average_components_per_aop_absolute': graph_avg_abs,
+        'average_components_per_aop_delta': graph_avg_delta,
+        'aop_network_density': graph_density,
+        'ke_component_annotations_absolute': graph_components_abs,
+        'ke_component_annotations_delta': graph_components_delta,
+        'ke_components_percentage_absolute': graph_components_pct_abs,
+        'ke_components_percentage_delta': graph_components_pct_delta,
+        'unique_ke_components_absolute': graph_unique_abs,
+        'unique_ke_components_delta': graph_unique_delta,
+        'biological_process_annotations_absolute': graph_bio_processes_abs,
+        'biological_process_annotations_delta': graph_bio_processes_delta,
+        'biological_object_annotations_absolute': graph_bio_objects_abs,
+        'biological_object_annotations_delta': graph_bio_objects_delta,
+        'aop_authors_absolute': graph_authors_abs,
+        'aop_authors_delta': graph_authors_delta,
+        'aops_created_over_time': graph_created,
+        'aops_modified_over_time': graph_modified,
+        'aop_creation_vs_modification_timeline': graph_scatter,
+        'aop_property_presence_absolute': graph_prop_abs,
+        'aop_property_presence_percentage': graph_prop_pct,
+        'aop_property_presence_unique_absolute': graph_prop_unique_abs,
+        'aop_property_presence_unique_percentage': graph_prop_unique_pct,
+        'kes_by_kec_count_absolute': graph_kec_count_abs,
+        'kes_by_kec_count_delta': graph_kec_count_delta
     }
 
     # Handle latest_* plots dynamically with version support
     latest_plots_with_version = {
         'latest_entity_counts': plot_latest_entity_counts,
         'latest_ke_components': plot_latest_ke_components,
-        'latest_network_density': plot_latest_network_density,
+        'latest_aop_connectivity': plot_latest_network_density,
         'latest_avg_per_aop': plot_latest_avg_per_aop,
         'latest_process_usage': plot_latest_process_usage,
         'latest_object_usage': plot_latest_object_usage,

@@ -16,7 +16,7 @@
     const versionedPlots = [
         'latest_entity_counts',
         'latest_ke_components',
-        'latest_network_density',
+        'latest_aop_connectivity',
         'latest_avg_per_aop',
         'latest_process_usage',
         'latest_object_usage',
