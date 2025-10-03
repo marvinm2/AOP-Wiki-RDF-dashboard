@@ -113,11 +113,15 @@ from .shared import (
     safe_read_csv,
     safe_plot_execution,
     create_fallback_plot,
+    export_figure_as_image,
+    get_csv_with_metadata,
+    create_bulk_download,
 
     # Constants and configuration
     BRAND_COLORS,
     config,
     _plot_data_cache,
+    _plot_figure_cache,
 )
 
 # Import all historical trend plot functions
@@ -186,9 +190,13 @@ __all__ = [
     'safe_read_csv',
     'safe_plot_execution',
     'create_fallback_plot',
+    'export_figure_as_image',
+    'get_csv_with_metadata',
+    'create_bulk_download',
     'BRAND_COLORS',
     'config',
     '_plot_data_cache',
+    '_plot_figure_cache',
 
     # Historical trends functions
     'plot_main_graph',

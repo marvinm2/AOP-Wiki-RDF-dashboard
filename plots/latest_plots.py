@@ -60,7 +60,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.io as pio
 from .shared import (
-    BRAND_COLORS, config, _plot_data_cache, run_sparql_query, safe_read_csv, create_fallback_plot
+    BRAND_COLORS, config, _plot_data_cache, _plot_figure_cache, run_sparql_query, safe_read_csv, create_fallback_plot
 )
 
 
@@ -286,6 +286,9 @@ def plot_latest_entity_counts(version: str = None) -> str:
         xaxis=dict(title="Entity Type")
     )
 
+    # Cache the figure object for image export (PNG/SVG/PDF)
+    _plot_figure_cache['latest_entity_counts'] = fig
+
     return pio.to_html(fig, full_html=False, include_plotlyjs="cdn", config={"responsive": True})
 
 
@@ -353,6 +356,9 @@ def plot_latest_ke_components(version: str = None) -> str:
         autosize=True,
         margin=dict(l=50, r=20, t=50, b=50)
     )
+
+    # Cache the figure object for image export (PNG/SVG/PDF)
+    _plot_figure_cache['latest_ke_components'] = fig
 
     return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
 
@@ -438,6 +444,9 @@ def plot_latest_network_density(version: str = None) -> str:
                  x=0.5, y=0.1, font_size=12, showarrow=False)
         ]
     )
+
+    # Cache the figure object for image export (PNG/SVG/PDF)
+    _plot_figure_cache['latest_network_density'] = fig
 
     return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
 
@@ -530,6 +539,9 @@ def plot_latest_avg_per_aop(version: str = None) -> str:
         margin=dict(l=50, r=20, t=50, b=50)
     )
 
+    # Cache the figure object for image export (PNG/SVG/PDF)
+    _plot_figure_cache['latest_avg_per_aop'] = fig
+
     return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
 
 
@@ -599,6 +611,9 @@ def plot_latest_ontology_usage(version: str = None) -> str:
         autosize=True,
         margin=dict(l=50, r=20, t=50, b=50)
     )
+
+    # Cache the figure object for image export (PNG/SVG/PDF)
+    _plot_figure_cache['latest_ontology_usage'] = fig
 
     return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
 
@@ -689,6 +704,9 @@ def plot_latest_process_usage(version: str = None) -> str:
         margin=dict(l=50, r=20, t=50, b=50)
     )
 
+    # Cache the figure object for image export (PNG/SVG/PDF)
+    _plot_figure_cache['latest_process_usage'] = fig
+
     return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
 
 
@@ -778,6 +796,9 @@ def plot_latest_object_usage(version: str = None) -> str:
         autosize=True,
         margin=dict(l=50, r=20, t=50, b=50)
     )
+
+    # Cache the figure object for image export (PNG/SVG/PDF)
+    _plot_figure_cache['latest_object_usage'] = fig
 
     return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
 
@@ -889,6 +910,9 @@ def plot_latest_aop_completeness(version: str = None) -> str:
         xaxis=dict(title="AOP Properties", tickangle=45),
         legend=dict(title="Property Type")
     )
+
+    # Cache the figure object for image export (PNG/SVG/PDF)
+    _plot_figure_cache['latest_aop_completeness'] = fig
 
     return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
 
@@ -1005,6 +1029,9 @@ def plot_latest_aop_completeness_unique_colors(version: str = None) -> str:
         showlegend=False  # Hide legend since colors are unique per property
     )
 
+    # Cache the figure object for image export (PNG/SVG/PDF)
+    _plot_figure_cache['latest_aop_completeness_unique'] = fig
+
     return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
 
 
@@ -1081,6 +1108,9 @@ def plot_latest_database_summary(version: str = None) -> str:
         margin=dict(l=50, r=20, t=50, b=50),
         yaxis=dict(title="Count")
     )
+
+    # Cache the figure object for image export (PNG/SVG/PDF)
+    _plot_figure_cache['latest_database_summary'] = fig
 
     return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
 
@@ -1170,5 +1200,8 @@ def plot_latest_ke_annotation_depth(version: str = None) -> str:
         autosize=True,
         margin=dict(l=50, r=20, t=50, b=50)
     )
+
+    # Cache the figure object for image export (PNG/SVG/PDF)
+    _plot_figure_cache['latest_ke_annotation_depth'] = fig
 
     return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})

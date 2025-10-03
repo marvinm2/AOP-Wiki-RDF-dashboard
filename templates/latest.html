@@ -62,6 +62,23 @@
     </ul>
 </section>
 
+<!-- Bulk Download Section -->
+<div style="text-align:center; margin:20px; padding:15px; background-color: #f9f9f9; border-radius: 8px;">
+    <h3 style="margin-top:0; color:#29235C;">📦 Bulk Download</h3>
+    <p style="font-size:14px; color:#666; margin:10px 0;">Download all plots at once in multiple formats</p>
+    <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+        <a href="/download/bulk?category=all&formats=csv,png,svg" class="nav-button" style="text-decoration:none; display:inline-block;">
+            📥 Download All (CSV + PNG + SVG)
+        </a>
+        <a href="/download/bulk?category=all&formats=csv" class="nav-button" style="text-decoration:none; display:inline-block;">
+            📄 CSV Only
+        </a>
+        <a href="/download/bulk?category=all&formats=png" class="nav-button" style="text-decoration:none; display:inline-block;">
+            🖼️ PNG Only
+        </a>
+    </div>
+</div>
+
 <!-- Navigation Buttons -->
 <div style="text-align:center; margin:20px;">
     <button class="nav-button" onclick="document.getElementById('database-state').scrollIntoView({behavior:'smooth'});">Database State</button>
@@ -76,7 +93,14 @@
         <div class="plot-box">
             <div class="plot-header">
                 <h3>Entity Counts</h3>
-                <a href="/download/latest_entity_counts" class="download-button" title="Download CSV data">Download CSV</a>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/latest_entity_counts?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/latest_entity_counts?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/latest_entity_counts?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
             </div>
             <p class="plot-description">
                 Total number of each entity type and unique authors in the latest version of the AOP-Wiki database.
@@ -94,7 +118,14 @@
         <div class="plot-box">
             <div class="plot-header">
                 <h3>AOP Connectivity</h3>
-                <a href="/download/latest_network_density" class="download-button" title="Download CSV data">Download CSV</a>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/latest_network_density?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/latest_network_density?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/latest_network_density?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
             </div>
             <p class="plot-description">
                 Analysis of AOP connectivity based on shared Key Events. Connected AOPs share at least one Key Event with other AOPs, while isolated AOPs have unique Key Events.
@@ -106,7 +137,14 @@
         <div class="plot-box">
             <div class="plot-header">
                 <h3>Average Components per AOP</h3>
-                <a href="/download/latest_avg_per_aop" class="download-button" title="Download CSV data">Download CSV</a>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/latest_avg_per_aop?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/latest_avg_per_aop?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/latest_avg_per_aop?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
             </div>
             <p class="plot-description">
                 Average number of Key Events and Key Event Relationships per AOP in the current database.
@@ -124,7 +162,14 @@
         <div class="plot-box">
             <div class="plot-header">
                 <h3>KE Component Distribution</h3>
-                <a href="/download/latest_ke_components" class="download-button" title="Download CSV data">Download CSV</a>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/latest_ke_components?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/latest_ke_components?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/latest_ke_components?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
             </div>
             <p class="plot-description">
                 Distribution of Key Event component annotations (Process, Object, Action) in the current database.
@@ -136,7 +181,14 @@
         <div class="plot-box">
             <div class="plot-header">
                 <h3>KE Annotation Depth</h3>
-                <a href="/download/latest_ke_annotation_depth" class="download-button" title="Download CSV data">Download CSV</a>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/latest_ke_annotation_depth?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/latest_ke_annotation_depth?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/latest_ke_annotation_depth?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
             </div>
             <p class="plot-description">
                 Distribution of annotation depth for Key Events, showing how thoroughly they are documented.
@@ -154,7 +206,14 @@
         <div class="plot-box full-width">
             <div class="plot-header">
                 <h3>AOP Completeness</h3>
-                <a href="/download/latest_aop_completeness" class="download-button" title="Download CSV data">Download CSV</a>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/latest_aop_completeness?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/latest_aop_completeness?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/latest_aop_completeness?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
             </div>
             <p class="plot-description">
                 Analysis of AOP data completeness showing the distribution of essential vs optional fields.
@@ -166,7 +225,14 @@
         <div class="plot-box">
             <div class="plot-header">
                 <h3>Biological Process Usage</h3>
-                <a href="/download/latest_process_usage" class="download-button" title="Download CSV data">Download CSV</a>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/latest_process_usage?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/latest_process_usage?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/latest_process_usage?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
             </div>
             <p class="plot-description">
                 Distribution of biological process ontology terms used in Key Event annotations.
@@ -178,7 +244,14 @@
         <div class="plot-box">
             <div class="plot-header">
                 <h3>Biological Object Usage</h3>
-                <a href="/download/latest_object_usage" class="download-button" title="Download CSV data">Download CSV</a>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/latest_object_usage?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/latest_object_usage?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/latest_object_usage?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
             </div>
             <p class="plot-description">
                 Distribution of biological object ontology terms used in Key Event annotations.

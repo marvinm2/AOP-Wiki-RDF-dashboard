@@ -97,7 +97,11 @@ from plots import (
     safe_plot_execution,
     get_latest_version,
     get_all_versions,
-    _plot_data_cache
+    _plot_data_cache,
+    _plot_figure_cache,
+    export_figure_as_image,
+    get_csv_with_metadata,
+    create_bulk_download
 )
 
 def compute_plots_parallel() -> dict:
@@ -396,252 +400,569 @@ def download_latest_entity_counts():
         Data is cached from plot generation during application startup.
         If plots failed to generate, this endpoint returns 404.
     """
+    plot_name = 'latest_entity_counts'
+    export_format = request.args.get('format', 'csv').lower()
+    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
+
     try:
-        if 'latest_entity_counts' not in _plot_data_cache:
-            return "No data available for download", 404
-        
-        df = _plot_data_cache['latest_entity_counts']
-        csv_data = df.to_csv(index=False)
-        
-        return Response(
-            csv_data,
-            mimetype='text/csv',
-            headers={'Content-Disposition': 'attachment; filename=latest_entity_counts.csv'}
-        )
+        if export_format == 'csv':
+            csv_data = get_csv_with_metadata(plot_name, include_metadata)
+            if not csv_data:
+                return "No data available for download", 404
+
+            return Response(
+                csv_data,
+                mimetype='text/csv',
+                headers={'Content-Disposition': f'attachment; filename={plot_name}.csv'}
+            )
+
+        elif export_format in ['png', 'svg']:
+            image_bytes = export_figure_as_image(plot_name, export_format)
+            if not image_bytes:
+                return "No figure available for export", 404
+
+            mimetype = f'image/{export_format}'
+            return Response(
+                image_bytes,
+                mimetype=mimetype,
+                headers={'Content-Disposition': f'attachment; filename={plot_name}.{export_format}'}
+            )
+
+        else:
+            return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
+
     except Exception as e:
-        logger.error(f"CSV download failed: {str(e)}")
+        logger.error(f"Download failed for {plot_name}: {str(e)}")
         return f"Download failed: {str(e)}", 500
 
 @app.route("/download/latest_ke_components")
 def download_latest_ke_components():
     """Download CSV data for Latest KE Components plot."""
+    plot_name = 'latest_ke_components'
+    export_format = request.args.get('format', 'csv').lower()
+    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
+
     try:
-        if 'latest_ke_components' not in _plot_data_cache:
-            return "No data available for download", 404
-        
-        df = _plot_data_cache['latest_ke_components']
-        csv_data = df.to_csv(index=False)
-        
-        return Response(
-            csv_data,
-            mimetype='text/csv',
-            headers={'Content-Disposition': 'attachment; filename=latest_ke_components.csv'}
-        )
+        if export_format == 'csv':
+            csv_data = get_csv_with_metadata(plot_name, include_metadata)
+            if not csv_data:
+                return "No data available for download", 404
+
+            return Response(
+                csv_data,
+                mimetype='text/csv',
+                headers={'Content-Disposition': f'attachment; filename={plot_name}.csv'}
+            )
+
+        elif export_format in ['png', 'svg']:
+            image_bytes = export_figure_as_image(plot_name, export_format)
+            if not image_bytes:
+                return "No figure available for export", 404
+
+            mimetype = f'image/{export_format}'
+            return Response(
+                image_bytes,
+                mimetype=mimetype,
+                headers={'Content-Disposition': f'attachment; filename={plot_name}.{export_format}'}
+            )
+
+        else:
+            return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
+
     except Exception as e:
-        logger.error(f"CSV download failed: {str(e)}")
+        logger.error(f"Download failed for {plot_name}: {str(e)}")
         return f"Download failed: {str(e)}", 500
 
 @app.route("/download/latest_network_density")
 def download_latest_network_density():
     """Download CSV data for Latest Network Density plot."""
+    plot_name = 'latest_network_density'
+    export_format = request.args.get('format', 'csv').lower()
+    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
+
     try:
-        if 'latest_network_density' not in _plot_data_cache:
-            return "No data available for download", 404
-        
-        df = _plot_data_cache['latest_network_density']
-        csv_data = df.to_csv(index=False)
-        
-        return Response(
-            csv_data,
-            mimetype='text/csv',
-            headers={'Content-Disposition': 'attachment; filename=latest_network_density.csv'}
-        )
+        if export_format == 'csv':
+            csv_data = get_csv_with_metadata(plot_name, include_metadata)
+            if not csv_data:
+                return "No data available for download", 404
+
+            return Response(
+                csv_data,
+                mimetype='text/csv',
+                headers={'Content-Disposition': f'attachment; filename={plot_name}.csv'}
+            )
+
+        elif export_format in ['png', 'svg']:
+            image_bytes = export_figure_as_image(plot_name, export_format)
+            if not image_bytes:
+                return "No figure available for export", 404
+
+            mimetype = f'image/{export_format}'
+            return Response(
+                image_bytes,
+                mimetype=mimetype,
+                headers={'Content-Disposition': f'attachment; filename={plot_name}.{export_format}'}
+            )
+
+        else:
+            return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
+
     except Exception as e:
-        logger.error(f"CSV download failed: {str(e)}")
+        logger.error(f"Download failed for {plot_name}: {str(e)}")
         return f"Download failed: {str(e)}", 500
 
 @app.route("/download/latest_avg_per_aop")
 def download_latest_avg_per_aop():
     """Download CSV data for Latest Avg per AOP plot."""
+    plot_name = 'latest_avg_per_aop'
+    export_format = request.args.get('format', 'csv').lower()
+    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
+
     try:
-        if 'latest_avg_per_aop' not in _plot_data_cache:
-            return "No data available for download", 404
-        
-        df = _plot_data_cache['latest_avg_per_aop']
-        csv_data = df.to_csv(index=False)
-        
-        return Response(
-            csv_data,
-            mimetype='text/csv',
-            headers={'Content-Disposition': 'attachment; filename=latest_avg_per_aop.csv'}
-        )
+        if export_format == 'csv':
+            csv_data = get_csv_with_metadata(plot_name, include_metadata)
+            if not csv_data:
+                return "No data available for download", 404
+
+            return Response(
+                csv_data,
+                mimetype='text/csv',
+                headers={'Content-Disposition': f'attachment; filename={plot_name}.csv'}
+            )
+
+        elif export_format in ['png', 'svg']:
+            image_bytes = export_figure_as_image(plot_name, export_format)
+            if not image_bytes:
+                return "No figure available for export", 404
+
+            mimetype = f'image/{export_format}'
+            return Response(
+                image_bytes,
+                mimetype=mimetype,
+                headers={'Content-Disposition': f'attachment; filename={plot_name}.{export_format}'}
+            )
+
+        else:
+            return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
+
     except Exception as e:
-        logger.error(f"CSV download failed: {str(e)}")
+        logger.error(f"Download failed for {plot_name}: {str(e)}")
         return f"Download failed: {str(e)}", 500
 
 @app.route("/download/latest_process_usage")
 def download_latest_process_usage():
     """Download CSV data for Latest Process Usage plot."""
+    plot_name = 'latest_process_usage'
+    export_format = request.args.get('format', 'csv').lower()
+    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
+
     try:
-        if 'latest_process_usage' not in _plot_data_cache:
-            return "No data available for download", 404
-        
-        df = _plot_data_cache['latest_process_usage']
-        csv_data = df.to_csv(index=False)
-        
-        return Response(
-            csv_data,
-            mimetype='text/csv',
-            headers={'Content-Disposition': 'attachment; filename=latest_process_usage.csv'}
-        )
+        if export_format == 'csv':
+            csv_data = get_csv_with_metadata(plot_name, include_metadata)
+            if not csv_data:
+                return "No data available for download", 404
+
+            return Response(
+                csv_data,
+                mimetype='text/csv',
+                headers={'Content-Disposition': f'attachment; filename={plot_name}.csv'}
+            )
+
+        elif export_format in ['png', 'svg']:
+            image_bytes = export_figure_as_image(plot_name, export_format)
+            if not image_bytes:
+                return "No figure available for export", 404
+
+            mimetype = f'image/{export_format}'
+            return Response(
+                image_bytes,
+                mimetype=mimetype,
+                headers={'Content-Disposition': f'attachment; filename={plot_name}.{export_format}'}
+            )
+
+        else:
+            return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
+
     except Exception as e:
-        logger.error(f"CSV download failed: {str(e)}")
+        logger.error(f"Download failed for {plot_name}: {str(e)}")
         return f"Download failed: {str(e)}", 500
 
 @app.route("/download/latest_object_usage")
 def download_latest_object_usage():
     """Download CSV data for Latest Object Usage plot."""
+    plot_name = 'latest_object_usage'
+    export_format = request.args.get('format', 'csv').lower()
+    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
+
     try:
-        if 'latest_object_usage' not in _plot_data_cache:
-            return "No data available for download", 404
-        
-        df = _plot_data_cache['latest_object_usage']
-        csv_data = df.to_csv(index=False)
-        
-        return Response(
-            csv_data,
-            mimetype='text/csv',
-            headers={'Content-Disposition': 'attachment; filename=latest_object_usage.csv'}
-        )
+        if export_format == 'csv':
+            csv_data = get_csv_with_metadata(plot_name, include_metadata)
+            if not csv_data:
+                return "No data available for download", 404
+
+            return Response(
+                csv_data,
+                mimetype='text/csv',
+                headers={'Content-Disposition': f'attachment; filename={plot_name}.csv'}
+            )
+
+        elif export_format in ['png', 'svg']:
+            image_bytes = export_figure_as_image(plot_name, export_format)
+            if not image_bytes:
+                return "No figure available for export", 404
+
+            mimetype = f'image/{export_format}'
+            return Response(
+                image_bytes,
+                mimetype=mimetype,
+                headers={'Content-Disposition': f'attachment; filename={plot_name}.{export_format}'}
+            )
+
+        else:
+            return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
+
     except Exception as e:
-        logger.error(f"CSV download failed: {str(e)}")
+        logger.error(f"Download failed for {plot_name}: {str(e)}")
         return f"Download failed: {str(e)}", 500
 
 @app.route("/download/latest_aop_completeness")
 def download_latest_aop_completeness():
     """Download CSV data for Latest AOP Completeness plot."""
+    plot_name = 'latest_aop_completeness'
+    export_format = request.args.get('format', 'csv').lower()
+    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
+
     try:
-        if 'latest_aop_completeness' not in _plot_data_cache:
-            return "No data available for download", 404
-        
-        df = _plot_data_cache['latest_aop_completeness']
-        csv_data = df.to_csv(index=False)
-        
-        return Response(
-            csv_data,
-            mimetype='text/csv',
-            headers={'Content-Disposition': 'attachment; filename=latest_aop_completeness.csv'}
-        )
+        if export_format == 'csv':
+            csv_data = get_csv_with_metadata(plot_name, include_metadata)
+            if not csv_data:
+                return "No data available for download", 404
+
+            return Response(
+                csv_data,
+                mimetype='text/csv',
+                headers={'Content-Disposition': f'attachment; filename={plot_name}.csv'}
+            )
+
+        elif export_format in ['png', 'svg']:
+            image_bytes = export_figure_as_image(plot_name, export_format)
+            if not image_bytes:
+                return "No figure available for export", 404
+
+            mimetype = f'image/{export_format}'
+            return Response(
+                image_bytes,
+                mimetype=mimetype,
+                headers={'Content-Disposition': f'attachment; filename={plot_name}.{export_format}'}
+            )
+
+        else:
+            return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
+
     except Exception as e:
-        logger.error(f"CSV download failed: {str(e)}")
+        logger.error(f"Download failed for {plot_name}: {str(e)}")
         return f"Download failed: {str(e)}", 500
 
 @app.route("/download/latest_aop_completeness_unique")
 def download_latest_aop_completeness_unique():
     """Download CSV data for Latest AOP Completeness (Unique Colors) plot."""
+    plot_name = 'latest_aop_completeness_unique'
+    export_format = request.args.get('format', 'csv').lower()
+    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
+
     try:
-        if 'latest_aop_completeness_unique' not in _plot_data_cache:
-            return "No data available for download", 404
-        
-        df = _plot_data_cache['latest_aop_completeness_unique']
-        csv_data = df.to_csv(index=False)
-        
-        return Response(
-            csv_data,
-            mimetype='text/csv',
-            headers={'Content-Disposition': 'attachment; filename=latest_aop_completeness_unique_colors.csv'}
-        )
+        if export_format == 'csv':
+            csv_data = get_csv_with_metadata(plot_name, include_metadata)
+            if not csv_data:
+                return "No data available for download", 404
+
+            return Response(
+                csv_data,
+                mimetype='text/csv',
+                headers={'Content-Disposition': f'attachment; filename={plot_name}.csv'}
+            )
+
+        elif export_format in ['png', 'svg']:
+            image_bytes = export_figure_as_image(plot_name, export_format)
+            if not image_bytes:
+                return "No figure available for export", 404
+
+            mimetype = f'image/{export_format}'
+            return Response(
+                image_bytes,
+                mimetype=mimetype,
+                headers={'Content-Disposition': f'attachment; filename={plot_name}.{export_format}'}
+            )
+
+        else:
+            return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
+
     except Exception as e:
-        logger.error(f"CSV download failed: {str(e)}")
+        logger.error(f"Download failed for {plot_name}: {str(e)}")
         return f"Download failed: {str(e)}", 500
 
 @app.route("/download/aop_property_presence_unique_absolute")
 def download_aop_property_presence_unique_absolute():
     """Download CSV data for AOP Property Presence Unique Colors (Absolute Count) plot."""
+    plot_name = 'aop_property_presence_unique_absolute'
+    export_format = request.args.get('format', 'csv').lower()
+    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
+
     try:
-        if 'aop_property_presence_unique_absolute' not in _plot_data_cache:
-            return "No data available for download", 404
-        
-        df = _plot_data_cache['aop_property_presence_unique_absolute']
-        csv_data = df.to_csv(index=False)
-        
-        return Response(
-            csv_data,
-            mimetype='text/csv',
-            headers={'Content-Disposition': 'attachment; filename=aop_property_presence_unique_absolute.csv'}
-        )
+        if export_format == 'csv':
+            csv_data = get_csv_with_metadata(plot_name, include_metadata)
+            if not csv_data:
+                return "No data available for download", 404
+
+            return Response(
+                csv_data,
+                mimetype='text/csv',
+                headers={'Content-Disposition': f'attachment; filename={plot_name}.csv'}
+            )
+
+        elif export_format in ['png', 'svg']:
+            image_bytes = export_figure_as_image(plot_name, export_format)
+            if not image_bytes:
+                return "No figure available for export", 404
+
+            mimetype = f'image/{export_format}'
+            return Response(
+                image_bytes,
+                mimetype=mimetype,
+                headers={'Content-Disposition': f'attachment; filename={plot_name}.{export_format}'}
+            )
+
+        else:
+            return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
+
     except Exception as e:
-        logger.error(f"CSV download failed: {str(e)}")
+        logger.error(f"Download failed for {plot_name}: {str(e)}")
         return f"Download failed: {str(e)}", 500
 
 @app.route("/download/aop_property_presence_unique_percentage")
 def download_aop_property_presence_unique_percentage():
     """Download CSV data for AOP Property Presence Unique Colors (Percentage) plot."""
+    plot_name = 'aop_property_presence_unique_percentage'
+    export_format = request.args.get('format', 'csv').lower()
+    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
+
     try:
-        if 'aop_property_presence_unique_percentage' not in _plot_data_cache:
-            return "No data available for download", 404
-        
-        df = _plot_data_cache['aop_property_presence_unique_percentage']
-        csv_data = df.to_csv(index=False)
-        
-        return Response(
-            csv_data,
-            mimetype='text/csv',
-            headers={'Content-Disposition': 'attachment; filename=aop_property_presence_unique_percentage.csv'}
-        )
+        if export_format == 'csv':
+            csv_data = get_csv_with_metadata(plot_name, include_metadata)
+            if not csv_data:
+                return "No data available for download", 404
+
+            return Response(
+                csv_data,
+                mimetype='text/csv',
+                headers={'Content-Disposition': f'attachment; filename={plot_name}.csv'}
+            )
+
+        elif export_format in ['png', 'svg']:
+            image_bytes = export_figure_as_image(plot_name, export_format)
+            if not image_bytes:
+                return "No figure available for export", 404
+
+            mimetype = f'image/{export_format}'
+            return Response(
+                image_bytes,
+                mimetype=mimetype,
+                headers={'Content-Disposition': f'attachment; filename={plot_name}.{export_format}'}
+            )
+
+        else:
+            return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
+
     except Exception as e:
-        logger.error(f"CSV download failed: {str(e)}")
+        logger.error(f"Download failed for {plot_name}: {str(e)}")
         return f"Download failed: {str(e)}", 500
 
 @app.route("/download/latest_ke_annotation_depth")
 def download_latest_ke_annotation_depth():
     """Download CSV data for Latest KE Annotation Depth plot."""
+    plot_name = 'latest_ke_annotation_depth'
+    export_format = request.args.get('format', 'csv').lower()
+    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
+
     try:
-        if 'latest_ke_annotation_depth' not in _plot_data_cache:
-            return "No data available for download", 404
-        
-        df = _plot_data_cache['latest_ke_annotation_depth']
-        csv_data = df.to_csv(index=False)
-        
-        return Response(
-            csv_data,
-            mimetype='text/csv',
-            headers={'Content-Disposition': 'attachment; filename=latest_ke_annotation_depth.csv'}
-        )
+        if export_format == 'csv':
+            csv_data = get_csv_with_metadata(plot_name, include_metadata)
+            if not csv_data:
+                return "No data available for download", 404
+
+            return Response(
+                csv_data,
+                mimetype='text/csv',
+                headers={'Content-Disposition': f'attachment; filename={plot_name}.csv'}
+            )
+
+        elif export_format in ['png', 'svg']:
+            image_bytes = export_figure_as_image(plot_name, export_format)
+            if not image_bytes:
+                return "No figure available for export", 404
+
+            mimetype = f'image/{export_format}'
+            return Response(
+                image_bytes,
+                mimetype=mimetype,
+                headers={'Content-Disposition': f'attachment; filename={plot_name}.{export_format}'}
+            )
+
+        else:
+            return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
+
     except Exception as e:
-        logger.error(f"CSV download failed: {str(e)}")
+        logger.error(f"Download failed for {plot_name}: {str(e)}")
         return f"Download failed: {str(e)}", 500
 
 @app.route("/download/main_graph_absolute")
 def download_main_graph_absolute():
     """Download CSV data for Main Graph Absolute plot."""
+    plot_name = 'main_graph_absolute'
+    export_format = request.args.get('format', 'csv').lower()
+    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
+
     try:
-        if 'main_graph_absolute' not in _plot_data_cache:
-            return "No data available for download", 404
-        
-        df = _plot_data_cache['main_graph_absolute']
-        csv_data = df.to_csv(index=False)
-        
-        return Response(
-            csv_data,
-            mimetype='text/csv',
-            headers={'Content-Disposition': 'attachment; filename=main_graph_absolute.csv'}
-        )
+        if export_format == 'csv':
+            csv_data = get_csv_with_metadata(plot_name, include_metadata)
+            if not csv_data:
+                return "No data available for download", 404
+
+            return Response(
+                csv_data,
+                mimetype='text/csv',
+                headers={'Content-Disposition': f'attachment; filename={plot_name}.csv'}
+            )
+
+        elif export_format in ['png', 'svg']:
+            image_bytes = export_figure_as_image(plot_name, export_format)
+            if not image_bytes:
+                return "No figure available for export", 404
+
+            mimetype = f'image/{export_format}'
+            return Response(
+                image_bytes,
+                mimetype=mimetype,
+                headers={'Content-Disposition': f'attachment; filename={plot_name}.{export_format}'}
+            )
+
+        else:
+            return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
+
     except Exception as e:
-        logger.error(f"CSV download failed: {str(e)}")
+        logger.error(f"Download failed for {plot_name}: {str(e)}")
         return f"Download failed: {str(e)}", 500
 
 @app.route("/download/main_graph_delta")
 def download_main_graph_delta():
     """Download CSV data for Main Graph Delta plot."""
+    plot_name = 'main_graph_delta'
+    export_format = request.args.get('format', 'csv').lower()
+    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
+
     try:
-        if 'main_graph_delta' not in _plot_data_cache:
-            return "No data available for download", 404
-        
-        df = _plot_data_cache['main_graph_delta']
-        csv_data = df.to_csv(index=False)
-        
-        return Response(
-            csv_data,
-            mimetype='text/csv',
-            headers={'Content-Disposition': 'attachment; filename=main_graph_delta.csv'}
-        )
+        if export_format == 'csv':
+            csv_data = get_csv_with_metadata(plot_name, include_metadata)
+            if not csv_data:
+                return "No data available for download", 404
+
+            return Response(
+                csv_data,
+                mimetype='text/csv',
+                headers={'Content-Disposition': f'attachment; filename={plot_name}.csv'}
+            )
+
+        elif export_format in ['png', 'svg']:
+            image_bytes = export_figure_as_image(plot_name, export_format)
+            if not image_bytes:
+                return "No figure available for export", 404
+
+            mimetype = f'image/{export_format}'
+            return Response(
+                image_bytes,
+                mimetype=mimetype,
+                headers={'Content-Disposition': f'attachment; filename={plot_name}.{export_format}'}
+            )
+
+        else:
+            return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
+
     except Exception as e:
-        logger.error(f"CSV download failed: {str(e)}")
+        logger.error(f"Download failed for {plot_name}: {str(e)}")
         return f"Download failed: {str(e)}", 500
 
+@app.route("/download/bulk")
+def download_bulk():
+    """Bulk download multiple plots in a ZIP archive.
 
+    Query Parameters:
+        plots (str): Comma-separated list of plot names (e.g., "latest_entity_counts,latest_ke_components")
+        formats (str): Comma-separated list of formats (default: "csv,png,svg")
+        category (str): Predefined category: "all", "database-state", "network-analysis", "ke-analysis", "data-quality"
 
+    Returns:
+        Response: ZIP file containing all requested plots in all requested formats
+
+    Example Usage:
+        /download/bulk?plots=latest_entity_counts,latest_ke_components&formats=csv,png
+        /download/bulk?category=database-state&formats=png,svg
+        /download/bulk?category=all&formats=csv
+    """
+    try:
+        # Predefined plot categories
+        categories = {
+            'all': [
+                'latest_entity_counts', 'latest_ke_components', 'latest_network_density',
+                'latest_avg_per_aop', 'latest_process_usage', 'latest_object_usage',
+                'latest_aop_completeness', 'latest_ke_annotation_depth'
+            ],
+            'database-state': ['latest_entity_counts'],
+            'network-analysis': ['latest_network_density', 'latest_avg_per_aop'],
+            'ke-analysis': ['latest_ke_components', 'latest_ke_annotation_depth'],
+            'data-quality': ['latest_aop_completeness', 'latest_process_usage', 'latest_object_usage']
+        }
+
+        # Get plot names from query params
+        category = request.args.get('category', '').lower()
+        plots_param = request.args.get('plots', '')
+
+        if category and category in categories:
+            plot_names = categories[category]
+        elif plots_param:
+            plot_names = [p.strip() for p in plots_param.split(',')]
+        else:
+            return "Please specify either 'category' or 'plots' parameter", 400
+
+        # Get formats from query params
+        formats_param = request.args.get('formats', 'csv,png,svg')
+        formats = [f.strip().lower() for f in formats_param.split(',')]
+
+        # Validate formats
+        valid_formats = {'csv', 'png', 'svg'}
+        formats = [f for f in formats if f in valid_formats]
+        if not formats:
+            return "No valid formats specified. Use csv, png, or svg.", 400
+
+        # Create ZIP file
+        zip_bytes = create_bulk_download(plot_names, formats)
+        if not zip_bytes:
+            return "Failed to create bulk download", 500
+
+        # Generate filename
+        if category:
+            filename = f"aopwiki_{category}_plots.zip"
+        else:
+            filename = f"aopwiki_{len(plot_names)}_plots.zip"
+
+        return Response(
+            zip_bytes,
+            mimetype='application/zip',
+            headers={'Content-Disposition': f'attachment; filename={filename}'}
+        )
+
+    except Exception as e:
+        logger.error(f"Bulk download failed: {str(e)}")
+        return f"Bulk download failed: {str(e)}", 500
 
 
 # Individual plot endpoints for lazy loading

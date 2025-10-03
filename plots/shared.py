@@ -128,6 +128,7 @@ config = {
 
 # Global data cache for CSV export functionality
 _plot_data_cache = {}
+_plot_figure_cache = {}  # Cache for Plotly figure objects (for PNG/SVG/PDF export)
 
 
 def safe_read_csv(filename: str, default_data: Optional[List[Dict]] = None) -> pd.DataFrame:
@@ -812,3 +813,153 @@ def get_all_versions() -> list[dict]:
     except Exception as e:
         logger.error(f"Error getting all versions: {e}")
         return []
+
+
+def export_figure_as_image(plot_name: str, format: str = 'png', width: int = 1200, height: int = 800) -> Optional[bytes]:
+    """Export a cached Plotly figure as PNG or SVG image.
+
+    Args:
+        plot_name: Name of the plot in _plot_figure_cache
+        format: Image format ('png' or 'svg')
+        width: Image width in pixels
+        height: Image height in pixels
+
+    Returns:
+        bytes: Image data as bytes, or None if export fails
+
+    Example:
+        >>> image_bytes = export_figure_as_image('latest_entity_counts', 'png')
+        >>> if image_bytes:
+        ...     with open('plot.png', 'wb') as f:
+        ...         f.write(image_bytes)
+    """
+    try:
+        if plot_name not in _plot_figure_cache:
+            logger.error(f"Plot {plot_name} not found in figure cache")
+            return None
+
+        fig = _plot_figure_cache[plot_name]
+
+        # Export to image format using Kaleido
+        image_bytes = pio.to_image(
+            fig,
+            format=format,
+            width=width,
+            height=height,
+            engine='kaleido'
+        )
+
+        logger.info(f"Successfully exported {plot_name} as {format.upper()}")
+        return image_bytes
+
+    except Exception as e:
+        logger.error(f"Error exporting {plot_name} as {format}: {e}")
+        return None
+
+
+def get_csv_with_metadata(plot_name: str, include_metadata: bool = True) -> Optional[str]:
+    """Generate CSV string with optional metadata headers.
+
+    Args:
+        plot_name: Name of the plot in _plot_data_cache
+        include_metadata: Whether to include metadata header rows
+
+    Returns:
+        str: CSV string with optional metadata, or None if data not found
+
+    Example:
+        >>> csv_data = get_csv_with_metadata('latest_entity_counts')
+        >>> print(csv_data[:100])
+        # Export Date: 2025-10-02 14:30:00
+        # Plot: latest_entity_counts
+        ...
+    """
+    try:
+        if plot_name not in _plot_data_cache:
+            logger.error(f"Plot {plot_name} not found in data cache")
+            return None
+
+        df = _plot_data_cache[plot_name]
+
+        if include_metadata:
+            from datetime import datetime
+            metadata_lines = [
+                f"# AOP-Wiki RDF Dashboard Export",
+                f"# Export Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                f"# Plot: {plot_name}",
+                f"# Data Source: {SPARQL_ENDPOINT}",
+                f"# Rows: {len(df)}",
+                f"#"
+            ]
+
+            # Add version if available in DataFrame
+            if 'Version' in df.columns and not df.empty:
+                version = df['Version'].iloc[0]
+                metadata_lines.insert(3, f"# Database Version: {version}")
+
+            metadata_header = '\n'.join(metadata_lines) + '\n'
+            return metadata_header + df.to_csv(index=False)
+        else:
+            return df.to_csv(index=False)
+
+    except Exception as e:
+        logger.error(f"Error generating CSV for {plot_name}: {e}")
+        return None
+
+
+def create_bulk_download(plot_names: list, formats: list = ['csv', 'png', 'svg']) -> Optional[bytes]:
+    """Create a ZIP archive containing multiple plots in multiple formats.
+
+    Args:
+        plot_names: List of plot names to include in the ZIP
+        formats: List of formats to export ('csv', 'png', 'svg')
+
+    Returns:
+        bytes: ZIP file contents as bytes, or None if creation fails
+
+    Example:
+        >>> zip_bytes = create_bulk_download(['latest_entity_counts', 'latest_ke_components'])
+        >>> if zip_bytes:
+        ...     with open('plots.zip', 'wb') as f:
+        ...         f.write(zip_bytes)
+    """
+    import io
+    import zipfile
+
+    try:
+        # Create an in-memory ZIP file
+        zip_buffer = io.BytesIO()
+
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+            for plot_name in plot_names:
+                # Add CSV if requested
+                if 'csv' in formats:
+                    csv_data = get_csv_with_metadata(plot_name, include_metadata=True)
+                    if csv_data:
+                        zip_file.writestr(f'{plot_name}.csv', csv_data)
+                        logger.info(f"Added {plot_name}.csv to ZIP")
+
+                # Add PNG if requested
+                if 'png' in formats:
+                    png_bytes = export_figure_as_image(plot_name, 'png')
+                    if png_bytes:
+                        zip_file.writestr(f'{plot_name}.png', png_bytes)
+                        logger.info(f"Added {plot_name}.png to ZIP")
+
+                # Add SVG if requested
+                if 'svg' in formats:
+                    svg_bytes = export_figure_as_image(plot_name, 'svg')
+                    if svg_bytes:
+                        zip_file.writestr(f'{plot_name}.svg', svg_bytes)
+                        logger.info(f"Added {plot_name}.svg to ZIP")
+
+        # Get the ZIP file contents
+        zip_buffer.seek(0)
+        zip_bytes = zip_buffer.read()
+
+        logger.info(f"Successfully created ZIP with {len(plot_names)} plots in {len(formats)} formats")
+        return zip_bytes
+
+    except Exception as e:
+        logger.error(f"Error creating bulk download ZIP: {e}")
+        return None
