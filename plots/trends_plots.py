@@ -29,8 +29,7 @@ Historical Plot Functions:
         - plot_bio_objects(): Biological object annotation trends
 
     Property Analysis:
-        - plot_aop_property_presence(): Property presence evolution
-        - plot_aop_property_presence_unique_colors(): Enhanced property visualization
+        - plot_aop_property_presence(): Property presence evolution with marker shapes
 
     Temporal Analysis:
         - plot_aop_lifetime(): AOP creation and modification patterns
@@ -56,7 +55,6 @@ import pandas as pd
 import plotly.express as px
 import plotly.io as pio
 from functools import reduce
-import colorsys
 from .shared import (
     BRAND_COLORS, config, _plot_data_cache, _plot_figure_cache, run_sparql_query, extract_counts, safe_read_csv
 )
@@ -1096,137 +1094,11 @@ def plot_bio_objects() -> tuple[str, str]:
 
 
 def plot_aop_property_presence(label_file="property_labels.csv") -> tuple[str, str]:
-    """Generate AOP property presence visualization with absolute and percentage views."""
-    global _plot_figure_cache
+    """Generate AOP property presence visualization with absolute and percentage views.
 
-    query_props = """
-    SELECT ?graph ?p (COUNT(DISTINCT ?AOP) AS ?count)
-    WHERE {
-      GRAPH ?graph {
-        ?AOP a aopo:AdverseOutcomePathway ;
-             ?p ?o .
-      }
-      FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-    }
-    GROUP BY ?graph ?p
-    ORDER BY ?graph ?p
+    Uses marker shapes to differentiate properties when colors repeat, ensuring
+    visual distinction across all properties.
     """
-
-    query_total = """
-    SELECT ?graph (COUNT(DISTINCT ?AOP) AS ?total)
-    WHERE {
-      GRAPH ?graph {
-        ?AOP a aopo:AdverseOutcomePathway .
-      }
-      FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-    }
-    GROUP BY ?graph
-    ORDER BY ?graph
-    """
-
-    results_props = run_sparql_query(query_props)
-    results_total = run_sparql_query(query_total)
-
-    df_props = pd.DataFrame([{
-        "version": r["graph"]["value"].split("/")[-1],
-        "property": r["p"]["value"],
-        "count": int(r["count"]["value"])
-    } for r in results_props])
-
-    df_total = pd.DataFrame([{
-        "version": r["graph"]["value"].split("/")[-1],
-        "total_aops": int(r["total"]["value"])
-    } for r in results_total])
-
-    # Merge
-    df = df_props.merge(df_total, on="version", how="left")
-    df["percentage"] = (df["count"] / df["total_aops"]) * 100
-
-    # Remove properties that are 100% in all versions
-    props_to_keep = (
-        df.groupby("property")["percentage"]
-          .max()
-          .loc[lambda x: x < 100]
-          .index
-    )
-    df = df[df["property"].isin(props_to_keep)]
-
-    # Label mapping with safe file reading
-    default_labels = [
-        {"uri": "http://purl.org/dc/elements/1.1/title", "label": "Title", "type": "Essential"},
-        {"uri": "http://purl.org/dc/elements/1.1/creator", "label": "Creator", "type": "Metadata"}
-    ]
-    df_labels = safe_read_csv(label_file, default_labels)
-
-    if not df_labels.empty:
-        df = df.merge(df_labels, how="left", left_on="property", right_on="uri")
-        df["display_label"] = df["label"].fillna(df["property"])
-    else:
-        df["display_label"] = df["property"]
-
-    # Sort
-    df["version_dt"] = pd.to_datetime(df["version"], errors="coerce")
-    df = df.sort_values("version_dt")
-
-    # Absolute presence
-    fig_abs = px.line(
-        df,
-        x="version",
-        y="count",
-        color="display_label",
-        markers=True,
-        title="Property Presence in AOPs Over Time (Count)",
-        labels={"count": "Number of AOPs", "display_label": "Property"},
-        color_discrete_sequence=BRAND_COLORS['palette']
-    )
-    fig_abs.update_layout(
-    template="plotly_white",
-    hovermode="x unified",
-    autosize=True,
-    margin=dict(l=50, r=20, t=50, b=50)
-    )
-
-    # Percentage presence
-    fig_delta = px.line(
-        df,
-        x="version",
-        y="percentage",
-        color="display_label",
-        markers=True,
-        title="Property Presence in AOPs Over Time (Percentage)",
-        labels={"percentage": "Percentage (%)", "display_label": "Property"},
-        color_discrete_sequence=BRAND_COLORS['palette']
-    )
-    fig_delta.update_layout(
-        template="plotly_white",
-        hovermode="x unified",
-        autosize=True,
-        margin=dict(l=50, r=20, t=50, b=50)
-    )
-
-    config = {
-        "responsive": True,
-        "toImageButtonOptions": {
-            "format": "png",
-            "filename": "aop_property_presence",
-            "height": 1000,
-            "width": 1600,
-            "scale": 4
-        }
-    }
-
-    # Cache figures for image export
-    _plot_figure_cache['aop_property_presence_absolute'] = fig_abs
-    _plot_figure_cache['aop_property_presence_percentage'] = fig_delta
-
-    return (
-        pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config=config),
-        pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config=config)
-    )
-
-
-def plot_aop_property_presence_unique_colors(label_file="property_labels.csv") -> tuple[str, str]:
-    """Generate AOP property presence visualization with unique colors for each property line."""
     global _plot_data_cache, _plot_figure_cache
 
     query_props = """
@@ -1298,71 +1170,503 @@ def plot_aop_property_presence_unique_colors(label_file="property_labels.csv") -
     df["version_dt"] = pd.to_datetime(df["version"], errors="coerce")
     df = df.sort_values("version_dt")
 
-    # Store data in cache for CSV downloads
-    _plot_data_cache['aop_property_presence_unique_absolute'] = df.copy()
-    _plot_data_cache['aop_property_presence_unique_percentage'] = df.copy()
+    # Cache data for CSV export
+    _plot_data_cache['aop_property_presence_absolute'] = df.copy()
+    _plot_data_cache['aop_property_presence_percentage'] = df.copy()
 
-    # Generate unique colors for each property
-    unique_properties = sorted(df["display_label"].unique())
+    # Define marker shapes for visual distinction
+    marker_symbols = ['circle', 'square', 'diamond', 'triangle-up', 'cross', 'x', 'star',
+                      'pentagon', 'hexagon', 'octagon', 'triangle-down', 'triangle-left', 'triangle-right']
 
-    # Generate distinct colors using HSV color space
-    num_colors = len(unique_properties)
-    colors = []
-    for i in range(num_colors):
-        hue = i / num_colors
-        # Use varying saturation and value for more distinction
-        saturation = 0.7 + (i % 3) * 0.1  # 0.7, 0.8, 0.9
-        value = 0.8 + (i % 2) * 0.1       # 0.8, 0.9
-        rgb = colorsys.hsv_to_rgb(hue, saturation, value)
-        hex_color = '#{:02x}{:02x}{:02x}'.format(int(rgb[0]*255), int(rgb[1]*255), int(rgb[2]*255))
-        colors.append(hex_color)
-
-    # Create color mapping
-    color_map = dict(zip(unique_properties, colors))
-
-    # Absolute presence with unique colors
+    # Absolute presence
     fig_abs = px.line(
         df,
         x="version",
         y="count",
         color="display_label",
         markers=True,
-        title="Property Presence Over Time - Enhanced Visualization (Count)",
+        title="Property Presence in AOPs Over Time (Count)",
         labels={"count": "Number of AOPs", "display_label": "Property"},
-        color_discrete_map=color_map
+        color_discrete_sequence=BRAND_COLORS['palette']
     )
+
+    # Apply marker shapes to traces
+    for i, trace in enumerate(fig_abs.data):
+        trace.update(marker=dict(symbol=marker_symbols[i % len(marker_symbols)], size=8))
+
     fig_abs.update_layout(
         template="plotly_white",
         hovermode="x unified",
         autosize=True,
-        height=700,  # Larger height for better visibility
-        margin=dict(l=50, r=20, t=70, b=50)
+        margin=dict(l=50, r=20, t=50, b=50)
     )
 
-    # Percentage presence with unique colors
+    # Percentage presence
     fig_delta = px.line(
         df,
         x="version",
         y="percentage",
         color="display_label",
         markers=True,
-        title="Property Presence Over Time - Enhanced Visualization (Percentage)",
+        title="Property Presence in AOPs Over Time (Percentage)",
         labels={"percentage": "Percentage (%)", "display_label": "Property"},
-        color_discrete_map=color_map
+        color_discrete_sequence=BRAND_COLORS['palette']
     )
+
+    # Apply marker shapes to traces
+    for i, trace in enumerate(fig_delta.data):
+        trace.update(marker=dict(symbol=marker_symbols[i % len(marker_symbols)], size=8))
+
     fig_delta.update_layout(
         template="plotly_white",
         hovermode="x unified",
         autosize=True,
-        height=700,  # Larger height for better visibility
-        margin=dict(l=50, r=20, t=70, b=50)
+        margin=dict(l=50, r=20, t=50, b=50)
+    )
+
+    config = {
+        "responsive": True,
+        "toImageButtonOptions": {
+            "format": "png",
+            "filename": "aop_property_presence",
+            "height": 1000,
+            "width": 1600,
+            "scale": 4
+        }
+    }
+
+    # Cache figures for image export
+    _plot_figure_cache['aop_property_presence_absolute'] = fig_abs
+    _plot_figure_cache['aop_property_presence_percentage'] = fig_delta
+
+    return (
+        pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config=config),
+        pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config=config)
+    )
+
+
+def plot_ke_property_presence(label_file="property_labels.csv") -> tuple[str, str]:
+    """Generate Key Event property presence visualization with absolute and percentage views.
+
+    Uses marker shapes to differentiate properties when colors repeat, ensuring
+    visual distinction across all properties.
+    """
+    global _plot_data_cache, _plot_figure_cache
+
+    query_props = """
+    SELECT ?graph ?p (COUNT(DISTINCT ?ke) AS ?count)
+    WHERE {
+      GRAPH ?graph {
+        ?ke a aopo:KeyEvent ;
+             ?p ?o .
+      }
+      FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+    }
+    GROUP BY ?graph ?p
+    ORDER BY ?graph ?p
+    """
+
+    query_total = """
+    SELECT ?graph (COUNT(DISTINCT ?ke) AS ?total)
+    WHERE {
+      GRAPH ?graph {
+        ?ke a aopo:KeyEvent .
+      }
+      FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+    }
+    GROUP BY ?graph
+    ORDER BY ?graph
+    """
+
+    results_props = run_sparql_query(query_props)
+    results_total = run_sparql_query(query_total)
+
+    df_props = pd.DataFrame([{
+        "version": r["graph"]["value"].split("/")[-1],
+        "property": r["p"]["value"],
+        "count": int(r["count"]["value"])
+    } for r in results_props])
+
+    df_total = pd.DataFrame([{
+        "version": r["graph"]["value"].split("/")[-1],
+        "total_kes": int(r["total"]["value"])
+    } for r in results_total])
+
+    # Merge
+    df = df_props.merge(df_total, on="version", how="left")
+    df["percentage"] = (df["count"] / df["total_kes"]) * 100
+
+    # Remove properties that are 100% in all versions
+    props_to_keep = (
+        df.groupby("property")["percentage"]
+          .max()
+          .loc[lambda x: x < 100]
+          .index
+    )
+    df = df[df["property"].isin(props_to_keep)]
+
+    # Label mapping with safe file reading
+    default_labels = [
+        {"uri": "http://purl.org/dc/elements/1.1/title", "label": "Title", "type": "Essential"},
+        {"uri": "http://purl.org/dc/elements/1.1/creator", "label": "Creator", "type": "Metadata"}
+    ]
+    df_labels = safe_read_csv(label_file, default_labels)
+
+    if not df_labels.empty:
+        df = df.merge(df_labels, how="left", left_on="property", right_on="uri")
+        df["display_label"] = df["label"].fillna(df["property"])
+    else:
+        df["display_label"] = df["property"]
+
+    # Sort
+    df["version_dt"] = pd.to_datetime(df["version"], errors="coerce")
+    df = df.sort_values("version_dt")
+
+    # Cache data for CSV export
+    _plot_data_cache['ke_property_presence_absolute'] = df.copy()
+    _plot_data_cache['ke_property_presence_percentage'] = df.copy()
+
+    # Define marker shapes for visual distinction
+    marker_symbols = ['circle', 'square', 'diamond', 'triangle-up', 'cross', 'x', 'star',
+                      'pentagon', 'hexagon', 'octagon', 'triangle-down', 'triangle-left', 'triangle-right']
+
+    # Absolute presence
+    fig_abs = px.line(
+        df,
+        x="version",
+        y="count",
+        color="display_label",
+        markers=True,
+        title="Property Presence in Key Events Over Time (Count)",
+        labels={"count": "Number of KEs", "display_label": "Property"},
+        color_discrete_sequence=BRAND_COLORS['palette']
+    )
+
+    # Apply marker shapes to traces
+    for i, trace in enumerate(fig_abs.data):
+        trace.update(marker=dict(symbol=marker_symbols[i % len(marker_symbols)], size=8))
+
+    fig_abs.update_layout(
+        template="plotly_white",
+        hovermode="x unified",
+        autosize=True,
+        margin=dict(l=50, r=20, t=50, b=50)
+    )
+
+    # Percentage presence
+    fig_delta = px.line(
+        df,
+        x="version",
+        y="percentage",
+        color="display_label",
+        markers=True,
+        title="Property Presence in Key Events Over Time (Percentage)",
+        labels={"percentage": "Percentage (%)", "display_label": "Property"},
+        color_discrete_sequence=BRAND_COLORS['palette']
+    )
+
+    # Apply marker shapes to traces
+    for i, trace in enumerate(fig_delta.data):
+        trace.update(marker=dict(symbol=marker_symbols[i % len(marker_symbols)], size=8))
+
+    fig_delta.update_layout(
+        template="plotly_white",
+        hovermode="x unified",
+        autosize=True,
+        margin=dict(l=50, r=20, t=50, b=50)
     )
 
     config = {"responsive": True}
 
     # Cache figures for image export
-    _plot_figure_cache['aop_property_presence_unique_absolute'] = fig_abs
-    _plot_figure_cache['aop_property_presence_unique_percentage'] = fig_delta
+    _plot_figure_cache['ke_property_presence_absolute'] = fig_abs
+    _plot_figure_cache['ke_property_presence_percentage'] = fig_delta
+
+    return (
+        pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config=config),
+        pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config=config)
+    )
+
+
+def plot_ker_property_presence(label_file="property_labels.csv") -> tuple[str, str]:
+    """Generate Key Event Relationship property presence visualization with absolute and percentage views.
+
+    Uses marker shapes to differentiate properties when colors repeat, ensuring
+    visual distinction across all properties.
+    """
+    global _plot_data_cache, _plot_figure_cache
+
+    query_props = """
+    SELECT ?graph ?p (COUNT(DISTINCT ?ker) AS ?count)
+    WHERE {
+      GRAPH ?graph {
+        ?ker a aopo:KeyEventRelationship ;
+             ?p ?o .
+      }
+      FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+    }
+    GROUP BY ?graph ?p
+    ORDER BY ?graph ?p
+    """
+
+    query_total = """
+    SELECT ?graph (COUNT(DISTINCT ?ker) AS ?total)
+    WHERE {
+      GRAPH ?graph {
+        ?ker a aopo:KeyEventRelationship .
+      }
+      FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+    }
+    GROUP BY ?graph
+    ORDER BY ?graph
+    """
+
+    results_props = run_sparql_query(query_props)
+    results_total = run_sparql_query(query_total)
+
+    df_props = pd.DataFrame([{
+        "version": r["graph"]["value"].split("/")[-1],
+        "property": r["p"]["value"],
+        "count": int(r["count"]["value"])
+    } for r in results_props])
+
+    df_total = pd.DataFrame([{
+        "version": r["graph"]["value"].split("/")[-1],
+        "total_kers": int(r["total"]["value"])
+    } for r in results_total])
+
+    # Merge
+    df = df_props.merge(df_total, on="version", how="left")
+    df["percentage"] = (df["count"] / df["total_kers"]) * 100
+
+    # Remove properties that are 100% in all versions
+    props_to_keep = (
+        df.groupby("property")["percentage"]
+          .max()
+          .loc[lambda x: x < 100]
+          .index
+    )
+    df = df[df["property"].isin(props_to_keep)]
+
+    # Label mapping with safe file reading
+    default_labels = [
+        {"uri": "http://purl.org/dc/elements/1.1/title", "label": "Title", "type": "Essential"},
+        {"uri": "http://purl.org/dc/elements/1.1/creator", "label": "Creator", "type": "Metadata"}
+    ]
+    df_labels = safe_read_csv(label_file, default_labels)
+
+    if not df_labels.empty:
+        df = df.merge(df_labels, how="left", left_on="property", right_on="uri")
+        df["display_label"] = df["label"].fillna(df["property"])
+    else:
+        df["display_label"] = df["property"]
+
+    # Sort
+    df["version_dt"] = pd.to_datetime(df["version"], errors="coerce")
+    df = df.sort_values("version_dt")
+
+    # Cache data for CSV export
+    _plot_data_cache['ker_property_presence_absolute'] = df.copy()
+    _plot_data_cache['ker_property_presence_percentage'] = df.copy()
+
+    # Define marker shapes for visual distinction
+    marker_symbols = ['circle', 'square', 'diamond', 'triangle-up', 'cross', 'x', 'star',
+                      'pentagon', 'hexagon', 'octagon', 'triangle-down', 'triangle-left', 'triangle-right']
+
+    # Absolute presence
+    fig_abs = px.line(
+        df,
+        x="version",
+        y="count",
+        color="display_label",
+        markers=True,
+        title="Property Presence in Key Event Relationships Over Time (Count)",
+        labels={"count": "Number of KERs", "display_label": "Property"},
+        color_discrete_sequence=BRAND_COLORS['palette']
+    )
+
+    # Apply marker shapes to traces
+    for i, trace in enumerate(fig_abs.data):
+        trace.update(marker=dict(symbol=marker_symbols[i % len(marker_symbols)], size=8))
+
+    fig_abs.update_layout(
+        template="plotly_white",
+        hovermode="x unified",
+        autosize=True,
+        margin=dict(l=50, r=20, t=50, b=50)
+    )
+
+    # Percentage presence
+    fig_delta = px.line(
+        df,
+        x="version",
+        y="percentage",
+        color="display_label",
+        markers=True,
+        title="Property Presence in Key Event Relationships Over Time (Percentage)",
+        labels={"percentage": "Percentage (%)", "display_label": "Property"},
+        color_discrete_sequence=BRAND_COLORS['palette']
+    )
+
+    # Apply marker shapes to traces
+    for i, trace in enumerate(fig_delta.data):
+        trace.update(marker=dict(symbol=marker_symbols[i % len(marker_symbols)], size=8))
+
+    fig_delta.update_layout(
+        template="plotly_white",
+        hovermode="x unified",
+        autosize=True,
+        margin=dict(l=50, r=20, t=50, b=50)
+    )
+
+    config = {"responsive": True}
+
+    # Cache figures for image export
+    _plot_figure_cache['ker_property_presence_absolute'] = fig_abs
+    _plot_figure_cache['ker_property_presence_percentage'] = fig_delta
+
+    return (
+        pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config=config),
+        pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config=config)
+    )
+
+
+def plot_stressor_property_presence(label_file="property_labels.csv") -> tuple[str, str]:
+    """Generate Stressor property presence visualization with absolute and percentage views.
+
+    Uses marker shapes to differentiate properties when colors repeat, ensuring
+    visual distinction across all properties.
+    """
+    global _plot_data_cache, _plot_figure_cache
+
+    query_props = """
+    SELECT ?graph ?p (COUNT(DISTINCT ?s) AS ?count)
+    WHERE {
+      GRAPH ?graph {
+        ?s a nci:C54571 ;
+           ?p ?o .
+      }
+      FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+    }
+    GROUP BY ?graph ?p
+    ORDER BY ?graph ?p
+    """
+
+    query_total = """
+    SELECT ?graph (COUNT(DISTINCT ?s) AS ?total)
+    WHERE {
+      GRAPH ?graph {
+        ?s a nci:C54571 .
+      }
+      FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+    }
+    GROUP BY ?graph
+    ORDER BY ?graph
+    """
+
+    results_props = run_sparql_query(query_props)
+    results_total = run_sparql_query(query_total)
+
+    df_props = pd.DataFrame([{
+        "version": r["graph"]["value"].split("/")[-1],
+        "property": r["p"]["value"],
+        "count": int(r["count"]["value"])
+    } for r in results_props])
+
+    df_total = pd.DataFrame([{
+        "version": r["graph"]["value"].split("/")[-1],
+        "total_stressors": int(r["total"]["value"])
+    } for r in results_total])
+
+    # Merge
+    df = df_props.merge(df_total, on="version", how="left")
+    df["percentage"] = (df["count"] / df["total_stressors"]) * 100
+
+    # Remove properties that are 100% in all versions
+    props_to_keep = (
+        df.groupby("property")["percentage"]
+          .max()
+          .loc[lambda x: x < 100]
+          .index
+    )
+    df = df[df["property"].isin(props_to_keep)]
+
+    # Label mapping with safe file reading
+    default_labels = [
+        {"uri": "http://purl.org/dc/elements/1.1/title", "label": "Title", "type": "Essential"},
+        {"uri": "http://purl.org/dc/elements/1.1/creator", "label": "Creator", "type": "Metadata"}
+    ]
+    df_labels = safe_read_csv(label_file, default_labels)
+
+    if not df_labels.empty:
+        df = df.merge(df_labels, how="left", left_on="property", right_on="uri")
+        df["display_label"] = df["label"].fillna(df["property"])
+    else:
+        df["display_label"] = df["property"]
+
+    # Sort
+    df["version_dt"] = pd.to_datetime(df["version"], errors="coerce")
+    df = df.sort_values("version_dt")
+
+    # Cache data for CSV export
+    _plot_data_cache['stressor_property_presence_absolute'] = df.copy()
+    _plot_data_cache['stressor_property_presence_percentage'] = df.copy()
+
+    # Define marker shapes for visual distinction
+    marker_symbols = ['circle', 'square', 'diamond', 'triangle-up', 'cross', 'x', 'star',
+                      'pentagon', 'hexagon', 'octagon', 'triangle-down', 'triangle-left', 'triangle-right']
+
+    # Absolute presence
+    fig_abs = px.line(
+        df,
+        x="version",
+        y="count",
+        color="display_label",
+        markers=True,
+        title="Property Presence in Stressors Over Time (Count)",
+        labels={"count": "Number of Stressors", "display_label": "Property"},
+        color_discrete_sequence=BRAND_COLORS['palette']
+    )
+
+    # Apply marker shapes to traces
+    for i, trace in enumerate(fig_abs.data):
+        trace.update(marker=dict(symbol=marker_symbols[i % len(marker_symbols)], size=8))
+
+    fig_abs.update_layout(
+        template="plotly_white",
+        hovermode="x unified",
+        autosize=True,
+        margin=dict(l=50, r=20, t=50, b=50)
+    )
+
+    # Percentage presence
+    fig_delta = px.line(
+        df,
+        x="version",
+        y="percentage",
+        color="display_label",
+        markers=True,
+        title="Property Presence in Stressors Over Time (Percentage)",
+        labels={"percentage": "Percentage (%)", "display_label": "Property"},
+        color_discrete_sequence=BRAND_COLORS['palette']
+    )
+
+    # Apply marker shapes to traces
+    for i, trace in enumerate(fig_delta.data):
+        trace.update(marker=dict(symbol=marker_symbols[i % len(marker_symbols)], size=8))
+
+    fig_delta.update_layout(
+        template="plotly_white",
+        hovermode="x unified",
+        autosize=True,
+        margin=dict(l=50, r=20, t=50, b=50)
+    )
+
+    config = {"responsive": True}
+
+    # Cache figures for image export
+    _plot_figure_cache['stressor_property_presence_absolute'] = fig_abs
+    _plot_figure_cache['stressor_property_presence_percentage'] = fig_delta
 
     return (
         pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config=config),

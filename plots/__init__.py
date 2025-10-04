@@ -29,8 +29,10 @@ Historical Trends (trends_plots):
         - plot_bio_objects(): Biological object annotation trends
 
     Property Analysis:
-        - plot_aop_property_presence(): Property presence evolution
-        - plot_aop_property_presence_unique_colors(): Enhanced property visualization
+        - plot_aop_property_presence(): AOP property presence evolution with marker shapes
+        - plot_ke_property_presence(): KE property presence evolution with marker shapes
+        - plot_ker_property_presence(): KER property presence evolution with marker shapes
+        - plot_stressor_property_presence(): Stressor property presence evolution with marker shapes
 
     Temporal Analysis:
         - plot_aop_lifetime(): AOP creation and modification patterns
@@ -55,7 +57,6 @@ Current Snapshots (latest_plots):
 
     Data Quality:
         - plot_latest_aop_completeness(): Current property completeness
-        - plot_latest_aop_completeness_unique_colors(): Enhanced completeness view
 
 Shared Utilities (shared):
     Core Functions:
@@ -144,7 +145,9 @@ from .trends_plots import (
 
     # Property analysis
     plot_aop_property_presence,
-    plot_aop_property_presence_unique_colors,
+    plot_ke_property_presence,
+    plot_ker_property_presence,
+    plot_stressor_property_presence,
 
     # Temporal analysis
     plot_aop_lifetime,
@@ -171,7 +174,6 @@ from .latest_plots import (
 
     # Data quality analysis
     plot_latest_aop_completeness,
-    plot_latest_aop_completeness_unique_colors,
 )
 
 # Define module version and metadata
@@ -210,7 +212,9 @@ __all__ = [
     'plot_bio_processes',
     'plot_bio_objects',
     'plot_aop_property_presence',
-    'plot_aop_property_presence_unique_colors',
+    'plot_ke_property_presence',
+    'plot_ker_property_presence',
+    'plot_stressor_property_presence',
     'plot_aop_lifetime',
 
     # Current snapshot functions
@@ -224,7 +228,6 @@ __all__ = [
     'plot_latest_process_usage',
     'plot_latest_object_usage',
     'plot_latest_aop_completeness',
-    'plot_latest_aop_completeness_unique_colors',
 ]
 
 # Module-level convenience functions
@@ -247,7 +250,9 @@ def get_available_functions():
             'plot_bio_processes',
             'plot_bio_objects',
             'plot_aop_property_presence',
-            'plot_aop_property_presence_unique_colors',
+            'plot_ke_property_presence',
+            'plot_ker_property_presence',
+            'plot_stressor_property_presence',
             'plot_aop_lifetime',
         ],
         'current_snapshots': [
@@ -261,7 +266,6 @@ def get_available_functions():
             'plot_latest_process_usage',
             'plot_latest_object_usage',
             'plot_latest_aop_completeness',
-            'plot_latest_aop_completeness_unique_colors',
         ],
         'utilities': [
             'run_sparql_query',
