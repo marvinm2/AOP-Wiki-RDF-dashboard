@@ -13,12 +13,10 @@ http://purl.org/dc/terms/modified,Modification Date,Metadata
 http://www.w3.org/2000/01/rdf-schema#label,Label,Essential
 http://www.w3.org/2000/01/rdf-schema#seeAlso,Web Link,Metadata
 http://purl.org/dc/elements/1.1/identifier,Identifier,Metadata
-http://purl.org/dc/elements/1.1/description,AOP Context,Context
+http://purl.org/dc/elements/1.1/description,Description,Essential
 http://aopkb.org/aop_ontology#AopContext,Domain of Applicability,Context
 http://aopkb.org/aop_ontology#LifeStageContext,Life Stage Applicability,Context
-
 http://aopkb.org/aop_ontology#has_evidence,Has Evidence,Assessment
-
 http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25217,Overall Assessment,Assessment
 http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25688,OECD Status,Metadata
 http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25725,Considerations for Applications,Assessment
@@ -26,6 +24,22 @@ http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C48192,Key Event Essentiality
 http://purl.obolibrary.org/obo/PATO_0000047,Sex Applicability,Context
 http://purl.org/dc/terms/alternative,Alternative Title,Metadata
 http://edamontology.org/operation_3799,Quantitative Understanding,Assessment
-
 http://www.w3.org/1999/02/22-rdf-syntax-ns#type,Type,Metadata
 http://purl.org/dc/elements/1.1/source,Source,Metadata
+http://purl.org/dc/terms/isPartOf,AOP Context,Context
+http://aopkb.org/aop_ontology#CellTypeContext,Cell Type Applicability,Context
+http://aopkb.org/aop_ontology#OrganContext,Organ Applicability,Context
+http://aopkb.org/aop_ontology#hasBiologicalEvent,Has Biological Event,Content
+http://edamontology.org/data_1025,Gene Identifier,Content
+http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25664,Level of Biological Organisation,Context
+http://purl.bioontology.org/ontology/NCBITAXON/131567,Taxonomic Applicability,Context
+http://purl.obolibrary.org/obo/GO_0008150,Biological Process,Content
+http://purl.obolibrary.org/obo/MMO_0000000,Measurement Method,Assessment
+http://purl.obolibrary.org/obo/PATO_0000001,Biological Action,Content
+http://purl.obolibrary.org/obo/PATO_0001241,Biological Object,Content
+http://aopkb.org/aop_ontology#has_downstream_key_event,Downstream Key Event,Content
+http://aopkb.org/aop_ontology#has_upstream_key_event,Upstream Key Event,Content
+http://edamontology.org/data_2042,Empirical Support,Assessment
+http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C71478,Weight of Evidence,Assessment
+http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C80263,Biological Plausibility,Assessment
+http://aopkb.org/aop_ontology#has_chemical_entity,Chemical Entity,Content
