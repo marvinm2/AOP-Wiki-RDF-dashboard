@@ -80,7 +80,9 @@ from plots import (
     plot_author_counts,
     plot_aop_lifetime,
     plot_aop_property_presence,
-    plot_aop_property_presence_unique_colors,
+    plot_ke_property_presence,
+    plot_ker_property_presence,
+    plot_stressor_property_presence,
     plot_kes_by_kec_count,
     plot_latest_entity_counts,
     plot_latest_ke_components,
@@ -90,7 +92,6 @@ from plots import (
     plot_latest_process_usage,
     plot_latest_object_usage,
     plot_latest_aop_completeness,
-    plot_latest_aop_completeness_unique_colors,
     plot_latest_database_summary,
     plot_latest_ke_annotation_depth,
     check_sparql_endpoint_health,
@@ -165,7 +166,9 @@ def compute_plots_parallel() -> dict:
         ('author_counts', lambda: safe_plot_execution(plot_author_counts)),
         ('aop_lifetime', lambda: safe_plot_execution(plot_aop_lifetime)),
         ('aop_property_presence', lambda: safe_plot_execution(plot_aop_property_presence)),
-        ('aop_property_presence_unique', lambda: safe_plot_execution(plot_aop_property_presence_unique_colors)),
+        ('ke_property_presence', lambda: safe_plot_execution(plot_ke_property_presence)),
+        ('ker_property_presence', lambda: safe_plot_execution(plot_ker_property_presence)),
+        ('stressor_property_presence', lambda: safe_plot_execution(plot_stressor_property_presence)),
         ('kes_by_kec_count', lambda: safe_plot_execution(plot_kes_by_kec_count)),
         ('latest_entity_counts', lambda: safe_plot_execution(plot_latest_entity_counts)),
         ('latest_ke_components', lambda: safe_plot_execution(plot_latest_ke_components)),
@@ -175,7 +178,6 @@ def compute_plots_parallel() -> dict:
         ('latest_process_usage', lambda: safe_plot_execution(plot_latest_process_usage)),
         ('latest_object_usage', lambda: safe_plot_execution(plot_latest_object_usage)),
         ('latest_aop_completeness', lambda: safe_plot_execution(plot_latest_aop_completeness)),
-        ('latest_aop_completeness_unique', lambda: safe_plot_execution(plot_latest_aop_completeness_unique_colors)),
         ('latest_database_summary', lambda: safe_plot_execution(plot_latest_database_summary)),
         ('latest_ke_annotation_depth', lambda: safe_plot_execution(plot_latest_ke_annotation_depth)),
     ]
@@ -234,7 +236,9 @@ graph_bio_objects_abs, graph_bio_objects_delta = plot_results.get('bio_objects',
 graph_authors_abs, graph_authors_delta = plot_results.get('author_counts', ("", ""))
 graph_created, graph_modified, graph_scatter = plot_results.get('aop_lifetime', ("", "", ""))
 graph_prop_abs, graph_prop_pct = plot_results.get('aop_property_presence', ("", ""))
-graph_prop_unique_abs, graph_prop_unique_pct = plot_results.get('aop_property_presence_unique', ("", ""))
+graph_ke_prop_abs, graph_ke_prop_pct = plot_results.get('ke_property_presence', ("", ""))
+graph_ker_prop_abs, graph_ker_prop_pct = plot_results.get('ker_property_presence', ("", ""))
+graph_stressor_prop_abs, graph_stressor_prop_pct = plot_results.get('stressor_property_presence', ("", ""))
 graph_kec_count_abs, graph_kec_count_delta = plot_results.get('kes_by_kec_count', ("", ""))
 
 # Latest data plots
@@ -246,7 +250,6 @@ latest_ontology_usage = plot_results.get('latest_ontology_usage') or ""
 latest_process_usage = plot_results.get('latest_process_usage') or ""
 latest_object_usage = plot_results.get('latest_object_usage') or ""
 latest_aop_completeness = plot_results.get('latest_aop_completeness') or ""
-latest_aop_completeness_unique = plot_results.get('latest_aop_completeness_unique') or ""
 latest_database_summary = plot_results.get('latest_database_summary') or ""
 latest_ke_annotation_depth = plot_results.get('latest_ke_annotation_depth') or ""
 # --- End of precomputed plots ---
@@ -663,10 +666,10 @@ def download_latest_aop_completeness():
         logger.error(f"Download failed for {plot_name}: {str(e)}")
         return f"Download failed: {str(e)}", 500
 
-@app.route("/download/latest_aop_completeness_unique")
-def download_latest_aop_completeness_unique():
-    """Download CSV data for Latest AOP Completeness (Unique Colors) plot."""
-    plot_name = 'latest_aop_completeness_unique'
+@app.route("/download/trend/ke_property_presence_absolute")
+def download_ke_property_presence_absolute():
+    """Download data for KE Property Presence (Absolute Count) plot."""
+    plot_name = 'ke_property_presence_absolute'
     export_format = request.args.get('format', 'csv').lower()
     include_metadata = request.args.get('metadata', 'true').lower() == 'true'
 
@@ -701,10 +704,10 @@ def download_latest_aop_completeness_unique():
         logger.error(f"Download failed for {plot_name}: {str(e)}")
         return f"Download failed: {str(e)}", 500
 
-@app.route("/download/aop_property_presence_unique_absolute")
-def download_aop_property_presence_unique_absolute():
-    """Download CSV data for AOP Property Presence Unique Colors (Absolute Count) plot."""
-    plot_name = 'aop_property_presence_unique_absolute'
+@app.route("/download/trend/ke_property_presence_percentage")
+def download_ke_property_presence_percentage():
+    """Download data for KE Property Presence (Percentage) plot."""
+    plot_name = 'ke_property_presence_percentage'
     export_format = request.args.get('format', 'csv').lower()
     include_metadata = request.args.get('metadata', 'true').lower() == 'true'
 
@@ -739,10 +742,124 @@ def download_aop_property_presence_unique_absolute():
         logger.error(f"Download failed for {plot_name}: {str(e)}")
         return f"Download failed: {str(e)}", 500
 
-@app.route("/download/aop_property_presence_unique_percentage")
-def download_aop_property_presence_unique_percentage():
-    """Download CSV data for AOP Property Presence Unique Colors (Percentage) plot."""
-    plot_name = 'aop_property_presence_unique_percentage'
+@app.route("/download/trend/ker_property_presence_absolute")
+def download_ker_property_presence_absolute():
+    """Download data for KER Property Presence (Absolute Count) plot."""
+    plot_name = 'ker_property_presence_absolute'
+    export_format = request.args.get('format', 'csv').lower()
+    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
+
+    try:
+        if export_format == 'csv':
+            csv_data = get_csv_with_metadata(plot_name, include_metadata)
+            if not csv_data:
+                return "No data available for download", 404
+
+            return Response(
+                csv_data,
+                mimetype='text/csv',
+                headers={'Content-Disposition': f'attachment; filename={plot_name}.csv'}
+            )
+
+        elif export_format in ['png', 'svg']:
+            image_bytes = export_figure_as_image(plot_name, export_format)
+            if not image_bytes:
+                return "No figure available for export", 404
+
+            mimetype = f'image/{export_format}'
+            return Response(
+                image_bytes,
+                mimetype=mimetype,
+                headers={'Content-Disposition': f'attachment; filename={plot_name}.{export_format}'}
+            )
+
+        else:
+            return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
+
+    except Exception as e:
+        logger.error(f"Download failed for {plot_name}: {str(e)}")
+        return f"Download failed: {str(e)}", 500
+
+@app.route("/download/trend/ker_property_presence_percentage")
+def download_ker_property_presence_percentage():
+    """Download data for KER Property Presence (Percentage) plot."""
+    plot_name = 'ker_property_presence_percentage'
+    export_format = request.args.get('format', 'csv').lower()
+    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
+
+    try:
+        if export_format == 'csv':
+            csv_data = get_csv_with_metadata(plot_name, include_metadata)
+            if not csv_data:
+                return "No data available for download", 404
+
+            return Response(
+                csv_data,
+                mimetype='text/csv',
+                headers={'Content-Disposition': f'attachment; filename={plot_name}.csv'}
+            )
+
+        elif export_format in ['png', 'svg']:
+            image_bytes = export_figure_as_image(plot_name, export_format)
+            if not image_bytes:
+                return "No figure available for export", 404
+
+            mimetype = f'image/{export_format}'
+            return Response(
+                image_bytes,
+                mimetype=mimetype,
+                headers={'Content-Disposition': f'attachment; filename={plot_name}.{export_format}'}
+            )
+
+        else:
+            return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
+
+    except Exception as e:
+        logger.error(f"Download failed for {plot_name}: {str(e)}")
+        return f"Download failed: {str(e)}", 500
+
+@app.route("/download/trend/stressor_property_presence_absolute")
+def download_stressor_property_presence_absolute():
+    """Download data for Stressor Property Presence (Absolute Count) plot."""
+    plot_name = 'stressor_property_presence_absolute'
+    export_format = request.args.get('format', 'csv').lower()
+    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
+
+    try:
+        if export_format == 'csv':
+            csv_data = get_csv_with_metadata(plot_name, include_metadata)
+            if not csv_data:
+                return "No data available for download", 404
+
+            return Response(
+                csv_data,
+                mimetype='text/csv',
+                headers={'Content-Disposition': f'attachment; filename={plot_name}.csv'}
+            )
+
+        elif export_format in ['png', 'svg']:
+            image_bytes = export_figure_as_image(plot_name, export_format)
+            if not image_bytes:
+                return "No figure available for export", 404
+
+            mimetype = f'image/{export_format}'
+            return Response(
+                image_bytes,
+                mimetype=mimetype,
+                headers={'Content-Disposition': f'attachment; filename={plot_name}.{export_format}'}
+            )
+
+        else:
+            return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
+
+    except Exception as e:
+        logger.error(f"Download failed for {plot_name}: {str(e)}")
+        return f"Download failed: {str(e)}", 500
+
+@app.route("/download/trend/stressor_property_presence_percentage")
+def download_stressor_property_presence_percentage():
+    """Download data for Stressor Property Presence (Percentage) plot."""
+    plot_name = 'stressor_property_presence_percentage'
     export_format = request.args.get('format', 'csv').lower()
     include_metadata = request.args.get('metadata', 'true').lower() == 'true'
 
@@ -1137,8 +1254,12 @@ def get_plot(plot_name):
         'aop_creation_vs_modification_timeline': graph_scatter,
         'aop_property_presence_absolute': graph_prop_abs,
         'aop_property_presence_percentage': graph_prop_pct,
-        'aop_property_presence_unique_absolute': graph_prop_unique_abs,
-        'aop_property_presence_unique_percentage': graph_prop_unique_pct,
+        'ke_property_presence_absolute': graph_ke_prop_abs,
+        'ke_property_presence_percentage': graph_ke_prop_pct,
+        'ker_property_presence_absolute': graph_ker_prop_abs,
+        'ker_property_presence_percentage': graph_ker_prop_pct,
+        'stressor_property_presence_absolute': graph_stressor_prop_abs,
+        'stressor_property_presence_percentage': graph_stressor_prop_pct,
         'kes_by_kec_count_absolute': graph_kec_count_abs,
         'kes_by_kec_count_delta': graph_kec_count_delta
     }
@@ -1152,7 +1273,6 @@ def get_plot(plot_name):
         'latest_process_usage': plot_latest_process_usage,
         'latest_object_usage': plot_latest_object_usage,
         'latest_aop_completeness': plot_latest_aop_completeness,
-        'latest_aop_completeness_unique': plot_latest_aop_completeness_unique_colors,
         'latest_ontology_usage': plot_latest_ontology_usage,
         'latest_database_summary': plot_latest_database_summary,
         'latest_ke_annotation_depth': plot_latest_ke_annotation_depth,

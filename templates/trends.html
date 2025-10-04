@@ -129,41 +129,121 @@
         </div>
     </div>
 
-    <!-- AOP Property Presence - Unique Colors -->
-    <div class="plot-box full-width" id="aop-property-presence-unique">
+    <!-- Key Event Property Presence -->
+    <div class="plot-box full-width" id="ke-property-presence">
         <div class="plot-header">
-            <h3>AOP Property Presence Over Time - Unique Colors</h3>
+            <h3>Key Event Property Presence Over Time</h3>
             <div style="display: flex; gap: 10px; align-items: center;">
                 <div class="download-dropdown">
                     <button class="download-button dropdown-toggle">Download Absolute ▼</button>
                     <div class="dropdown-menu">
-                        <a href="/download/trend/aop_property_presence_unique_absolute?format=csv" class="dropdown-item">📄 CSV</a>
-                        <a href="/download/trend/aop_property_presence_unique_absolute?format=png" class="dropdown-item">🖼️ PNG</a>
-                        <a href="/download/trend/aop_property_presence_unique_absolute?format=svg" class="dropdown-item">📐 SVG</a>
+                        <a href="/download/trend/ke_property_presence_absolute?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/ke_property_presence_absolute?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/ke_property_presence_absolute?format=svg" class="dropdown-item">📐 SVG</a>
                     </div>
                 </div>
                 <div class="download-dropdown">
                     <button class="download-button dropdown-toggle">Download Percentage ▼</button>
                     <div class="dropdown-menu">
-                        <a href="/download/trend/aop_property_presence_unique_percentage?format=csv" class="dropdown-item">📄 CSV</a>
-                        <a href="/download/trend/aop_property_presence_unique_percentage?format=png" class="dropdown-item">🖼️ PNG</a>
-                        <a href="/download/trend/aop_property_presence_unique_percentage?format=svg" class="dropdown-item">📐 SVG</a>
+                        <a href="/download/trend/ke_property_presence_percentage?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/ke_property_presence_percentage?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/ke_property_presence_percentage?format=svg" class="dropdown-item">📐 SVG</a>
                     </div>
                 </div>
                 <label><input type="checkbox" class="plot-toggle"> Show Percentage</label>
             </div>
         </div>
         <p class="plot-description">
-            Same AOP property presence trends with unique colors for each property line instead of repeating colors.
-            Larger panel for better visualization of all property trends.
+            Tracks which metadata properties are present in Key Events over time. Identifies completeness patterns and annotation trends.
+            Uses marker shapes for visual distinction.
         </p>
         <div class="abs">
-            <div class="lazy-plot" data-plot-name="aop_property_presence_unique_absolute">
+            <div class="lazy-plot" data-plot-name="ke_property_presence_absolute">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
         </div>
         <div class="delta" style="display:none;">
-            <div class="lazy-plot" data-plot-name="aop_property_presence_unique_percentage">
+            <div class="lazy-plot" data-plot-name="ke_property_presence_percentage">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Key Event Relationship Property Presence -->
+    <div class="plot-box full-width" id="ker-property-presence">
+        <div class="plot-header">
+            <h3>Key Event Relationship Property Presence Over Time</h3>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download Absolute ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/ker_property_presence_absolute?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/ker_property_presence_absolute?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/ker_property_presence_absolute?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download Percentage ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/ker_property_presence_percentage?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/ker_property_presence_percentage?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/ker_property_presence_percentage?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+                <label><input type="checkbox" class="plot-toggle"> Show Percentage</label>
+            </div>
+        </div>
+        <p class="plot-description">
+            Tracks which metadata properties are present in Key Event Relationships over time. Monitors evidence and annotation quality.
+            Uses marker shapes for visual distinction.
+        </p>
+        <div class="abs">
+            <div class="lazy-plot" data-plot-name="ker_property_presence_absolute">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+        <div class="delta" style="display:none;">
+            <div class="lazy-plot" data-plot-name="ker_property_presence_percentage">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Stressor Property Presence -->
+    <div class="plot-box full-width" id="stressor-property-presence">
+        <div class="plot-header">
+            <h3>Stressor Property Presence Over Time</h3>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download Absolute ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/stressor_property_presence_absolute?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/stressor_property_presence_absolute?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/stressor_property_presence_absolute?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download Percentage ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/stressor_property_presence_percentage?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/stressor_property_presence_percentage?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/stressor_property_presence_percentage?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+                <label><input type="checkbox" class="plot-toggle"> Show Percentage</label>
+            </div>
+        </div>
+        <p class="plot-description">
+            Tracks which metadata properties are present in Stressors over time. Identifies documentation patterns and completeness trends.
+            Uses marker shapes for visual distinction.
+        </p>
+        <div class="abs">
+            <div class="lazy-plot" data-plot-name="stressor_property_presence_absolute">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+        <div class="delta" style="display:none;">
+            <div class="lazy-plot" data-plot-name="stressor_property_presence_percentage">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
         </div>
