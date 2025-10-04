@@ -40,6 +40,6 @@ http://purl.obolibrary.org/obo/PATO_0001241,Biological Object,Content
 http://aopkb.org/aop_ontology#has_downstream_key_event,Downstream Key Event,Content
 http://aopkb.org/aop_ontology#has_upstream_key_event,Upstream Key Event,Content
 http://edamontology.org/data_2042,Empirical Support,Assessment
-http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C71478,Weight of Evidence,Assessment
+http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C71478,Uncertainty,Assessment
 http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C80263,Biological Plausibility,Assessment
 http://aopkb.org/aop_ontology#has_chemical_entity,Chemical Entity,Content
