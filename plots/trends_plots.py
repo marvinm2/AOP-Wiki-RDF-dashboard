@@ -1153,6 +1153,32 @@ def plot_aop_property_presence(label_file="property_labels.csv") -> tuple[str, s
     )
     df = df[df["property"].isin(props_to_keep)]
 
+    # Ensure complete data: fill missing property-version combinations with 0
+    if not df.empty:
+        all_versions = sorted(df['version'].unique())
+        all_props = sorted(df['property'].unique())
+        complete_index = pd.MultiIndex.from_product(
+            [all_versions, all_props],
+            names=['version', 'property']
+        )
+        df_complete = df.set_index(['version', 'property']).reindex(complete_index, fill_value=0).reset_index()
+
+        # Merge with totals to get proper totals for each version
+        df_complete = df_complete.merge(df_total, on="version", how="left")
+
+        # Find the total column name (total_aops, total_kes, total_kers, or total_stressors)
+        total_col = [col for col in df_complete.columns if col.startswith('total_')][0]
+
+        # Recalculate percentage with the correct total column
+        df_complete["percentage"] = (df_complete["count"] / df_complete[total_col]) * 100
+
+        # Preserve display_label if it exists, otherwise will be added later
+        if 'display_label' in df.columns:
+            label_map = df[['property', 'display_label']].drop_duplicates().set_index('property')['display_label'].to_dict()
+            df_complete['display_label'] = df_complete['property'].map(label_map)
+
+        df = df_complete
+
     # Label mapping with safe file reading
     default_labels = [
         {"uri": "http://purl.org/dc/elements/1.1/title", "label": "Title", "type": "Essential"},
@@ -1305,6 +1331,32 @@ def plot_ke_property_presence(label_file="property_labels.csv") -> tuple[str, st
     )
     df = df[df["property"].isin(props_to_keep)]
 
+    # Ensure complete data: fill missing property-version combinations with 0
+    if not df.empty:
+        all_versions = sorted(df['version'].unique())
+        all_props = sorted(df['property'].unique())
+        complete_index = pd.MultiIndex.from_product(
+            [all_versions, all_props],
+            names=['version', 'property']
+        )
+        df_complete = df.set_index(['version', 'property']).reindex(complete_index, fill_value=0).reset_index()
+
+        # Merge with totals to get proper totals for each version
+        df_complete = df_complete.merge(df_total, on="version", how="left")
+
+        # Find the total column name (total_aops, total_kes, total_kers, or total_stressors)
+        total_col = [col for col in df_complete.columns if col.startswith('total_')][0]
+
+        # Recalculate percentage with the correct total column
+        df_complete["percentage"] = (df_complete["count"] / df_complete[total_col]) * 100
+
+        # Preserve display_label if it exists, otherwise will be added later
+        if 'display_label' in df.columns:
+            label_map = df[['property', 'display_label']].drop_duplicates().set_index('property')['display_label'].to_dict()
+            df_complete['display_label'] = df_complete['property'].map(label_map)
+
+        df = df_complete
+
     # Label mapping with safe file reading
     default_labels = [
         {"uri": "http://purl.org/dc/elements/1.1/title", "label": "Title", "type": "Essential"},
@@ -1448,6 +1500,32 @@ def plot_ker_property_presence(label_file="property_labels.csv") -> tuple[str, s
     )
     df = df[df["property"].isin(props_to_keep)]
 
+    # Ensure complete data: fill missing property-version combinations with 0
+    if not df.empty:
+        all_versions = sorted(df['version'].unique())
+        all_props = sorted(df['property'].unique())
+        complete_index = pd.MultiIndex.from_product(
+            [all_versions, all_props],
+            names=['version', 'property']
+        )
+        df_complete = df.set_index(['version', 'property']).reindex(complete_index, fill_value=0).reset_index()
+
+        # Merge with totals to get proper totals for each version
+        df_complete = df_complete.merge(df_total, on="version", how="left")
+
+        # Find the total column name (total_aops, total_kes, total_kers, or total_stressors)
+        total_col = [col for col in df_complete.columns if col.startswith('total_')][0]
+
+        # Recalculate percentage with the correct total column
+        df_complete["percentage"] = (df_complete["count"] / df_complete[total_col]) * 100
+
+        # Preserve display_label if it exists, otherwise will be added later
+        if 'display_label' in df.columns:
+            label_map = df[['property', 'display_label']].drop_duplicates().set_index('property')['display_label'].to_dict()
+            df_complete['display_label'] = df_complete['property'].map(label_map)
+
+        df = df_complete
+
     # Label mapping with safe file reading
     default_labels = [
         {"uri": "http://purl.org/dc/elements/1.1/title", "label": "Title", "type": "Essential"},
@@ -1590,6 +1668,32 @@ def plot_stressor_property_presence(label_file="property_labels.csv") -> tuple[s
           .index
     )
     df = df[df["property"].isin(props_to_keep)]
+
+    # Ensure complete data: fill missing property-version combinations with 0
+    if not df.empty:
+        all_versions = sorted(df['version'].unique())
+        all_props = sorted(df['property'].unique())
+        complete_index = pd.MultiIndex.from_product(
+            [all_versions, all_props],
+            names=['version', 'property']
+        )
+        df_complete = df.set_index(['version', 'property']).reindex(complete_index, fill_value=0).reset_index()
+
+        # Merge with totals to get proper totals for each version
+        df_complete = df_complete.merge(df_total, on="version", how="left")
+
+        # Find the total column name (total_aops, total_kes, total_kers, or total_stressors)
+        total_col = [col for col in df_complete.columns if col.startswith('total_')][0]
+
+        # Recalculate percentage with the correct total column
+        df_complete["percentage"] = (df_complete["count"] / df_complete[total_col]) * 100
+
+        # Preserve display_label if it exists, otherwise will be added later
+        if 'display_label' in df.columns:
+            label_map = df[['property', 'display_label']].drop_duplicates().set_index('property')['display_label'].to_dict()
+            df_complete['display_label'] = df_complete['property'].map(label_map)
+
+        df = df_complete
 
     # Label mapping with safe file reading
     default_labels = [
