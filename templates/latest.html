@@ -222,6 +222,95 @@
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
         </div>
+        <div class="plot-box full-width">
+            <div class="plot-header">
+                <h3>AOP Completeness by OECD Status</h3>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/latest_aop_completeness_by_status?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/latest_aop_completeness_by_status?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/latest_aop_completeness_by_status?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+            </div>
+            <p class="plot-description">
+                Comparison of AOP completeness scores across OECD status categories (Endorsed, Under Review, Under Development) grouped by property type:
+                <strong>Essential</strong> (Title, Abstract, Description),
+                <strong>Content</strong> (Key Events, Relationships, Stressors),
+                <strong>Context</strong> (Applicability domains),
+                <strong>Assessment</strong> (Evidence, Plausibility), and
+                <strong>Metadata</strong> (Dates, Identifiers).
+            </p>
+            <details style="margin-top: 10px;">
+                <summary style="cursor: pointer; color: #307BBF; font-weight: 500;">Show property details ▼</summary>
+                <div id="aop-properties-details" class="property-details" data-entity-type="AOP" style="margin-top: 10px; padding: 10px; background-color: #f9f9f9; border-radius: 4px; font-size: 13px;">
+                    Loading properties...
+                </div>
+            </details>
+            <div class="lazy-plot" data-plot-name="latest_aop_completeness_by_status">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+        <div class="plot-box full-width">
+            <div class="plot-header">
+                <h3>KE Completeness by AOP OECD Status</h3>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/latest_ke_completeness_by_status?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/latest_ke_completeness_by_status?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/latest_ke_completeness_by_status?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+            </div>
+            <p class="plot-description">
+                Completeness of Key Events based on the OECD status of AOPs they belong to. KEs belonging to multiple AOPs with different statuses are counted for each status. Property types:
+                <strong>Essential</strong> (Title, Description),
+                <strong>Content</strong> (Biological components),
+                <strong>Context</strong> (Applicability),
+                <strong>Assessment</strong> (Evidence, Measurement), and
+                <strong>Metadata</strong> (Dates, Links).
+            </p>
+            <details style="margin-top: 10px;">
+                <summary style="cursor: pointer; color: #307BBF; font-weight: 500;">Show property details ▼</summary>
+                <div id="ke-properties-details" class="property-details" data-entity-type="KE" style="margin-top: 10px; padding: 10px; background-color: #f9f9f9; border-radius: 4px; font-size: 13px;">
+                    Loading properties...
+                </div>
+            </details>
+            <div class="lazy-plot" data-plot-name="latest_ke_completeness_by_status">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+        <div class="plot-box full-width">
+            <div class="plot-header">
+                <h3>KER Completeness by AOP OECD Status</h3>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/latest_ker_completeness_by_status?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/latest_ker_completeness_by_status?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/latest_ker_completeness_by_status?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+            </div>
+            <p class="plot-description">
+                Completeness of Key Event Relationships based on the OECD status of AOPs they belong to. KERs belonging to multiple AOPs with different statuses are counted for each status. Property types:
+                <strong>Essential</strong> (Title, Description),
+                <strong>Content</strong> (Upstream/Downstream KEs),
+                <strong>Context</strong> (Applicability, Evidence type), and
+                <strong>Metadata</strong> (Dates, Links).
+            </p>
+            <details style="margin-top: 10px;">
+                <summary style="cursor: pointer; color: #307BBF; font-weight: 500;">Show property details ▼</summary>
+                <div id="ker-properties-details" class="property-details" data-entity-type="KER" style="margin-top: 10px; padding: 10px; background-color: #f9f9f9; border-radius: 4px; font-size: 13px;">
+                    Loading properties...
+                </div>
+            </details>
+            <div class="lazy-plot" data-plot-name="latest_ker_completeness_by_status">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
         <div class="plot-box">
             <div class="plot-header">
                 <h3>Biological Process Usage</h3>
@@ -273,5 +362,48 @@
 
 <script src="{{ url_for('static', filename='js/lazy-loading.js') }}"></script>
 <script src="{{ url_for('static', filename='js/version-selector.js') }}"></script>
+<script>
+// Load property details dynamically from the API
+document.addEventListener('DOMContentLoaded', function() {
+    const propertyContainers = document.querySelectorAll('.property-details');
+
+    propertyContainers.forEach(container => {
+        const entityType = container.getAttribute('data-entity-type');
+
+        fetch(`/api/properties/${entityType}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    container.innerHTML = `<p style="color: #E6007E;">Error loading properties: ${data.error}</p>`;
+                    return;
+                }
+
+                const properties = data.properties;
+                let html = '';
+
+                // Property types in desired order
+                const propertyTypes = ['Essential', 'Content', 'Context', 'Assessment', 'Metadata'];
+
+                propertyTypes.forEach(type => {
+                    const props = properties[type] || [];
+                    if (props.length > 0) {
+                        const labels = props.map(p => p.label).join(', ');
+                        html += `<p><strong>${type}:</strong> ${labels}</p>`;
+                    }
+                });
+
+                if (html === '') {
+                    html = '<p>No properties found for this entity type.</p>';
+                }
+
+                container.innerHTML = html;
+            })
+            .catch(error => {
+                console.error('Error loading properties:', error);
+                container.innerHTML = `<p style="color: #E6007E;">Error loading properties. Please try again later.</p>`;
+            });
+    });
+});
+</script>
 </body>
 </html>

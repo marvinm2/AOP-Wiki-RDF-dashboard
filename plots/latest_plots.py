@@ -869,10 +869,16 @@ def plot_latest_aop_completeness(version: str = None) -> str:
         property_counts[prop_uri] = count
 
     # Match with our property labels and calculate completeness
+    # Only include properties that are actually used (count > 0)
     completeness_data = []
     for prop in properties:
         uri = prop["uri"]
         count = property_counts.get(uri, 0)
+
+        # Skip properties with 0 count (not relevant for AOPs)
+        if count == 0:
+            continue
+
         completeness = (count / total_aops) * 100
 
         completeness_data.append({
@@ -1203,5 +1209,567 @@ def plot_latest_ke_annotation_depth(version: str = None) -> str:
 
     # Cache the figure object for image export (PNG/SVG/PDF)
     _plot_figure_cache['latest_ke_annotation_depth'] = fig
+
+    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+
+
+def plot_latest_aop_completeness_by_status(version: str = None) -> str:
+    """Create a grouped bar chart showing AOP completeness scores grouped by OECD status.
+
+    Analyzes completeness across property categories (Essential, Content, Context,
+    Assessment, Metadata) for each OECD status category to test the hypothesis that
+    endorsed/reviewed AOPs have better completeness than under development AOPs.
+
+    Args:
+        version: Optional version string to analyze historical data
+
+    Returns:
+        HTML string containing the Plotly visualization
+    """
+    global _plot_data_cache
+
+    where_filter, order_limit = _build_graph_filter(version)
+
+    # Default fallback properties for AOP completeness analysis
+    default_properties = [
+        {"uri": "http://purl.org/dc/elements/1.1/title", "label": "Title", "type": "Essential"},
+        {"uri": "http://purl.org/dc/terms/abstract", "label": "Abstract", "type": "Essential"},
+        {"uri": "http://purl.org/dc/elements/1.1/creator", "label": "Creator", "type": "Metadata"},
+        {"uri": "http://aopkb.org/aop_ontology#has_key_event", "label": "Has Key Event", "type": "Content"},
+        {"uri": "http://aopkb.org/aop_ontology#has_adverse_outcome", "label": "Has Adverse Outcome", "type": "Content"}
+    ]
+    properties_df = safe_read_csv("property_labels.csv", default_properties)
+
+    # Filter properties to only those that apply to AOPs
+    aop_properties_df = properties_df[properties_df['applies_to'].str.contains('AOP', na=False)]
+    properties = aop_properties_df.to_dict(orient="records")
+
+    # Build property URI list for SPARQL filtering
+    property_uris = [p["uri"] for p in properties]
+
+    # Build FILTER clause for properties
+    if property_uris:
+        property_filter_values = ", ".join([f"<{uri}>" for uri in property_uris])
+        property_filter = f"FILTER(?p IN ({property_filter_values}))"
+    else:
+        property_filter = ""
+
+    # Get the target graph version
+    version_query = f"""
+    SELECT ?graph
+    WHERE {{
+        GRAPH ?graph {{ ?aop a aopo:AdverseOutcomePathway . }}
+        FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        {where_filter}
+    }}
+    GROUP BY ?graph
+    {order_limit}
+    """
+    version_results = run_sparql_query(version_query)
+    if not version_results:
+        return create_fallback_plot("AOP Completeness by OECD Status", "No AOP data available")
+
+    latest_version = version_results[0]["graph"]["value"].split("/")[-1]
+    target_graph = f"http://aopwiki.org/graph/{latest_version}"
+
+    # Optimized aggregated query: Get counts of AOPs with each property grouped by status
+    # This query aggregates in SPARQL instead of transferring all data to Python
+    aggregated_query = f"""
+    SELECT ?status ?p (COUNT(DISTINCT ?aop) AS ?count_with_property)
+    WHERE {{
+        GRAPH <{target_graph}> {{
+            ?aop a aopo:AdverseOutcomePathway .
+            OPTIONAL {{
+                ?aop <http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25688> ?status_obj .
+                BIND(STR(?status_obj) AS ?status)
+            }}
+            ?aop ?p ?o .
+            {property_filter}
+        }}
+    }}
+    GROUP BY ?status ?p
+    """
+
+    aggregated_results = run_sparql_query(aggregated_query)
+
+    # Also get total count of AOPs per status
+    status_count_query = f"""
+    SELECT ?status (COUNT(DISTINCT ?aop) AS ?total_aops)
+    WHERE {{
+        GRAPH <{target_graph}> {{
+            ?aop a aopo:AdverseOutcomePathway .
+            OPTIONAL {{
+                ?aop <http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25688> ?status_obj .
+                BIND(STR(?status_obj) AS ?status)
+            }}
+        }}
+    }}
+    GROUP BY ?status
+    """
+
+    status_count_results = run_sparql_query(status_count_query)
+
+    if not aggregated_results or not status_count_results:
+        return create_fallback_plot("AOP Completeness by OECD Status", "No completeness data available")
+
+    # Build status to total AOPs map
+    status_totals = {}
+    for result in status_count_results:
+        status = result.get("status", {}).get("value", "No Status")
+        total = int(result["total_aops"]["value"])
+        status_totals[status] = total
+
+    # Build property URI to metadata map
+    property_metadata = {p["uri"]: p for p in properties}
+
+    # Process aggregated results to calculate completeness by property type
+    status_type_data = {}
+
+    for result in aggregated_results:
+        status = result.get("status", {}).get("value", "No Status")
+        prop_uri = result["p"]["value"]
+        count_with_property = int(result["count_with_property"]["value"])
+
+        # Get property metadata
+        prop_meta = property_metadata.get(prop_uri)
+        if not prop_meta:
+            continue
+
+        prop_type = prop_meta["type"]
+
+        if status not in status_type_data:
+            status_type_data[status] = {}
+        if prop_type not in status_type_data[status]:
+            status_type_data[status][prop_type] = {"count": 0, "total": 0}
+
+        # Add this property's contribution
+        status_type_data[status][prop_type]["count"] += count_with_property
+        status_type_data[status][prop_type]["total"] += status_totals.get(status, 0)
+
+    # Convert to DataFrame for plotting
+    data = []
+    for status, type_data in status_type_data.items():
+        for prop_type, counts in type_data.items():
+            completeness = (counts["count"] / counts["total"]) * 100 if counts["total"] > 0 else 0
+            data.append({
+                "OECD Status": status,
+                "Property Type": prop_type,
+                "Completeness": completeness,
+                "Count": counts["count"],
+                "Total": counts["total"]
+            })
+
+    if not data:
+        return create_fallback_plot("AOP Completeness by OECD Status", "No completeness data found")
+
+    df = pd.DataFrame(data)
+    df["Version"] = latest_version  # Add version for context
+
+    # Store in global cache for CSV download
+    _plot_data_cache['latest_aop_completeness_by_status'] = df
+
+    # Use centralized brand colors for consistency
+    color_map = BRAND_COLORS['type_colors'].copy()
+    # Add fallback for any missing types
+    color_map.update({"Structure": BRAND_COLORS['accent']})
+
+    # Create grouped bar chart
+    fig = px.bar(
+        df,
+        x="OECD Status",
+        y="Completeness",
+        color="Property Type",
+        title=f"AOP Completeness by OECD Status ({latest_version})",
+        text="Completeness",
+        color_discrete_map=color_map,
+        barmode="group"
+    )
+
+    fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
+    fig.update_layout(
+        template="plotly_white",
+        autosize=True,
+        margin=dict(l=50, r=20, t=50, b=100),
+        yaxis=dict(title="Completeness (%)", range=[0, 105]),
+        xaxis=dict(title="OECD Status", tickangle=45),
+        legend=dict(title="Property Type")
+    )
+
+    # Cache the figure object for image export (PNG/SVG/PDF)
+    _plot_figure_cache['latest_aop_completeness_by_status'] = fig
+
+    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+
+
+def plot_latest_ke_completeness_by_status(version: str = None) -> str:
+    """Create a grouped bar chart showing KE completeness scores grouped by OECD status.
+
+    Analyzes completeness of Key Events based on the OECD status of AOPs they belong to.
+    A KE can belong to multiple AOPs with different statuses and will be counted for each.
+
+    Args:
+        version: Optional version string to analyze historical data
+
+    Returns:
+        HTML string containing the Plotly visualization
+    """
+    global _plot_data_cache
+
+    where_filter, order_limit = _build_graph_filter(version)
+
+    # Get properties relevant for KEs
+    default_properties = [
+        {"uri": "http://www.w3.org/2000/01/rdf-schema#label", "label": "Label", "type": "Essential"},
+        {"uri": "http://purl.org/dc/elements/1.1/description", "label": "Description", "type": "Essential"}
+    ]
+    properties_df = safe_read_csv("property_labels.csv", default_properties)
+
+    # Filter properties to only those that apply to KEs
+    ke_properties_df = properties_df[properties_df['applies_to'].str.contains('KE', na=False)]
+    properties = ke_properties_df.to_dict(orient="records")
+
+    # Build property URI list for SPARQL filtering
+    property_uris = [p["uri"] for p in properties]
+
+    # Build FILTER clause for properties
+    if property_uris:
+        property_filter_values = ", ".join([f"<{uri}>" for uri in property_uris])
+        property_filter = f"FILTER(?p IN ({property_filter_values}))"
+    else:
+        property_filter = ""
+
+    # Get the target graph version
+    version_query = f"""
+    SELECT ?graph
+    WHERE {{
+        GRAPH ?graph {{ ?aop a aopo:AdverseOutcomePathway . }}
+        FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        {where_filter}
+    }}
+    GROUP BY ?graph
+    {order_limit}
+    """
+    version_results = run_sparql_query(version_query)
+    if not version_results:
+        return create_fallback_plot("KE Completeness by OECD Status", "No AOP data available")
+
+    latest_version = version_results[0]["graph"]["value"].split("/")[-1]
+    target_graph = f"http://aopwiki.org/graph/{latest_version}"
+
+    # Optimized aggregated query: Get counts of KEs with each property grouped by AOP status
+    # This combines the KE-AOP relationship, AOP status, and property presence in one query
+    aggregated_query = f"""
+    SELECT ?status ?p (COUNT(DISTINCT ?ke) AS ?count_with_property)
+    WHERE {{
+        GRAPH <{target_graph}> {{
+            ?aop a aopo:AdverseOutcomePathway ;
+                 <http://aopkb.org/aop_ontology#has_key_event> ?ke .
+            OPTIONAL {{
+                ?aop <http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25688> ?status_obj .
+                BIND(STR(?status_obj) AS ?status)
+            }}
+            ?ke a aopo:KeyEvent ;
+                ?p ?o .
+            {property_filter}
+        }}
+    }}
+    GROUP BY ?status ?p
+    """
+
+    aggregated_results = run_sparql_query(aggregated_query)
+
+    # Also get total count of KEs per status (a KE can belong to multiple statuses)
+    status_ke_count_query = f"""
+    SELECT ?status (COUNT(DISTINCT ?ke) AS ?total_kes)
+    WHERE {{
+        GRAPH <{target_graph}> {{
+            ?aop a aopo:AdverseOutcomePathway ;
+                 <http://aopkb.org/aop_ontology#has_key_event> ?ke .
+            OPTIONAL {{
+                ?aop <http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25688> ?status_obj .
+                BIND(STR(?status_obj) AS ?status)
+            }}
+        }}
+    }}
+    GROUP BY ?status
+    """
+
+    status_count_results = run_sparql_query(status_ke_count_query)
+
+    if not aggregated_results or not status_count_results:
+        return create_fallback_plot("KE Completeness by OECD Status", "No completeness data available")
+
+    # Build status to total KEs map
+    status_totals = {}
+    for result in status_count_results:
+        status = result.get("status", {}).get("value", "No Status")
+        total = int(result["total_kes"]["value"])
+        status_totals[status] = total
+
+    # Build property URI to metadata map
+    property_metadata = {p["uri"]: p for p in properties}
+
+    # Process aggregated results to calculate completeness by property type
+    status_type_data = {}
+
+    for result in aggregated_results:
+        status = result.get("status", {}).get("value", "No Status")
+        prop_uri = result["p"]["value"]
+        count_with_property = int(result["count_with_property"]["value"])
+
+        # Get property metadata
+        prop_meta = property_metadata.get(prop_uri)
+        if not prop_meta:
+            continue
+
+        prop_type = prop_meta["type"]
+
+        if status not in status_type_data:
+            status_type_data[status] = {}
+        if prop_type not in status_type_data[status]:
+            status_type_data[status][prop_type] = {"count": 0, "total": 0}
+
+        # Add this property's contribution
+        status_type_data[status][prop_type]["count"] += count_with_property
+        status_type_data[status][prop_type]["total"] += status_totals.get(status, 0)
+
+    # Convert to DataFrame for plotting
+    data = []
+    for status, type_data in status_type_data.items():
+        for prop_type, counts in type_data.items():
+            completeness = (counts["count"] / counts["total"]) * 100 if counts["total"] > 0 else 0
+            data.append({
+                "OECD Status": status,
+                "Property Type": prop_type,
+                "Completeness": completeness,
+                "Count": counts["count"],
+                "Total": counts["total"]
+            })
+
+    if not data:
+        return create_fallback_plot("KE Completeness by OECD Status", "No completeness data found")
+
+    df = pd.DataFrame(data)
+    df["Version"] = latest_version  # Add version for context
+
+    # Store in global cache for CSV download
+    _plot_data_cache['latest_ke_completeness_by_status'] = df
+
+    # Use centralized brand colors for consistency
+    color_map = BRAND_COLORS['type_colors'].copy()
+    # Add fallback for any missing types
+    color_map.update({"Structure": BRAND_COLORS['accent']})
+
+    # Create grouped bar chart
+    fig = px.bar(
+        df,
+        x="OECD Status",
+        y="Completeness",
+        color="Property Type",
+        title=f"KE Completeness by AOP OECD Status ({latest_version})",
+        text="Completeness",
+        color_discrete_map=color_map,
+        barmode="group"
+    )
+
+    fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
+    fig.update_layout(
+        template="plotly_white",
+        autosize=True,
+        margin=dict(l=50, r=20, t=50, b=100),
+        yaxis=dict(title="Completeness (%)", range=[0, 105]),
+        xaxis=dict(title="OECD Status of Parent AOPs", tickangle=45),
+        legend=dict(title="Property Type")
+    )
+
+    # Cache the figure object for image export (PNG/SVG/PDF)
+    _plot_figure_cache['latest_ke_completeness_by_status'] = fig
+
+    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+
+
+def plot_latest_ker_completeness_by_status(version: str = None) -> str:
+    """Create a grouped bar chart showing KER completeness scores grouped by OECD status.
+
+    Analyzes completeness of Key Event Relationships based on the OECD status of AOPs they belong to.
+    A KER can belong to multiple AOPs with different statuses and will be counted for each.
+
+    Args:
+        version: Optional version string to analyze historical data
+
+    Returns:
+        HTML string containing the Plotly visualization
+    """
+    global _plot_data_cache
+
+    where_filter, order_limit = _build_graph_filter(version)
+
+    # Get properties relevant for KERs
+    default_properties = [
+        {"uri": "http://www.w3.org/2000/01/rdf-schema#label", "label": "Label", "type": "Essential"},
+        {"uri": "http://purl.org/dc/elements/1.1/description", "label": "Description", "type": "Essential"}
+    ]
+    properties_df = safe_read_csv("property_labels.csv", default_properties)
+
+    # Filter properties to only those that apply to KERs
+    ker_properties_df = properties_df[properties_df['applies_to'].str.contains('KER', na=False)]
+    properties = ker_properties_df.to_dict(orient="records")
+
+    # Build property URI list for SPARQL filtering
+    property_uris = [p["uri"] for p in properties]
+
+    # Build FILTER clause for properties
+    if property_uris:
+        property_filter_values = ", ".join([f"<{uri}>" for uri in property_uris])
+        property_filter = f"FILTER(?p IN ({property_filter_values}))"
+    else:
+        property_filter = ""
+
+    # Get the target graph version
+    version_query = f"""
+    SELECT ?graph
+    WHERE {{
+        GRAPH ?graph {{ ?aop a aopo:AdverseOutcomePathway . }}
+        FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        {where_filter}
+    }}
+    GROUP BY ?graph
+    {order_limit}
+    """
+    version_results = run_sparql_query(version_query)
+    if not version_results:
+        return create_fallback_plot("KER Completeness by OECD Status", "No AOP data available")
+
+    latest_version = version_results[0]["graph"]["value"].split("/")[-1]
+    target_graph = f"http://aopwiki.org/graph/{latest_version}"
+
+    # Optimized aggregated query: Get counts of KERs with each property grouped by AOP status
+    # This combines the KER-AOP relationship, AOP status, and property presence in one query
+    aggregated_query = f"""
+    SELECT ?status ?p (COUNT(DISTINCT ?ker) AS ?count_with_property)
+    WHERE {{
+        GRAPH <{target_graph}> {{
+            ?aop a aopo:AdverseOutcomePathway ;
+                 <http://aopkb.org/aop_ontology#has_key_event_relationship> ?ker .
+            OPTIONAL {{
+                ?aop <http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25688> ?status_obj .
+                BIND(STR(?status_obj) AS ?status)
+            }}
+            ?ker a aopo:KeyEventRelationship ;
+                ?p ?o .
+            {property_filter}
+        }}
+    }}
+    GROUP BY ?status ?p
+    """
+
+    aggregated_results = run_sparql_query(aggregated_query)
+
+    # Also get total count of KERs per status (a KER can belong to multiple statuses)
+    status_ker_count_query = f"""
+    SELECT ?status (COUNT(DISTINCT ?ker) AS ?total_kers)
+    WHERE {{
+        GRAPH <{target_graph}> {{
+            ?aop a aopo:AdverseOutcomePathway ;
+                 <http://aopkb.org/aop_ontology#has_key_event_relationship> ?ker .
+            OPTIONAL {{
+                ?aop <http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25688> ?status_obj .
+                BIND(STR(?status_obj) AS ?status)
+            }}
+        }}
+    }}
+    GROUP BY ?status
+    """
+
+    status_count_results = run_sparql_query(status_ker_count_query)
+
+    if not aggregated_results or not status_count_results:
+        return create_fallback_plot("KER Completeness by OECD Status", "No completeness data available")
+
+    # Build status to total KERs map
+    status_totals = {}
+    for result in status_count_results:
+        status = result.get("status", {}).get("value", "No Status")
+        total = int(result["total_kers"]["value"])
+        status_totals[status] = total
+
+    # Build property URI to metadata map
+    property_metadata = {p["uri"]: p for p in properties}
+
+    # Process aggregated results to calculate completeness by property type
+    status_type_data = {}
+
+    for result in aggregated_results:
+        status = result.get("status", {}).get("value", "No Status")
+        prop_uri = result["p"]["value"]
+        count_with_property = int(result["count_with_property"]["value"])
+
+        # Get property metadata
+        prop_meta = property_metadata.get(prop_uri)
+        if not prop_meta:
+            continue
+
+        prop_type = prop_meta["type"]
+
+        if status not in status_type_data:
+            status_type_data[status] = {}
+        if prop_type not in status_type_data[status]:
+            status_type_data[status][prop_type] = {"count": 0, "total": 0}
+
+        # Add this property's contribution
+        status_type_data[status][prop_type]["count"] += count_with_property
+        status_type_data[status][prop_type]["total"] += status_totals.get(status, 0)
+
+    # Convert to DataFrame for plotting
+    data = []
+    for status, type_data in status_type_data.items():
+        for prop_type, counts in type_data.items():
+            completeness = (counts["count"] / counts["total"]) * 100 if counts["total"] > 0 else 0
+            data.append({
+                "OECD Status": status,
+                "Property Type": prop_type,
+                "Completeness": completeness,
+                "Count": counts["count"],
+                "Total": counts["total"]
+            })
+
+    if not data:
+        return create_fallback_plot("KER Completeness by OECD Status", "No completeness data found")
+
+    df = pd.DataFrame(data)
+    df["Version"] = latest_version  # Add version for context
+
+    # Store in global cache for CSV download
+    _plot_data_cache['latest_ker_completeness_by_status'] = df
+
+    # Use centralized brand colors for consistency
+    color_map = BRAND_COLORS['type_colors'].copy()
+    # Add fallback for any missing types
+    color_map.update({"Structure": BRAND_COLORS['accent']})
+
+    # Create grouped bar chart
+    fig = px.bar(
+        df,
+        x="OECD Status",
+        y="Completeness",
+        color="Property Type",
+        title=f"KER Completeness by AOP OECD Status ({latest_version})",
+        text="Completeness",
+        color_discrete_map=color_map,
+        barmode="group"
+    )
+
+    fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
+    fig.update_layout(
+        template="plotly_white",
+        autosize=True,
+        margin=dict(l=50, r=20, t=50, b=100),
+        yaxis=dict(title="Completeness (%)", range=[0, 105]),
+        xaxis=dict(title="OECD Status of Parent AOPs", tickangle=45),
+        legend=dict(title="Property Type")
+    )
+
+    # Cache the figure object for image export (PNG/SVG/PDF)
+    _plot_figure_cache['latest_ker_completeness_by_status'] = fig
 
     return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
