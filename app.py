@@ -83,6 +83,9 @@ from plots import (
     plot_ke_property_presence,
     plot_ker_property_presence,
     plot_stressor_property_presence,
+    plot_entity_completeness_trends,
+    plot_aop_completeness_boxplot,
+    # plot_aop_completeness_boxplot_by_status,  # REMOVED - hits Virtuoso execution limits
     plot_kes_by_kec_count,
     plot_latest_entity_counts,
     plot_latest_ke_components,
@@ -92,12 +95,16 @@ from plots import (
     plot_latest_process_usage,
     plot_latest_object_usage,
     plot_latest_aop_completeness,
+    plot_latest_aop_completeness_by_status,
+    plot_latest_ke_completeness_by_status,
+    plot_latest_ker_completeness_by_status,
     plot_latest_database_summary,
     plot_latest_ke_annotation_depth,
     check_sparql_endpoint_health,
     safe_plot_execution,
     get_latest_version,
     get_all_versions,
+    get_properties_for_entity,
     _plot_data_cache,
     _plot_figure_cache,
     export_figure_as_image,
@@ -169,6 +176,10 @@ def compute_plots_parallel() -> dict:
         ('ke_property_presence', lambda: safe_plot_execution(plot_ke_property_presence)),
         ('ker_property_presence', lambda: safe_plot_execution(plot_ker_property_presence)),
         ('stressor_property_presence', lambda: safe_plot_execution(plot_stressor_property_presence)),
+        ('entity_completeness_trends', lambda: safe_plot_execution(plot_entity_completeness_trends)),
+        # Re-enabled after SPARQL optimization (reduced from 10 queries to 4, 410K rows to ~20K)
+        ('aop_completeness_boxplot', lambda: safe_plot_execution(plot_aop_completeness_boxplot)),
+        # REMOVED: 'aop_completeness_boxplot_by_status' - hits Virtuoso execution limits on network query
         ('kes_by_kec_count', lambda: safe_plot_execution(plot_kes_by_kec_count)),
         ('latest_entity_counts', lambda: safe_plot_execution(plot_latest_entity_counts)),
         ('latest_ke_components', lambda: safe_plot_execution(plot_latest_ke_components)),
@@ -239,6 +250,10 @@ graph_prop_abs, graph_prop_pct = plot_results.get('aop_property_presence', ("", 
 graph_ke_prop_abs, graph_ke_prop_pct = plot_results.get('ke_property_presence', ("", ""))
 graph_ker_prop_abs, graph_ker_prop_pct = plot_results.get('ker_property_presence', ("", ""))
 graph_stressor_prop_abs, graph_stressor_prop_pct = plot_results.get('stressor_property_presence', ("", ""))
+graph_entity_completeness = plot_results.get('entity_completeness_trends') or ""
+# Boxplots skip startup, generate on-demand
+graph_aop_completeness_boxplot = ""
+# graph_aop_completeness_boxplot_by_status = ""  # REMOVED - hits Virtuoso execution limits
 graph_kec_count_abs, graph_kec_count_delta = plot_results.get('kes_by_kec_count', ("", ""))
 
 # Latest data plots
@@ -632,6 +647,120 @@ def download_latest_object_usage():
 def download_latest_aop_completeness():
     """Download CSV data for Latest AOP Completeness plot."""
     plot_name = 'latest_aop_completeness'
+    export_format = request.args.get('format', 'csv').lower()
+    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
+
+    try:
+        if export_format == 'csv':
+            csv_data = get_csv_with_metadata(plot_name, include_metadata)
+            if not csv_data:
+                return "No data available for download", 404
+
+            return Response(
+                csv_data,
+                mimetype='text/csv',
+                headers={'Content-Disposition': f'attachment; filename={plot_name}.csv'}
+            )
+
+        elif export_format in ['png', 'svg']:
+            image_bytes = export_figure_as_image(plot_name, export_format)
+            if not image_bytes:
+                return "No figure available for export", 404
+
+            mimetype = f'image/{export_format}'
+            return Response(
+                image_bytes,
+                mimetype=mimetype,
+                headers={'Content-Disposition': f'attachment; filename={plot_name}.{export_format}'}
+            )
+
+        else:
+            return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
+
+    except Exception as e:
+        logger.error(f"Download failed for {plot_name}: {str(e)}")
+        return f"Download failed: {str(e)}", 500
+
+@app.route("/download/latest_aop_completeness_by_status")
+def download_latest_aop_completeness_by_status():
+    """Download CSV data for Latest AOP Completeness by OECD Status plot."""
+    plot_name = 'latest_aop_completeness_by_status'
+    export_format = request.args.get('format', 'csv').lower()
+    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
+
+    try:
+        if export_format == 'csv':
+            csv_data = get_csv_with_metadata(plot_name, include_metadata)
+            if not csv_data:
+                return "No data available for download", 404
+
+            return Response(
+                csv_data,
+                mimetype='text/csv',
+                headers={'Content-Disposition': f'attachment; filename={plot_name}.csv'}
+            )
+
+        elif export_format in ['png', 'svg']:
+            image_bytes = export_figure_as_image(plot_name, export_format)
+            if not image_bytes:
+                return "No figure available for export", 404
+
+            mimetype = f'image/{export_format}'
+            return Response(
+                image_bytes,
+                mimetype=mimetype,
+                headers={'Content-Disposition': f'attachment; filename={plot_name}.{export_format}'}
+            )
+
+        else:
+            return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
+
+    except Exception as e:
+        logger.error(f"Download failed for {plot_name}: {str(e)}")
+        return f"Download failed: {str(e)}", 500
+
+@app.route("/download/latest_ke_completeness_by_status")
+def download_latest_ke_completeness_by_status():
+    """Download CSV data for Latest KE Completeness by OECD Status plot."""
+    plot_name = 'latest_ke_completeness_by_status'
+    export_format = request.args.get('format', 'csv').lower()
+    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
+
+    try:
+        if export_format == 'csv':
+            csv_data = get_csv_with_metadata(plot_name, include_metadata)
+            if not csv_data:
+                return "No data available for download", 404
+
+            return Response(
+                csv_data,
+                mimetype='text/csv',
+                headers={'Content-Disposition': f'attachment; filename={plot_name}.csv'}
+            )
+
+        elif export_format in ['png', 'svg']:
+            image_bytes = export_figure_as_image(plot_name, export_format)
+            if not image_bytes:
+                return "No figure available for export", 404
+
+            mimetype = f'image/{export_format}'
+            return Response(
+                image_bytes,
+                mimetype=mimetype,
+                headers={'Content-Disposition': f'attachment; filename={plot_name}.{export_format}'}
+            )
+
+        else:
+            return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
+
+    except Exception as e:
+        logger.error(f"Download failed for {plot_name}: {str(e)}")
+        return f"Download failed: {str(e)}", 500
+
+@app.route("/download/latest_ker_completeness_by_status")
+def download_latest_ker_completeness_by_status():
+    """Download CSV data for Latest KER Completeness by OECD Status plot."""
+    plot_name = 'latest_ker_completeness_by_status'
     export_format = request.args.get('format', 'csv').lower()
     include_metadata = request.args.get('metadata', 'true').lower() == 'true'
 
@@ -1206,6 +1335,55 @@ def api_get_all_versions():
         logger.error(f"Error getting all versions: {e}")
         return jsonify({"versions": [], "count": 0, "error": str(e)}), 500
 
+@app.route("/api/properties/<entity_type>")
+def api_get_properties(entity_type):
+    """API endpoint to get properties for a specific entity type.
+
+    Returns properties filtered by entity type from property_labels.csv,
+    grouped by category (Essential, Content, Context, Assessment, Metadata).
+
+    Args:
+        entity_type (str): Entity type (AOP, KE, KER, or Stressor)
+
+    Returns:
+        JSON response with properties grouped by category.
+
+    Example Response:
+        {
+            "entity_type": "KE",
+            "properties": {
+                "Essential": [
+                    {"uri": "...", "label": "Title", "type": "Essential", "applies_to": "AOP|KE|KER|Stressor"},
+                    ...
+                ],
+                "Content": [...],
+                "Context": [...],
+                "Assessment": [...],
+                "Metadata": [...]
+            }
+        }
+    """
+    try:
+        # Validate entity type
+        valid_types = ['AOP', 'KE', 'KER', 'STRESSOR']
+        if entity_type.upper() not in valid_types:
+            return jsonify({
+                "error": f"Invalid entity type. Must be one of: {', '.join(valid_types)}"
+            }), 400
+
+        properties = get_properties_for_entity(entity_type)
+        return jsonify({
+            "entity_type": entity_type.upper(),
+            "properties": properties
+        })
+    except Exception as e:
+        logger.error(f"Error getting properties for {entity_type}: {e}")
+        return jsonify({
+            "entity_type": entity_type,
+            "properties": {},
+            "error": str(e)
+        }), 500
+
 @app.route("/api/plot/<plot_name>")
 def get_plot(plot_name):
     """API endpoint to serve individual plots on demand for lazy loading.
@@ -1260,6 +1438,10 @@ def get_plot(plot_name):
         'ker_property_presence_percentage': graph_ker_prop_pct,
         'stressor_property_presence_absolute': graph_stressor_prop_abs,
         'stressor_property_presence_percentage': graph_stressor_prop_pct,
+        'entity_completeness_trends': graph_entity_completeness,
+        # Lazy-only plots - lambdas will be evaluated on-demand by API handler
+        'aop_completeness_boxplot': lambda: safe_plot_execution(plot_aop_completeness_boxplot),
+        # 'aop_completeness_boxplot_by_status': lambda: safe_plot_execution(plot_aop_completeness_boxplot_by_status),  # REMOVED
         'kes_by_kec_count_absolute': graph_kec_count_abs,
         'kes_by_kec_count_delta': graph_kec_count_delta
     }
@@ -1273,6 +1455,9 @@ def get_plot(plot_name):
         'latest_process_usage': plot_latest_process_usage,
         'latest_object_usage': plot_latest_object_usage,
         'latest_aop_completeness': plot_latest_aop_completeness,
+        'latest_aop_completeness_by_status': plot_latest_aop_completeness_by_status,
+        'latest_ke_completeness_by_status': plot_latest_ke_completeness_by_status,
+        'latest_ker_completeness_by_status': plot_latest_ker_completeness_by_status,
         'latest_ontology_usage': plot_latest_ontology_usage,
         'latest_database_summary': plot_latest_database_summary,
         'latest_ke_annotation_depth': plot_latest_ke_annotation_depth,
@@ -1297,7 +1482,11 @@ def get_plot(plot_name):
 
     # Check historical trend plots
     elif plot_name in plot_map:
-        return jsonify({'html': plot_map[plot_name], 'success': True})
+        plot_html = plot_map[plot_name]
+        # If it's a callable (lambda function), execute it to generate the plot on-demand
+        if callable(plot_html):
+            plot_html = plot_html()
+        return jsonify({'html': plot_html, 'success': True})
 
     else:
         return jsonify({'error': f'Plot {plot_name} not found', 'success': False}), 404

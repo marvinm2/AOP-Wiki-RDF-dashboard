@@ -54,10 +54,13 @@ Author:
 import pandas as pd
 import plotly.express as px
 import plotly.io as pio
+import logging
 from functools import reduce
 from .shared import (
-    BRAND_COLORS, config, _plot_data_cache, _plot_figure_cache, run_sparql_query, extract_counts, safe_read_csv
+    BRAND_COLORS, config, _plot_data_cache, _plot_figure_cache, run_sparql_query, extract_counts, safe_read_csv, create_fallback_plot, get_properties_for_entity
 )
+
+logger = logging.getLogger(__name__)
 
 
 def plot_main_graph() -> tuple[str, str, pd.DataFrame]:
@@ -1903,3 +1906,983 @@ def plot_kes_by_kec_count() -> tuple[str, str]:
         pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config={"responsive": True}),
         pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config={"responsive": True})
     )
+
+
+def plot_entity_completeness_trends(label_file="property_labels.csv") -> str:
+    """Generate entity completeness trend visualization showing average completeness percentage over time.
+
+    Calculates average completeness for AOPs, KEs, KERs, and Stressors across all versions.
+    Excludes properties that are 100% present in any version (e.g., rdf:type, mandatory fields)
+    to focus on optional/variable properties that reflect true data richness.
+
+    Completeness is calculated per entity as (properties present / non-ubiquitous properties) × 100,
+    then averaged across all entities of that type in each version.
+
+    Args:
+        label_file: Path to CSV file containing property labels and types
+
+    Returns:
+        HTML string containing the Plotly visualization
+    """
+    global _plot_data_cache, _plot_figure_cache
+
+    # Load property labels
+    default_properties = [
+        {"uri": "http://purl.org/dc/elements/1.1/title", "label": "Title", "type": "Essential", "applies_to": "AOP|KE|KER|Stressor"},
+        {"uri": "http://purl.org/dc/elements/1.1/creator", "label": "Creator", "type": "Metadata", "applies_to": "AOP|KE|KER"}
+    ]
+    df_labels = safe_read_csv(label_file, default_properties)
+
+    if df_labels.empty:
+        return create_fallback_plot("Entity Completeness Trends", "No property labels available")
+
+    # Entity type configurations
+    entity_configs = [
+        {
+            "name": "AOP",
+            "rdf_type": "aopo:AdverseOutcomePathway",
+            "variable": "?aop",
+            "label": "AOPs"
+        },
+        {
+            "name": "KE",
+            "rdf_type": "aopo:KeyEvent",
+            "variable": "?ke",
+            "label": "Key Events"
+        },
+        {
+            "name": "KER",
+            "rdf_type": "aopo:KeyEventRelationship",
+            "variable": "?ker",
+            "label": "Key Event Relationships"
+        },
+        {
+            "name": "Stressor",
+            "rdf_type": "aopo:Stressor",
+            "variable": "?stressor",
+            "label": "Stressors"
+        }
+    ]
+
+    all_completeness_data = []
+
+    for config in entity_configs:
+        entity_type = config["name"]
+        rdf_type = config["rdf_type"]
+        variable = config["variable"]
+        display_label = config["label"]
+
+        # Filter properties applicable to this entity type
+        applicable_props = df_labels[
+            df_labels["applies_to"].fillna("").str.contains(entity_type, case=False, na=False)
+        ]
+
+        if applicable_props.empty:
+            continue
+
+        applicable_uris = set(applicable_props["uri"].tolist())
+
+        if not applicable_uris:
+            continue
+
+        # Query to identify 100% present properties (to exclude them)
+        # First get total entity counts per version
+        uri_filter_presence = ">, <".join(applicable_uris)
+        query_total = f"""
+        SELECT ?graph (COUNT(DISTINCT {variable}) AS ?total)
+        WHERE {{
+          GRAPH ?graph {{
+            {variable} a {rdf_type} .
+          }}
+          FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }}
+        GROUP BY ?graph
+        ORDER BY ?graph
+        """
+
+        query_presence = f"""
+        SELECT ?graph ?p (COUNT(DISTINCT {variable}) AS ?count)
+        WHERE {{
+          GRAPH ?graph {{
+            {variable} a {rdf_type} ;
+                 ?p ?o .
+            FILTER(?p IN (<{uri_filter_presence}>))
+          }}
+          FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }}
+        GROUP BY ?graph ?p
+        ORDER BY ?graph ?p
+        """
+
+        try:
+            results_total = run_sparql_query(query_total)
+            results_presence = run_sparql_query(query_presence)
+
+            # Build totals map
+            totals_map = {}
+            for r in results_total:
+                version = r["graph"]["value"].split("/")[-1]
+                totals_map[version] = int(r["total"]["value"])
+
+            # Calculate property presence percentages
+            prop_presence = {}
+            for r in results_presence:
+                version = r["graph"]["value"].split("/")[-1]
+                prop_uri = r["p"]["value"]
+                count = int(r["count"]["value"])
+                total = totals_map.get(version, 1)
+                percentage = (count / total) * 100
+
+                if prop_uri not in prop_presence:
+                    prop_presence[prop_uri] = []
+                prop_presence[prop_uri].append(percentage)
+
+            # Filter out properties that reach 100% in any version
+            props_to_exclude = {
+                prop_uri for prop_uri, percentages in prop_presence.items()
+                if max(percentages) >= 100
+            }
+
+            # Update applicable URIs to exclude 100% properties
+            applicable_uris = applicable_uris - props_to_exclude
+            total_properties = len(applicable_uris)
+
+            if total_properties == 0:
+                logger.info(f"All properties for {entity_type} are 100% present, skipping completeness calculation")
+                continue
+
+        except Exception as e:
+            logger.warning(f"Error filtering 100% properties for {entity_type}: {str(e)}, proceeding with all properties")
+            total_properties = len(applicable_uris)
+
+        # Query to get property counts per entity per version (using filtered properties)
+        uri_filter = ">, <".join(applicable_uris)
+        query = f"""
+        SELECT ?graph {variable} (COUNT(DISTINCT ?p) AS ?prop_count)
+        WHERE {{
+          GRAPH ?graph {{
+            {variable} a {rdf_type} ;
+                 ?p ?o .
+            FILTER(?p IN (<{uri_filter}>))
+          }}
+          FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }}
+        GROUP BY ?graph {variable}
+        ORDER BY ?graph {variable}
+        """
+
+        try:
+            results = run_sparql_query(query)
+
+            if not results:
+                continue
+
+            # Process results to calculate average completeness per version
+            version_data = {}
+            for result in results:
+                version = result["graph"]["value"].split("/")[-1]
+                prop_count = int(result["prop_count"]["value"])
+                completeness = (prop_count / total_properties) * 100
+
+                if version not in version_data:
+                    version_data[version] = []
+                version_data[version].append(completeness)
+
+            # Calculate average completeness per version
+            for version, completeness_list in version_data.items():
+                avg_completeness = sum(completeness_list) / len(completeness_list)
+                all_completeness_data.append({
+                    "version": version,
+                    "entity_type": display_label,
+                    "avg_completeness": avg_completeness,
+                    "entity_count": len(completeness_list)
+                })
+
+        except Exception as e:
+            logger.error(f"Error querying completeness for {entity_type}: {str(e)}")
+            continue
+
+    if not all_completeness_data:
+        return create_fallback_plot("Entity Completeness Trends", "No completeness data available")
+
+    # Create DataFrame
+    df = pd.DataFrame(all_completeness_data)
+
+    # Sort by version
+    df["version_dt"] = pd.to_datetime(df["version"], errors="coerce")
+    df = df.sort_values("version_dt")
+
+    # Cache data for CSV export
+    _plot_data_cache['entity_completeness_trends'] = df.copy()
+
+    # Create line plot
+    fig = px.line(
+        df,
+        x="version",
+        y="avg_completeness",
+        color="entity_type",
+        markers=True,
+        title="Entity Completeness Over Time (Excluding 100% Present Properties)",
+        labels={
+            "avg_completeness": "Average Completeness (%)",
+            "entity_type": "Entity Type",
+            "version": "Version"
+        },
+        color_discrete_sequence=BRAND_COLORS['palette']
+    )
+
+    # Apply marker shapes for visual distinction
+    marker_symbols = ['circle', 'square', 'diamond', 'triangle-up']
+    for i, trace in enumerate(fig.data):
+        trace.update(
+            marker=dict(symbol=marker_symbols[i % len(marker_symbols)], size=10),
+            line=dict(width=3)
+        )
+
+    fig.update_layout(
+        template="plotly_white",
+        hovermode="x unified",
+        autosize=True,
+        margin=dict(l=50, r=20, t=50, b=50),
+        yaxis=dict(title="Average Completeness (%)", range=[0, 105]),
+        xaxis=dict(title="Version", tickangle=-45),
+        legend=dict(title="Entity Type", orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+    )
+
+    config = {"responsive": True}
+
+    # Cache figure for image export
+    _plot_figure_cache['entity_completeness_trends'] = fig
+
+    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config=config)
+
+
+def plot_aop_completeness_boxplot(label_file="property_labels.csv") -> str:
+    """Generate composite AOP completeness distribution boxplot showing completeness variance across versions.
+
+    Creates a boxplot showing the distribution of **composite completeness scores** for AOPs.
+    The composite score includes:
+    - The AOP entity's own property completeness
+    - Average completeness of all KEs (Key Events) linked to the AOP
+    - Average completeness of all KERs (Key Event Relationships) linked to the AOP
+
+    All completeness scores are averaged with equal weight (flat average of all entities in the AOP network).
+    Excludes properties that are 100% present in any version to focus on optional properties.
+
+    The boxplot shows:
+    - Median completeness (line in box)
+    - Quartiles (box edges: Q1, Q3)
+    - Whiskers (1.5 * IQR from quartiles)
+    - Outliers (individual points beyond whiskers)
+
+    This reveals whether AOPs have consistent data quality or if some are well-documented
+    while others are sparse, considering the entire AOP network (not just AOP metadata).
+
+    Args:
+        label_file: Path to CSV file containing property labels and types
+
+    Returns:
+        HTML string containing the Plotly boxplot visualization
+    """
+    global _plot_data_cache, _plot_figure_cache
+
+    # Load property labels from CSV
+    default_properties = [
+        {"uri": "http://purl.org/dc/elements/1.1/title", "label": "Title", "type": "Essential", "applies_to": "AOP|KE|KER|Stressor"},
+        {"uri": "http://purl.org/dc/elements/1.1/creator", "label": "Creator", "type": "Metadata", "applies_to": "AOP|KE|KER"}
+    ]
+    df_labels = safe_read_csv(label_file, default_properties)
+
+    if df_labels.empty:
+        return create_fallback_plot("Composite AOP Completeness Distribution", "No property labels available")
+
+    # Load properties for each entity type from CSV
+    aop_properties_df = df_labels[df_labels['applies_to'].str.contains('AOP', na=False)]
+    ke_properties_df = df_labels[df_labels['applies_to'].str.contains('KE', na=False)]
+    ker_properties_df = df_labels[df_labels['applies_to'].str.contains('KER', na=False)]
+
+    # Get initial property sets
+    aop_props_all = set(aop_properties_df['uri'].tolist())
+    ke_props_all = set(ke_properties_df['uri'].tolist())
+    ker_props_all = set(ker_properties_df['uri'].tolist())
+
+    # Combine all properties for a single query to find 100% present ones
+    all_props = aop_props_all | ke_props_all | ker_props_all
+
+    if not all_props:
+        return create_fallback_plot("Composite AOP Completeness Distribution", "No properties found")
+
+    # Single combined query to check property presence across all entity types
+    # This replaces 6 separate queries (2 per entity type)
+    all_props_filter = ">, <".join(all_props)
+
+    query_combined_presence = f"""
+    SELECT ?graph ?entity_type ?p (COUNT(DISTINCT ?entity) AS ?count)
+    WHERE {{
+      GRAPH ?graph {{
+        {{
+          ?entity a aopo:AdverseOutcomePathway ;
+                  ?p ?o .
+          BIND("AOP" AS ?entity_type)
+        }}
+        UNION
+        {{
+          ?entity a aopo:KeyEvent ;
+                  ?p ?o .
+          BIND("KE" AS ?entity_type)
+        }}
+        UNION
+        {{
+          ?entity a aopo:KeyEventRelationship ;
+                  ?p ?o .
+          BIND("KER" AS ?entity_type)
+        }}
+        FILTER(?p IN (<{all_props_filter}>))
+      }}
+      FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+    }}
+    GROUP BY ?graph ?entity_type ?p
+    ORDER BY ?graph ?entity_type ?p
+    """
+
+    query_combined_totals = """
+    SELECT ?graph ?entity_type (COUNT(DISTINCT ?entity) AS ?total)
+    WHERE {
+      GRAPH ?graph {
+        {
+          ?entity a aopo:AdverseOutcomePathway .
+          BIND("AOP" AS ?entity_type)
+        }
+        UNION
+        {
+          ?entity a aopo:KeyEvent .
+          BIND("KE" AS ?entity_type)
+        }
+        UNION
+        {
+          ?entity a aopo:KeyEventRelationship .
+          BIND("KER" AS ?entity_type)
+        }
+      }
+      FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+    }
+    GROUP BY ?graph ?entity_type
+    ORDER BY ?graph ?entity_type
+    """
+
+    try:
+        results_totals = run_sparql_query(query_combined_totals)
+        results_presence = run_sparql_query(query_combined_presence)
+
+        # Build totals map: {version: {entity_type: total}}
+        totals_map = {}
+        for r in results_totals:
+            version = r["graph"]["value"].split("/")[-1]
+            entity_type = r["entity_type"]["value"]
+            total = int(r["total"]["value"])
+
+            if version not in totals_map:
+                totals_map[version] = {}
+            totals_map[version][entity_type] = total
+
+        # Calculate property presence percentages by entity type
+        # {entity_type: {prop_uri: [percentages]}}
+        prop_presence = {"AOP": {}, "KE": {}, "KER": {}}
+
+        for r in results_presence:
+            version = r["graph"]["value"].split("/")[-1]
+            entity_type = r["entity_type"]["value"]
+            prop_uri = r["p"]["value"]
+            count = int(r["count"]["value"])
+            total = totals_map.get(version, {}).get(entity_type, 1)
+            percentage = (count / total) * 100
+
+            if prop_uri not in prop_presence[entity_type]:
+                prop_presence[entity_type][prop_uri] = []
+            prop_presence[entity_type][prop_uri].append(percentage)
+
+        # Filter out properties that reach 100% in any version for each entity type
+        aop_props_to_exclude = {
+            prop_uri for prop_uri, percentages in prop_presence["AOP"].items()
+            if max(percentages) >= 100
+        }
+        ke_props_to_exclude = {
+            prop_uri for prop_uri, percentages in prop_presence["KE"].items()
+            if max(percentages) >= 100
+        }
+        ker_props_to_exclude = {
+            prop_uri for prop_uri, percentages in prop_presence["KER"].items()
+            if max(percentages) >= 100
+        }
+
+        # Get filtered property sets
+        aop_props = aop_props_all - aop_props_to_exclude
+        ke_props = ke_props_all - ke_props_to_exclude
+        ker_props = ker_props_all - ker_props_to_exclude
+
+        aop_prop_count = len(aop_props)
+        ke_prop_count = len(ke_props)
+        ker_prop_count = len(ker_props)
+
+    except Exception as e:
+        logger.warning(f"Error filtering 100% properties: {str(e)}")
+        # Fall back to using all properties
+        aop_props = aop_props_all
+        ke_props = ke_props_all
+        ker_props = ker_props_all
+        aop_prop_count = len(aop_props)
+        ke_prop_count = len(ke_props)
+        ker_prop_count = len(ker_props)
+
+    if aop_prop_count == 0 and ke_prop_count == 0 and ker_prop_count == 0:
+        return create_fallback_plot("Composite AOP Completeness Distribution", "All properties are 100% present")
+
+    # Step 1: Query AOP network structure - which KEs and KERs belong to each AOP
+    # Use GROUP_CONCAT to aggregate KEs and KERs per AOP, reducing from 240K rows to ~8K rows
+    query_network = """
+    SELECT ?graph ?aop
+           (GROUP_CONCAT(DISTINCT ?ke; separator="|") AS ?kes)
+           (GROUP_CONCAT(DISTINCT ?ker; separator="|") AS ?kers)
+    WHERE {
+      GRAPH ?graph {
+        ?aop a aopo:AdverseOutcomePathway .
+        OPTIONAL { ?aop aopo:has_key_event ?ke }
+        OPTIONAL { ?aop aopo:has_key_event_relationship ?ker }
+      }
+      FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+    }
+    GROUP BY ?graph ?aop
+    ORDER BY ?graph ?aop
+    """
+
+    try:
+        results_network = run_sparql_query(query_network)
+
+        if not results_network:
+            return create_fallback_plot("Composite AOP Completeness Distribution", "No AOP network data available")
+
+        # Build a map: {version: {aop_uri: {kes: set(), kers: set()}}}
+        network_map = {}
+        for r in results_network:
+            version = r["graph"]["value"].split("/")[-1]
+            aop_uri = r["aop"]["value"]
+
+            if version not in network_map:
+                network_map[version] = {}
+            if aop_uri not in network_map[version]:
+                network_map[version][aop_uri] = {"kes": set(), "kers": set()}
+
+            # Parse GROUP_CONCAT results (pipe-separated)
+            if "kes" in r and r["kes"] and r["kes"]["value"]:
+                kes_list = r["kes"]["value"].split("|")
+                network_map[version][aop_uri]["kes"] = set(kes_list)
+
+            if "kers" in r and r["kers"] and r["kers"]["value"]:
+                kers_list = r["kers"]["value"].split("|")
+                network_map[version][aop_uri]["kers"] = set(kers_list)
+
+
+        # Step 2: Query property counts for all entity types in a single query
+        # Combine 3 queries into 1 using UNION for better performance
+
+        # Build a single UNION query for all entity types
+        # Use WHERE clause with UNION instead of subqueries to avoid syntax issues
+
+        union_parts = []
+
+        if aop_prop_count > 0:
+            aop_uri_filter = ">, <".join(aop_props)
+            union_parts.append(f"""
+              GRAPH ?graph {{
+                ?entity a aopo:AdverseOutcomePathway ;
+                     ?p ?o .
+                FILTER(?p IN (<{aop_uri_filter}>))
+                BIND("AOP" AS ?entity_type)
+              }}
+            """)
+
+        if ke_prop_count > 0:
+            ke_uri_filter = ">, <".join(ke_props)
+            union_parts.append(f"""
+              GRAPH ?graph {{
+                ?entity a aopo:KeyEvent ;
+                    ?p ?o .
+                FILTER(?p IN (<{ke_uri_filter}>))
+                BIND("KE" AS ?entity_type)
+              }}
+            """)
+
+        if ker_prop_count > 0:
+            ker_uri_filter = ">, <".join(ker_props)
+            union_parts.append(f"""
+              GRAPH ?graph {{
+                ?entity a aopo:KeyEventRelationship ;
+                     ?p ?o .
+                FILTER(?p IN (<{ker_uri_filter}>))
+                BIND("KER" AS ?entity_type)
+              }}
+            """)
+
+        # Execute combined query if we have at least one entity type
+        if union_parts:
+            union_clause = "\nUNION\n".join(["{" + part + "}" for part in union_parts])
+            query_combined = f"""
+            SELECT ?graph ?entity (COUNT(DISTINCT ?p) AS ?prop_count) ?entity_type
+            WHERE {{
+              {{
+                {union_clause}
+              }}
+              FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+            }}
+            GROUP BY ?graph ?entity ?entity_type
+            ORDER BY ?graph ?entity ?entity_type
+            """
+            results_combined = run_sparql_query(query_combined)
+        else:
+            results_combined = []
+
+        # Step 3: Build completeness maps for each entity type
+
+        # Map: {version: {entity_uri: completeness}}
+        aop_completeness = {}
+        ke_completeness = {}
+        ker_completeness = {}
+
+        for r in results_combined:
+            version = r["graph"]["value"].split("/")[-1]
+            entity_uri = r["entity"]["value"]
+            entity_type = r["entity_type"]["value"]
+            prop_count = int(r["prop_count"]["value"])
+
+            if entity_type == "AOP":
+                completeness = (prop_count / aop_prop_count) * 100 if aop_prop_count > 0 else 0
+                if version not in aop_completeness:
+                    aop_completeness[version] = {}
+                aop_completeness[version][entity_uri] = completeness
+
+            elif entity_type == "KE":
+                completeness = (prop_count / ke_prop_count) * 100 if ke_prop_count > 0 else 0
+                if version not in ke_completeness:
+                    ke_completeness[version] = {}
+                ke_completeness[version][entity_uri] = completeness
+
+            elif entity_type == "KER":
+                completeness = (prop_count / ker_prop_count) * 100 if ker_prop_count > 0 else 0
+                if version not in ker_completeness:
+                    ker_completeness[version] = {}
+                ker_completeness[version][entity_uri] = completeness
+
+        # Step 4: Calculate composite AOP completeness scores
+        completeness_data = []
+
+        for version, aops in network_map.items():
+            for aop_uri, network in aops.items():
+                entity_scores = []
+
+                # Add AOP entity completeness
+                if version in aop_completeness and aop_uri in aop_completeness[version]:
+                    entity_scores.append(aop_completeness[version][aop_uri])
+                elif aop_prop_count > 0:
+                    entity_scores.append(0)  # AOP exists but has no properties
+
+                # Add KE completeness scores
+                for ke_uri in network["kes"]:
+                    if version in ke_completeness and ke_uri in ke_completeness[version]:
+                        entity_scores.append(ke_completeness[version][ke_uri])
+                    elif ke_prop_count > 0:
+                        entity_scores.append(0)  # KE exists but has no properties
+
+                # Add KER completeness scores
+                for ker_uri in network["kers"]:
+                    if version in ker_completeness and ker_uri in ker_completeness[version]:
+                        entity_scores.append(ker_completeness[version][ker_uri])
+                    elif ker_prop_count > 0:
+                        entity_scores.append(0)  # KER exists but has no properties
+
+                # Calculate composite score as flat average
+                if entity_scores:
+                    composite_score = sum(entity_scores) / len(entity_scores)
+                    completeness_data.append({
+                        "version": version,
+                        "aop_uri": aop_uri,
+                        "completeness": composite_score,
+                        "entity_count": len(entity_scores)
+                    })
+
+        if not completeness_data:
+            return create_fallback_plot("Composite AOP Completeness Distribution", "No completeness data available")
+
+        # Create DataFrame
+        df = pd.DataFrame(completeness_data)
+
+        # Sort by version
+        df["version_dt"] = pd.to_datetime(df["version"], errors="coerce")
+        df = df.sort_values("version_dt")
+
+        # Cache data for CSV export
+        _plot_data_cache['aop_completeness_boxplot'] = df.copy()
+
+        # Create boxplot
+        fig = px.box(
+            df,
+            x="version",
+            y="completeness",
+            title="Composite AOP Completeness Distribution Over Time",
+            labels={
+                "completeness": "Composite Completeness (%)",
+                "version": "Version"
+            }
+        )
+
+        fig.update_traces(
+            marker=dict(opacity=0.6, color=BRAND_COLORS["primary"]),
+            line=dict(width=2)
+        )
+
+        fig.update_layout(
+            template="plotly_white",
+            autosize=True,
+            margin=dict(l=50, r=20, t=50, b=100),
+            yaxis=dict(title="Composite Completeness (%)", range=[0, 105]),
+            xaxis=dict(title="Version", tickangle=-45),
+            showlegend=False
+        )
+
+        config = {"responsive": True}
+
+        # Cache figure for image export
+        _plot_figure_cache['aop_completeness_boxplot'] = fig
+
+        return pio.to_html(fig, full_html=False, include_plotlyjs=False, config=config)
+
+    except Exception as e:
+        logger.error(f"Error creating composite AOP completeness boxplot: {str(e)}")
+        return create_fallback_plot("Composite AOP Completeness Distribution", f"Error: {str(e)}")
+
+def plot_aop_completeness_boxplot_by_status():
+    """
+    Plot composite AOP completeness distribution grouped by OECD status across all versions.
+    
+    Similar to plot_aop_completeness_boxplot() but adds color-grouped visualization
+    by OECD approval status (Approved, Under Review, Under Development, No Status).
+    
+    Uses fallback strategy: queries status from latest version and applies across
+    all historical versions to avoid timeout issues.
+    
+    Returns:
+        str: HTML string of the Plotly boxplot visualization
+    """
+    import pandas as pd
+    import plotly.express as px
+    import plotly.io as pio
+
+    # Load properties from CSV for each entity type
+    default_properties = [
+        {"uri": "http://purl.org/dc/elements/1.1/title", "label": "Title", "type": "Essential"},
+        {"uri": "http://purl.org/dc/terms/abstract", "label": "Abstract", "type": "Essential"},
+        {"uri": "http://purl.org/dc/elements/1.1/creator", "label": "Creator", "type": "Metadata"},
+    ]
+    properties_df = safe_read_csv("property_labels.csv", default_properties)
+
+    # Filter properties for each entity type
+    aop_properties_df = properties_df[properties_df['applies_to'].str.contains('AOP', na=False)]
+    ke_properties_df = properties_df[properties_df['applies_to'].str.contains('KE', na=False)]
+    ker_properties_df = properties_df[properties_df['applies_to'].str.contains('KER', na=False)]
+
+    aop_props = set([p["uri"] for _, p in aop_properties_df.iterrows()])
+    ke_props = set([p["uri"] for _, p in ke_properties_df.iterrows()])
+    ker_props = set([p["uri"] for _, p in ker_properties_df.iterrows()])
+
+    aop_prop_count = len(aop_props)
+    ke_prop_count = len(ke_props)
+    ker_prop_count = len(ker_props)
+
+    if aop_prop_count == 0 and ke_prop_count == 0 and ker_prop_count == 0:
+        return create_fallback_plot("Composite AOP Completeness by OECD Status", "No properties configured")
+    
+    # Phase 1: Optimized network structure query - combine network + status in single query
+    # Get individual AOP-KE and AOP-KER relationships with status (but no entity IN filters later)
+    query_network = """
+    SELECT ?graph ?aop (STR(?status_obj) AS ?status) ?ke ?ker
+    WHERE {
+      GRAPH ?graph {
+        ?aop a aopo:AdverseOutcomePathway .
+        OPTIONAL {
+            ?aop <http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25688> ?status_obj
+        }
+        OPTIONAL { ?aop aopo:has_key_event ?ke }
+        OPTIONAL { ?aop aopo:has_key_event_relationship ?ker }
+      }
+      FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+    }
+    ORDER BY ?graph ?aop
+    """
+
+    try:
+        results_network = run_sparql_query(query_network)
+
+        if not results_network:
+            return create_fallback_plot("Composite AOP Completeness by OECD Status", "No AOP network data available")
+
+        # Build network map from individual rows
+        network_map = {}  # {version: {aop_uri: {"kes": set(), "kers": set(), "status": str}}}
+        all_aops = set()
+        all_kes = set()
+        all_kers = set()
+
+        for r in results_network:
+            version = r["graph"]["value"].split("/")[-1]
+            aop_uri = r["aop"]["value"]
+            status = r.get("status", {}).get("value", "No Status") if "status" in r else "No Status"
+
+            # Track all unique entities
+            all_aops.add(aop_uri)
+
+            if version not in network_map:
+                network_map[version] = {}
+            if aop_uri not in network_map[version]:
+                network_map[version][aop_uri] = {"kes": set(), "kers": set(), "status": status}
+
+            # Add KE if present
+            if "ke" in r and r["ke"]:
+                ke_uri = r["ke"]["value"]
+                network_map[version][aop_uri]["kes"].add(ke_uri)
+                all_kes.add(ke_uri)
+
+            # Add KER if present
+            if "ker" in r and r["ker"]:
+                ker_uri = r["ker"]["value"]
+                network_map[version][aop_uri]["kers"].add(ker_uri)
+                all_kers.add(ker_uri)
+
+        logger.info(f"Phase 1 complete: Found {len(all_aops)} unique AOPs, {len(all_kes)} unique KEs, {len(all_kers)} unique KERs across all versions")
+
+        # Phase 2: Query property counts with optimized filtering
+        # Use property URI filtering but avoid large entity IN filters
+
+        # Build property filter strings
+        if aop_prop_count > 0:
+            aop_prop_filter_values = ", ".join([f"<{uri}>" for uri in aop_props])
+            aop_prop_filter = f"FILTER(?p IN ({aop_prop_filter_values}))"
+        else:
+            aop_prop_filter = ""
+
+        if ke_prop_count > 0:
+            ke_prop_filter_values = ", ".join([f"<{uri}>" for uri in ke_props])
+            ke_prop_filter = f"FILTER(?p IN ({ke_prop_filter_values}))"
+        else:
+            ke_prop_filter = ""
+
+        if ker_prop_count > 0:
+            ker_prop_filter_values = ", ".join([f"<{uri}>" for uri in ker_props])
+            ker_prop_filter = f"FILTER(?p IN ({ker_prop_filter_values}))"
+        else:
+            ker_prop_filter = ""
+
+        # Query AOP property counts
+        if aop_prop_count > 0:
+            query_aop = f"""
+            SELECT ?graph ?aop (COUNT(DISTINCT ?p) AS ?prop_count)
+            WHERE {{
+              GRAPH ?graph {{
+                ?aop a aopo:AdverseOutcomePathway ;
+                     ?p ?o .
+                {aop_prop_filter}
+              }}
+              FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+            }}
+            GROUP BY ?graph ?aop
+            ORDER BY ?graph ?aop
+            """
+            results_aop = run_sparql_query(query_aop)
+        else:
+            results_aop = []
+
+        # Query KE property counts
+        if ke_prop_count > 0:
+            query_ke = f"""
+            SELECT ?graph ?ke (COUNT(DISTINCT ?p) AS ?prop_count)
+            WHERE {{
+              GRAPH ?graph {{
+                ?ke a aopo:KeyEvent ;
+                    ?p ?o .
+                {ke_prop_filter}
+              }}
+              FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+            }}
+            GROUP BY ?graph ?ke
+            ORDER BY ?graph ?ke
+            """
+            results_ke = run_sparql_query(query_ke)
+        else:
+            results_ke = []
+
+        # Query KER property counts
+        if ker_prop_count > 0:
+            query_ker = f"""
+            SELECT ?graph ?ker (COUNT(DISTINCT ?p) AS ?prop_count)
+            WHERE {{
+              GRAPH ?graph {{
+                ?ker a aopo:KeyEventRelationship ;
+                     ?p ?o .
+                {ker_prop_filter}
+              }}
+              FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+            }}
+            GROUP BY ?graph ?ker
+            ORDER BY ?graph ?ker
+            """
+            results_ker = run_sparql_query(query_ker)
+        else:
+            results_ker = []
+        
+        # Step 3: Build completeness maps
+        
+        aop_completeness = {}
+        for r in results_aop:
+            version = r["graph"]["value"].split("/")[-1]
+            entity_uri = r["aop"]["value"]
+            prop_count = int(r["prop_count"]["value"])
+            completeness = (prop_count / aop_prop_count) * 100 if aop_prop_count > 0 else 0
+            
+            if version not in aop_completeness:
+                aop_completeness[version] = {}
+            aop_completeness[version][entity_uri] = completeness
+        
+        ke_completeness = {}
+        for r in results_ke:
+            version = r["graph"]["value"].split("/")[-1]
+            entity_uri = r["ke"]["value"]
+            prop_count = int(r["prop_count"]["value"])
+            completeness = (prop_count / ke_prop_count) * 100 if ke_prop_count > 0 else 0
+            
+            if version not in ke_completeness:
+                ke_completeness[version] = {}
+            ke_completeness[version][entity_uri] = completeness
+        
+        ker_completeness = {}
+        for r in results_ker:
+            version = r["graph"]["value"].split("/")[-1]
+            entity_uri = r["ker"]["value"]
+            prop_count = int(r["prop_count"]["value"])
+            completeness = (prop_count / ker_prop_count) * 100 if ker_prop_count > 0 else 0
+            
+            if version not in ker_completeness:
+                ker_completeness[version] = {}
+            ker_completeness[version][entity_uri] = completeness
+        
+        # Step 4: Calculate composite scores WITH status
+        completeness_data = []
+        
+        for version, aops in network_map.items():
+            for aop_uri, network in aops.items():
+                entity_scores = []
+                
+                # Add AOP entity completeness
+                if version in aop_completeness and aop_uri in aop_completeness[version]:
+                    entity_scores.append(aop_completeness[version][aop_uri])
+                elif aop_prop_count > 0:
+                    entity_scores.append(0)
+                
+                # Add KE completeness scores
+                for ke_uri in network["kes"]:
+                    if version in ke_completeness and ke_uri in ke_completeness[version]:
+                        entity_scores.append(ke_completeness[version][ke_uri])
+                    elif ke_prop_count > 0:
+                        entity_scores.append(0)
+                
+                # Add KER completeness scores
+                for ker_uri in network["kers"]:
+                    if version in ker_completeness and ker_uri in ker_completeness[version]:
+                        entity_scores.append(ker_completeness[version][ker_uri])
+                    elif ker_prop_count > 0:
+                        entity_scores.append(0)
+                
+                # Calculate composite score
+                if entity_scores:
+                    composite_score = sum(entity_scores) / len(entity_scores)
+                    # Get status from network_map (already captured in Phase 1)
+                    status = network["status"]
+
+                    completeness_data.append({
+                        "version": version,
+                        "aop_uri": aop_uri,
+                        "status": status,
+                        "completeness": composite_score,
+                        "entity_count": len(entity_scores)
+                    })
+        
+        if not completeness_data:
+            return create_fallback_plot("Composite AOP Completeness by OECD Status", "No completeness data available")
+        
+        # Create DataFrame
+        df = pd.DataFrame(completeness_data)
+        
+        # Sort by version
+        df["version_dt"] = pd.to_datetime(df["version"], errors="coerce")
+        df = df.sort_values("version_dt")
+        
+        # Cache data for CSV export
+        _plot_data_cache['aop_completeness_boxplot_by_status'] = df.copy()
+
+        # Dynamically extract all unique statuses and assign colors
+        unique_statuses = sorted(df['status'].unique())
+
+        # Use Plotly's qualitative color palette for consistent, distinguishable colors
+        # Plotly Plotly palette provides 10 distinct colors
+        plotly_colors = px.colors.qualitative.Plotly
+
+        # Build dynamic color map
+        status_color_map = {}
+        for i, status in enumerate(unique_statuses):
+            status_color_map[status] = plotly_colors[i % len(plotly_colors)]
+
+        logger.info(f"Found {len(unique_statuses)} unique OECD statuses: {unique_statuses}")
+
+        # Create boxplot with color grouping by status
+        fig = px.box(
+            df,
+            x="version",
+            y="completeness",
+            color="status",
+            title="Composite AOP Completeness Distribution by OECD Status",
+            labels={
+                "completeness": "Composite Completeness (%)",
+                "version": "Version",
+                "status": "OECD Status"
+            },
+            color_discrete_map=status_color_map
+        )
+        
+        fig.update_traces(
+            marker=dict(opacity=0.6),
+            line=dict(width=2)
+        )
+        
+        fig.update_layout(
+            template="plotly_white",
+            autosize=True,
+            margin=dict(l=50, r=20, t=50, b=100),
+            yaxis=dict(title="Composite Completeness (%)", range=[0, 105]),
+            xaxis=dict(title="Version", tickangle=-45),
+            showlegend=True,
+            legend=dict(
+                title="OECD Status",
+                orientation="v",
+                yanchor="top",
+                y=1,
+                xanchor="left",
+                x=1.02
+            )
+        )
+        
+        config = {"responsive": True}
+        
+        # Cache figure for image export
+        _plot_figure_cache['aop_completeness_boxplot_by_status'] = fig
+        
+        return pio.to_html(fig, full_html=False, include_plotlyjs=False, config=config)
+    
+    except Exception as e:
+        logger.error(f"Error creating status-separated AOP completeness boxplot: {str(e)}")
+        return create_fallback_plot("Composite AOP Completeness by OECD Status", f"Error: {str(e)}")

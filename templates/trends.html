@@ -251,6 +251,90 @@
     </div>
 </section>
 
+<section class="section-block" id="entity-completeness">
+    <h2 class="section-header">Entity Completeness Trends</h2>
+    <div class="plot-grid">
+    <div class="plot-box" id="entity-completeness-trends">
+        <div class="plot-header">
+            <h3>Average Entity Completeness Over Time</h3>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/entity_completeness_trends?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/entity_completeness_trends?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/entity_completeness_trends?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <p class="plot-description">
+            Shows the average completeness percentage for AOPs, Key Events, Key Event Relationships, and Stressors over time.
+            Excludes properties that are 100% present (always filled in) to focus on optional properties that reflect data richness.
+            Completeness is calculated as the percentage of non-ubiquitous properties each entity has filled in,
+            then averaged across all entities of that type in each version.
+        </p>
+        <div class="lazy-plot" data-plot-name="entity_completeness_trends">
+            <!-- Plot will be loaded here via JavaScript -->
+        </div>
+    </div>
+
+    <div class="plot-box" id="aop-completeness-boxplot">
+        <div class="plot-header">
+            <h3>Composite AOP Completeness Distribution Over Time</h3>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/aop_completeness_boxplot?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/aop_completeness_boxplot?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/aop_completeness_boxplot?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <p class="plot-description">
+            Shows the distribution of <strong>composite completeness scores</strong> for individual AOPs in each version.
+            Each AOP's score is the average of its own property completeness plus the completeness of all its linked Key Events (KEs) and Key Event Relationships (KERs).
+            This reveals whether entire AOP networks are well-documented or if some networks are sparse.
+            The box shows quartiles (Q1, median, Q3), whiskers extend to 1.5×IQR, and points show outliers.
+            Excludes 100% present properties like the average plot above.
+        </p>
+        <div class="lazy-plot" data-plot-name="aop_completeness_boxplot">
+            <!-- Plot will be loaded here via JavaScript -->
+        </div>
+    </div>
+
+    <!-- REMOVED: Composite AOP Completeness by OECD Status - hits Virtuoso execution limits on network query
+    <div class="plot-box" id="aop-completeness-boxplot-by-status">
+        <div class="plot-header">
+            <h3>Composite AOP Completeness by OECD Status</h3>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/aop_completeness_boxplot_by_status?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/aop_completeness_boxplot_by_status?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/aop_completeness_boxplot_by_status?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <p class="plot-description">
+            Shows the distribution of <strong>composite completeness scores</strong> for individual AOPs in each version, <strong>color-coded by OECD approval status</strong>.
+            Each AOP's score is the average of its own property completeness plus the completeness of all its linked Key Events (KEs) and Key Event Relationships (KERs).
+            Status categories include all OECD approval stages present in the data (e.g., Endorsed, Approved, Under Review, Under Development), with each status assigned a distinct color.
+            This reveals how completeness patterns differ across different maturity levels and whether endorsed/approved AOPs tend to be better documented than those still in development.
+            Note: Status data is queried from the latest version and applied across all historical versions for consistency.
+        </p>
+        <div class="lazy-plot" data-plot-name="aop_completeness_boxplot_by_status">
+            <!-- Plot will be loaded here via JavaScript -->
+        </div>
+    </div>
+    -->
+    </div>
+</section>
+
 <section class="section-block" id="network-connectivity">
     <!-- Average KEs/KERs -->
     <h2 class="section-header">AOP Connectivity and Network Structure</h2>
