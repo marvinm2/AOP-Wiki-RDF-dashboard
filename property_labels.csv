@@ -1,45 +1,45 @@
-uri,label,type
-http://aopkb.org/aop_ontology#has_key_event,Has Key Event,Content
-http://aopkb.org/aop_ontology#has_key_event_relationship,Has Key Event Relationship,Content
-http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C54571,Prototypical Stressors,Content
-http://aopkb.org/aop_ontology#has_molecular_initiating_event,Has Molecular Initiating Event,Content
-http://aopkb.org/aop_ontology#has_adverse_outcome,Has Adverse Outcome,Content
-http://purl.org/dc/elements/1.1/title,Title,Essential
-http://purl.org/dc/terms/abstract,Abstract,Essential
-http://xmlns.com/foaf/0.1/page,Page,Metadata
-http://purl.org/dc/elements/1.1/creator,Creator,Metadata
-http://purl.org/dc/terms/created,Creation Date,Metadata
-http://purl.org/dc/terms/modified,Modification Date,Metadata
-http://www.w3.org/2000/01/rdf-schema#label,Label,Essential
-http://www.w3.org/2000/01/rdf-schema#seeAlso,Web Link,Metadata
-http://purl.org/dc/elements/1.1/identifier,Identifier,Metadata
-http://purl.org/dc/elements/1.1/description,Description,Essential
-http://aopkb.org/aop_ontology#AopContext,Domain of Applicability,Context
-http://aopkb.org/aop_ontology#LifeStageContext,Life Stage Applicability,Context
-http://aopkb.org/aop_ontology#has_evidence,Has Evidence,Assessment
-http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25217,Overall Assessment,Assessment
-http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25688,OECD Status,Metadata
-http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25725,Considerations for Applications,Assessment
-http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C48192,Key Event Essentiality,Assessment
-http://purl.obolibrary.org/obo/PATO_0000047,Sex Applicability,Context
-http://purl.org/dc/terms/alternative,Alternative Title,Metadata
-http://edamontology.org/operation_3799,Quantitative Understanding,Assessment
-http://www.w3.org/1999/02/22-rdf-syntax-ns#type,Type,Metadata
-http://purl.org/dc/elements/1.1/source,Source,Metadata
-http://purl.org/dc/terms/isPartOf,AOP Context,Context
-http://aopkb.org/aop_ontology#CellTypeContext,Cell Type Applicability,Context
-http://aopkb.org/aop_ontology#OrganContext,Organ Applicability,Context
-http://aopkb.org/aop_ontology#hasBiologicalEvent,Has Biological Event,Content
-http://edamontology.org/data_1025,Gene Identifier,Content
-http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25664,Level of Biological Organisation,Context
-http://purl.bioontology.org/ontology/NCBITAXON/131567,Taxonomic Applicability,Context
-http://purl.obolibrary.org/obo/GO_0008150,Biological Process,Content
-http://purl.obolibrary.org/obo/MMO_0000000,Measurement Method,Assessment
-http://purl.obolibrary.org/obo/PATO_0000001,Biological Action,Content
-http://purl.obolibrary.org/obo/PATO_0001241,Biological Object,Content
-http://aopkb.org/aop_ontology#has_downstream_key_event,Downstream Key Event,Content
-http://aopkb.org/aop_ontology#has_upstream_key_event,Upstream Key Event,Content
-http://edamontology.org/data_2042,Empirical Support,Assessment
-http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C71478,Uncertainty,Assessment
-http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C80263,Biological Plausibility,Assessment
-http://aopkb.org/aop_ontology#has_chemical_entity,Chemical Entity,Content
+uri,label,type,applies_to
+http://aopkb.org/aop_ontology#has_key_event,Has Key Event,Content,AOP
+http://aopkb.org/aop_ontology#has_key_event_relationship,Has Key Event Relationship,Content,AOP
+http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C54571,Prototypical Stressors,Content,AOP
+http://aopkb.org/aop_ontology#has_molecular_initiating_event,Has Molecular Initiating Event,Content,AOP
+http://aopkb.org/aop_ontology#has_adverse_outcome,Has Adverse Outcome,Content,AOP
+http://purl.org/dc/elements/1.1/title,Title,Essential,AOP|KE|KER|Stressor
+http://purl.org/dc/terms/abstract,Abstract,Essential,AOP
+http://xmlns.com/foaf/0.1/page,Page,Metadata,AOP|KE|KER|Stressor
+http://purl.org/dc/elements/1.1/creator,Creator,Metadata,AOP|KE|KER
+http://purl.org/dc/terms/created,Creation Date,Metadata,AOP|KE|KER
+http://purl.org/dc/terms/modified,Modification Date,Metadata,AOP|KE|KER
+http://www.w3.org/2000/01/rdf-schema#label,Label,Essential,AOP|KE|KER|Stressor
+http://www.w3.org/2000/01/rdf-schema#seeAlso,Web Link,Metadata,AOP|KE|KER
+http://purl.org/dc/elements/1.1/identifier,Identifier,Metadata,AOP|KE|KER
+http://purl.org/dc/elements/1.1/description,Description,Essential,AOP|KE|KER|Stressor
+http://aopkb.org/aop_ontology#AopContext,Domain of Applicability,Context,AOP
+http://aopkb.org/aop_ontology#LifeStageContext,Life Stage Applicability,Context,AOP|KE|KER
+http://aopkb.org/aop_ontology#has_evidence,Has Evidence,Assessment,AOP|KE|KER
+http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25217,Overall Assessment,Assessment,AOP
+http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25688,OECD Status,Metadata,AOP
+http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25725,Considerations for Applications,Assessment,AOP
+http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C48192,Key Event Essentiality,Assessment,AOP
+http://purl.obolibrary.org/obo/PATO_0000047,Sex Applicability,Context,AOP|KE|KER
+http://purl.org/dc/terms/alternative,Alternative Title,Metadata,AOP
+http://edamontology.org/operation_3799,Quantitative Understanding,Assessment,AOP
+http://www.w3.org/1999/02/22-rdf-syntax-ns#type,Type,Metadata,AOP
+http://purl.org/dc/elements/1.1/source,Source,Metadata,KE|KER
+http://purl.org/dc/terms/isPartOf,AOP Context,Context,AOP
+http://aopkb.org/aop_ontology#CellTypeContext,Cell Type Applicability,Context,KE|KER
+http://aopkb.org/aop_ontology#OrganContext,Organ Applicability,Context,KE|KER
+http://aopkb.org/aop_ontology#hasBiologicalEvent,Has Biological Event,Content,KE
+http://edamontology.org/data_1025,Gene Identifier,Content,NONE
+http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25664,Level of Biological Organisation,Context,KE
+http://purl.bioontology.org/ontology/NCBITAXON/131567,Taxonomic Applicability,Context,AOP|KE|KER
+http://purl.obolibrary.org/obo/GO_0008150,Biological Process,Content,KE
+http://purl.obolibrary.org/obo/MMO_0000000,Measurement Method,Essential,KE
+http://purl.obolibrary.org/obo/PATO_0000001,Biological Action,Content,KE
+http://purl.obolibrary.org/obo/PATO_0001241,Biological Object,Content,KE
+http://aopkb.org/aop_ontology#has_downstream_key_event,Downstream Key Event,Content,KER
+http://aopkb.org/aop_ontology#has_upstream_key_event,Upstream Key Event,Content,KER
+http://edamontology.org/data_2042,Empirical Support,Assessment,KER
+http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C71478,Uncertainty,Assessment,KER
+http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C80263,Biological Plausibility,Assessment,KER
+http://aopkb.org/aop_ontology#has_chemical_entity,Chemical Entity,Content,Stressor

@@ -189,6 +189,64 @@ def safe_read_csv(filename: str, default_data: Optional[List[Dict]] = None) -> p
         return pd.DataFrame()
 
 
+def get_properties_for_entity(entity_type: str) -> Dict[str, List[Dict[str, str]]]:
+    """Get properties for a specific entity type, grouped by property category.
+
+    Reads property_labels.csv and filters properties based on the applies_to column,
+    then groups them by type (Essential, Content, Context, Assessment, Metadata).
+
+    Args:
+        entity_type (str): Entity type to filter by (AOP, KE, KER, or Stressor).
+            Case-insensitive.
+
+    Returns:
+        Dict[str, List[Dict[str, str]]]: Dictionary with property types as keys
+            (Essential, Content, Context, Assessment, Metadata) and lists of
+            property dictionaries as values. Each property dict contains:
+            - uri: Property URI
+            - label: Human-readable label
+            - type: Property category
+            - applies_to: Pipe-separated entity types
+
+    Example:
+        >>> props = get_properties_for_entity('KE')
+        >>> essential_props = props.get('Essential', [])
+        >>> print(f"KE has {len(essential_props)} essential properties")
+        >>> for prop in essential_props:
+        ...     print(f"  - {prop['label']}")
+
+    Note:
+        Properties with applies_to="NONE" are excluded from all entity types.
+        Properties are included if entity_type appears in the pipe-separated
+        applies_to column (e.g., "AOP|KE|KER" includes AOP, KE, and KER).
+    """
+    entity_type = entity_type.upper()
+
+    # Read property labels CSV
+    df = safe_read_csv('property_labels.csv')
+
+    if df.empty:
+        logger.warning("property_labels.csv is empty or could not be read")
+        return {}
+
+    # Filter properties that apply to this entity type
+    # applies_to is pipe-separated, e.g., "AOP|KE|KER"
+    filtered_df = df[df['applies_to'].str.contains(entity_type, case=False, na=False)]
+
+    # Group by property type
+    grouped = {}
+    property_types = ['Essential', 'Content', 'Context', 'Assessment', 'Metadata']
+
+    for prop_type in property_types:
+        type_df = filtered_df[filtered_df['type'] == prop_type]
+        if not type_df.empty:
+            grouped[prop_type] = type_df.to_dict('records')
+        else:
+            grouped[prop_type] = []
+
+    return grouped
+
+
 def check_sparql_endpoint_health() -> bool:
     """Check if SPARQL endpoint is accessible and responsive.
 
