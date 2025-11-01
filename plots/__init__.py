@@ -34,6 +34,10 @@ Historical Trends (trends_plots):
         - plot_ker_property_presence(): KER property presence evolution with marker shapes
         - plot_stressor_property_presence(): Stressor property presence evolution with marker shapes
 
+    Entity Completeness:
+        - plot_entity_completeness_trends(): Average completeness percentage trends across entity types
+        - plot_aop_completeness_boxplot(): Distribution of AOP completeness scores per version
+
     Temporal Analysis:
         - plot_aop_lifetime(): AOP creation and modification patterns
 
@@ -112,6 +116,7 @@ from .shared import (
 
     # Utility functions
     safe_read_csv,
+    get_properties_for_entity,
     safe_plot_execution,
     create_fallback_plot,
     export_figure_as_image,
@@ -151,6 +156,11 @@ from .trends_plots import (
 
     # Temporal analysis
     plot_aop_lifetime,
+
+    # Entity completeness analysis
+    plot_entity_completeness_trends,
+    plot_aop_completeness_boxplot,
+    # plot_aop_completeness_boxplot_by_status,  # REMOVED - hits Virtuoso execution limits
 )
 
 # Import all current snapshot plot functions
@@ -174,6 +184,9 @@ from .latest_plots import (
 
     # Data quality analysis
     plot_latest_aop_completeness,
+    plot_latest_aop_completeness_by_status,
+    plot_latest_ke_completeness_by_status,
+    plot_latest_ker_completeness_by_status,
 )
 
 # Define module version and metadata
@@ -190,6 +203,7 @@ __all__ = [
     'get_latest_version',
     'get_all_versions',
     'safe_read_csv',
+    'get_properties_for_entity',
     'safe_plot_execution',
     'create_fallback_plot',
     'export_figure_as_image',
@@ -216,6 +230,9 @@ __all__ = [
     'plot_ker_property_presence',
     'plot_stressor_property_presence',
     'plot_aop_lifetime',
+    'plot_entity_completeness_trends',
+    'plot_aop_completeness_boxplot',
+    # 'plot_aop_completeness_boxplot_by_status',  # REMOVED - hits Virtuoso execution limits
 
     # Current snapshot functions
     'plot_latest_entity_counts',
@@ -228,6 +245,9 @@ __all__ = [
     'plot_latest_process_usage',
     'plot_latest_object_usage',
     'plot_latest_aop_completeness',
+    'plot_latest_aop_completeness_by_status',
+    'plot_latest_ke_completeness_by_status',
+    'plot_latest_ker_completeness_by_status',
 ]
 
 # Module-level convenience functions
@@ -254,6 +274,9 @@ def get_available_functions():
             'plot_ker_property_presence',
             'plot_stressor_property_presence',
             'plot_aop_lifetime',
+            'plot_entity_completeness_trends',
+            'plot_aop_completeness_boxplot',
+            # 'plot_aop_completeness_boxplot_by_status',  # REMOVED - hits Virtuoso execution limits
         ],
         'current_snapshots': [
             'plot_latest_entity_counts',
@@ -266,6 +289,9 @@ def get_available_functions():
             'plot_latest_process_usage',
             'plot_latest_object_usage',
             'plot_latest_aop_completeness',
+            'plot_latest_aop_completeness_by_status',
+            'plot_latest_ke_completeness_by_status',
+            'plot_latest_ker_completeness_by_status',
         ],
         'utilities': [
             'run_sparql_query',
