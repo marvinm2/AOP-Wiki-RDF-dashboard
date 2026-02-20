@@ -577,7 +577,8 @@ def plot_aop_lifetime() -> tuple[str, str, str]:
     fig3 = px.scatter(df_lifetime, x="created", y="modified", hover_name="aop",
                       title="AOP Creation vs. Modification Timeline",
                       labels={"created": "Created", "modified": "Modified"},
-                      color_discrete_sequence=[BRAND_COLORS['accent']])
+                      color_discrete_sequence=[BRAND_COLORS['accent']],
+                      render_mode='svg')
     fig3.update_layout(template="plotly_white", height=500)
     html3 = pio.to_html(fig3, full_html=False, include_plotlyjs=False)
 
