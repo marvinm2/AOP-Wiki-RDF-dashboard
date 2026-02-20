@@ -38,16 +38,17 @@ Author:
     Generated with Claude Code (https://claude.ai/code)
 
 """
+from config import Config, configure_logging
+
+# Configure structured JSON logging before any other imports that might log
+configure_logging()
+
 from flask import Flask, render_template, jsonify, request, Response, url_for, redirect
 import pandas as pd
 import time
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from config import Config
 
-# Configure logging
-logging.basicConfig(level=getattr(logging, Config.LOG_LEVEL),
-                    format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 # Validate configuration

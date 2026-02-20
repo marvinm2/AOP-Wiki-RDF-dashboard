@@ -39,6 +39,8 @@ Author:
 
 """
 import os
+import sys
+import logging
 from typing import Dict, Any
 
 class Config:
@@ -174,6 +176,43 @@ class Config:
             return True
             
         except Exception as e:
-            import logging
-            logging.error(f"Configuration validation failed: {str(e)}")
+            import logging as _logging
+            _logging.error(f"Configuration validation failed: {str(e)}")
             return False
+
+
+def configure_logging(log_level: str = None):
+    """Configure structured JSON logging for production.
+
+    JSON lines format with fields:
+    - timestamp: ISO 8601
+    - level: DEBUG/INFO/WARNING/ERROR/CRITICAL
+    - logger: module name
+    - message: log message
+    - module: source module
+    - funcName: source function
+    """
+    from pythonjsonlogger.jsonlogger import JsonFormatter
+
+    if log_level is None:
+        log_level = Config.LOG_LEVEL
+
+    handler = logging.StreamHandler(sys.stdout)
+
+    formatter = JsonFormatter(
+        fmt="%(asctime)s %(levelname)s %(name)s %(message)s %(module)s %(funcName)s",
+        datefmt="%Y-%m-%dT%H:%M:%S%z",
+        rename_fields={
+            "asctime": "timestamp",
+            "levelname": "level",
+            "name": "logger",
+        }
+    )
+
+    handler.setFormatter(formatter)
+
+    # Configure root logger
+    root_logger = logging.getLogger()
+    root_logger.handlers.clear()  # Remove any existing handlers
+    root_logger.addHandler(handler)
+    root_logger.setLevel(getattr(logging, log_level.upper(), logging.INFO))
