@@ -1,9 +1,9 @@
 ---
-status: complete
+status: diagnosed
 phase: 01-foundation-and-cleanup
 source: [01-01-SUMMARY.md, 01-02-SUMMARY.md, 01-03-SUMMARY.md]
 started: 2026-02-20T14:30:00Z
-updated: 2026-02-20T14:52:00Z
+updated: 2026-02-20T14:55:00Z
 ---
 
 ## Current Test
@@ -57,6 +57,14 @@ skipped: 0
   reason: "User reported: I see some failed plots, but not with a good error message. E.g. AOP Creation vs Modification plot and KE component plots in the trends page do not work"
   severity: major
   test: 5
-  artifacts: []
-  missing: []
+  root_cause: "API handler at app.py:1491-1496 returns success:true unconditionally for all plot_map lookups. Two failure paths: (1) plot_aop_lifetime has no return annotation so safe_plot_execution returns single fallback string, unpacking fails silently, empty strings stored — API returns {html:'', success:true}. (2) Annotated plots get fallback Plotly charts with 'Data Unavailable' text — API returns {html:fallback_html, success:true}. In both cases showErrorState() never fires because success is true."
+  artifacts:
+    - path: "app.py"
+      issue: "Lines 1491-1496: no content check before returning success:true"
+    - path: "plots/trends_plots.py"
+      issue: "Line 528: plot_aop_lifetime() missing return type annotation -> tuple[str, str, str]"
+  missing:
+    - "API handler should check for empty/falsy HTML and return success:false with error message"
+    - "API handler should detect fallback sentinel ('Data Unavailable') and return success:false"
+    - "plot_aop_lifetime needs return type annotation for correct fallback tuple generation"
   debug_session: ""
