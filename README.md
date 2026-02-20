@@ -106,7 +106,7 @@ open http://localhost:5000/status
 ### **File Structure**
 ```
 ├── app.py                 # Main Flask application
-├── plots.py               # Plot generation and data processing
+├── plots/                 # Plot generation package (shared, trends, latest)
 ├── config.py              # Configuration settings
 ├── property_labels.csv    # AOP property metadata
 ├── templates/             # HTML templates
@@ -128,13 +128,13 @@ open http://localhost:5000/status
 ```
 
 ### **Adding New Plots**
-1. Create plot function in `plots.py` with data caching
+1. Create plot function in the `plots/` package with data caching
 2. Add Flask route for CSV download in `app.py`
 3. Include plot variable in template rendering
 4. Add download button to appropriate HTML template
 
 ### **Customization**
-- **Colors**: Modify `BRAND_COLORS` in `plots.py`
+- **Colors**: Modify `BRAND_COLORS` in `plots/shared.py`
 - **Properties**: Update `property_labels.csv` with new AOP properties
 - **Endpoints**: Configure SPARQL endpoint in `config.py`
 - **Layout**: Customize templates and CSS for different layouts
