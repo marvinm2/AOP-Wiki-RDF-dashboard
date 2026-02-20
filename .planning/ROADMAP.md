@@ -12,7 +12,7 @@ This roadmap transforms the AOP-Wiki RDF Dashboard from a functioning but fragil
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation and Cleanup** - Eliminate technical debt, production-ready infrastructure, developer guardrails
+- [x] **Phase 1: Foundation and Cleanup** - Eliminate technical debt, production-ready infrastructure, developer guardrails (completed 2026-02-20)
 - [ ] **Phase 2: Reliability and Completeness** - All plots load reliably, full export coverage, methodology transparency
 - [ ] **Phase 3: Network Analysis** - Interactive AOP network graph with centrality metrics, PageRank, and community detection
 - [ ] **Phase 4: Entity Exploration** - Deep-dive views for AOPs, KEs, and stressors with shareable URLs
@@ -31,7 +31,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Application serves requests under Gunicorn with multiple workers (not Flask dev server)
   4. Memory usage stabilizes under sustained load — cache does not grow unboundedly when cycling through versions
   5. A developer can add a new plot by following documented templates and checklists without reading existing plot implementations
-**Plans:** 3 plans
+**Plans:** 3/3 plans complete
 
 Plans:
 - [ ] 01-01-PLAN.md — Delete legacy files, clean dead code, pin dependencies (Wave 1)
@@ -124,7 +124,7 @@ Note: Phase 2 and Phase 3 can execute in parallel (both depend only on Phase 1).
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation and Cleanup | 0/3 | Not started | - |
+| 1. Foundation and Cleanup | 0/3 | Complete    | 2026-02-20 |
 | 2. Reliability and Completeness | 0/3 | Not started | - |
 | 3. Network Analysis | 0/3 | Not started | - |
 | 4. Entity Exploration | 0/3 | Not started | - |
