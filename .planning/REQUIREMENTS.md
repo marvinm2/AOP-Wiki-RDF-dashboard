@@ -11,8 +11,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [ ] **INFR-01**: Legacy `plots.py` monolith (4,194 lines) is deleted and all imports use the modular `plots/` package
 - [ ] **INFR-02**: All dependency versions are pinned in requirements.txt with tested versions
-- [ ] **INFR-03**: Application runs under Gunicorn in production (not Flask dev server)
-- [ ] **INFR-04**: Cache has eviction policy preventing unbounded memory growth
+- [x] **INFR-03**: Application runs under Gunicorn in production (not Flask dev server)
+- [x] **INFR-04**: Cache has eviction policy preventing unbounded memory growth
 - [ ] **INFR-05**: CORS headers are configured for cross-origin access on VHP platform
 - [ ] **INFR-06**: Dashboard is deployed and accessible on VHP4Safety platform (Issue #3)
 
@@ -20,7 +20,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [ ] **RELY-01**: AOP completeness distribution plot loads in under 30 seconds (currently ~75s)
 - [ ] **RELY-02**: AOP completeness by OECD status visualization is restored or replaced with working alternative
-- [ ] **RELY-03**: All plot error states use consistent fallback with actionable user-facing messages
+- [x] **RELY-03**: All plot error states use consistent fallback with actionable user-facing messages
 - [ ] **RELY-04**: Every displayed visualization has CSV, PNG, and SVG export options
 
 ### Data Exploration
@@ -101,13 +101,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | INFR-01 | Phase 1 | Pending |
 | INFR-02 | Phase 1 | Pending |
-| INFR-03 | Phase 1 | Pending |
-| INFR-04 | Phase 1 | Pending |
+| INFR-03 | Phase 1 | Complete |
+| INFR-04 | Phase 1 | Complete |
 | INFR-05 | Phase 6 | Pending |
 | INFR-06 | Phase 6 | Pending |
 | RELY-01 | Phase 2 | Pending |
 | RELY-02 | Phase 2 | Pending |
-| RELY-03 | Phase 1 | Pending |
+| RELY-03 | Phase 1 | Complete |
 | RELY-04 | Phase 2 | Pending |
 | EXPL-01 | Phase 4 | Pending |
 | EXPL-02 | Phase 4 | Pending |
