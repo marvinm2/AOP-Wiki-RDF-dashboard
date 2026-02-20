@@ -99,38 +99,38 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INFR-01 | - | Pending |
-| INFR-02 | - | Pending |
-| INFR-03 | - | Pending |
-| INFR-04 | - | Pending |
-| INFR-05 | - | Pending |
-| INFR-06 | - | Pending |
-| RELY-01 | - | Pending |
-| RELY-02 | - | Pending |
-| RELY-03 | - | Pending |
-| RELY-04 | - | Pending |
-| EXPL-01 | - | Pending |
-| EXPL-02 | - | Pending |
-| EXPL-03 | - | Pending |
-| EXPL-04 | - | Pending |
-| EXPL-05 | - | Pending |
-| EXPL-06 | - | Pending |
-| EXPL-07 | - | Pending |
-| NETW-01 | - | Pending |
-| NETW-02 | - | Pending |
-| NETW-03 | - | Pending |
-| NETW-04 | - | Pending |
-| ANLY-01 | - | Pending |
-| ANLY-02 | - | Pending |
-| ANLY-03 | - | Pending |
-| DEVX-01 | - | Pending |
-| DEVX-02 | - | Pending |
+| INFR-01 | Phase 1 | Pending |
+| INFR-02 | Phase 1 | Pending |
+| INFR-03 | Phase 1 | Pending |
+| INFR-04 | Phase 1 | Pending |
+| INFR-05 | Phase 6 | Pending |
+| INFR-06 | Phase 6 | Pending |
+| RELY-01 | Phase 2 | Pending |
+| RELY-02 | Phase 2 | Pending |
+| RELY-03 | Phase 1 | Pending |
+| RELY-04 | Phase 2 | Pending |
+| EXPL-01 | Phase 4 | Pending |
+| EXPL-02 | Phase 4 | Pending |
+| EXPL-03 | Phase 4 | Pending |
+| EXPL-04 | Phase 4 | Pending |
+| EXPL-05 | Phase 4 | Pending |
+| EXPL-06 | Phase 4 | Pending |
+| EXPL-07 | Phase 2 | Pending |
+| NETW-01 | Phase 3 | Pending |
+| NETW-02 | Phase 3 | Pending |
+| NETW-03 | Phase 3 | Pending |
+| NETW-04 | Phase 3 | Pending |
+| ANLY-01 | Phase 5 | Pending |
+| ANLY-02 | Phase 5 | Pending |
+| ANLY-03 | Phase 5 | Pending |
+| DEVX-01 | Phase 1 | Pending |
+| DEVX-02 | Phase 1 | Pending |
 
 **Coverage:**
 - v1 requirements: 26 total
-- Mapped to phases: 0
-- Unmapped: 26 ⚠️
+- Mapped to phases: 26
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-20*
-*Last updated: 2026-02-20 after initial definition*
+*Last updated: 2026-02-20 after roadmap creation*
