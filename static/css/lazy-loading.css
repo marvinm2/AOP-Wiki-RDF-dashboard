@@ -70,22 +70,48 @@
     background: #fff5f5;
     border: 1px solid #fed7d7;
     border-radius: 8px;
-    color: #c53030;
+    color: #555;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
 }
 
-.plot-error button {
-    background-color: #e53e3e;
+.plot-error .error-icon {
+    font-size: 2.5rem;
+    margin-bottom: 12px;
+    line-height: 1;
+}
+
+.plot-error .error-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #29235C;
+    margin: 0 0 8px 0;
+}
+
+.plot-error .error-suggestion {
+    font-size: 0.9rem;
+    color: #777;
+    margin: 0 0 16px 0;
+    max-width: 400px;
+    line-height: 1.4;
+}
+
+.plot-error .error-retry-btn {
+    background-color: #307BBF;
     color: white;
     border: none;
-    padding: 8px 16px;
+    padding: 8px 24px;
     border-radius: 4px;
     cursor: pointer;
-    margin-top: 10px;
+    font-size: 0.9rem;
     transition: background-color 0.3s ease;
 }
 
-.plot-error button:hover {
-    background-color: #c53030;
+.plot-error .error-retry-btn:hover {
+    background-color: #29235C;
 }
 
 /* Plot loading states for different sizes */

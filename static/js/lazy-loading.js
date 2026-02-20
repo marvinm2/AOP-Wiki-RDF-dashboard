@@ -163,11 +163,34 @@ class PlotLazyLoader {
     }
 
     showErrorState(element, error) {
+        const errorLower = error.toLowerCase();
+        const isTimeout = errorLower.includes('timeout');
+        const isUnreachable = errorLower.includes('fetch') ||
+                              errorLower.includes('network') ||
+                              errorLower.includes('503');
+
+        let icon, title, suggestion;
+        if (isTimeout) {
+            icon = '\u23F1';  // Stopwatch
+            title = 'Query Timed Out';
+            suggestion = 'This visualization requires a complex query. Try again in a moment.';
+        } else if (isUnreachable) {
+            icon = '\u26A0';  // Warning sign
+            title = 'Service Unreachable';
+            suggestion = 'The data service is currently unavailable. Please check back later.';
+        } else {
+            icon = '\u26A0';  // Warning sign
+            title = 'Unable to Load Plot';
+            suggestion = 'An unexpected error occurred while loading this visualization.';
+        }
+
+        const plotName = element.dataset.plotName;
         element.innerHTML = `
             <div class="plot-error">
-                <p>⚠️ Unable to load plot</p>
-                <small>${error}</small>
-                <button onclick="plotLoader.retryPlot('${element.dataset.plotName}')">Retry</button>
+                <div class="error-icon">${icon}</div>
+                <h4 class="error-title">${title}</h4>
+                <p class="error-suggestion">${suggestion}</p>
+                <button class="error-retry-btn" onclick="plotLoader.retryPlot('${plotName}')">Retry</button>
             </div>
         `;
     }

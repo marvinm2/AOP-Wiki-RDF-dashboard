@@ -211,6 +211,13 @@ def compute_plots_parallel() -> dict:
 # --- Precompute plots at startup ---
 plot_results = compute_plots_parallel()
 
+# Pin latest version in caches so it is never evicted
+_latest_version = get_latest_version()
+if _latest_version and _latest_version != "Unknown":
+    _plot_data_cache.pin_version(_latest_version)
+    _plot_figure_cache.pin_version(_latest_version)
+    logger.info(f"Pinned version {_latest_version} in data and figure caches")
+
 # Extract results with fallbacks
 try:
     graph_main_abs, graph_main_delta, df_all = plot_results.get('main_graph', (None, None, None))
@@ -319,16 +326,24 @@ def health_check():
         endpoint_healthy = check_sparql_endpoint_health()
         successful_plots = sum(1 for v in plot_results.values() if v is not None)
         total_plots = len(plot_results)
-        
-        health_status = {
-            "status": "healthy" if endpoint_healthy and successful_plots > 0 else "degraded",
-            "sparql_endpoint": "up" if endpoint_healthy else "down",
-            "plots_loaded": f"{successful_plots}/{total_plots}",
-            "timestamp": time.time()
-        }
-        
-        return health_status, 200 if health_status["status"] == "healthy" else 503
-        
+
+        if endpoint_healthy:
+            health_status = {
+                "status": "healthy",
+                "sparql_endpoint": "up",
+                "plots_loaded": f"{successful_plots}/{total_plots}",
+                "timestamp": time.time()
+            }
+            return health_status, 200
+        else:
+            health_status = {
+                "status": "unhealthy",
+                "sparql_endpoint": "down",
+                "plots_loaded": f"{successful_plots}/{total_plots}",
+                "timestamp": time.time()
+            }
+            return health_status, 503
+
     except Exception as e:
         logger.error(f"Health check failed: {str(e)}")
         return {"status": "error", "message": str(e)}, 500
