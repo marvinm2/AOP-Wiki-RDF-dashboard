@@ -123,6 +123,9 @@ from .shared import (
     get_csv_with_metadata,
     create_bulk_download,
 
+    # Cache class
+    VersionedPlotCache,
+
     # Constants and configuration
     BRAND_COLORS,
     config,

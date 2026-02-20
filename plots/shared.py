@@ -58,16 +58,121 @@ import plotly.io as pio
 from SPARQLWrapper import SPARQLWrapper, JSON, SPARQLExceptions
 import time
 import logging
+import threading
+from collections import OrderedDict
 import requests
 from typing import List, Dict, Any, Optional, Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urlparse
 from config import Config
 
-# Configure logging
-logging.basicConfig(level=getattr(logging, Config.LOG_LEVEL),
-                    format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+class VersionedPlotCache:
+    """Cache with TTL expiry, max-version cap, and pinned latest version.
+
+    - Latest/current version is pinned and never evicted
+    - Historical versions follow TTL + max cap rules
+    - Evicts oldest historical entry when cap is reached
+    - Thread-safe for concurrent access from Gunicorn gthread workers
+    - Supports dict-like [] access for backward compatibility
+    """
+
+    def __init__(self, max_versions: int = 5, ttl_seconds: int = 1800):
+        self._data = OrderedDict()          # key -> (value, timestamp)
+        self._pinned_prefix = None           # e.g., "2025-07-01"
+        self._max_versions = max_versions
+        self._ttl = ttl_seconds
+        self._lock = threading.Lock()
+
+    def pin_version(self, version: str):
+        """Pin a version so its entries are never evicted."""
+        self._pinned_prefix = version
+
+    def get(self, key: str, default=None):
+        with self._lock:
+            if key not in self._data:
+                return default
+            value, ts = self._data[key]
+            # Check TTL for non-pinned entries
+            if not self._is_pinned(key) and time.time() - ts > self._ttl:
+                del self._data[key]
+                return default
+            # Move to end (most recently used)
+            self._data.move_to_end(key)
+            return value
+
+    def set(self, key: str, value):
+        with self._lock:
+            self._data[key] = (value, time.time())
+            self._data.move_to_end(key)
+            self._evict_if_needed()
+
+    def __contains__(self, key):
+        with self._lock:
+            if key not in self._data:
+                return False
+            value, ts = self._data[key]
+            # Check TTL for non-pinned entries
+            if not self._is_pinned(key) and time.time() - ts > self._ttl:
+                del self._data[key]
+                return False
+            return True
+
+    def __setitem__(self, key, value):
+        self.set(key, value)
+
+    def __getitem__(self, key):
+        result = self.get(key)
+        if result is None and key not in self._data:
+            raise KeyError(key)
+        return result
+
+    def keys(self):
+        """Return keys, filtering out expired entries."""
+        with self._lock:
+            now = time.time()
+            valid_keys = []
+            expired_keys = []
+            for k in self._data:
+                value, ts = self._data[k]
+                if not self._is_pinned(k) and now - ts > self._ttl:
+                    expired_keys.append(k)
+                else:
+                    valid_keys.append(k)
+            for k in expired_keys:
+                del self._data[k]
+            return valid_keys
+
+    def clear(self):
+        """Clear all cached entries."""
+        with self._lock:
+            self._data.clear()
+
+    def _is_pinned(self, key: str) -> bool:
+        return self._pinned_prefix is not None and self._pinned_prefix in key
+
+    def _evict_if_needed(self):
+        """Evict oldest non-pinned entries when over version cap."""
+        # Count distinct versions (extract version from keys like 'latest_entity_counts_2024-01-15')
+        versions = set()
+        for k in self._data:
+            parts = k.rsplit('_', 1)
+            if len(parts) > 1 and '-' in parts[-1]:
+                versions.add(parts[-1])
+
+        while len(versions) > self._max_versions:
+            # Find oldest non-pinned entry
+            for k in list(self._data.keys()):
+                if not self._is_pinned(k):
+                    del self._data[k]
+                    parts = k.rsplit('_', 1)
+                    if len(parts) > 1:
+                        versions.discard(parts[-1])
+                    break
+            else:
+                break  # All entries are pinned
+
 
 # Validate configuration on import
 if not Config.validate_config():
@@ -125,9 +230,9 @@ config = {
     }
 }
 
-# Global data cache for CSV export functionality
-_plot_data_cache = {}
-_plot_figure_cache = {}  # Cache for Plotly figure objects (for PNG/SVG/PDF export)
+# Global data cache for CSV export functionality (TTL + LRU eviction, pinned latest version)
+_plot_data_cache = VersionedPlotCache(max_versions=5, ttl_seconds=1800)
+_plot_figure_cache = VersionedPlotCache(max_versions=5, ttl_seconds=1800)
 
 
 def safe_read_csv(filename: str, default_data: Optional[List[Dict]] = None) -> pd.DataFrame:
