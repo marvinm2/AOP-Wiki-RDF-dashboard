@@ -243,7 +243,10 @@ graph_components_pct_abs, graph_components_pct_delta = plot_results.get('ke_comp
 graph_bio_processes_abs, graph_bio_processes_delta = plot_results.get('bio_processes', ("", ""))
 graph_bio_objects_abs, graph_bio_objects_delta = plot_results.get('bio_objects', ("", ""))
 graph_authors_abs, graph_authors_delta = plot_results.get('author_counts', ("", ""))
-graph_created, graph_modified, graph_scatter = plot_results.get('aop_lifetime', ("", "", ""))
+try:
+    graph_created, graph_modified, graph_scatter = plot_results.get('aop_lifetime', ("", "", ""))
+except (TypeError, ValueError):
+    graph_created = graph_modified = graph_scatter = ""
 graph_prop_abs, graph_prop_pct = plot_results.get('aop_property_presence', ("", ""))
 graph_ke_prop_abs, graph_ke_prop_pct = plot_results.get('ke_property_presence', ("", ""))
 graph_ker_prop_abs, graph_ker_prop_pct = plot_results.get('ker_property_presence', ("", ""))
@@ -1489,7 +1492,18 @@ def get_plot(plot_name):
         plot_html = plot_map[plot_name]
         # If it's a callable (lambda function), execute it to generate the plot on-demand
         if callable(plot_html):
-            plot_html = plot_html()
+            try:
+                plot_html = plot_html()
+            except Exception as e:
+                logger.error(f"Error generating on-demand plot {plot_name}: {e}")
+                return jsonify({'error': str(e), 'success': False}), 500
+
+        # Validate content: empty or fallback HTML should not count as success
+        if not plot_html or (isinstance(plot_html, str) and len(plot_html.strip()) == 0):
+            return jsonify({'error': f'Plot {plot_name} has no data available', 'success': False}), 500
+        if isinstance(plot_html, str) and 'Data Unavailable' in plot_html:
+            return jsonify({'error': f'Plot {plot_name} failed to load - data unavailable', 'success': False}), 500
+
         return jsonify({'html': plot_html, 'success': True})
 
     else:

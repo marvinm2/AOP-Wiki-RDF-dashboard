@@ -525,7 +525,7 @@ def plot_author_counts() -> tuple[str, str]:
     )
 
 
-def plot_aop_lifetime():
+def plot_aop_lifetime() -> tuple[str, str, str]:
     """Generate AOP lifetime analysis visualizations."""
     global _plot_figure_cache
 

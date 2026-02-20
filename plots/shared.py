@@ -863,8 +863,12 @@ def safe_plot_execution(plot_func, *args, **kwargs) -> Any:
                 return create_fallback_plot(plot_func.__name__, str(e))
             elif 'tuple' in str(return_type):
                 fallback = create_fallback_plot(plot_func.__name__, str(e))
-                # Return tuple of fallbacks based on expected length
-                if 'plot_main_graph' in plot_func.__name__:
+                # Count expected tuple elements from annotation
+                type_str = str(return_type)
+                str_count = type_str.count('str')
+                if str_count >= 3 and 'DataFrame' not in type_str:
+                    return tuple([fallback] * str_count)
+                elif 'DataFrame' in type_str:
                     return fallback, fallback, pd.DataFrame()
                 else:
                     return fallback, fallback
