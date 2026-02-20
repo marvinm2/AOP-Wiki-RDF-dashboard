@@ -31,12 +31,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Application serves requests under Gunicorn with multiple workers (not Flask dev server)
   4. Memory usage stabilizes under sustained load — cache does not grow unboundedly when cycling through versions
   5. A developer can add a new plot by following documented templates and checklists without reading existing plot implementations
-**Plans**: TBD
+**Plans:** 3 plans
 
 Plans:
-- [ ] 01-01: TBD
-- [ ] 01-02: TBD
-- [ ] 01-03: TBD
+- [ ] 01-01-PLAN.md — Delete legacy files, clean dead code, pin dependencies (Wave 1)
+- [ ] 01-02-PLAN.md — Gunicorn, bounded cache, JSON logging, health endpoint, error cards (Wave 2)
+- [ ] 01-03-PLAN.md — Add-a-plot checklist, GitHub issue template, CLAUDE.md update (Wave 1)
 
 ### Phase 2: Reliability and Completeness
 **Goal**: Every visualization on the dashboard loads reliably, exports in all formats, and explains its methodology to users
