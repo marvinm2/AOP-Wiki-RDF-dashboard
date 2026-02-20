@@ -160,7 +160,6 @@ from .trends_plots import (
     # Entity completeness analysis
     plot_entity_completeness_trends,
     plot_aop_completeness_boxplot,
-    # plot_aop_completeness_boxplot_by_status,  # REMOVED - hits Virtuoso execution limits
 )
 
 # Import all current snapshot plot functions
@@ -232,7 +231,6 @@ __all__ = [
     'plot_aop_lifetime',
     'plot_entity_completeness_trends',
     'plot_aop_completeness_boxplot',
-    # 'plot_aop_completeness_boxplot_by_status',  # REMOVED - hits Virtuoso execution limits
 
     # Current snapshot functions
     'plot_latest_entity_counts',
@@ -276,7 +274,6 @@ def get_available_functions():
             'plot_aop_lifetime',
             'plot_entity_completeness_trends',
             'plot_aop_completeness_boxplot',
-            # 'plot_aop_completeness_boxplot_by_status',  # REMOVED - hits Virtuoso execution limits
         ],
         'current_snapshots': [
             'plot_latest_entity_counts',

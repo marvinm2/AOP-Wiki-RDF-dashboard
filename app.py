@@ -38,29 +38,21 @@ Author:
     Generated with Claude Code (https://claude.ai/code)
 
 """
-from flask import Flask, render_template, jsonify, request, Response
+from flask import Flask, render_template, jsonify, request, Response, url_for, redirect
 import pandas as pd
-from SPARQLWrapper import SPARQLWrapper, JSON
-import plotly.express as px
-import plotly.io as pio
-import os
-from functools import reduce
 import time
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from config import Config
 
 # Configure logging
-logging.basicConfig(level=getattr(logging, Config.LOG_LEVEL), 
+logging.basicConfig(level=getattr(logging, Config.LOG_LEVEL),
                     format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 # Validate configuration
 if not Config.validate_config():
     logger.error("Invalid configuration detected, using defaults")
-
-# Set default Plotly renderer
-from flask import Flask, render_template, url_for, Response, redirect
 
 app = Flask(
     __name__,
@@ -85,7 +77,6 @@ from plots import (
     plot_stressor_property_presence,
     plot_entity_completeness_trends,
     plot_aop_completeness_boxplot,
-    # plot_aop_completeness_boxplot_by_status,  # REMOVED - hits Virtuoso execution limits
     plot_kes_by_kec_count,
     plot_latest_entity_counts,
     plot_latest_ke_components,
@@ -179,7 +170,6 @@ def compute_plots_parallel() -> dict:
         ('entity_completeness_trends', lambda: safe_plot_execution(plot_entity_completeness_trends)),
         # Re-enabled after SPARQL optimization (reduced from 10 queries to 4, 410K rows to ~20K)
         ('aop_completeness_boxplot', lambda: safe_plot_execution(plot_aop_completeness_boxplot)),
-        # REMOVED: 'aop_completeness_boxplot_by_status' - hits Virtuoso execution limits on network query
         ('kes_by_kec_count', lambda: safe_plot_execution(plot_kes_by_kec_count)),
         ('latest_entity_counts', lambda: safe_plot_execution(plot_latest_entity_counts)),
         ('latest_ke_components', lambda: safe_plot_execution(plot_latest_ke_components)),
@@ -253,7 +243,6 @@ graph_stressor_prop_abs, graph_stressor_prop_pct = plot_results.get('stressor_pr
 graph_entity_completeness = plot_results.get('entity_completeness_trends') or ""
 # Boxplots skip startup, generate on-demand
 graph_aop_completeness_boxplot = ""
-# graph_aop_completeness_boxplot_by_status = ""  # REMOVED - hits Virtuoso execution limits
 graph_kec_count_abs, graph_kec_count_delta = plot_results.get('kes_by_kec_count', ("", ""))
 
 # Latest data plots
@@ -1441,7 +1430,6 @@ def get_plot(plot_name):
         'entity_completeness_trends': graph_entity_completeness,
         # Lazy-only plots - lambdas will be evaluated on-demand by API handler
         'aop_completeness_boxplot': lambda: safe_plot_execution(plot_aop_completeness_boxplot),
-        # 'aop_completeness_boxplot_by_status': lambda: safe_plot_execution(plot_aop_completeness_boxplot_by_status),  # REMOVED
         'kes_by_kec_count_absolute': graph_kec_count_abs,
         'kes_by_kec_count_delta': graph_kec_count_delta
     }

@@ -56,7 +56,6 @@ import pandas as pd
 import plotly.express as px
 import plotly.io as pio
 from SPARQLWrapper import SPARQLWrapper, JSON, SPARQLExceptions
-from functools import reduce
 import time
 import logging
 import requests
