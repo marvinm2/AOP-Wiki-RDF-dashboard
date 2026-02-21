@@ -31,7 +31,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **EXPL-04**: Entity names and IDs in plots link directly to corresponding AOP-Wiki source pages
 - [ ] **EXPL-05**: User can toggle a raw data table view beneath each plot showing the underlying data
 - [ ] **EXPL-06**: URL encodes version and active plot state so users can share specific views
-- [ ] **EXPL-07**: Each plot has an expandable methodology note explaining what it measures and how
+- [x] **EXPL-07**: Each plot has an expandable methodology note explaining what it measures and how
 
 ### Network Analysis
 
@@ -115,7 +115,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EXPL-04 | Phase 4 | Pending |
 | EXPL-05 | Phase 4 | Pending |
 | EXPL-06 | Phase 4 | Pending |
-| EXPL-07 | Phase 2 | Pending |
+| EXPL-07 | Phase 2 | Complete |
 | NETW-01 | Phase 3 | Pending |
 | NETW-02 | Phase 3 | Pending |
 | NETW-03 | Phase 3 | Pending |
