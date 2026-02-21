@@ -56,8 +56,12 @@ import plotly.express as px
 import plotly.io as pio
 import logging
 from functools import reduce
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from .shared import (
-    BRAND_COLORS, config, _plot_data_cache, _plot_figure_cache, run_sparql_query, extract_counts, safe_read_csv, create_fallback_plot, get_properties_for_entity
+    BRAND_COLORS, config, _plot_data_cache, _plot_figure_cache,
+    run_sparql_query, run_sparql_query_with_retry, extract_counts,
+    safe_read_csv, create_fallback_plot, get_properties_for_entity,
+    get_all_versions
 )
 
 logger = logging.getLogger(__name__)
@@ -271,7 +275,7 @@ def plot_main_graph() -> tuple[str, str, pd.DataFrame]:
 
 def plot_avg_per_aop() -> tuple[str, str]:
     """Generate average components per AOP visualization with absolute and delta views."""
-    global _plot_figure_cache
+    global _plot_data_cache, _plot_figure_cache
 
     query_aops = """
         SELECT ?graph (COUNT(?aop) AS ?count)
@@ -381,6 +385,10 @@ def plot_avg_per_aop() -> tuple[str, str]:
         tickangle=-45
     )
 
+    # Cache data for CSV export
+    _plot_data_cache['average_components_per_aop_absolute'] = df_melted.copy()
+    _plot_data_cache['average_components_per_aop_delta'] = df_delta_melted.copy()
+
     # Cache figures for image export
     _plot_figure_cache['average_components_per_aop_absolute'] = fig_abs
     _plot_figure_cache['average_components_per_aop_delta'] = fig_delta
@@ -393,7 +401,7 @@ def plot_avg_per_aop() -> tuple[str, str]:
 
 def plot_network_density() -> str:
     """Generate network density evolution visualization."""
-    global _plot_figure_cache
+    global _plot_data_cache, _plot_figure_cache
 
     query_density = """
     SELECT ?graph (COUNT(DISTINCT ?ke) AS ?nodes) (COUNT(?ker) AS ?edges)
@@ -447,6 +455,9 @@ def plot_network_density() -> str:
         tickangle=-45
     )
 
+    # Cache data for CSV export
+    _plot_data_cache['aop_network_density'] = df_density.copy()
+
     # Cache figure for image export
     _plot_figure_cache['aop_network_density'] = fig
 
@@ -455,7 +466,7 @@ def plot_network_density() -> str:
 
 def plot_author_counts() -> tuple[str, str]:
     """Generate author contribution visualization with absolute and delta views."""
-    global _plot_figure_cache
+    global _plot_data_cache, _plot_figure_cache
 
     query = """
     SELECT ?graph (COUNT(DISTINCT ?c) AS ?author_count)
@@ -515,6 +526,10 @@ def plot_author_counts() -> tuple[str, str]:
         tickangle=-45
     )
 
+    # Cache data for CSV export
+    _plot_data_cache['aop_authors_absolute'] = df_authors.copy()
+    _plot_data_cache['aop_authors_delta'] = df_authors[['version', 'author_count_Δ']].copy()
+
     # Cache figures for image export
     _plot_figure_cache['aop_authors_absolute'] = fig_abs
     _plot_figure_cache['aop_authors_delta'] = fig_delta
@@ -527,7 +542,7 @@ def plot_author_counts() -> tuple[str, str]:
 
 def plot_aop_lifetime() -> tuple[str, str, str]:
     """Generate AOP lifetime analysis visualizations."""
-    global _plot_figure_cache
+    global _plot_data_cache, _plot_figure_cache
 
     query_lifetime = """
     SELECT ?graph ?aop ?created ?modified
@@ -582,6 +597,11 @@ def plot_aop_lifetime() -> tuple[str, str, str]:
     fig3.update_layout(template="plotly_white", height=500)
     html3 = pio.to_html(fig3, full_html=False, include_plotlyjs=False)
 
+    # Cache data for CSV export
+    _plot_data_cache['aops_created_over_time'] = df_created.copy()
+    _plot_data_cache['aops_modified_over_time'] = df_modified.copy()
+    _plot_data_cache['aop_creation_vs_modification_timeline'] = df_lifetime.copy()
+
     # Cache figures for image export
     _plot_figure_cache['aops_created_over_time'] = fig1
     _plot_figure_cache['aops_modified_over_time'] = fig2
@@ -592,7 +612,7 @@ def plot_aop_lifetime() -> tuple[str, str, str]:
 
 def plot_ke_components() -> tuple[str, str]:
     """Generate KE component annotation visualization with absolute and delta views."""
-    global _plot_figure_cache
+    global _plot_data_cache, _plot_figure_cache
 
     query_components = """
     SELECT ?graph
@@ -686,6 +706,10 @@ def plot_ke_components() -> tuple[str, str]:
         tickangle=-45
     )
 
+    # Cache data for CSV export
+    _plot_data_cache['ke_component_annotations_absolute'] = df_melted.copy()
+    _plot_data_cache['ke_component_annotations_delta'] = df_melted_diff.copy()
+
     # Cache figures for image export
     _plot_figure_cache['ke_component_annotations_absolute'] = fig_abs
     _plot_figure_cache['ke_component_annotations_delta'] = fig_delta
@@ -698,7 +722,7 @@ def plot_ke_components() -> tuple[str, str]:
 
 def plot_ke_components_percentage() -> tuple[str, str]:
     """Generate KE component percentage visualization with absolute and delta views."""
-    global _plot_figure_cache
+    global _plot_data_cache, _plot_figure_cache
 
     query_components = """
     SELECT ?graph
@@ -820,6 +844,10 @@ def plot_ke_components_percentage() -> tuple[str, str]:
         tickangle=-45
     )
 
+    # Cache data for CSV export
+    _plot_data_cache['ke_components_percentage_absolute'] = df_melted.copy()
+    _plot_data_cache['ke_components_percentage_delta'] = df_melted_delta.copy()
+
     # Cache figures for image export
     _plot_figure_cache['ke_components_percentage_absolute'] = fig_abs
     _plot_figure_cache['ke_components_percentage_delta'] = fig_delta
@@ -832,7 +860,7 @@ def plot_ke_components_percentage() -> tuple[str, str]:
 
 def plot_unique_ke_components() -> tuple[str, str]:
     """Generate unique KE component visualization with absolute and delta views."""
-    global _plot_figure_cache
+    global _plot_data_cache, _plot_figure_cache
 
     query_unique_components = """
     SELECT ?graph
@@ -926,6 +954,10 @@ def plot_unique_ke_components() -> tuple[str, str]:
         tickangle=-45
     )
 
+    # Cache data for CSV export
+    _plot_data_cache['unique_ke_components_absolute'] = df_melted.copy()
+    _plot_data_cache['unique_ke_components_delta'] = df_melted_diff.copy()
+
     # Cache figures for image export
     _plot_figure_cache['unique_ke_components_absolute'] = fig_abs
     _plot_figure_cache['unique_ke_components_delta'] = fig_delta
@@ -938,7 +970,7 @@ def plot_unique_ke_components() -> tuple[str, str]:
 
 def plot_bio_processes() -> tuple[str, str]:
     """Generate biological process ontology usage visualization with absolute and delta views."""
-    global _plot_figure_cache
+    global _plot_data_cache, _plot_figure_cache
 
     query_ontologies = """
     SELECT ?graph ?ontology (COUNT(DISTINCT ?process) AS ?count)
@@ -1005,6 +1037,10 @@ def plot_bio_processes() -> tuple[str, str]:
     fig_delta.update_layout(template="plotly_white", hovermode="x unified", autosize=True)
     fig_delta.update_xaxes(tickmode='array', tickvals=df_ont["version"], ticktext=df_ont["version"], tickangle=-45)
 
+    # Cache data for CSV export
+    _plot_data_cache['biological_process_annotations_absolute'] = df_ont.copy()
+    _plot_data_cache['biological_process_annotations_delta'] = df_delta.copy()
+
     # Cache figures for image export
     _plot_figure_cache['biological_process_annotations_absolute'] = fig_abs
     _plot_figure_cache['biological_process_annotations_delta'] = fig_delta
@@ -1017,7 +1053,7 @@ def plot_bio_processes() -> tuple[str, str]:
 
 def plot_bio_objects() -> tuple[str, str]:
     """Generate biological object ontology usage visualization with absolute and delta views."""
-    global _plot_figure_cache
+    global _plot_data_cache, _plot_figure_cache
 
     query_objects = """
     SELECT ?graph ?ontology (COUNT(DISTINCT ?object) AS ?count)
@@ -1086,6 +1122,10 @@ def plot_bio_objects() -> tuple[str, str]:
     )
     fig_delta.update_layout(template="plotly_white", hovermode="x unified", autosize=True)
     fig_delta.update_xaxes(tickmode='array', tickvals=df_obj["version"], ticktext=df_obj["version"], tickangle=-45)
+
+    # Cache data for CSV export
+    _plot_data_cache['biological_object_annotations_absolute'] = df_obj.copy()
+    _plot_data_cache['biological_object_annotations_delta'] = df_delta.copy()
 
     # Cache figures for image export
     _plot_figure_cache['biological_object_annotations_absolute'] = fig_abs
@@ -1784,7 +1824,7 @@ def plot_stressor_property_presence(label_file="property_labels.csv") -> tuple[s
 
 def plot_kes_by_kec_count() -> tuple[str, str]:
     """Generate KE distribution by KEC count visualization with absolute and delta views."""
-    global _plot_figure_cache
+    global _plot_data_cache, _plot_figure_cache
 
     query_kec_count = """
     PREFIX aopo: <http://aopkb.org/aop_ontology#>
@@ -1898,6 +1938,10 @@ def plot_kes_by_kec_count() -> tuple[str, str]:
             tickangle=-45
         )
     )
+
+    # Cache data for CSV export
+    _plot_data_cache['kes_by_kec_count_absolute'] = df_full.copy()
+    _plot_data_cache['kes_by_kec_count_delta'] = df_delta.copy()
 
     # Cache figures for image export
     _plot_figure_cache['kes_by_kec_count_absolute'] = fig_abs
