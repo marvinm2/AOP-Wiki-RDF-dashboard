@@ -252,8 +252,7 @@ graph_ke_prop_abs, graph_ke_prop_pct = plot_results.get('ke_property_presence', 
 graph_ker_prop_abs, graph_ker_prop_pct = plot_results.get('ker_property_presence', ("", ""))
 graph_stressor_prop_abs, graph_stressor_prop_pct = plot_results.get('stressor_property_presence', ("", ""))
 graph_entity_completeness = plot_results.get('entity_completeness_trends') or ""
-# Boxplots skip startup, generate on-demand
-graph_aop_completeness_boxplot = ""
+graph_aop_completeness_boxplot = plot_results.get('aop_completeness_boxplot') or ""
 graph_kec_count_abs, graph_kec_count_delta = plot_results.get('kes_by_kec_count', ("", ""))
 
 # Latest data plots
@@ -1447,8 +1446,7 @@ def get_plot(plot_name):
         'stressor_property_presence_absolute': graph_stressor_prop_abs,
         'stressor_property_presence_percentage': graph_stressor_prop_pct,
         'entity_completeness_trends': graph_entity_completeness,
-        # Lazy-only plots - lambdas will be evaluated on-demand by API handler
-        'aop_completeness_boxplot': lambda: safe_plot_execution(plot_aop_completeness_boxplot),
+        'aop_completeness_boxplot': graph_aop_completeness_boxplot,
         'kes_by_kec_count_absolute': graph_kec_count_abs,
         'kes_by_kec_count_delta': graph_kec_count_delta
     }
