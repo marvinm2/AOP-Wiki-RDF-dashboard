@@ -151,25 +151,169 @@ def plot_main_graph() -> tuple[str, str, pd.DataFrame]:
     """
     global _plot_data_cache, _plot_figure_cache
 
-    sparql_queries = {
-        "AOPs": """
+    try:
+        sparql_queries = {
+            "AOPs": """
+                SELECT ?graph (COUNT(?aop) AS ?count)
+                WHERE {
+                    GRAPH ?graph { ?aop a aopo:AdverseOutcomePathway . }
+                    FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+                }
+                GROUP BY ?graph
+            """,
+            "KEs": """
+                SELECT ?graph (COUNT(?ke) AS ?count)
+                WHERE {
+                    GRAPH ?graph {?ke a aopo:KeyEvent .
+                    }
+                    FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+                }
+                GROUP BY ?graph
+            """,
+            "KERs": """
+                SELECT ?graph (COUNT(?ker) AS ?count)
+                WHERE {
+                    GRAPH ?graph {
+                        ?ker a aopo:KeyEventRelationship .
+                    }
+                    FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+                }
+                GROUP BY ?graph
+            """,
+            "Stressors": """
+                SELECT ?graph (COUNT(?s) AS ?count)
+                WHERE {
+                    GRAPH ?graph {
+                        ?s a nci:C54571 .
+                    }
+                    FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+                }
+                GROUP BY ?graph
+            """
+        }
+
+        # --- Query and merge results ---
+        df_list = []
+        for label, query in sparql_queries.items():
+            results = run_sparql_query(query)
+            df = extract_counts(results)
+            df.rename(columns={"count": label}, inplace=True)
+            df_list.append(df)
+
+        df_all = reduce(lambda left, right: pd.merge(left, right, on="version", how="outer"), df_list)
+
+        if df_all.empty:
+            logger.warning("Main graph query returned no results")
+            return (
+                create_fallback_plot("Entity Evolution Over Time", "No data available"),
+                create_fallback_plot("Entity Change Between Versions", "No data available"),
+                pd.DataFrame()
+            )
+
+        # Convert to datetime for correct sorting
+        df_all["version_dt"] = pd.to_datetime(df_all["version"], errors="coerce")
+        df_all = df_all.sort_values("version_dt").drop(columns="version_dt").reset_index(drop=True)
+
+        # --- Absolute plot ---
+        df_abs_melted = df_all.melt(id_vars="version", var_name="Entity", value_name="Count")
+        # Clean data: fill NaN with 0 and ensure numeric type
+        df_abs_melted["Count"] = pd.to_numeric(df_abs_melted["Count"], errors="coerce").fillna(0).astype(int)
+        fig_abs = px.line(
+            df_abs_melted, x="version", y="Count", color="Entity", markers=True,
+            title="Entity Evolution Over Time",
+            color_discrete_sequence=BRAND_COLORS['palette']
+        )
+        fig_abs.update_layout(
+            template="plotly_white",
+            hovermode="x unified",
+            autosize=True,   # Let Plotly resize dynamically
+            margin=dict(l=50, r=20, t=50, b=50)
+        )
+        fig_abs.update_xaxes(
+            tickmode='array',
+            tickvals=df_all["version"],
+            ticktext=df_all["version"],
+            tickangle=-45
+        )
+
+        # --- Delta plot ---
+        df_delta = df_all.copy()
+        for col in sparql_queries.keys():
+            df_delta[f"{col}_Δ"] = df_all[col].diff().fillna(0).astype(int)
+
+        df_delta_melted = df_delta.melt(
+            id_vars="version",
+            value_vars=[f"{k}_Δ" for k in sparql_queries.keys()],
+            var_name="Entity",
+            value_name="Count"
+        )
+        df_delta_melted["Entity"] = df_delta_melted["Entity"].str.replace("_Δ", "")
+
+        fig_delta = px.line(
+            df_delta_melted, x="version", y="Count", color="Entity", markers=True,
+            title="Entity Change Between Versions",
+            color_discrete_sequence=BRAND_COLORS['palette']
+        )
+        fig_delta.update_layout(
+            template="plotly_white",
+            hovermode="x unified",
+            autosize=True,
+            margin=dict(l=50, r=20, t=50, b=50)
+        )
+        fig_delta.update_xaxes(
+            tickmode='array',
+            tickvals=df_all["version"],
+            ticktext=df_all["version"],
+            tickangle=-45
+        )
+
+        # Store absolute and delta data in cache for CSV download
+        _plot_data_cache['main_graph_absolute'] = df_abs_melted
+        _plot_data_cache['main_graph_delta'] = df_delta_melted
+
+        # Cache figures for image export
+        _plot_figure_cache['aop_entity_counts_absolute'] = fig_abs
+        _plot_figure_cache['aop_entity_counts_delta'] = fig_delta
+
+        return (
+            pio.to_html(fig_abs, full_html=False, include_plotlyjs="cdn", config={"responsive": True}),
+            pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config={"responsive": True}),
+            df_all
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to generate main graph plots: {str(e)}")
+        return (
+            create_fallback_plot("Entity Evolution Over Time", str(e)),
+            create_fallback_plot("Entity Change Between Versions", str(e)),
+            pd.DataFrame()
+        )
+
+
+def plot_avg_per_aop() -> tuple[str, str]:
+    """Generate average components per AOP visualization with absolute and delta views."""
+    global _plot_data_cache, _plot_figure_cache
+
+    try:
+        query_aops = """
             SELECT ?graph (COUNT(?aop) AS ?count)
             WHERE {
                 GRAPH ?graph { ?aop a aopo:AdverseOutcomePathway . }
                 FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
             }
             GROUP BY ?graph
-        """,
-        "KEs": """
+        """
+        query_kes = """
             SELECT ?graph (COUNT(?ke) AS ?count)
             WHERE {
-                GRAPH ?graph {?ke a aopo:KeyEvent .
+                GRAPH ?graph {
+                    ?ke a aopo:KeyEvent .
                 }
                 FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
             }
             GROUP BY ?graph
-        """,
-        "KERs": """
+        """
+        query_kers = """
             SELECT ?graph (COUNT(?ker) AS ?count)
             WHERE {
                 GRAPH ?graph {
@@ -178,963 +322,1049 @@ def plot_main_graph() -> tuple[str, str, pd.DataFrame]:
                 FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
             }
             GROUP BY ?graph
-        """,
-        "Stressors": """
-            SELECT ?graph (COUNT(?s) AS ?count)
-            WHERE {
-                GRAPH ?graph {
-                    ?s a nci:C54571 .
-                }
-                FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-            }
-            GROUP BY ?graph
         """
-    }
 
-    # --- Query and merge results ---
-    df_list = []
-    for label, query in sparql_queries.items():
-        results = run_sparql_query(query)
-        df = extract_counts(results)
-        df.rename(columns={"count": label}, inplace=True)
-        df_list.append(df)
+        df_aops = extract_counts(run_sparql_query(query_aops))
+        df_aops.rename(columns={"count": "aop_count"}, inplace=True)
+        df_aops["version_dt"] = pd.to_datetime(df_aops["version"], errors="coerce")
 
-    df_all = reduce(lambda left, right: pd.merge(left, right, on="version", how="outer"), df_list)
+        df_kes = extract_counts(run_sparql_query(query_kes))
+        df_kes.rename(columns={"count": "ke_count"}, inplace=True)
+        df_kes["version_dt"] = pd.to_datetime(df_kes["version"], errors="coerce")
 
-    # Convert to datetime for correct sorting
-    df_all["version_dt"] = pd.to_datetime(df_all["version"], errors="coerce")
-    df_all = df_all.sort_values("version_dt").drop(columns="version_dt").reset_index(drop=True)
+        df_kers = extract_counts(run_sparql_query(query_kers))
+        df_kers.rename(columns={"count": "ker_count"}, inplace=True)
+        df_kers["version_dt"] = pd.to_datetime(df_kers["version"], errors="coerce")
 
-    # --- Absolute plot ---
-    df_abs_melted = df_all.melt(id_vars="version", var_name="Entity", value_name="Count")
-    # Clean data: fill NaN with 0 and ensure numeric type
-    df_abs_melted["Count"] = pd.to_numeric(df_abs_melted["Count"], errors="coerce").fillna(0).astype(int)
-    fig_abs = px.line(
-        df_abs_melted, x="version", y="Count", color="Entity", markers=True,
-        title="Entity Evolution Over Time",
-        color_discrete_sequence=BRAND_COLORS['palette']
-    )
-    fig_abs.update_layout(
-        template="plotly_white",
-        hovermode="x unified",
-        autosize=True,   # Let Plotly resize dynamically
-        margin=dict(l=50, r=20, t=50, b=50)
-    )
-    fig_abs.update_xaxes(
-        tickmode='array',
-        tickvals=df_all["version"],
-        ticktext=df_all["version"],
-        tickangle=-45
-    )
+        df_all = df_aops.merge(df_kes, on="version").merge(df_kers, on="version")
+        df_all = df_all.drop_duplicates("version").copy()
+        df_all["version_dt"] = pd.to_datetime(df_all["version"], errors="coerce")
+        df_all = df_all.sort_values("version_dt").drop(columns="version_dt")
 
-    # --- Delta plot ---
-    df_delta = df_all.copy()
-    for col in sparql_queries.keys():
-        df_delta[f"{col}_Δ"] = df_all[col].diff().fillna(0).astype(int)
+        if df_all.empty:
+            logger.warning("Average per AOP query returned no results")
+            return (
+                create_fallback_plot("Average Components per AOP Over Time", "No data available"),
+                create_fallback_plot("Change in Average Components per AOP", "No data available")
+            )
 
-    df_delta_melted = df_delta.melt(
-        id_vars="version",
-        value_vars=[f"{k}_Δ" for k in sparql_queries.keys()],
-        var_name="Entity",
-        value_name="Count"
-    )
-    df_delta_melted["Entity"] = df_delta_melted["Entity"].str.replace("_Δ", "")
+        # Guard against division by zero
+        df_all["avg_KEs_per_AOP"] = df_all.apply(
+            lambda row: row["ke_count"] / row["aop_count"] if row["aop_count"] > 0 else 0, axis=1
+        )
+        df_all["avg_KERs_per_AOP"] = df_all.apply(
+            lambda row: row["ker_count"] / row["aop_count"] if row["aop_count"] > 0 else 0, axis=1
+        )
 
-    fig_delta = px.line(
-        df_delta_melted, x="version", y="Count", color="Entity", markers=True,
-        title="Entity Change Between Versions",
-        color_discrete_sequence=BRAND_COLORS['palette']
-    )
-    fig_delta.update_layout(
-        template="plotly_white",
-        hovermode="x unified",
-        autosize=True,
-        margin=dict(l=50, r=20, t=50, b=50)
-    )
-    fig_delta.update_xaxes(
-        tickmode='array',
-        tickvals=df_all["version"],
-        ticktext=df_all["version"],
-        tickangle=-45
-    )
+        # Absolute
+        df_melted = df_all.melt(
+            id_vars="version",
+            value_vars=["avg_KEs_per_AOP", "avg_KERs_per_AOP"],
+            var_name="Metric",
+            value_name="Average"
+        ).sort_values("version")
 
-    # Store absolute and delta data in cache for CSV download
-    _plot_data_cache['main_graph_absolute'] = df_abs_melted
-    _plot_data_cache['main_graph_delta'] = df_delta_melted
+        df_melted["Metric"] = df_melted["Metric"].replace({
+            "avg_KEs_per_AOP": "Average KEs per AOP",
+            "avg_KERs_per_AOP": "Average KERs per AOP"
+        })
 
-    # Cache figures for image export
-    _plot_figure_cache['aop_entity_counts_absolute'] = fig_abs
-    _plot_figure_cache['aop_entity_counts_delta'] = fig_delta
+        fig_abs = px.line(df_melted, x="version", y="Average", color="Metric", markers=True,
+                          title="Average Components per AOP Over Time",
+                          color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary']])
+        fig_abs.update_layout(
+            template="plotly_white",
+            hovermode="x unified",
+            autosize=True,
+            margin=dict(l=50, r=20, t=50, b=50)
+        )
+        fig_abs.update_xaxes(
+            tickmode='array',
+            tickvals=df_all["version"],
+            ticktext=df_all["version"],
+            tickangle=-45
+        )
 
-    return (
-        pio.to_html(fig_abs, full_html=False, include_plotlyjs="cdn", config={"responsive": True}),
-        pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config={"responsive": True}),
-        df_all
-    )
+        # Delta
+        df_all["avg_KEs_per_AOP_Δ"] = df_all["avg_KEs_per_AOP"].diff().fillna(0)
+        df_all["avg_KERs_per_AOP_Δ"] = df_all["avg_KERs_per_AOP"].diff().fillna(0)
+        df_delta_melted = df_all.melt(
+            id_vars="version",
+            value_vars=["avg_KEs_per_AOP_Δ", "avg_KERs_per_AOP_Δ"],
+            var_name="Metric",
+            value_name="Δ Average"
+        ).sort_values("version")
 
+        df_delta_melted["Metric"] = df_delta_melted["Metric"].replace({
+            "avg_KEs_per_AOP_Δ": "Δ KEs per AOP",
+            "avg_KERs_per_AOP_Δ": "Δ KERs per AOP"
+        })
+        fig_delta = px.line(df_delta_melted, x="version", y="Δ Average", color="Metric", markers=True,
+                            title="Change in Average Components per AOP",
+                            color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary']])
+        fig_delta.update_layout(
+            template="plotly_white",
+            hovermode="x unified",
+            autosize=True,
+            margin=dict(l=50, r=20, t=50, b=50)
+        )
+        fig_delta.update_xaxes(
+            tickmode='array',
+            tickvals=df_all["version"],
+            ticktext=df_all["version"],
+            tickangle=-45
+        )
 
-def plot_avg_per_aop() -> tuple[str, str]:
-    """Generate average components per AOP visualization with absolute and delta views."""
-    global _plot_data_cache, _plot_figure_cache
+        # Cache data for CSV export
+        _plot_data_cache['average_components_per_aop_absolute'] = df_melted.copy()
+        _plot_data_cache['average_components_per_aop_delta'] = df_delta_melted.copy()
 
-    query_aops = """
-        SELECT ?graph (COUNT(?aop) AS ?count)
-        WHERE {
-            GRAPH ?graph { ?aop a aopo:AdverseOutcomePathway . }
-            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-        }
-        GROUP BY ?graph
-    """
-    query_kes = """
-        SELECT ?graph (COUNT(?ke) AS ?count)
-        WHERE {
-            GRAPH ?graph {
-                ?ke a aopo:KeyEvent .
-            }
-            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-        }
-        GROUP BY ?graph
-    """
-    query_kers = """
-        SELECT ?graph (COUNT(?ker) AS ?count)
-        WHERE {
-            GRAPH ?graph {
-                ?ker a aopo:KeyEventRelationship .
-            }
-            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-        }
-        GROUP BY ?graph
-    """
+        # Cache figures for image export
+        _plot_figure_cache['average_components_per_aop_absolute'] = fig_abs
+        _plot_figure_cache['average_components_per_aop_delta'] = fig_delta
 
-    df_aops = extract_counts(run_sparql_query(query_aops))
-    df_aops.rename(columns={"count": "aop_count"}, inplace=True)
-    df_aops["version_dt"] = pd.to_datetime(df_aops["version"], errors="coerce")
+        return (
+            pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config={"responsive": True}),
+            pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config={"responsive": True})
+        )
 
-    df_kes = extract_counts(run_sparql_query(query_kes))
-    df_kes.rename(columns={"count": "ke_count"}, inplace=True)
-    df_kes["version_dt"] = pd.to_datetime(df_kes["version"], errors="coerce")
-
-    df_kers = extract_counts(run_sparql_query(query_kers))
-    df_kers.rename(columns={"count": "ker_count"}, inplace=True)
-    df_kers["version_dt"] = pd.to_datetime(df_kers["version"], errors="coerce")
-
-    df_all = df_aops.merge(df_kes, on="version").merge(df_kers, on="version")
-    df_all = df_all.drop_duplicates("version").copy()
-    df_all["version_dt"] = pd.to_datetime(df_all["version"], errors="coerce")
-    df_all = df_all.sort_values("version_dt").drop(columns="version_dt")
-
-    df_all["avg_KEs_per_AOP"] = df_all["ke_count"] / df_all["aop_count"]
-    df_all["avg_KERs_per_AOP"] = df_all["ker_count"] / df_all["aop_count"]
-
-    # Absolute
-    df_melted = df_all.melt(
-        id_vars="version",
-        value_vars=["avg_KEs_per_AOP", "avg_KERs_per_AOP"],
-        var_name="Metric",
-        value_name="Average"
-    ).sort_values("version")
-
-    df_melted["Metric"] = df_melted["Metric"].replace({
-        "avg_KEs_per_AOP": "Average KEs per AOP",
-        "avg_KERs_per_AOP": "Average KERs per AOP"
-    })
-
-    fig_abs = px.line(df_melted, x="version", y="Average", color="Metric", markers=True,
-                      title="Average Components per AOP Over Time",
-                      color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary']])
-    fig_abs.update_layout(
-        template="plotly_white",
-        hovermode="x unified",
-        autosize=True,
-        margin=dict(l=50, r=20, t=50, b=50)
-    )
-    fig_abs.update_xaxes(
-        tickmode='array',
-        tickvals=df_all["version"],
-        ticktext=df_all["version"],
-        tickangle=-45
-    )
-
-    # Delta
-    df_all["avg_KEs_per_AOP_Δ"] = df_all["avg_KEs_per_AOP"].diff().fillna(0)
-    df_all["avg_KERs_per_AOP_Δ"] = df_all["avg_KERs_per_AOP"].diff().fillna(0)
-    df_delta_melted = df_all.melt(
-        id_vars="version",
-        value_vars=["avg_KEs_per_AOP_Δ", "avg_KERs_per_AOP_Δ"],
-        var_name="Metric",
-        value_name="Δ Average"
-    ).sort_values("version")
-
-    df_delta_melted["Metric"] = df_delta_melted["Metric"].replace({
-        "avg_KEs_per_AOP_Δ": "Δ KEs per AOP",
-        "avg_KERs_per_AOP_Δ": "Δ KERs per AOP"
-    })
-    fig_delta = px.line(df_delta_melted, x="version", y="Δ Average", color="Metric", markers=True,
-                        title="Change in Average Components per AOP",
-                        color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary']])
-    fig_delta.update_layout(
-        template="plotly_white",
-        hovermode="x unified",
-        autosize=True,
-        margin=dict(l=50, r=20, t=50, b=50)
-    )
-    fig_delta.update_xaxes(
-        tickmode='array',
-        tickvals=df_all["version"],
-        ticktext=df_all["version"],
-        tickangle=-45
-    )
-
-    # Cache data for CSV export
-    _plot_data_cache['average_components_per_aop_absolute'] = df_melted.copy()
-    _plot_data_cache['average_components_per_aop_delta'] = df_delta_melted.copy()
-
-    # Cache figures for image export
-    _plot_figure_cache['average_components_per_aop_absolute'] = fig_abs
-    _plot_figure_cache['average_components_per_aop_delta'] = fig_delta
-
-    return (
-        pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config={"responsive": True}),
-        pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config={"responsive": True})
-    )
+    except Exception as e:
+        logger.error(f"Failed to generate average per AOP plots: {str(e)}")
+        return (
+            create_fallback_plot("Average Components per AOP Over Time", str(e)),
+            create_fallback_plot("Change in Average Components per AOP", str(e))
+        )
 
 
 def plot_network_density() -> str:
     """Generate network density evolution visualization."""
     global _plot_data_cache, _plot_figure_cache
 
-    query_density = """
-    SELECT ?graph (COUNT(DISTINCT ?ke) AS ?nodes) (COUNT(?ker) AS ?edges)
-    WHERE {
-      GRAPH ?graph {
-        ?aop a aopo:AdverseOutcomePathway ;
-             aopo:has_key_event ?ke ;
-             aopo:has_key_event_relationship ?ker .
-      }
-      FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-    }
-    GROUP BY ?graph
-    """
+    try:
+        query_density = """
+        SELECT ?graph (COUNT(DISTINCT ?ke) AS ?nodes) (COUNT(?ker) AS ?edges)
+        WHERE {
+          GRAPH ?graph {
+            ?aop a aopo:AdverseOutcomePathway ;
+                 aopo:has_key_event ?ke ;
+                 aopo:has_key_event_relationship ?ker .
+          }
+          FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        GROUP BY ?graph
+        """
 
-    results = run_sparql_query(query_density)
-    df_density = pd.DataFrame([{
-        "version": r["graph"]["value"].split("/")[-1],
-        "nodes": int(r["nodes"]["value"]),
-        "edges": int(r["edges"]["value"])
-    } for r in results])
+        results = run_sparql_query(query_density)
 
-    # Avoid division by zero
-    df_density["density"] = df_density.apply(
-        lambda row: 2 * row["edges"] / (row["nodes"] * (row["nodes"] - 1)) if row["nodes"] > 1 else 0,
-        axis=1
-    )
+        if not results:
+            logger.warning("Network density query returned no results")
+            return create_fallback_plot("Network Density Evolution Over Time", "No data available")
 
-    # Sort and ensure tick labels
-    df_density["version_dt"] = pd.to_datetime(df_density["version"], errors="coerce")
-    df_density = df_density.sort_values("version_dt").drop(columns="version_dt")
+        df_density = pd.DataFrame([{
+            "version": r["graph"]["value"].split("/")[-1],
+            "nodes": int(r["nodes"]["value"]),
+            "edges": int(r["edges"]["value"])
+        } for r in results])
 
-    fig = px.line(
-        df_density,
-        x="version",
-        y="density",
-        title="Network Density Evolution Over Time",
-        markers=True,
-        labels={"density": "Graph Density"},
-        color_discrete_sequence=[BRAND_COLORS['accent']]
-    )
-    fig.update_layout(
-        template="plotly_white",
-        hovermode="x unified",
-        autosize=True,
-        margin=dict(l=50, r=20, t=50, b=50)
-    )
-    fig.update_xaxes(
-        tickmode='array',
-        tickvals=df_density["version"],
-        ticktext=df_density["version"],
-        tickangle=-45
-    )
+        if df_density.empty:
+            logger.warning("Network density DataFrame is empty")
+            return create_fallback_plot("Network Density Evolution Over Time", "No data available")
 
-    # Cache data for CSV export
-    _plot_data_cache['aop_network_density'] = df_density.copy()
+        # Avoid division by zero
+        df_density["density"] = df_density.apply(
+            lambda row: 2 * row["edges"] / (row["nodes"] * (row["nodes"] - 1)) if row["nodes"] > 1 else 0,
+            axis=1
+        )
 
-    # Cache figure for image export
-    _plot_figure_cache['aop_network_density'] = fig
+        # Sort and ensure tick labels
+        df_density["version_dt"] = pd.to_datetime(df_density["version"], errors="coerce")
+        df_density = df_density.sort_values("version_dt").drop(columns="version_dt")
 
-    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+        fig = px.line(
+            df_density,
+            x="version",
+            y="density",
+            title="Network Density Evolution Over Time",
+            markers=True,
+            labels={"density": "Graph Density"},
+            color_discrete_sequence=[BRAND_COLORS['accent']]
+        )
+        fig.update_layout(
+            template="plotly_white",
+            hovermode="x unified",
+            autosize=True,
+            margin=dict(l=50, r=20, t=50, b=50)
+        )
+        fig.update_xaxes(
+            tickmode='array',
+            tickvals=df_density["version"],
+            ticktext=df_density["version"],
+            tickangle=-45
+        )
+
+        # Cache data for CSV export
+        _plot_data_cache['aop_network_density'] = df_density.copy()
+
+        # Cache figure for image export
+        _plot_figure_cache['aop_network_density'] = fig
+
+        return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+
+    except Exception as e:
+        logger.error(f"Failed to generate network density plot: {str(e)}")
+        return create_fallback_plot("Network Density Evolution Over Time", str(e))
 
 
 def plot_author_counts() -> tuple[str, str]:
     """Generate author contribution visualization with absolute and delta views."""
     global _plot_data_cache, _plot_figure_cache
 
-    query = """
-    SELECT ?graph (COUNT(DISTINCT ?c) AS ?author_count)
-    WHERE {
-      GRAPH ?graph {
-        ?aop a aopo:AdverseOutcomePathway ;
-             dc:creator ?c .
-      }
-      FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-    }
-    GROUP BY ?graph
-    ORDER BY ?graph
-    """
+    try:
+        query = """
+        SELECT ?graph (COUNT(DISTINCT ?c) AS ?author_count)
+        WHERE {
+          GRAPH ?graph {
+            ?aop a aopo:AdverseOutcomePathway ;
+                 dc:creator ?c .
+          }
+          FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        GROUP BY ?graph
+        ORDER BY ?graph
+        """
 
-    results = run_sparql_query(query)
+        results = run_sparql_query(query)
 
-    df_authors = pd.DataFrame([{
-        "version": r["graph"]["value"].split("/")[-1],
-        "author_count": int(r["author_count"]["value"])
-    } for r in results])
+        if not results:
+            logger.warning("Author counts query returned no results")
+            return (
+                create_fallback_plot("Author Contributions Over Time", "No data available"),
+                create_fallback_plot("Change in Author Contributions", "No data available")
+            )
 
-    df_authors["version_dt"] = pd.to_datetime(df_authors["version"], errors="coerce")
-    df_authors = df_authors.sort_values("version_dt").drop(columns="version_dt")
+        df_authors = pd.DataFrame([{
+            "version": r["graph"]["value"].split("/")[-1],
+            "author_count": int(r["author_count"]["value"])
+        } for r in results])
 
-    # Absolute
-    fig_abs = px.line(df_authors, x="version", y="author_count", markers=True,
-                      title="Author Contributions Over Time",
-                      color_discrete_sequence=[BRAND_COLORS['secondary']])
-    fig_abs.update_layout(
-        template="plotly_white",
-        hovermode="x unified",
-        autosize=True,
-        margin=dict(l=50, r=20, t=50, b=50)
-    )
-    fig_abs.update_xaxes(
-        tickmode='array',
-        tickvals=df_authors["version"],
-        ticktext=df_authors["version"],
-        tickangle=-45
-    )
+        if df_authors.empty:
+            logger.warning("Author counts DataFrame is empty")
+            return (
+                create_fallback_plot("Author Contributions Over Time", "No data available"),
+                create_fallback_plot("Change in Author Contributions", "No data available")
+            )
 
-    # Delta
-    df_authors["author_count_Δ"] = df_authors["author_count"].diff().fillna(0)
-    fig_delta = px.line(df_authors, x="version", y="author_count_Δ", markers=True,
-                        title="Change in Author Contributions",
-                        color_discrete_sequence=[BRAND_COLORS['light']])
-    fig_delta.update_layout(
-        template="plotly_white",
-        hovermode="x unified",
-        autosize=True,
-        margin=dict(l=50, r=20, t=50, b=50)
-    )
-    fig_delta.update_xaxes(
-        tickmode='array',
-        tickvals=df_authors["version"],
-        ticktext=df_authors["version"],
-        tickangle=-45
-    )
+        df_authors["version_dt"] = pd.to_datetime(df_authors["version"], errors="coerce")
+        df_authors = df_authors.sort_values("version_dt").drop(columns="version_dt")
 
-    # Cache data for CSV export
-    _plot_data_cache['aop_authors_absolute'] = df_authors.copy()
-    _plot_data_cache['aop_authors_delta'] = df_authors[['version', 'author_count_Δ']].copy()
+        # Absolute
+        fig_abs = px.line(df_authors, x="version", y="author_count", markers=True,
+                          title="Author Contributions Over Time",
+                          color_discrete_sequence=[BRAND_COLORS['secondary']])
+        fig_abs.update_layout(
+            template="plotly_white",
+            hovermode="x unified",
+            autosize=True,
+            margin=dict(l=50, r=20, t=50, b=50)
+        )
+        fig_abs.update_xaxes(
+            tickmode='array',
+            tickvals=df_authors["version"],
+            ticktext=df_authors["version"],
+            tickangle=-45
+        )
 
-    # Cache figures for image export
-    _plot_figure_cache['aop_authors_absolute'] = fig_abs
-    _plot_figure_cache['aop_authors_delta'] = fig_delta
+        # Delta
+        df_authors["author_count_Δ"] = df_authors["author_count"].diff().fillna(0)
+        fig_delta = px.line(df_authors, x="version", y="author_count_Δ", markers=True,
+                            title="Change in Author Contributions",
+                            color_discrete_sequence=[BRAND_COLORS['light']])
+        fig_delta.update_layout(
+            template="plotly_white",
+            hovermode="x unified",
+            autosize=True,
+            margin=dict(l=50, r=20, t=50, b=50)
+        )
+        fig_delta.update_xaxes(
+            tickmode='array',
+            tickvals=df_authors["version"],
+            ticktext=df_authors["version"],
+            tickangle=-45
+        )
 
-    return (
-        pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config={"responsive": True}),
-        pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config={"responsive": True})
-    )
+        # Cache data for CSV export
+        _plot_data_cache['aop_authors_absolute'] = df_authors.copy()
+        _plot_data_cache['aop_authors_delta'] = df_authors[['version', 'author_count_Δ']].copy()
+
+        # Cache figures for image export
+        _plot_figure_cache['aop_authors_absolute'] = fig_abs
+        _plot_figure_cache['aop_authors_delta'] = fig_delta
+
+        return (
+            pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config={"responsive": True}),
+            pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config={"responsive": True})
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to generate author count plots: {str(e)}")
+        return (
+            create_fallback_plot("Author Contributions Over Time", str(e)),
+            create_fallback_plot("Change in Author Contributions", str(e))
+        )
 
 
 def plot_aop_lifetime() -> tuple[str, str, str]:
     """Generate AOP lifetime analysis visualizations."""
     global _plot_data_cache, _plot_figure_cache
 
-    query_lifetime = """
-    SELECT ?graph ?aop ?created ?modified
-    WHERE {
-      GRAPH ?graph {
-        ?aop a aopo:AdverseOutcomePathway ;
-             dcterms:created ?created ;
-             dcterms:modified ?modified .
-      }
-      FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-    }
-    """
-    results_lifetime = run_sparql_query(query_lifetime)
+    fallback_created = create_fallback_plot("AOP Creation Timeline", "No data available")
+    fallback_modified = create_fallback_plot("AOP Modification Timeline", "No data available")
+    fallback_scatter = create_fallback_plot("AOP Creation vs. Modification Timeline", "No data available")
 
-    df_lifetime = pd.DataFrame([{
-        "aop": r["aop"]["value"],
-        "version": r["graph"]["value"].split("/")[-1],
-        "created": pd.to_datetime(r["created"]["value"]),
-        "modified": pd.to_datetime(r["modified"]["value"])
-    } for r in results_lifetime])
+    try:
+        query_lifetime = """
+        SELECT ?graph ?aop ?created ?modified
+        WHERE {
+          GRAPH ?graph {
+            ?aop a aopo:AdverseOutcomePathway ;
+                 dcterms:created ?created ;
+                 dcterms:modified ?modified .
+          }
+          FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        """
+        results_lifetime = run_sparql_query(query_lifetime)
 
-    df_lifetime["lifetime_days"] = (df_lifetime["modified"] - df_lifetime["created"]).dt.days
-    df_lifetime["year_created"] = df_lifetime["created"].dt.year
-    df_lifetime["year_modified"] = df_lifetime["modified"].dt.year
+        if not results_lifetime:
+            logger.warning("AOP lifetime query returned no results")
+            return fallback_created, fallback_modified, fallback_scatter
 
-    # Deduplicate
-    df_created = df_lifetime.sort_values("created").drop_duplicates("aop", keep="first")
-    df_modified = df_lifetime.sort_values("modified").drop_duplicates("aop", keep="last")
+        df_lifetime = pd.DataFrame([{
+            "aop": r["aop"]["value"],
+            "version": r["graph"]["value"].split("/")[-1],
+            "created": pd.to_datetime(r["created"]["value"], errors="coerce"),
+            "modified": pd.to_datetime(r["modified"]["value"], errors="coerce")
+        } for r in results_lifetime])
 
-    # --- Plot 1: AOPs Created ---
-    fig1 = px.histogram(df_created, x="year_created",
-                        title="AOP Creation Timeline",
-                        labels={"year_created": "Year", "count": "AOP Count"},
-                        color_discrete_sequence=[BRAND_COLORS['primary']])
-    fig1.update_layout(template="plotly_white", height=400)
-    html1 = pio.to_html(fig1, full_html=False, include_plotlyjs="cdn")
+        if df_lifetime.empty:
+            logger.warning("AOP lifetime DataFrame is empty after parsing")
+            return fallback_created, fallback_modified, fallback_scatter
 
-    # --- Plot 2: AOPs Modified ---
-    fig2 = px.histogram(df_modified, x="year_modified",
-                        title="AOP Modification Timeline",
-                        labels={"year_modified": "Year", "count": "AOP Count"},
-                        color_discrete_sequence=[BRAND_COLORS['secondary']])
-    fig2.update_layout(template="plotly_white", height=400)
-    html2 = pio.to_html(fig2, full_html=False, include_plotlyjs=False)
+        # Drop rows where date parsing failed
+        df_lifetime = df_lifetime.dropna(subset=["created", "modified"])
+        if df_lifetime.empty:
+            logger.warning("AOP lifetime DataFrame is empty after dropping invalid dates")
+            return fallback_created, fallback_modified, fallback_scatter
 
-    # --- Plot 3: Created vs. Modified Dates ---
-    fig3 = px.scatter(df_lifetime, x="created", y="modified", hover_name="aop",
-                      title="AOP Creation vs. Modification Timeline",
-                      labels={"created": "Created", "modified": "Modified"},
-                      color_discrete_sequence=[BRAND_COLORS['accent']],
-                      render_mode='svg')
-    fig3.update_layout(template="plotly_white", height=500)
-    html3 = pio.to_html(fig3, full_html=False, include_plotlyjs=False)
+        df_lifetime["lifetime_days"] = (df_lifetime["modified"] - df_lifetime["created"]).dt.days
+        df_lifetime["year_created"] = df_lifetime["created"].dt.year
+        df_lifetime["year_modified"] = df_lifetime["modified"].dt.year
 
-    # Cache data for CSV export
-    _plot_data_cache['aops_created_over_time'] = df_created.copy()
-    _plot_data_cache['aops_modified_over_time'] = df_modified.copy()
-    _plot_data_cache['aop_creation_vs_modification_timeline'] = df_lifetime.copy()
+        # Deduplicate
+        df_created = df_lifetime.sort_values("created").drop_duplicates("aop", keep="first")
+        df_modified = df_lifetime.sort_values("modified").drop_duplicates("aop", keep="last")
 
-    # Cache figures for image export
-    _plot_figure_cache['aops_created_over_time'] = fig1
-    _plot_figure_cache['aops_modified_over_time'] = fig2
-    _plot_figure_cache['aop_creation_vs_modification_timeline'] = fig3
+        # Cache data for CSV export
+        _plot_data_cache['aops_created_over_time'] = df_created.copy()
+        _plot_data_cache['aops_modified_over_time'] = df_modified.copy()
+        _plot_data_cache['aop_creation_vs_modification_timeline'] = df_lifetime.copy()
 
-    return html1, html2, html3
+        # --- Plot 1: AOPs Created ---
+        html1 = fallback_created
+        try:
+            fig1 = px.histogram(df_created, x="year_created",
+                                title="AOP Creation Timeline",
+                                labels={"year_created": "Year", "count": "AOP Count"},
+                                color_discrete_sequence=[BRAND_COLORS['primary']])
+            fig1.update_layout(template="plotly_white", height=400)
+            html1 = pio.to_html(fig1, full_html=False, include_plotlyjs="cdn")
+            _plot_figure_cache['aops_created_over_time'] = fig1
+        except Exception as e:
+            logger.error(f"Failed to generate AOP creation timeline plot: {str(e)}")
+
+        # --- Plot 2: AOPs Modified ---
+        html2 = fallback_modified
+        try:
+            fig2 = px.histogram(df_modified, x="year_modified",
+                                title="AOP Modification Timeline",
+                                labels={"year_modified": "Year", "count": "AOP Count"},
+                                color_discrete_sequence=[BRAND_COLORS['secondary']])
+            fig2.update_layout(template="plotly_white", height=400)
+            html2 = pio.to_html(fig2, full_html=False, include_plotlyjs=False)
+            _plot_figure_cache['aops_modified_over_time'] = fig2
+        except Exception as e:
+            logger.error(f"Failed to generate AOP modification timeline plot: {str(e)}")
+
+        # --- Plot 3: Created vs. Modified Dates ---
+        html3 = fallback_scatter
+        try:
+            fig3 = px.scatter(df_lifetime, x="created", y="modified", hover_name="aop",
+                              title="AOP Creation vs. Modification Timeline",
+                              labels={"created": "Created", "modified": "Modified"},
+                              color_discrete_sequence=[BRAND_COLORS['accent']],
+                              render_mode='svg')
+            fig3.update_layout(template="plotly_white", height=500)
+            html3 = pio.to_html(fig3, full_html=False, include_plotlyjs=False)
+            _plot_figure_cache['aop_creation_vs_modification_timeline'] = fig3
+        except Exception as e:
+            logger.error(f"Failed to generate AOP creation vs modification scatter plot: {str(e)}")
+
+        return html1, html2, html3
+
+    except Exception as e:
+        logger.error(f"Failed to generate AOP lifetime plots: {str(e)}")
+        return fallback_created, fallback_modified, fallback_scatter
 
 
 def plot_ke_components() -> tuple[str, str]:
     """Generate KE component annotation visualization with absolute and delta views."""
     global _plot_data_cache, _plot_figure_cache
 
-    query_components = """
-    SELECT ?graph
-           (COUNT(?process) AS ?process_count)
-           (COUNT(?object) AS ?object_count)
-           (COUNT(?action) AS ?action_count)
-    WHERE {
-      GRAPH ?graph {
-        ?ke a aopo:KeyEvent ;
-            aopo:hasBiologicalEvent ?bioevent .
-        OPTIONAL { ?bioevent aopo:hasProcess ?process . }
-        OPTIONAL { ?bioevent aopo:hasObject ?object . }
-        OPTIONAL { ?bioevent aopo:hasAction ?action . }
-      }
-      FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-    }
-    GROUP BY ?graph
-    """
+    try:
+        query_components = """
+        SELECT ?graph
+               (COUNT(?process) AS ?process_count)
+               (COUNT(?object) AS ?object_count)
+               (COUNT(?action) AS ?action_count)
+        WHERE {
+          GRAPH ?graph {
+            ?ke a aopo:KeyEvent ;
+                aopo:hasBiologicalEvent ?bioevent .
+            OPTIONAL { ?bioevent aopo:hasProcess ?process . }
+            OPTIONAL { ?bioevent aopo:hasObject ?object . }
+            OPTIONAL { ?bioevent aopo:hasAction ?action . }
+          }
+          FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        GROUP BY ?graph
+        """
 
-    results_components = run_sparql_query(query_components)
-    df_components = pd.DataFrame([{
-        "version": r["graph"]["value"].split("/")[-1],
-        "Process": int(r["process_count"]["value"]),
-        "Object": int(r["object_count"]["value"]),
-        "Action": int(r["action_count"]["value"])
-    } for r in results_components])
+        results_components = run_sparql_query(query_components)
 
-    # Sort by datetime
-    df_components["version_dt"] = pd.to_datetime(df_components["version"], errors="coerce")
-    df_components = df_components.sort_values("version_dt").drop(columns="version_dt")
+        if not results_components:
+            logger.warning("KE components query returned no results")
+            return (
+                create_fallback_plot("KE Component Annotations Over Time", "No data available"),
+                create_fallback_plot("Change in KE Component Annotations", "No data available")
+            )
 
-    # --- Absolute line plot ---
-    df_melted = df_components.melt(
-        id_vars=["version"],
-        value_vars=["Process", "Object", "Action"],
-        var_name="Component", value_name="Count"
-    )
+        df_components = pd.DataFrame([{
+            "version": r["graph"]["value"].split("/")[-1],
+            "Process": int(r["process_count"]["value"]),
+            "Object": int(r["object_count"]["value"]),
+            "Action": int(r["action_count"]["value"])
+        } for r in results_components])
 
-    fig_abs = px.line(
-        df_melted,
-        x="version",
-        y="Count",
-        color="Component",
-        title="KE Component Annotations Over Time",
-        markers=True,
-        color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary'], BRAND_COLORS['accent']]
-    )
-    fig_abs.update_layout(
-        template="plotly_white",
-        hovermode="x unified",
-        autosize=True,
-        margin=dict(l=50, r=20, t=50, b=50)
-    )
-    fig_abs.update_xaxes(
-        tickmode='array',
-        tickvals=df_components["version"],
-        ticktext=df_components["version"],
-        tickangle=-45
-    )
+        if df_components.empty:
+            logger.warning("KE components DataFrame is empty")
+            return (
+                create_fallback_plot("KE Component Annotations Over Time", "No data available"),
+                create_fallback_plot("Change in KE Component Annotations", "No data available")
+            )
 
-    # --- Delta line plot ---
-    df_diff = df_components.copy()
-    df_diff[["Process", "Object", "Action"]] = \
-        df_diff[["Process", "Object", "Action"]].diff().fillna(0)
+        # Sort by datetime
+        df_components["version_dt"] = pd.to_datetime(df_components["version"], errors="coerce")
+        df_components = df_components.sort_values("version_dt").drop(columns="version_dt")
 
-    df_melted_diff = df_diff.melt(
-        id_vars=["version"],
-        value_vars=["Process", "Object", "Action"],
-        var_name="Component", value_name="Change"
-    )
+        # --- Absolute line plot ---
+        df_melted = df_components.melt(
+            id_vars=["version"],
+            value_vars=["Process", "Object", "Action"],
+            var_name="Component", value_name="Count"
+        )
 
-    fig_delta = px.line(
-        df_melted_diff,
-        x="version",
-        y="Change",
-        color="Component",
-        title="Change in KE Component Annotations",
-        markers=True,
-        color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary'], BRAND_COLORS['accent']]
-    )
-    fig_delta.update_layout(
-        template="plotly_white",
-        hovermode="x unified",
-        autosize=True,
-        margin=dict(l=50, r=20, t=50, b=50)
-    )
-    fig_delta.update_xaxes(
-        tickmode='array',
-        tickvals=df_components["version"],
-        ticktext=df_components["version"],
-        tickangle=-45
-    )
+        fig_abs = px.line(
+            df_melted,
+            x="version",
+            y="Count",
+            color="Component",
+            title="KE Component Annotations Over Time",
+            markers=True,
+            color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary'], BRAND_COLORS['accent']]
+        )
+        fig_abs.update_layout(
+            template="plotly_white",
+            hovermode="x unified",
+            autosize=True,
+            margin=dict(l=50, r=20, t=50, b=50)
+        )
+        fig_abs.update_xaxes(
+            tickmode='array',
+            tickvals=df_components["version"],
+            ticktext=df_components["version"],
+            tickangle=-45
+        )
 
-    # Cache data for CSV export
-    _plot_data_cache['ke_component_annotations_absolute'] = df_melted.copy()
-    _plot_data_cache['ke_component_annotations_delta'] = df_melted_diff.copy()
+        # --- Delta line plot ---
+        df_diff = df_components.copy()
+        df_diff[["Process", "Object", "Action"]] = \
+            df_diff[["Process", "Object", "Action"]].diff().fillna(0)
 
-    # Cache figures for image export
-    _plot_figure_cache['ke_component_annotations_absolute'] = fig_abs
-    _plot_figure_cache['ke_component_annotations_delta'] = fig_delta
+        df_melted_diff = df_diff.melt(
+            id_vars=["version"],
+            value_vars=["Process", "Object", "Action"],
+            var_name="Component", value_name="Change"
+        )
 
-    return (
-        pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config={"responsive": True}),
-        pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config={"responsive": True})
-    )
+        fig_delta = px.line(
+            df_melted_diff,
+            x="version",
+            y="Change",
+            color="Component",
+            title="Change in KE Component Annotations",
+            markers=True,
+            color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary'], BRAND_COLORS['accent']]
+        )
+        fig_delta.update_layout(
+            template="plotly_white",
+            hovermode="x unified",
+            autosize=True,
+            margin=dict(l=50, r=20, t=50, b=50)
+        )
+        fig_delta.update_xaxes(
+            tickmode='array',
+            tickvals=df_components["version"],
+            ticktext=df_components["version"],
+            tickangle=-45
+        )
+
+        # Cache data for CSV export
+        _plot_data_cache['ke_component_annotations_absolute'] = df_melted.copy()
+        _plot_data_cache['ke_component_annotations_delta'] = df_melted_diff.copy()
+
+        # Cache figures for image export
+        _plot_figure_cache['ke_component_annotations_absolute'] = fig_abs
+        _plot_figure_cache['ke_component_annotations_delta'] = fig_delta
+
+        return (
+            pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config={"responsive": True}),
+            pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config={"responsive": True})
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to generate KE component annotations plots: {str(e)}")
+        return (
+            create_fallback_plot("KE Component Annotations Over Time", str(e)),
+            create_fallback_plot("Change in KE Component Annotations", str(e))
+        )
 
 
 def plot_ke_components_percentage() -> tuple[str, str]:
     """Generate KE component percentage visualization with absolute and delta views."""
     global _plot_data_cache, _plot_figure_cache
 
-    query_components = """
-    SELECT ?graph
-           (COUNT(?process) AS ?process_count)
-           (COUNT(?object) AS ?object_count)
-           (COUNT(?action) AS ?action_count)
-    WHERE {
-      GRAPH ?graph {
-        ?ke a aopo:KeyEvent ;
-            aopo:hasBiologicalEvent ?bioevent .
-        OPTIONAL { ?bioevent aopo:hasProcess ?process . }
-        OPTIONAL { ?bioevent aopo:hasObject ?object . }
-        OPTIONAL { ?bioevent aopo:hasAction ?action . }
-      }
-      FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-    }
-    GROUP BY ?graph
-    """
+    try:
+        query_components = """
+        SELECT ?graph
+               (COUNT(?process) AS ?process_count)
+               (COUNT(?object) AS ?object_count)
+               (COUNT(?action) AS ?action_count)
+        WHERE {
+          GRAPH ?graph {
+            ?ke a aopo:KeyEvent ;
+                aopo:hasBiologicalEvent ?bioevent .
+            OPTIONAL { ?bioevent aopo:hasProcess ?process . }
+            OPTIONAL { ?bioevent aopo:hasObject ?object . }
+            OPTIONAL { ?bioevent aopo:hasAction ?action . }
+          }
+          FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        GROUP BY ?graph
+        """
 
-    query_total_kes = """
-    SELECT ?graph (COUNT(?ke) AS ?total_kes)
-    WHERE {
-      GRAPH ?graph {
-        ?ke a aopo:KeyEvent .
-      }
-      FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-    }
-    GROUP BY ?graph
-    """
+        query_total_kes = """
+        SELECT ?graph (COUNT(?ke) AS ?total_kes)
+        WHERE {
+          GRAPH ?graph {
+            ?ke a aopo:KeyEvent .
+          }
+          FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        GROUP BY ?graph
+        """
 
-    # Run queries
-    results_components = run_sparql_query(query_components)
-    results_total_kes = run_sparql_query(query_total_kes)
+        # Run queries
+        results_components = run_sparql_query(query_components)
+        results_total_kes = run_sparql_query(query_total_kes)
 
-    # DataFrames
-    df_components = pd.DataFrame([{
-        "version": r["graph"]["value"].split("/")[-1],
-        "Process": int(r["process_count"]["value"]),
-        "Object": int(r["object_count"]["value"]),
-        "Action": int(r["action_count"]["value"])
-    } for r in results_components])
+        if not results_components or not results_total_kes:
+            logger.warning("KE components percentage query returned no results")
+            return (
+                create_fallback_plot("KE Component Annotations as Percentage Over Time", "No data available"),
+                create_fallback_plot("Change in KE Component Percentage", "No data available")
+            )
 
-    df_total = pd.DataFrame([{
-        "version": r["graph"]["value"].split("/")[-1],
-        "TotalKEs": int(r["total_kes"]["value"])
-    } for r in results_total_kes])
+        # DataFrames
+        df_components = pd.DataFrame([{
+            "version": r["graph"]["value"].split("/")[-1],
+            "Process": int(r["process_count"]["value"]),
+            "Object": int(r["object_count"]["value"]),
+            "Action": int(r["action_count"]["value"])
+        } for r in results_components])
 
-    # Merge for percentage calculation
-    df_merged = df_components.merge(df_total, on="version", how="inner")
+        df_total = pd.DataFrame([{
+            "version": r["graph"]["value"].split("/")[-1],
+            "TotalKEs": int(r["total_kes"]["value"])
+        } for r in results_total_kes])
 
-    # Calculate percentages
-    for col in ["Process", "Object", "Action"]:
-        df_merged[col] = (df_merged[col] / df_merged["TotalKEs"]) * 100
+        if df_components.empty or df_total.empty:
+            logger.warning("KE components percentage DataFrames are empty")
+            return (
+                create_fallback_plot("KE Component Annotations as Percentage Over Time", "No data available"),
+                create_fallback_plot("Change in KE Component Percentage", "No data available")
+            )
 
-    # Sort by version
-    df_merged["version_dt"] = pd.to_datetime(df_merged["version"], errors="coerce")
-    df_merged = df_merged.sort_values("version_dt").drop(columns="version_dt")
+        # Merge for percentage calculation
+        df_merged = df_components.merge(df_total, on="version", how="inner")
 
-    # --- Absolute percentage plot ---
-    df_melted = df_merged.melt(
-        id_vars=["version"],
-        value_vars=["Process", "Object", "Action"],
-        var_name="Component", value_name="Percentage"
-    )
+        # Filter out versions with zero total KEs to avoid division by zero
+        df_merged = df_merged[df_merged["TotalKEs"] > 0]
 
-    fig_abs = px.line(
-        df_melted,
-        x="version",
-        y="Percentage",
-        color="Component",
-        title="KE Component Annotations as Percentage Over Time",
-        markers=True,
-        color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary'], BRAND_COLORS['accent']]
-    )
-    fig_abs.update_layout(
-        template="plotly_white",
-        hovermode="x unified",
-        autosize=True,
-        yaxis=dict(title="Percentage (%)"),
-        margin=dict(l=50, r=20, t=50, b=50)
-    )
-    fig_abs.update_xaxes(
-        tickmode='array',
-        tickvals=df_merged["version"],
-        ticktext=df_merged["version"],
-        tickangle=-45
-    )
+        if df_merged.empty:
+            logger.warning("KE components percentage: no versions with non-zero KE counts")
+            return (
+                create_fallback_plot("KE Component Annotations as Percentage Over Time", "No versions with KE data"),
+                create_fallback_plot("Change in KE Component Percentage", "No versions with KE data")
+            )
 
-    # --- Delta percentage plot ---
-    df_delta = df_merged.copy()
-    df_delta[["Process", "Object", "Action"]] = df_delta[["Process", "Object", "Action"]].diff().fillna(0)
+        # Calculate percentages
+        for col in ["Process", "Object", "Action"]:
+            df_merged[col] = (df_merged[col] / df_merged["TotalKEs"]) * 100
 
-    df_melted_delta = df_delta.melt(
-        id_vars=["version"],
-        value_vars=["Process", "Object", "Action"],
-        var_name="Component", value_name="Percentage Change"
-    )
+        # Sort by version
+        df_merged["version_dt"] = pd.to_datetime(df_merged["version"], errors="coerce")
+        df_merged = df_merged.sort_values("version_dt").drop(columns="version_dt")
 
-    fig_delta = px.line(
-        df_melted_delta,
-        x="version",
-        y="Percentage Change",
-        color="Component",
-        title="Change in KE Component Percentage",
-        markers=True,
-        color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary'], BRAND_COLORS['accent']]
-    )
-    fig_delta.update_layout(
-        template="plotly_white",
-        hovermode="x unified",
-        autosize=True,
-        yaxis=dict(title="Percentage Change (%)"),
-        margin=dict(l=50, r=20, t=50, b=50)
-    )
-    fig_delta.update_xaxes(
-        tickmode='array',
-        tickvals=df_merged["version"],
-        ticktext=df_merged["version"],
-        tickangle=-45
-    )
+        # --- Absolute percentage plot ---
+        df_melted = df_merged.melt(
+            id_vars=["version"],
+            value_vars=["Process", "Object", "Action"],
+            var_name="Component", value_name="Percentage"
+        )
 
-    # Cache data for CSV export
-    _plot_data_cache['ke_components_percentage_absolute'] = df_melted.copy()
-    _plot_data_cache['ke_components_percentage_delta'] = df_melted_delta.copy()
+        fig_abs = px.line(
+            df_melted,
+            x="version",
+            y="Percentage",
+            color="Component",
+            title="KE Component Annotations as Percentage Over Time",
+            markers=True,
+            color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary'], BRAND_COLORS['accent']]
+        )
+        fig_abs.update_layout(
+            template="plotly_white",
+            hovermode="x unified",
+            autosize=True,
+            yaxis=dict(title="Percentage (%)"),
+            margin=dict(l=50, r=20, t=50, b=50)
+        )
+        fig_abs.update_xaxes(
+            tickmode='array',
+            tickvals=df_merged["version"],
+            ticktext=df_merged["version"],
+            tickangle=-45
+        )
 
-    # Cache figures for image export
-    _plot_figure_cache['ke_components_percentage_absolute'] = fig_abs
-    _plot_figure_cache['ke_components_percentage_delta'] = fig_delta
+        # --- Delta percentage plot ---
+        df_delta = df_merged.copy()
+        df_delta[["Process", "Object", "Action"]] = df_delta[["Process", "Object", "Action"]].diff().fillna(0)
 
-    return (
-        pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config=config),
-        pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config=config)
-    )
+        df_melted_delta = df_delta.melt(
+            id_vars=["version"],
+            value_vars=["Process", "Object", "Action"],
+            var_name="Component", value_name="Percentage Change"
+        )
+
+        fig_delta = px.line(
+            df_melted_delta,
+            x="version",
+            y="Percentage Change",
+            color="Component",
+            title="Change in KE Component Percentage",
+            markers=True,
+            color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary'], BRAND_COLORS['accent']]
+        )
+        fig_delta.update_layout(
+            template="plotly_white",
+            hovermode="x unified",
+            autosize=True,
+            yaxis=dict(title="Percentage Change (%)"),
+            margin=dict(l=50, r=20, t=50, b=50)
+        )
+        fig_delta.update_xaxes(
+            tickmode='array',
+            tickvals=df_merged["version"],
+            ticktext=df_merged["version"],
+            tickangle=-45
+        )
+
+        # Cache data for CSV export
+        _plot_data_cache['ke_components_percentage_absolute'] = df_melted.copy()
+        _plot_data_cache['ke_components_percentage_delta'] = df_melted_delta.copy()
+
+        # Cache figures for image export
+        _plot_figure_cache['ke_components_percentage_absolute'] = fig_abs
+        _plot_figure_cache['ke_components_percentage_delta'] = fig_delta
+
+        return (
+            pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config=config),
+            pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config=config)
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to generate KE components percentage plots: {str(e)}")
+        return (
+            create_fallback_plot("KE Component Annotations as Percentage Over Time", str(e)),
+            create_fallback_plot("Change in KE Component Percentage", str(e))
+        )
 
 
 def plot_unique_ke_components() -> tuple[str, str]:
     """Generate unique KE component visualization with absolute and delta views."""
     global _plot_data_cache, _plot_figure_cache
 
-    query_unique_components = """
-    SELECT ?graph
-           (COUNT(DISTINCT ?process) AS ?process_count)
-           (COUNT(DISTINCT ?object) AS ?object_count)
-           (COUNT(DISTINCT ?action) AS ?action_count)
-    WHERE {
-      GRAPH ?graph {
-        ?ke a aopo:KeyEvent ;
-            aopo:hasBiologicalEvent ?bioevent .
-        OPTIONAL { ?bioevent aopo:hasProcess ?process . }
-        OPTIONAL { ?bioevent aopo:hasObject ?object . }
-        OPTIONAL { ?bioevent aopo:hasAction ?action . }
-      }
-      FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-    }
-    GROUP BY ?graph
-    """
+    try:
+        query_unique_components = """
+        SELECT ?graph
+               (COUNT(DISTINCT ?process) AS ?process_count)
+               (COUNT(DISTINCT ?object) AS ?object_count)
+               (COUNT(DISTINCT ?action) AS ?action_count)
+        WHERE {
+          GRAPH ?graph {
+            ?ke a aopo:KeyEvent ;
+                aopo:hasBiologicalEvent ?bioevent .
+            OPTIONAL { ?bioevent aopo:hasProcess ?process . }
+            OPTIONAL { ?bioevent aopo:hasObject ?object . }
+            OPTIONAL { ?bioevent aopo:hasAction ?action . }
+          }
+          FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        GROUP BY ?graph
+        """
 
-    results_unique = run_sparql_query(query_unique_components)
-    df_unique = pd.DataFrame([{
-        "version": r["graph"]["value"].split("/")[-1],
-        "Process": int(r["process_count"]["value"]),
-        "Object": int(r["object_count"]["value"]),
-        "Action": int(r["action_count"]["value"])
-    } for r in results_unique])
+        results_unique = run_sparql_query(query_unique_components)
 
-    # Sort by datetime
-    df_unique["version_dt"] = pd.to_datetime(df_unique["version"], errors="coerce")
-    df_unique = df_unique.sort_values("version_dt").drop(columns="version_dt")
+        if not results_unique:
+            logger.warning("Unique KE components query returned no results")
+            return (
+                create_fallback_plot("Unique KE Component Annotations Over Time", "No data available"),
+                create_fallback_plot("Change in Unique KE Component Annotations", "No data available")
+            )
 
-    # --- Absolute plot ---
-    df_melted = df_unique.melt(
-        id_vars=["version"],
-        value_vars=["Process", "Object", "Action"],
-        var_name="Component", value_name="Unique Count"
-    )
+        df_unique = pd.DataFrame([{
+            "version": r["graph"]["value"].split("/")[-1],
+            "Process": int(r["process_count"]["value"]),
+            "Object": int(r["object_count"]["value"]),
+            "Action": int(r["action_count"]["value"])
+        } for r in results_unique])
 
-    fig_abs = px.line(
-        df_melted,
-        x="version",
-        y="Unique Count",
-        color="Component",
-        title="Unique KE Component Annotations Over Time",
-        markers=True,
-        color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary'], BRAND_COLORS['accent']]
-    )
-    fig_abs.update_layout(
-        template="plotly_white",
-        hovermode="x unified",
-        autosize=True,
-        margin=dict(l=50, r=20, t=50, b=50)
-    )
-    fig_abs.update_xaxes(
-        tickmode='array',
-        tickvals=df_unique["version"],
-        ticktext=df_unique["version"],
-        tickangle=-45
-    )
+        if df_unique.empty:
+            logger.warning("Unique KE components DataFrame is empty")
+            return (
+                create_fallback_plot("Unique KE Component Annotations Over Time", "No data available"),
+                create_fallback_plot("Change in Unique KE Component Annotations", "No data available")
+            )
 
-    # --- Delta plot ---
-    df_diff = df_unique.copy()
-    df_diff[["Process", "Object", "Action"]] = \
-        df_diff[["Process", "Object", "Action"]].diff().fillna(0)
+        # Sort by datetime
+        df_unique["version_dt"] = pd.to_datetime(df_unique["version"], errors="coerce")
+        df_unique = df_unique.sort_values("version_dt").drop(columns="version_dt")
 
-    df_melted_diff = df_diff.melt(
-        id_vars=["version"],
-        value_vars=["Process", "Object", "Action"],
-        var_name="Component", value_name="Change"
-    )
+        # --- Absolute plot ---
+        df_melted = df_unique.melt(
+            id_vars=["version"],
+            value_vars=["Process", "Object", "Action"],
+            var_name="Component", value_name="Unique Count"
+        )
 
-    fig_delta = px.line(
-        df_melted_diff,
-        x="version",
-        y="Change",
-        color="Component",
-        title="Change in Unique KE Component Annotations",
-        markers=True,
-        color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary'], BRAND_COLORS['accent']]
-    )
-    fig_delta.update_layout(
-        template="plotly_white",
-        hovermode="x unified",
-        autosize=True,
-        margin=dict(l=50, r=20, t=50, b=50)
-    )
-    fig_delta.update_xaxes(
-        tickmode='array',
-        tickvals=df_unique["version"],
-        ticktext=df_unique["version"],
-        tickangle=-45
-    )
+        fig_abs = px.line(
+            df_melted,
+            x="version",
+            y="Unique Count",
+            color="Component",
+            title="Unique KE Component Annotations Over Time",
+            markers=True,
+            color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary'], BRAND_COLORS['accent']]
+        )
+        fig_abs.update_layout(
+            template="plotly_white",
+            hovermode="x unified",
+            autosize=True,
+            margin=dict(l=50, r=20, t=50, b=50)
+        )
+        fig_abs.update_xaxes(
+            tickmode='array',
+            tickvals=df_unique["version"],
+            ticktext=df_unique["version"],
+            tickangle=-45
+        )
 
-    # Cache data for CSV export
-    _plot_data_cache['unique_ke_components_absolute'] = df_melted.copy()
-    _plot_data_cache['unique_ke_components_delta'] = df_melted_diff.copy()
+        # --- Delta plot ---
+        df_diff = df_unique.copy()
+        df_diff[["Process", "Object", "Action"]] = \
+            df_diff[["Process", "Object", "Action"]].diff().fillna(0)
 
-    # Cache figures for image export
-    _plot_figure_cache['unique_ke_components_absolute'] = fig_abs
-    _plot_figure_cache['unique_ke_components_delta'] = fig_delta
+        df_melted_diff = df_diff.melt(
+            id_vars=["version"],
+            value_vars=["Process", "Object", "Action"],
+            var_name="Component", value_name="Change"
+        )
 
-    return (
-        pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config={"responsive": True}),
-        pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config={"responsive": True})
-    )
+        fig_delta = px.line(
+            df_melted_diff,
+            x="version",
+            y="Change",
+            color="Component",
+            title="Change in Unique KE Component Annotations",
+            markers=True,
+            color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary'], BRAND_COLORS['accent']]
+        )
+        fig_delta.update_layout(
+            template="plotly_white",
+            hovermode="x unified",
+            autosize=True,
+            margin=dict(l=50, r=20, t=50, b=50)
+        )
+        fig_delta.update_xaxes(
+            tickmode='array',
+            tickvals=df_unique["version"],
+            ticktext=df_unique["version"],
+            tickangle=-45
+        )
+
+        # Cache data for CSV export
+        _plot_data_cache['unique_ke_components_absolute'] = df_melted.copy()
+        _plot_data_cache['unique_ke_components_delta'] = df_melted_diff.copy()
+
+        # Cache figures for image export
+        _plot_figure_cache['unique_ke_components_absolute'] = fig_abs
+        _plot_figure_cache['unique_ke_components_delta'] = fig_delta
+
+        return (
+            pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config={"responsive": True}),
+            pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config={"responsive": True})
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to generate unique KE component plots: {str(e)}")
+        return (
+            create_fallback_plot("Unique KE Component Annotations Over Time", str(e)),
+            create_fallback_plot("Change in Unique KE Component Annotations", str(e))
+        )
 
 
 def plot_bio_processes() -> tuple[str, str]:
     """Generate biological process ontology usage visualization with absolute and delta views."""
     global _plot_data_cache, _plot_figure_cache
 
-    query_ontologies = """
-    SELECT ?graph ?ontology (COUNT(DISTINCT ?process) AS ?count)
-    WHERE {
-      GRAPH ?graph {
-        ?ke a aopo:KeyEvent ;
-            aopo:hasBiologicalEvent ?bioevent .
-        ?bioevent aopo:hasProcess ?process .
+    try:
+        query_ontologies = """
+        SELECT ?graph ?ontology (COUNT(DISTINCT ?process) AS ?count)
+        WHERE {
+          GRAPH ?graph {
+            ?ke a aopo:KeyEvent ;
+                aopo:hasBiologicalEvent ?bioevent .
+            ?bioevent aopo:hasProcess ?process .
 
-        BIND(
-          IF(STRSTARTS(STR(?process), "http://purl.obolibrary.org/obo/GO_"), "GO",
-          IF(STRSTARTS(STR(?process), "http://purl.obolibrary.org/obo/MP_"), "MP",
-          IF(STRSTARTS(STR(?process), "http://purl.obolibrary.org/obo/NBO_"), "NBO",
-          IF(STRSTARTS(STR(?process), "http://purl.obolibrary.org/obo/MI_"), "MI",
-          IF(STRSTARTS(STR(?process), "http://purl.obolibrary.org/obo/VT_"), "VT",
-          IF(STRSTARTS(STR(?process), "http://purl.org/commons/record/mesh/"), "MESH",
-          IF(STRSTARTS(STR(?process), "http://purl.obolibrary.org/obo/HP_"), "HP", "OTHER"))))))) AS ?ontology)
-      }
-      FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-    }
-    GROUP BY ?graph ?ontology
-    ORDER BY ?graph ?ontology
-    """
+            BIND(
+              IF(STRSTARTS(STR(?process), "http://purl.obolibrary.org/obo/GO_"), "GO",
+              IF(STRSTARTS(STR(?process), "http://purl.obolibrary.org/obo/MP_"), "MP",
+              IF(STRSTARTS(STR(?process), "http://purl.obolibrary.org/obo/NBO_"), "NBO",
+              IF(STRSTARTS(STR(?process), "http://purl.obolibrary.org/obo/MI_"), "MI",
+              IF(STRSTARTS(STR(?process), "http://purl.obolibrary.org/obo/VT_"), "VT",
+              IF(STRSTARTS(STR(?process), "http://purl.org/commons/record/mesh/"), "MESH",
+              IF(STRSTARTS(STR(?process), "http://purl.obolibrary.org/obo/HP_"), "HP", "OTHER"))))))) AS ?ontology)
+          }
+          FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        GROUP BY ?graph ?ontology
+        ORDER BY ?graph ?ontology
+        """
 
-    results_ont = run_sparql_query(query_ontologies)
-    df_ont = pd.DataFrame([{
-        "version": r["graph"]["value"].split("/")[-1],
-        "ontology": r["ontology"]["value"],
-        "count": int(r["count"]["value"])
-    } for r in results_ont if "ontology" in r])
+        results_ont = run_sparql_query(query_ontologies)
 
-    # Sort by datetime
-    df_ont["version_dt"] = pd.to_datetime(df_ont["version"], errors="coerce")
-    df_ont = df_ont.sort_values("version_dt").drop(columns="version_dt")
+        if not results_ont:
+            logger.warning("Biological process annotations query returned no results")
+            return (
+                create_fallback_plot("Biological Process Annotations by Ontology Over Time", "No data available"),
+                create_fallback_plot("Change in Biological Process Annotations by Ontology", "No data available")
+            )
 
-    # --- Absolute bar chart ---
-    fig_abs = px.bar(
-        df_ont,
-        x="version",
-        y="count",
-        color="ontology",
-        barmode="group",
-        title="Biological Process Annotations by Ontology Over Time",
-        labels={"count": "Annotated KEs", "ontology": "Ontology"},
-        color_discrete_sequence=BRAND_COLORS['palette']
-    )
-    fig_abs.update_layout(template="plotly_white", hovermode="x unified", autosize=True)
-    fig_abs.update_xaxes(tickmode='array', tickvals=df_ont["version"], ticktext=df_ont["version"], tickangle=-45)
+        df_ont = pd.DataFrame([{
+            "version": r["graph"]["value"].split("/")[-1],
+            "ontology": r["ontology"]["value"],
+            "count": int(r["count"]["value"])
+        } for r in results_ont if "ontology" in r])
 
-    # --- Delta calculation ---
-    df_delta = df_ont.copy()
-    df_delta["count"] = df_delta.groupby("ontology")["count"].diff().fillna(0)
+        if df_ont.empty:
+            logger.warning("Biological process annotations DataFrame is empty")
+            return (
+                create_fallback_plot("Biological Process Annotations by Ontology Over Time", "No data available"),
+                create_fallback_plot("Change in Biological Process Annotations by Ontology", "No data available")
+            )
 
-    fig_delta = px.bar(
-        df_delta,
-        x="version",
-        y="count",
-        color="ontology",
-        barmode="group",
-        title="Change in Biological Process Annotations by Ontology",
-        labels={"count": "Change in Annotated KEs", "ontology": "Ontology"},
-        color_discrete_sequence=BRAND_COLORS['palette']
-    )
-    fig_delta.update_layout(template="plotly_white", hovermode="x unified", autosize=True)
-    fig_delta.update_xaxes(tickmode='array', tickvals=df_ont["version"], ticktext=df_ont["version"], tickangle=-45)
+        # Sort by datetime
+        df_ont["version_dt"] = pd.to_datetime(df_ont["version"], errors="coerce")
+        df_ont = df_ont.sort_values("version_dt").drop(columns="version_dt")
 
-    # Cache data for CSV export
-    _plot_data_cache['biological_process_annotations_absolute'] = df_ont.copy()
-    _plot_data_cache['biological_process_annotations_delta'] = df_delta.copy()
+        # --- Absolute bar chart ---
+        fig_abs = px.bar(
+            df_ont,
+            x="version",
+            y="count",
+            color="ontology",
+            barmode="group",
+            title="Biological Process Annotations by Ontology Over Time",
+            labels={"count": "Annotated KEs", "ontology": "Ontology"},
+            color_discrete_sequence=BRAND_COLORS['palette']
+        )
+        fig_abs.update_layout(template="plotly_white", hovermode="x unified", autosize=True)
+        fig_abs.update_xaxes(tickmode='array', tickvals=df_ont["version"], ticktext=df_ont["version"], tickangle=-45)
 
-    # Cache figures for image export
-    _plot_figure_cache['biological_process_annotations_absolute'] = fig_abs
-    _plot_figure_cache['biological_process_annotations_delta'] = fig_delta
+        # --- Delta calculation ---
+        df_delta = df_ont.copy()
+        df_delta["count"] = df_delta.groupby("ontology")["count"].diff().fillna(0)
 
-    return (
-        pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config={"responsive": True}),
-        pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config={"responsive": True})
-    )
+        fig_delta = px.bar(
+            df_delta,
+            x="version",
+            y="count",
+            color="ontology",
+            barmode="group",
+            title="Change in Biological Process Annotations by Ontology",
+            labels={"count": "Change in Annotated KEs", "ontology": "Ontology"},
+            color_discrete_sequence=BRAND_COLORS['palette']
+        )
+        fig_delta.update_layout(template="plotly_white", hovermode="x unified", autosize=True)
+        fig_delta.update_xaxes(tickmode='array', tickvals=df_ont["version"], ticktext=df_ont["version"], tickangle=-45)
+
+        # Cache data for CSV export
+        _plot_data_cache['biological_process_annotations_absolute'] = df_ont.copy()
+        _plot_data_cache['biological_process_annotations_delta'] = df_delta.copy()
+
+        # Cache figures for image export
+        _plot_figure_cache['biological_process_annotations_absolute'] = fig_abs
+        _plot_figure_cache['biological_process_annotations_delta'] = fig_delta
+
+        return (
+            pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config={"responsive": True}),
+            pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config={"responsive": True})
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to generate biological process annotation plots: {str(e)}")
+        return (
+            create_fallback_plot("Biological Process Annotations by Ontology Over Time", str(e)),
+            create_fallback_plot("Change in Biological Process Annotations by Ontology", str(e))
+        )
 
 
 def plot_bio_objects() -> tuple[str, str]:
     """Generate biological object ontology usage visualization with absolute and delta views."""
     global _plot_data_cache, _plot_figure_cache
 
-    query_objects = """
-    SELECT ?graph ?ontology (COUNT(DISTINCT ?object) AS ?count)
-    WHERE {
-      GRAPH ?graph {
-        ?ke a aopo:KeyEvent ;
-            aopo:hasBiologicalEvent ?bioevent .
-        ?bioevent aopo:hasObject ?object .
+    try:
+        query_objects = """
+        SELECT ?graph ?ontology (COUNT(DISTINCT ?object) AS ?count)
+        WHERE {
+          GRAPH ?graph {
+            ?ke a aopo:KeyEvent ;
+                aopo:hasBiologicalEvent ?bioevent .
+            ?bioevent aopo:hasObject ?object .
 
-        BIND(
-          IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/GO_"), "GO",
-          IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/PR_"), "PR",
-          IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/CHEBI_"), "CHEBI",
-          IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/UBERON_"), "UBERON",
-          IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/CL_"), "CL",
-          IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/MP_"), "MP",
-          IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/NBO_"), "NBO",
-          IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/MI_"), "MI",
-          IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/VT_"), "VT",
-          IF(STRSTARTS(STR(?object), "http://purl.org/commons/record/mesh/"), "MESH",
-          IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/HP_"), "HP", "OTHER"))))))))))) AS ?ontology)
-      }
-      FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-    }
-    GROUP BY ?graph ?ontology
-    ORDER BY ?graph ?ontology
-    """
+            BIND(
+              IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/GO_"), "GO",
+              IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/PR_"), "PR",
+              IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/CHEBI_"), "CHEBI",
+              IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/UBERON_"), "UBERON",
+              IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/CL_"), "CL",
+              IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/MP_"), "MP",
+              IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/NBO_"), "NBO",
+              IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/MI_"), "MI",
+              IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/VT_"), "VT",
+              IF(STRSTARTS(STR(?object), "http://purl.org/commons/record/mesh/"), "MESH",
+              IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/HP_"), "HP", "OTHER"))))))))))) AS ?ontology)
+          }
+          FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        GROUP BY ?graph ?ontology
+        ORDER BY ?graph ?ontology
+        """
 
-    results_obj = run_sparql_query(query_objects)
-    df_obj = pd.DataFrame([{
-        "version": r["graph"]["value"].split("/")[-1],
-        "ontology": r["ontology"]["value"],
-        "count": int(r["count"]["value"])
-    } for r in results_obj if "ontology" in r])
+        results_obj = run_sparql_query(query_objects)
 
-    df_obj["version_dt"] = pd.to_datetime(df_obj["version"], errors="coerce")
-    df_obj = df_obj.sort_values("version_dt").drop(columns="version_dt")
+        if not results_obj:
+            logger.warning("Biological object annotations query returned no results")
+            return (
+                create_fallback_plot("Biological Object Annotations by Ontology Over Time", "No data available"),
+                create_fallback_plot("Change in Biological Object Annotations by Ontology", "No data available")
+            )
 
-    # --- Absolute bar chart ---
-    fig_abs = px.bar(
-        df_obj,
-        x="version",
-        y="count",
-        color="ontology",
-        barmode="group",
-        title="Biological Object Annotations by Ontology Over Time",
-        labels={"count": "Annotated KEs", "ontology": "Ontology"},
-        color_discrete_sequence=BRAND_COLORS['palette']
-    )
-    fig_abs.update_layout(template="plotly_white", hovermode="x unified", autosize=True)
-    fig_abs.update_xaxes(tickmode='array', tickvals=df_obj["version"], ticktext=df_obj["version"], tickangle=-45)
+        df_obj = pd.DataFrame([{
+            "version": r["graph"]["value"].split("/")[-1],
+            "ontology": r["ontology"]["value"],
+            "count": int(r["count"]["value"])
+        } for r in results_obj if "ontology" in r])
 
-    # --- Delta calculation ---
-    df_delta = df_obj.copy()
-    df_delta["count"] = df_delta.groupby("ontology")["count"].diff().fillna(0)
+        if df_obj.empty:
+            logger.warning("Biological object annotations DataFrame is empty")
+            return (
+                create_fallback_plot("Biological Object Annotations by Ontology Over Time", "No data available"),
+                create_fallback_plot("Change in Biological Object Annotations by Ontology", "No data available")
+            )
 
-    fig_delta = px.bar(
-        df_delta,
-        x="version",
-        y="count",
-        color="ontology",
-        barmode="group",
-        title="Change in Biological Object Annotations by Ontology",
-        labels={"count": "Change in Annotated KEs", "ontology": "Ontology"},
-        color_discrete_sequence=BRAND_COLORS['palette']
-    )
-    fig_delta.update_layout(template="plotly_white", hovermode="x unified", autosize=True)
-    fig_delta.update_xaxes(tickmode='array', tickvals=df_obj["version"], ticktext=df_obj["version"], tickangle=-45)
+        df_obj["version_dt"] = pd.to_datetime(df_obj["version"], errors="coerce")
+        df_obj = df_obj.sort_values("version_dt").drop(columns="version_dt")
 
-    # Cache data for CSV export
-    _plot_data_cache['biological_object_annotations_absolute'] = df_obj.copy()
-    _plot_data_cache['biological_object_annotations_delta'] = df_delta.copy()
+        # --- Absolute bar chart ---
+        fig_abs = px.bar(
+            df_obj,
+            x="version",
+            y="count",
+            color="ontology",
+            barmode="group",
+            title="Biological Object Annotations by Ontology Over Time",
+            labels={"count": "Annotated KEs", "ontology": "Ontology"},
+            color_discrete_sequence=BRAND_COLORS['palette']
+        )
+        fig_abs.update_layout(template="plotly_white", hovermode="x unified", autosize=True)
+        fig_abs.update_xaxes(tickmode='array', tickvals=df_obj["version"], ticktext=df_obj["version"], tickangle=-45)
 
-    # Cache figures for image export
-    _plot_figure_cache['biological_object_annotations_absolute'] = fig_abs
-    _plot_figure_cache['biological_object_annotations_delta'] = fig_delta
+        # --- Delta calculation ---
+        df_delta = df_obj.copy()
+        df_delta["count"] = df_delta.groupby("ontology")["count"].diff().fillna(0)
 
-    return (
-        pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config={"responsive": True}),
-        pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config={"responsive": True})
-    )
+        fig_delta = px.bar(
+            df_delta,
+            x="version",
+            y="count",
+            color="ontology",
+            barmode="group",
+            title="Change in Biological Object Annotations by Ontology",
+            labels={"count": "Change in Annotated KEs", "ontology": "Ontology"},
+            color_discrete_sequence=BRAND_COLORS['palette']
+        )
+        fig_delta.update_layout(template="plotly_white", hovermode="x unified", autosize=True)
+        fig_delta.update_xaxes(tickmode='array', tickvals=df_obj["version"], ticktext=df_obj["version"], tickangle=-45)
+
+        # Cache data for CSV export
+        _plot_data_cache['biological_object_annotations_absolute'] = df_obj.copy()
+        _plot_data_cache['biological_object_annotations_delta'] = df_delta.copy()
+
+        # Cache figures for image export
+        _plot_figure_cache['biological_object_annotations_absolute'] = fig_abs
+        _plot_figure_cache['biological_object_annotations_delta'] = fig_delta
+
+        return (
+            pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config={"responsive": True}),
+            pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config={"responsive": True})
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to generate biological object annotation plots: {str(e)}")
+        return (
+            create_fallback_plot("Biological Object Annotations by Ontology Over Time", str(e)),
+            create_fallback_plot("Change in Biological Object Annotations by Ontology", str(e))
+        )
 
 
 def plot_aop_property_presence(label_file="property_labels.csv") -> tuple[str, str]:
@@ -1145,174 +1375,201 @@ def plot_aop_property_presence(label_file="property_labels.csv") -> tuple[str, s
     """
     global _plot_data_cache, _plot_figure_cache
 
-    query_props = """
-    SELECT ?graph ?p (COUNT(DISTINCT ?AOP) AS ?count)
-    WHERE {
-      GRAPH ?graph {
-        ?AOP a aopo:AdverseOutcomePathway ;
-             ?p ?o .
-      }
-      FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-    }
-    GROUP BY ?graph ?p
-    ORDER BY ?graph ?p
-    """
-
-    query_total = """
-    SELECT ?graph (COUNT(DISTINCT ?AOP) AS ?total)
-    WHERE {
-      GRAPH ?graph {
-        ?AOP a aopo:AdverseOutcomePathway .
-      }
-      FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-    }
-    GROUP BY ?graph
-    ORDER BY ?graph
-    """
-
-    results_props = run_sparql_query(query_props)
-    results_total = run_sparql_query(query_total)
-
-    df_props = pd.DataFrame([{
-        "version": r["graph"]["value"].split("/")[-1],
-        "property": r["p"]["value"],
-        "count": int(r["count"]["value"])
-    } for r in results_props])
-
-    df_total = pd.DataFrame([{
-        "version": r["graph"]["value"].split("/")[-1],
-        "total_aops": int(r["total"]["value"])
-    } for r in results_total])
-
-    # Merge
-    df = df_props.merge(df_total, on="version", how="left")
-    df["percentage"] = (df["count"] / df["total_aops"]) * 100
-
-    # Remove properties that are 100% in all versions
-    props_to_keep = (
-        df.groupby("property")["percentage"]
-          .max()
-          .loc[lambda x: x < 100]
-          .index
-    )
-    df = df[df["property"].isin(props_to_keep)]
-
-    # Ensure complete data: fill missing property-version combinations with 0
-    if not df.empty:
-        all_versions = sorted(df['version'].unique())
-        all_props = sorted(df['property'].unique())
-        complete_index = pd.MultiIndex.from_product(
-            [all_versions, all_props],
-            names=['version', 'property']
-        )
-        df_complete = df.set_index(['version', 'property']).reindex(complete_index, fill_value=0).reset_index()
-
-        # Merge with totals to get proper totals for each version
-        df_complete = df_complete.merge(df_total, on="version", how="left")
-
-        # Find the total column name (total_aops, total_kes, total_kers, or total_stressors)
-        total_col = [col for col in df_complete.columns if col.startswith('total_')][0]
-
-        # Recalculate percentage with the correct total column
-        df_complete["percentage"] = (df_complete["count"] / df_complete[total_col]) * 100
-
-        # Preserve display_label if it exists, otherwise will be added later
-        if 'display_label' in df.columns:
-            label_map = df[['property', 'display_label']].drop_duplicates().set_index('property')['display_label'].to_dict()
-            df_complete['display_label'] = df_complete['property'].map(label_map)
-
-        df = df_complete
-
-    # Label mapping with safe file reading
-    default_labels = [
-        {"uri": "http://purl.org/dc/elements/1.1/title", "label": "Title", "type": "Essential"},
-        {"uri": "http://purl.org/dc/elements/1.1/creator", "label": "Creator", "type": "Metadata"}
-    ]
-    df_labels = safe_read_csv(label_file, default_labels)
-
-    if not df_labels.empty:
-        df = df.merge(df_labels, how="left", left_on="property", right_on="uri")
-        df["display_label"] = df["label"].fillna(df["property"])
-    else:
-        df["display_label"] = df["property"]
-
-    # Sort
-    df["version_dt"] = pd.to_datetime(df["version"], errors="coerce")
-    df = df.sort_values("version_dt")
-
-    # Cache data for CSV export
-    _plot_data_cache['aop_property_presence_absolute'] = df.copy()
-    _plot_data_cache['aop_property_presence_percentage'] = df.copy()
-
-    # Define marker shapes for visual distinction
-    marker_symbols = ['circle', 'square', 'diamond', 'triangle-up', 'cross', 'x', 'star',
-                      'pentagon', 'hexagon', 'octagon', 'triangle-down', 'triangle-left', 'triangle-right']
-
-    # Absolute presence
-    fig_abs = px.line(
-        df,
-        x="version",
-        y="count",
-        color="display_label",
-        markers=True,
-        title="Property Presence in AOPs Over Time (Count)",
-        labels={"count": "Number of AOPs", "display_label": "Property"},
-        color_discrete_sequence=BRAND_COLORS['palette']
-    )
-
-    # Apply marker shapes to traces
-    for i, trace in enumerate(fig_abs.data):
-        trace.update(marker=dict(symbol=marker_symbols[i % len(marker_symbols)], size=8))
-
-    fig_abs.update_layout(
-        template="plotly_white",
-        hovermode="x unified",
-        autosize=True,
-        margin=dict(l=50, r=20, t=50, b=50)
-    )
-
-    # Percentage presence
-    fig_delta = px.line(
-        df,
-        x="version",
-        y="percentage",
-        color="display_label",
-        markers=True,
-        title="Property Presence in AOPs Over Time (Percentage)",
-        labels={"percentage": "Percentage (%)", "display_label": "Property"},
-        color_discrete_sequence=BRAND_COLORS['palette']
-    )
-
-    # Apply marker shapes to traces
-    for i, trace in enumerate(fig_delta.data):
-        trace.update(marker=dict(symbol=marker_symbols[i % len(marker_symbols)], size=8))
-
-    fig_delta.update_layout(
-        template="plotly_white",
-        hovermode="x unified",
-        autosize=True,
-        margin=dict(l=50, r=20, t=50, b=50)
-    )
-
-    config = {
-        "responsive": True,
-        "toImageButtonOptions": {
-            "format": "png",
-            "filename": "aop_property_presence",
-            "height": 1000,
-            "width": 1600,
-            "scale": 4
+    try:
+        query_props = """
+        SELECT ?graph ?p (COUNT(DISTINCT ?AOP) AS ?count)
+        WHERE {
+          GRAPH ?graph {
+            ?AOP a aopo:AdverseOutcomePathway ;
+                 ?p ?o .
+          }
+          FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
         }
-    }
+        GROUP BY ?graph ?p
+        ORDER BY ?graph ?p
+        """
 
-    # Cache figures for image export
-    _plot_figure_cache['aop_property_presence_absolute'] = fig_abs
-    _plot_figure_cache['aop_property_presence_percentage'] = fig_delta
+        query_total = """
+        SELECT ?graph (COUNT(DISTINCT ?AOP) AS ?total)
+        WHERE {
+          GRAPH ?graph {
+            ?AOP a aopo:AdverseOutcomePathway .
+          }
+          FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        GROUP BY ?graph
+        ORDER BY ?graph
+        """
 
-    return (
-        pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config=config),
-        pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config=config)
-    )
+        results_props = run_sparql_query(query_props)
+        results_total = run_sparql_query(query_total)
+
+        if not results_props or not results_total:
+            logger.warning("AOP property presence query returned no results")
+            return (
+                create_fallback_plot("Property Presence in AOPs Over Time (Count)", "No data available"),
+                create_fallback_plot("Property Presence in AOPs Over Time (Percentage)", "No data available")
+            )
+
+        df_props = pd.DataFrame([{
+            "version": r["graph"]["value"].split("/")[-1],
+            "property": r["p"]["value"],
+            "count": int(r["count"]["value"])
+        } for r in results_props])
+
+        df_total = pd.DataFrame([{
+            "version": r["graph"]["value"].split("/")[-1],
+            "total_aops": int(r["total"]["value"])
+        } for r in results_total])
+
+        if df_props.empty or df_total.empty:
+            logger.warning("AOP property presence DataFrames are empty")
+            return (
+                create_fallback_plot("Property Presence in AOPs Over Time (Count)", "No data available"),
+                create_fallback_plot("Property Presence in AOPs Over Time (Percentage)", "No data available")
+            )
+
+        # Merge
+        df = df_props.merge(df_total, on="version", how="left")
+        # Guard against division by zero in percentage calculation
+        df["percentage"] = df.apply(
+            lambda row: (row["count"] / row["total_aops"]) * 100 if row["total_aops"] > 0 else 0, axis=1
+        )
+
+        # Remove properties that are 100% in all versions
+        props_to_keep = (
+            df.groupby("property")["percentage"]
+              .max()
+              .loc[lambda x: x < 100]
+              .index
+        )
+        df = df[df["property"].isin(props_to_keep)]
+
+        # Ensure complete data: fill missing property-version combinations with 0
+        if not df.empty:
+            all_versions = sorted(df['version'].unique())
+            all_props = sorted(df['property'].unique())
+            complete_index = pd.MultiIndex.from_product(
+                [all_versions, all_props],
+                names=['version', 'property']
+            )
+            df_complete = df.set_index(['version', 'property']).reindex(complete_index, fill_value=0).reset_index()
+
+            # Merge with totals to get proper totals for each version
+            df_complete = df_complete.merge(df_total, on="version", how="left")
+
+            # Find the total column name (total_aops, total_kes, total_kers, or total_stressors)
+            total_col = [col for col in df_complete.columns if col.startswith('total_')][0]
+
+            # Recalculate percentage with the correct total column, guarding division by zero
+            df_complete["percentage"] = df_complete.apply(
+                lambda row: (row["count"] / row[total_col]) * 100 if row[total_col] > 0 else 0, axis=1
+            )
+
+            # Preserve display_label if it exists, otherwise will be added later
+            if 'display_label' in df.columns:
+                label_map = df[['property', 'display_label']].drop_duplicates().set_index('property')['display_label'].to_dict()
+                df_complete['display_label'] = df_complete['property'].map(label_map)
+
+            df = df_complete
+
+        # Label mapping with safe file reading
+        default_labels = [
+            {"uri": "http://purl.org/dc/elements/1.1/title", "label": "Title", "type": "Essential"},
+            {"uri": "http://purl.org/dc/elements/1.1/creator", "label": "Creator", "type": "Metadata"}
+        ]
+        df_labels = safe_read_csv(label_file, default_labels)
+
+        if not df_labels.empty:
+            df = df.merge(df_labels, how="left", left_on="property", right_on="uri")
+            df["display_label"] = df["label"].fillna(df["property"])
+        else:
+            df["display_label"] = df["property"]
+
+        # Sort
+        df["version_dt"] = pd.to_datetime(df["version"], errors="coerce")
+        df = df.sort_values("version_dt")
+
+        # Cache data for CSV export
+        _plot_data_cache['aop_property_presence_absolute'] = df.copy()
+        _plot_data_cache['aop_property_presence_percentage'] = df.copy()
+
+        # Define marker shapes for visual distinction
+        marker_symbols = ['circle', 'square', 'diamond', 'triangle-up', 'cross', 'x', 'star',
+                          'pentagon', 'hexagon', 'octagon', 'triangle-down', 'triangle-left', 'triangle-right']
+
+        # Absolute presence
+        fig_abs = px.line(
+            df,
+            x="version",
+            y="count",
+            color="display_label",
+            markers=True,
+            title="Property Presence in AOPs Over Time (Count)",
+            labels={"count": "Number of AOPs", "display_label": "Property"},
+            color_discrete_sequence=BRAND_COLORS['palette']
+        )
+
+        # Apply marker shapes to traces
+        for i, trace in enumerate(fig_abs.data):
+            trace.update(marker=dict(symbol=marker_symbols[i % len(marker_symbols)], size=8))
+
+        fig_abs.update_layout(
+            template="plotly_white",
+            hovermode="x unified",
+            autosize=True,
+            margin=dict(l=50, r=20, t=50, b=50)
+        )
+
+        # Percentage presence
+        fig_delta = px.line(
+            df,
+            x="version",
+            y="percentage",
+            color="display_label",
+            markers=True,
+            title="Property Presence in AOPs Over Time (Percentage)",
+            labels={"percentage": "Percentage (%)", "display_label": "Property"},
+            color_discrete_sequence=BRAND_COLORS['palette']
+        )
+
+        # Apply marker shapes to traces
+        for i, trace in enumerate(fig_delta.data):
+            trace.update(marker=dict(symbol=marker_symbols[i % len(marker_symbols)], size=8))
+
+        fig_delta.update_layout(
+            template="plotly_white",
+            hovermode="x unified",
+            autosize=True,
+            margin=dict(l=50, r=20, t=50, b=50)
+        )
+
+        config = {
+            "responsive": True,
+            "toImageButtonOptions": {
+                "format": "png",
+                "filename": "aop_property_presence",
+                "height": 1000,
+                "width": 1600,
+                "scale": 4
+            }
+        }
+
+        # Cache figures for image export
+        _plot_figure_cache['aop_property_presence_absolute'] = fig_abs
+        _plot_figure_cache['aop_property_presence_percentage'] = fig_delta
+
+        return (
+            pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config=config),
+            pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config=config)
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to generate AOP property presence plots: {str(e)}")
+        return (
+            create_fallback_plot("Property Presence in AOPs Over Time (Count)", str(e)),
+            create_fallback_plot("Property Presence in AOPs Over Time (Percentage)", str(e))
+        )
 
 
 def plot_ke_property_presence(label_file="property_labels.csv") -> tuple[str, str]:
@@ -1323,165 +1580,147 @@ def plot_ke_property_presence(label_file="property_labels.csv") -> tuple[str, st
     """
     global _plot_data_cache, _plot_figure_cache
 
-    query_props = """
-    SELECT ?graph ?p (COUNT(DISTINCT ?ke) AS ?count)
-    WHERE {
-      GRAPH ?graph {
-        ?ke a aopo:KeyEvent ;
-             ?p ?o .
-      }
-      FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-    }
-    GROUP BY ?graph ?p
-    ORDER BY ?graph ?p
-    """
+    try:
+        query_props = """
+        SELECT ?graph ?p (COUNT(DISTINCT ?ke) AS ?count)
+        WHERE {
+          GRAPH ?graph {
+            ?ke a aopo:KeyEvent ;
+                 ?p ?o .
+          }
+          FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        GROUP BY ?graph ?p
+        ORDER BY ?graph ?p
+        """
 
-    query_total = """
-    SELECT ?graph (COUNT(DISTINCT ?ke) AS ?total)
-    WHERE {
-      GRAPH ?graph {
-        ?ke a aopo:KeyEvent .
-      }
-      FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-    }
-    GROUP BY ?graph
-    ORDER BY ?graph
-    """
+        query_total = """
+        SELECT ?graph (COUNT(DISTINCT ?ke) AS ?total)
+        WHERE {
+          GRAPH ?graph {
+            ?ke a aopo:KeyEvent .
+          }
+          FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        GROUP BY ?graph
+        ORDER BY ?graph
+        """
 
-    results_props = run_sparql_query(query_props)
-    results_total = run_sparql_query(query_total)
+        results_props = run_sparql_query(query_props)
+        results_total = run_sparql_query(query_total)
 
-    df_props = pd.DataFrame([{
-        "version": r["graph"]["value"].split("/")[-1],
-        "property": r["p"]["value"],
-        "count": int(r["count"]["value"])
-    } for r in results_props])
+        if not results_props or not results_total:
+            logger.warning("KE property presence query returned no results")
+            return (
+                create_fallback_plot("Property Presence in Key Events Over Time (Count)", "No data available"),
+                create_fallback_plot("Property Presence in Key Events Over Time (Percentage)", "No data available")
+            )
 
-    df_total = pd.DataFrame([{
-        "version": r["graph"]["value"].split("/")[-1],
-        "total_kes": int(r["total"]["value"])
-    } for r in results_total])
+        df_props = pd.DataFrame([{
+            "version": r["graph"]["value"].split("/")[-1],
+            "property": r["p"]["value"],
+            "count": int(r["count"]["value"])
+        } for r in results_props])
 
-    # Merge
-    df = df_props.merge(df_total, on="version", how="left")
-    df["percentage"] = (df["count"] / df["total_kes"]) * 100
+        df_total = pd.DataFrame([{
+            "version": r["graph"]["value"].split("/")[-1],
+            "total_kes": int(r["total"]["value"])
+        } for r in results_total])
 
-    # Remove properties that are 100% in all versions
-    props_to_keep = (
-        df.groupby("property")["percentage"]
-          .max()
-          .loc[lambda x: x < 100]
-          .index
-    )
-    df = df[df["property"].isin(props_to_keep)]
+        if df_props.empty or df_total.empty:
+            return (
+                create_fallback_plot("Property Presence in Key Events Over Time (Count)", "No data available"),
+                create_fallback_plot("Property Presence in Key Events Over Time (Percentage)", "No data available")
+            )
 
-    # Ensure complete data: fill missing property-version combinations with 0
-    if not df.empty:
-        all_versions = sorted(df['version'].unique())
-        all_props = sorted(df['property'].unique())
-        complete_index = pd.MultiIndex.from_product(
-            [all_versions, all_props],
-            names=['version', 'property']
+        # Merge
+        df = df_props.merge(df_total, on="version", how="left")
+        df["percentage"] = df.apply(
+            lambda row: (row["count"] / row["total_kes"]) * 100 if row["total_kes"] > 0 else 0, axis=1
         )
-        df_complete = df.set_index(['version', 'property']).reindex(complete_index, fill_value=0).reset_index()
 
-        # Merge with totals to get proper totals for each version
-        df_complete = df_complete.merge(df_total, on="version", how="left")
+        # Remove properties that are 100% in all versions
+        props_to_keep = (
+            df.groupby("property")["percentage"]
+              .max()
+              .loc[lambda x: x < 100]
+              .index
+        )
+        df = df[df["property"].isin(props_to_keep)]
 
-        # Find the total column name (total_aops, total_kes, total_kers, or total_stressors)
-        total_col = [col for col in df_complete.columns if col.startswith('total_')][0]
+        # Ensure complete data: fill missing property-version combinations with 0
+        if not df.empty:
+            all_versions = sorted(df['version'].unique())
+            all_props = sorted(df['property'].unique())
+            complete_index = pd.MultiIndex.from_product(
+                [all_versions, all_props],
+                names=['version', 'property']
+            )
+            df_complete = df.set_index(['version', 'property']).reindex(complete_index, fill_value=0).reset_index()
+            df_complete = df_complete.merge(df_total, on="version", how="left")
+            total_col = [col for col in df_complete.columns if col.startswith('total_')][0]
+            df_complete["percentage"] = df_complete.apply(
+                lambda row: (row["count"] / row[total_col]) * 100 if row[total_col] > 0 else 0, axis=1
+            )
+            if 'display_label' in df.columns:
+                label_map = df[['property', 'display_label']].drop_duplicates().set_index('property')['display_label'].to_dict()
+                df_complete['display_label'] = df_complete['property'].map(label_map)
+            df = df_complete
 
-        # Recalculate percentage with the correct total column
-        df_complete["percentage"] = (df_complete["count"] / df_complete[total_col]) * 100
+        # Label mapping with safe file reading
+        default_labels = [
+            {"uri": "http://purl.org/dc/elements/1.1/title", "label": "Title", "type": "Essential"},
+            {"uri": "http://purl.org/dc/elements/1.1/creator", "label": "Creator", "type": "Metadata"}
+        ]
+        df_labels = safe_read_csv(label_file, default_labels)
+        if not df_labels.empty:
+            df = df.merge(df_labels, how="left", left_on="property", right_on="uri")
+            df["display_label"] = df["label"].fillna(df["property"])
+        else:
+            df["display_label"] = df["property"]
 
-        # Preserve display_label if it exists, otherwise will be added later
-        if 'display_label' in df.columns:
-            label_map = df[['property', 'display_label']].drop_duplicates().set_index('property')['display_label'].to_dict()
-            df_complete['display_label'] = df_complete['property'].map(label_map)
+        df["version_dt"] = pd.to_datetime(df["version"], errors="coerce")
+        df = df.sort_values("version_dt")
 
-        df = df_complete
+        _plot_data_cache['ke_property_presence_absolute'] = df.copy()
+        _plot_data_cache['ke_property_presence_percentage'] = df.copy()
 
-    # Label mapping with safe file reading
-    default_labels = [
-        {"uri": "http://purl.org/dc/elements/1.1/title", "label": "Title", "type": "Essential"},
-        {"uri": "http://purl.org/dc/elements/1.1/creator", "label": "Creator", "type": "Metadata"}
-    ]
-    df_labels = safe_read_csv(label_file, default_labels)
+        marker_symbols = ['circle', 'square', 'diamond', 'triangle-up', 'cross', 'x', 'star',
+                          'pentagon', 'hexagon', 'octagon', 'triangle-down', 'triangle-left', 'triangle-right']
 
-    if not df_labels.empty:
-        df = df.merge(df_labels, how="left", left_on="property", right_on="uri")
-        df["display_label"] = df["label"].fillna(df["property"])
-    else:
-        df["display_label"] = df["property"]
+        fig_abs = px.line(df, x="version", y="count", color="display_label", markers=True,
+                          title="Property Presence in Key Events Over Time (Count)",
+                          labels={"count": "Number of KEs", "display_label": "Property"},
+                          color_discrete_sequence=BRAND_COLORS['palette'])
+        for i, trace in enumerate(fig_abs.data):
+            trace.update(marker=dict(symbol=marker_symbols[i % len(marker_symbols)], size=8))
+        fig_abs.update_layout(template="plotly_white", hovermode="x unified", autosize=True,
+                              margin=dict(l=50, r=20, t=50, b=50))
 
-    # Sort
-    df["version_dt"] = pd.to_datetime(df["version"], errors="coerce")
-    df = df.sort_values("version_dt")
+        fig_delta = px.line(df, x="version", y="percentage", color="display_label", markers=True,
+                            title="Property Presence in Key Events Over Time (Percentage)",
+                            labels={"percentage": "Percentage (%)", "display_label": "Property"},
+                            color_discrete_sequence=BRAND_COLORS['palette'])
+        for i, trace in enumerate(fig_delta.data):
+            trace.update(marker=dict(symbol=marker_symbols[i % len(marker_symbols)], size=8))
+        fig_delta.update_layout(template="plotly_white", hovermode="x unified", autosize=True,
+                                margin=dict(l=50, r=20, t=50, b=50))
 
-    # Cache data for CSV export
-    _plot_data_cache['ke_property_presence_absolute'] = df.copy()
-    _plot_data_cache['ke_property_presence_percentage'] = df.copy()
+        config = {"responsive": True}
+        _plot_figure_cache['ke_property_presence_absolute'] = fig_abs
+        _plot_figure_cache['ke_property_presence_percentage'] = fig_delta
 
-    # Define marker shapes for visual distinction
-    marker_symbols = ['circle', 'square', 'diamond', 'triangle-up', 'cross', 'x', 'star',
-                      'pentagon', 'hexagon', 'octagon', 'triangle-down', 'triangle-left', 'triangle-right']
+        return (
+            pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config=config),
+            pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config=config)
+        )
 
-    # Absolute presence
-    fig_abs = px.line(
-        df,
-        x="version",
-        y="count",
-        color="display_label",
-        markers=True,
-        title="Property Presence in Key Events Over Time (Count)",
-        labels={"count": "Number of KEs", "display_label": "Property"},
-        color_discrete_sequence=BRAND_COLORS['palette']
-    )
-
-    # Apply marker shapes to traces
-    for i, trace in enumerate(fig_abs.data):
-        trace.update(marker=dict(symbol=marker_symbols[i % len(marker_symbols)], size=8))
-
-    fig_abs.update_layout(
-        template="plotly_white",
-        hovermode="x unified",
-        autosize=True,
-        margin=dict(l=50, r=20, t=50, b=50)
-    )
-
-    # Percentage presence
-    fig_delta = px.line(
-        df,
-        x="version",
-        y="percentage",
-        color="display_label",
-        markers=True,
-        title="Property Presence in Key Events Over Time (Percentage)",
-        labels={"percentage": "Percentage (%)", "display_label": "Property"},
-        color_discrete_sequence=BRAND_COLORS['palette']
-    )
-
-    # Apply marker shapes to traces
-    for i, trace in enumerate(fig_delta.data):
-        trace.update(marker=dict(symbol=marker_symbols[i % len(marker_symbols)], size=8))
-
-    fig_delta.update_layout(
-        template="plotly_white",
-        hovermode="x unified",
-        autosize=True,
-        margin=dict(l=50, r=20, t=50, b=50)
-    )
-
-    config = {"responsive": True}
-
-    # Cache figures for image export
-    _plot_figure_cache['ke_property_presence_absolute'] = fig_abs
-    _plot_figure_cache['ke_property_presence_percentage'] = fig_delta
-
-    return (
-        pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config=config),
-        pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config=config)
-    )
+    except Exception as e:
+        logger.error(f"Failed to generate KE property presence plots: {str(e)}")
+        return (
+            create_fallback_plot("Property Presence in Key Events Over Time (Count)", str(e)),
+            create_fallback_plot("Property Presence in Key Events Over Time (Percentage)", str(e))
+        )
 
 
 def plot_ker_property_presence(label_file="property_labels.csv") -> tuple[str, str]:
@@ -1492,165 +1731,123 @@ def plot_ker_property_presence(label_file="property_labels.csv") -> tuple[str, s
     """
     global _plot_data_cache, _plot_figure_cache
 
-    query_props = """
-    SELECT ?graph ?p (COUNT(DISTINCT ?ker) AS ?count)
-    WHERE {
-      GRAPH ?graph {
-        ?ker a aopo:KeyEventRelationship ;
-             ?p ?o .
-      }
-      FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-    }
-    GROUP BY ?graph ?p
-    ORDER BY ?graph ?p
-    """
+    try:
+        results_props = run_sparql_query("""
+        SELECT ?graph ?p (COUNT(DISTINCT ?ker) AS ?count)
+        WHERE {
+          GRAPH ?graph { ?ker a aopo:KeyEventRelationship ; ?p ?o . }
+          FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        GROUP BY ?graph ?p ORDER BY ?graph ?p
+        """)
+        results_total = run_sparql_query("""
+        SELECT ?graph (COUNT(DISTINCT ?ker) AS ?total)
+        WHERE {
+          GRAPH ?graph { ?ker a aopo:KeyEventRelationship . }
+          FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        GROUP BY ?graph ORDER BY ?graph
+        """)
 
-    query_total = """
-    SELECT ?graph (COUNT(DISTINCT ?ker) AS ?total)
-    WHERE {
-      GRAPH ?graph {
-        ?ker a aopo:KeyEventRelationship .
-      }
-      FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-    }
-    GROUP BY ?graph
-    ORDER BY ?graph
-    """
+        if not results_props or not results_total:
+            logger.warning("KER property presence query returned no results")
+            return (
+                create_fallback_plot("Property Presence in Key Event Relationships Over Time (Count)", "No data available"),
+                create_fallback_plot("Property Presence in Key Event Relationships Over Time (Percentage)", "No data available")
+            )
 
-    results_props = run_sparql_query(query_props)
-    results_total = run_sparql_query(query_total)
+        df_props = pd.DataFrame([{
+            "version": r["graph"]["value"].split("/")[-1],
+            "property": r["p"]["value"],
+            "count": int(r["count"]["value"])
+        } for r in results_props])
+        df_total = pd.DataFrame([{
+            "version": r["graph"]["value"].split("/")[-1],
+            "total_kers": int(r["total"]["value"])
+        } for r in results_total])
 
-    df_props = pd.DataFrame([{
-        "version": r["graph"]["value"].split("/")[-1],
-        "property": r["p"]["value"],
-        "count": int(r["count"]["value"])
-    } for r in results_props])
+        if df_props.empty or df_total.empty:
+            return (
+                create_fallback_plot("Property Presence in Key Event Relationships Over Time (Count)", "No data available"),
+                create_fallback_plot("Property Presence in Key Event Relationships Over Time (Percentage)", "No data available")
+            )
 
-    df_total = pd.DataFrame([{
-        "version": r["graph"]["value"].split("/")[-1],
-        "total_kers": int(r["total"]["value"])
-    } for r in results_total])
-
-    # Merge
-    df = df_props.merge(df_total, on="version", how="left")
-    df["percentage"] = (df["count"] / df["total_kers"]) * 100
-
-    # Remove properties that are 100% in all versions
-    props_to_keep = (
-        df.groupby("property")["percentage"]
-          .max()
-          .loc[lambda x: x < 100]
-          .index
-    )
-    df = df[df["property"].isin(props_to_keep)]
-
-    # Ensure complete data: fill missing property-version combinations with 0
-    if not df.empty:
-        all_versions = sorted(df['version'].unique())
-        all_props = sorted(df['property'].unique())
-        complete_index = pd.MultiIndex.from_product(
-            [all_versions, all_props],
-            names=['version', 'property']
+        df = df_props.merge(df_total, on="version", how="left")
+        df["percentage"] = df.apply(
+            lambda row: (row["count"] / row["total_kers"]) * 100 if row["total_kers"] > 0 else 0, axis=1
         )
-        df_complete = df.set_index(['version', 'property']).reindex(complete_index, fill_value=0).reset_index()
 
-        # Merge with totals to get proper totals for each version
-        df_complete = df_complete.merge(df_total, on="version", how="left")
+        props_to_keep = df.groupby("property")["percentage"].max().loc[lambda x: x < 100].index
+        df = df[df["property"].isin(props_to_keep)]
 
-        # Find the total column name (total_aops, total_kes, total_kers, or total_stressors)
-        total_col = [col for col in df_complete.columns if col.startswith('total_')][0]
+        if not df.empty:
+            all_versions = sorted(df['version'].unique())
+            all_props = sorted(df['property'].unique())
+            complete_index = pd.MultiIndex.from_product([all_versions, all_props], names=['version', 'property'])
+            df_complete = df.set_index(['version', 'property']).reindex(complete_index, fill_value=0).reset_index()
+            df_complete = df_complete.merge(df_total, on="version", how="left")
+            total_col = [col for col in df_complete.columns if col.startswith('total_')][0]
+            df_complete["percentage"] = df_complete.apply(
+                lambda row: (row["count"] / row[total_col]) * 100 if row[total_col] > 0 else 0, axis=1
+            )
+            if 'display_label' in df.columns:
+                label_map = df[['property', 'display_label']].drop_duplicates().set_index('property')['display_label'].to_dict()
+                df_complete['display_label'] = df_complete['property'].map(label_map)
+            df = df_complete
 
-        # Recalculate percentage with the correct total column
-        df_complete["percentage"] = (df_complete["count"] / df_complete[total_col]) * 100
+        default_labels = [
+            {"uri": "http://purl.org/dc/elements/1.1/title", "label": "Title", "type": "Essential"},
+            {"uri": "http://purl.org/dc/elements/1.1/creator", "label": "Creator", "type": "Metadata"}
+        ]
+        df_labels = safe_read_csv(label_file, default_labels)
+        if not df_labels.empty:
+            df = df.merge(df_labels, how="left", left_on="property", right_on="uri")
+            df["display_label"] = df["label"].fillna(df["property"])
+        else:
+            df["display_label"] = df["property"]
 
-        # Preserve display_label if it exists, otherwise will be added later
-        if 'display_label' in df.columns:
-            label_map = df[['property', 'display_label']].drop_duplicates().set_index('property')['display_label'].to_dict()
-            df_complete['display_label'] = df_complete['property'].map(label_map)
+        df["version_dt"] = pd.to_datetime(df["version"], errors="coerce")
+        df = df.sort_values("version_dt")
 
-        df = df_complete
+        _plot_data_cache['ker_property_presence_absolute'] = df.copy()
+        _plot_data_cache['ker_property_presence_percentage'] = df.copy()
 
-    # Label mapping with safe file reading
-    default_labels = [
-        {"uri": "http://purl.org/dc/elements/1.1/title", "label": "Title", "type": "Essential"},
-        {"uri": "http://purl.org/dc/elements/1.1/creator", "label": "Creator", "type": "Metadata"}
-    ]
-    df_labels = safe_read_csv(label_file, default_labels)
+        marker_symbols = ['circle', 'square', 'diamond', 'triangle-up', 'cross', 'x', 'star',
+                          'pentagon', 'hexagon', 'octagon', 'triangle-down', 'triangle-left', 'triangle-right']
 
-    if not df_labels.empty:
-        df = df.merge(df_labels, how="left", left_on="property", right_on="uri")
-        df["display_label"] = df["label"].fillna(df["property"])
-    else:
-        df["display_label"] = df["property"]
+        fig_abs = px.line(df, x="version", y="count", color="display_label", markers=True,
+                          title="Property Presence in Key Event Relationships Over Time (Count)",
+                          labels={"count": "Number of KERs", "display_label": "Property"},
+                          color_discrete_sequence=BRAND_COLORS['palette'])
+        for i, trace in enumerate(fig_abs.data):
+            trace.update(marker=dict(symbol=marker_symbols[i % len(marker_symbols)], size=8))
+        fig_abs.update_layout(template="plotly_white", hovermode="x unified", autosize=True,
+                              margin=dict(l=50, r=20, t=50, b=50))
 
-    # Sort
-    df["version_dt"] = pd.to_datetime(df["version"], errors="coerce")
-    df = df.sort_values("version_dt")
+        fig_delta = px.line(df, x="version", y="percentage", color="display_label", markers=True,
+                            title="Property Presence in Key Event Relationships Over Time (Percentage)",
+                            labels={"percentage": "Percentage (%)", "display_label": "Property"},
+                            color_discrete_sequence=BRAND_COLORS['palette'])
+        for i, trace in enumerate(fig_delta.data):
+            trace.update(marker=dict(symbol=marker_symbols[i % len(marker_symbols)], size=8))
+        fig_delta.update_layout(template="plotly_white", hovermode="x unified", autosize=True,
+                                margin=dict(l=50, r=20, t=50, b=50))
 
-    # Cache data for CSV export
-    _plot_data_cache['ker_property_presence_absolute'] = df.copy()
-    _plot_data_cache['ker_property_presence_percentage'] = df.copy()
+        config = {"responsive": True}
+        _plot_figure_cache['ker_property_presence_absolute'] = fig_abs
+        _plot_figure_cache['ker_property_presence_percentage'] = fig_delta
 
-    # Define marker shapes for visual distinction
-    marker_symbols = ['circle', 'square', 'diamond', 'triangle-up', 'cross', 'x', 'star',
-                      'pentagon', 'hexagon', 'octagon', 'triangle-down', 'triangle-left', 'triangle-right']
+        return (
+            pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config=config),
+            pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config=config)
+        )
 
-    # Absolute presence
-    fig_abs = px.line(
-        df,
-        x="version",
-        y="count",
-        color="display_label",
-        markers=True,
-        title="Property Presence in Key Event Relationships Over Time (Count)",
-        labels={"count": "Number of KERs", "display_label": "Property"},
-        color_discrete_sequence=BRAND_COLORS['palette']
-    )
-
-    # Apply marker shapes to traces
-    for i, trace in enumerate(fig_abs.data):
-        trace.update(marker=dict(symbol=marker_symbols[i % len(marker_symbols)], size=8))
-
-    fig_abs.update_layout(
-        template="plotly_white",
-        hovermode="x unified",
-        autosize=True,
-        margin=dict(l=50, r=20, t=50, b=50)
-    )
-
-    # Percentage presence
-    fig_delta = px.line(
-        df,
-        x="version",
-        y="percentage",
-        color="display_label",
-        markers=True,
-        title="Property Presence in Key Event Relationships Over Time (Percentage)",
-        labels={"percentage": "Percentage (%)", "display_label": "Property"},
-        color_discrete_sequence=BRAND_COLORS['palette']
-    )
-
-    # Apply marker shapes to traces
-    for i, trace in enumerate(fig_delta.data):
-        trace.update(marker=dict(symbol=marker_symbols[i % len(marker_symbols)], size=8))
-
-    fig_delta.update_layout(
-        template="plotly_white",
-        hovermode="x unified",
-        autosize=True,
-        margin=dict(l=50, r=20, t=50, b=50)
-    )
-
-    config = {"responsive": True}
-
-    # Cache figures for image export
-    _plot_figure_cache['ker_property_presence_absolute'] = fig_abs
-    _plot_figure_cache['ker_property_presence_percentage'] = fig_delta
-
-    return (
-        pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config=config),
-        pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config=config)
-    )
+    except Exception as e:
+        logger.error(f"Failed to generate KER property presence plots: {str(e)}")
+        return (
+            create_fallback_plot("Property Presence in Key Event Relationships Over Time (Count)", str(e)),
+            create_fallback_plot("Property Presence in Key Event Relationships Over Time (Percentage)", str(e))
+        )
 
 
 def plot_stressor_property_presence(label_file="property_labels.csv") -> tuple[str, str]:
@@ -1661,296 +1858,234 @@ def plot_stressor_property_presence(label_file="property_labels.csv") -> tuple[s
     """
     global _plot_data_cache, _plot_figure_cache
 
-    query_props = """
-    SELECT ?graph ?p (COUNT(DISTINCT ?s) AS ?count)
-    WHERE {
-      GRAPH ?graph {
-        ?s a nci:C54571 ;
-           ?p ?o .
-      }
-      FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-    }
-    GROUP BY ?graph ?p
-    ORDER BY ?graph ?p
-    """
+    try:
+        results_props = run_sparql_query("""
+        SELECT ?graph ?p (COUNT(DISTINCT ?s) AS ?count)
+        WHERE {
+          GRAPH ?graph { ?s a nci:C54571 ; ?p ?o . }
+          FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        GROUP BY ?graph ?p ORDER BY ?graph ?p
+        """)
+        results_total = run_sparql_query("""
+        SELECT ?graph (COUNT(DISTINCT ?s) AS ?total)
+        WHERE {
+          GRAPH ?graph { ?s a nci:C54571 . }
+          FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        GROUP BY ?graph ORDER BY ?graph
+        """)
 
-    query_total = """
-    SELECT ?graph (COUNT(DISTINCT ?s) AS ?total)
-    WHERE {
-      GRAPH ?graph {
-        ?s a nci:C54571 .
-      }
-      FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-    }
-    GROUP BY ?graph
-    ORDER BY ?graph
-    """
+        if not results_props or not results_total:
+            logger.warning("Stressor property presence query returned no results")
+            return (
+                create_fallback_plot("Property Presence in Stressors Over Time (Count)", "No data available"),
+                create_fallback_plot("Property Presence in Stressors Over Time (Percentage)", "No data available")
+            )
 
-    results_props = run_sparql_query(query_props)
-    results_total = run_sparql_query(query_total)
+        df_props = pd.DataFrame([{
+            "version": r["graph"]["value"].split("/")[-1],
+            "property": r["p"]["value"],
+            "count": int(r["count"]["value"])
+        } for r in results_props])
+        df_total = pd.DataFrame([{
+            "version": r["graph"]["value"].split("/")[-1],
+            "total_stressors": int(r["total"]["value"])
+        } for r in results_total])
 
-    df_props = pd.DataFrame([{
-        "version": r["graph"]["value"].split("/")[-1],
-        "property": r["p"]["value"],
-        "count": int(r["count"]["value"])
-    } for r in results_props])
+        if df_props.empty or df_total.empty:
+            return (
+                create_fallback_plot("Property Presence in Stressors Over Time (Count)", "No data available"),
+                create_fallback_plot("Property Presence in Stressors Over Time (Percentage)", "No data available")
+            )
 
-    df_total = pd.DataFrame([{
-        "version": r["graph"]["value"].split("/")[-1],
-        "total_stressors": int(r["total"]["value"])
-    } for r in results_total])
-
-    # Merge
-    df = df_props.merge(df_total, on="version", how="left")
-    df["percentage"] = (df["count"] / df["total_stressors"]) * 100
-
-    # Remove properties that are 100% in all versions
-    props_to_keep = (
-        df.groupby("property")["percentage"]
-          .max()
-          .loc[lambda x: x < 100]
-          .index
-    )
-    df = df[df["property"].isin(props_to_keep)]
-
-    # Ensure complete data: fill missing property-version combinations with 0
-    if not df.empty:
-        all_versions = sorted(df['version'].unique())
-        all_props = sorted(df['property'].unique())
-        complete_index = pd.MultiIndex.from_product(
-            [all_versions, all_props],
-            names=['version', 'property']
+        df = df_props.merge(df_total, on="version", how="left")
+        df["percentage"] = df.apply(
+            lambda row: (row["count"] / row["total_stressors"]) * 100 if row["total_stressors"] > 0 else 0, axis=1
         )
-        df_complete = df.set_index(['version', 'property']).reindex(complete_index, fill_value=0).reset_index()
 
-        # Merge with totals to get proper totals for each version
-        df_complete = df_complete.merge(df_total, on="version", how="left")
+        props_to_keep = df.groupby("property")["percentage"].max().loc[lambda x: x < 100].index
+        df = df[df["property"].isin(props_to_keep)]
 
-        # Find the total column name (total_aops, total_kes, total_kers, or total_stressors)
-        total_col = [col for col in df_complete.columns if col.startswith('total_')][0]
+        if not df.empty:
+            all_versions = sorted(df['version'].unique())
+            all_props = sorted(df['property'].unique())
+            complete_index = pd.MultiIndex.from_product([all_versions, all_props], names=['version', 'property'])
+            df_complete = df.set_index(['version', 'property']).reindex(complete_index, fill_value=0).reset_index()
+            df_complete = df_complete.merge(df_total, on="version", how="left")
+            total_col = [col for col in df_complete.columns if col.startswith('total_')][0]
+            df_complete["percentage"] = df_complete.apply(
+                lambda row: (row["count"] / row[total_col]) * 100 if row[total_col] > 0 else 0, axis=1
+            )
+            if 'display_label' in df.columns:
+                label_map = df[['property', 'display_label']].drop_duplicates().set_index('property')['display_label'].to_dict()
+                df_complete['display_label'] = df_complete['property'].map(label_map)
+            df = df_complete
 
-        # Recalculate percentage with the correct total column
-        df_complete["percentage"] = (df_complete["count"] / df_complete[total_col]) * 100
+        default_labels = [
+            {"uri": "http://purl.org/dc/elements/1.1/title", "label": "Title", "type": "Essential"},
+            {"uri": "http://purl.org/dc/elements/1.1/creator", "label": "Creator", "type": "Metadata"}
+        ]
+        df_labels = safe_read_csv(label_file, default_labels)
+        if not df_labels.empty:
+            df = df.merge(df_labels, how="left", left_on="property", right_on="uri")
+            df["display_label"] = df["label"].fillna(df["property"])
+        else:
+            df["display_label"] = df["property"]
 
-        # Preserve display_label if it exists, otherwise will be added later
-        if 'display_label' in df.columns:
-            label_map = df[['property', 'display_label']].drop_duplicates().set_index('property')['display_label'].to_dict()
-            df_complete['display_label'] = df_complete['property'].map(label_map)
+        df["version_dt"] = pd.to_datetime(df["version"], errors="coerce")
+        df = df.sort_values("version_dt")
 
-        df = df_complete
+        _plot_data_cache['stressor_property_presence_absolute'] = df.copy()
+        _plot_data_cache['stressor_property_presence_percentage'] = df.copy()
 
-    # Label mapping with safe file reading
-    default_labels = [
-        {"uri": "http://purl.org/dc/elements/1.1/title", "label": "Title", "type": "Essential"},
-        {"uri": "http://purl.org/dc/elements/1.1/creator", "label": "Creator", "type": "Metadata"}
-    ]
-    df_labels = safe_read_csv(label_file, default_labels)
+        marker_symbols = ['circle', 'square', 'diamond', 'triangle-up', 'cross', 'x', 'star',
+                          'pentagon', 'hexagon', 'octagon', 'triangle-down', 'triangle-left', 'triangle-right']
 
-    if not df_labels.empty:
-        df = df.merge(df_labels, how="left", left_on="property", right_on="uri")
-        df["display_label"] = df["label"].fillna(df["property"])
-    else:
-        df["display_label"] = df["property"]
+        fig_abs = px.line(df, x="version", y="count", color="display_label", markers=True,
+                          title="Property Presence in Stressors Over Time (Count)",
+                          labels={"count": "Number of Stressors", "display_label": "Property"},
+                          color_discrete_sequence=BRAND_COLORS['palette'])
+        for i, trace in enumerate(fig_abs.data):
+            trace.update(marker=dict(symbol=marker_symbols[i % len(marker_symbols)], size=8))
+        fig_abs.update_layout(template="plotly_white", hovermode="x unified", autosize=True,
+                              margin=dict(l=50, r=20, t=50, b=50))
 
-    # Sort
-    df["version_dt"] = pd.to_datetime(df["version"], errors="coerce")
-    df = df.sort_values("version_dt")
+        fig_delta = px.line(df, x="version", y="percentage", color="display_label", markers=True,
+                            title="Property Presence in Stressors Over Time (Percentage)",
+                            labels={"percentage": "Percentage (%)", "display_label": "Property"},
+                            color_discrete_sequence=BRAND_COLORS['palette'])
+        for i, trace in enumerate(fig_delta.data):
+            trace.update(marker=dict(symbol=marker_symbols[i % len(marker_symbols)], size=8))
+        fig_delta.update_layout(template="plotly_white", hovermode="x unified", autosize=True,
+                                margin=dict(l=50, r=20, t=50, b=50))
 
-    # Cache data for CSV export
-    _plot_data_cache['stressor_property_presence_absolute'] = df.copy()
-    _plot_data_cache['stressor_property_presence_percentage'] = df.copy()
+        config = {"responsive": True}
+        _plot_figure_cache['stressor_property_presence_absolute'] = fig_abs
+        _plot_figure_cache['stressor_property_presence_percentage'] = fig_delta
 
-    # Define marker shapes for visual distinction
-    marker_symbols = ['circle', 'square', 'diamond', 'triangle-up', 'cross', 'x', 'star',
-                      'pentagon', 'hexagon', 'octagon', 'triangle-down', 'triangle-left', 'triangle-right']
+        return (
+            pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config=config),
+            pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config=config)
+        )
 
-    # Absolute presence
-    fig_abs = px.line(
-        df,
-        x="version",
-        y="count",
-        color="display_label",
-        markers=True,
-        title="Property Presence in Stressors Over Time (Count)",
-        labels={"count": "Number of Stressors", "display_label": "Property"},
-        color_discrete_sequence=BRAND_COLORS['palette']
-    )
-
-    # Apply marker shapes to traces
-    for i, trace in enumerate(fig_abs.data):
-        trace.update(marker=dict(symbol=marker_symbols[i % len(marker_symbols)], size=8))
-
-    fig_abs.update_layout(
-        template="plotly_white",
-        hovermode="x unified",
-        autosize=True,
-        margin=dict(l=50, r=20, t=50, b=50)
-    )
-
-    # Percentage presence
-    fig_delta = px.line(
-        df,
-        x="version",
-        y="percentage",
-        color="display_label",
-        markers=True,
-        title="Property Presence in Stressors Over Time (Percentage)",
-        labels={"percentage": "Percentage (%)", "display_label": "Property"},
-        color_discrete_sequence=BRAND_COLORS['palette']
-    )
-
-    # Apply marker shapes to traces
-    for i, trace in enumerate(fig_delta.data):
-        trace.update(marker=dict(symbol=marker_symbols[i % len(marker_symbols)], size=8))
-
-    fig_delta.update_layout(
-        template="plotly_white",
-        hovermode="x unified",
-        autosize=True,
-        margin=dict(l=50, r=20, t=50, b=50)
-    )
-
-    config = {"responsive": True}
-
-    # Cache figures for image export
-    _plot_figure_cache['stressor_property_presence_absolute'] = fig_abs
-    _plot_figure_cache['stressor_property_presence_percentage'] = fig_delta
-
-    return (
-        pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config=config),
-        pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config=config)
-    )
+    except Exception as e:
+        logger.error(f"Failed to generate stressor property presence plots: {str(e)}")
+        return (
+            create_fallback_plot("Property Presence in Stressors Over Time (Count)", str(e)),
+            create_fallback_plot("Property Presence in Stressors Over Time (Percentage)", str(e))
+        )
 
 
 def plot_kes_by_kec_count() -> tuple[str, str]:
     """Generate KE distribution by KEC count visualization with absolute and delta views."""
     global _plot_data_cache, _plot_figure_cache
 
-    query_kec_count = """
-    PREFIX aopo: <http://aopkb.org/aop_ontology#>
-    PREFIX dc: <http://purl.org/dc/elements/1.1/>
-    PREFIX dcterms: <http://purl.org/dc/terms/>
+    try:
+        query_kec_count = """
+        PREFIX aopo: <http://aopkb.org/aop_ontology#>
+        PREFIX dc: <http://purl.org/dc/elements/1.1/>
+        PREFIX dcterms: <http://purl.org/dc/terms/>
 
-    SELECT ?graph ?bioevent_count_group
-           (COUNT(DISTINCT ?ke) AS ?total_kes)
-    WHERE {
-      GRAPH ?graph {
-        ?ke a aopo:KeyEvent .
-        OPTIONAL { ?ke aopo:hasBiologicalEvent ?bioevent . }
-        {
-          SELECT ?ke (COUNT(DISTINCT ?bioevent2) AS ?bioevent_count)
-          WHERE {
+        SELECT ?graph ?bioevent_count_group
+               (COUNT(DISTINCT ?ke) AS ?total_kes)
+        WHERE {
+          GRAPH ?graph {
             ?ke a aopo:KeyEvent .
-            OPTIONAL { ?ke aopo:hasBiologicalEvent ?bioevent2 . }
+            OPTIONAL { ?ke aopo:hasBiologicalEvent ?bioevent . }
+            {
+              SELECT ?ke (COUNT(DISTINCT ?bioevent2) AS ?bioevent_count)
+              WHERE {
+                ?ke a aopo:KeyEvent .
+                OPTIONAL { ?ke aopo:hasBiologicalEvent ?bioevent2 . }
+              }
+              GROUP BY ?ke
+            }
+            BIND(
+              IF(?bioevent_count = 0, "0",
+                IF(?bioevent_count = 1, "1",
+                   IF(?bioevent_count = 2, "2",
+                      IF(?bioevent_count = 3, "3",
+                         IF(?bioevent_count = 4, "4",
+                            IF(?bioevent_count = 5, "5",
+                               IF(?bioevent_count >= 6, "6+", ">1"))))))) AS ?bioevent_count_group
+            )
           }
-          GROUP BY ?ke
+          FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
         }
-        BIND(
-          IF(?bioevent_count = 0, "0",
-            IF(?bioevent_count = 1, "1",
-               IF(?bioevent_count = 2, "2",
-                  IF(?bioevent_count = 3, "3",
-                     IF(?bioevent_count = 4, "4",
-                        IF(?bioevent_count = 5, "5",
-                           IF(?bioevent_count >= 6, "6+", ">1"))))))) AS ?bioevent_count_group
+        GROUP BY ?graph ?bioevent_count_group
+        ORDER BY ?graph xsd:integer(?bioevent_count_group)
+        """
+
+        results = run_sparql_query(query_kec_count)
+
+        data = []
+        for r in results:
+            if "graph" in r and "bioevent_count_group" in r and "total_kes" in r:
+                data.append({
+                    "version": r["graph"]["value"].split("/")[-1],
+                    "bioevent_count_group": r["bioevent_count_group"]["value"],
+                    "total_kes": int(r["total_kes"]["value"])
+                })
+
+        if not data:
+            logger.warning("No data for KE by KEC count plot")
+            return (
+                create_fallback_plot("KE Distribution by Component Count Over Time", "No data available"),
+                create_fallback_plot("Change in KE Distribution by Component Count", "No data available")
+            )
+
+        df = pd.DataFrame(data)
+
+        all_versions = sorted(df["version"].unique())
+        all_groups = sorted(df["bioevent_count_group"].unique())
+
+        idx = pd.MultiIndex.from_product([all_versions, all_groups],
+                                         names=["version", "bioevent_count_group"])
+        df_full = df.set_index(["version", "bioevent_count_group"]).reindex(idx, fill_value=0).reset_index()
+
+        df_full["version_dt"] = pd.to_datetime(df_full["version"], errors="coerce")
+        df_full = df_full.sort_values(["version_dt", "bioevent_count_group"]).drop(columns="version_dt")
+
+        fig_abs = px.area(
+            df_full, x="version", y="total_kes", color="bioevent_count_group",
+            title="KE Distribution by Component Count Over Time",
+            labels={"total_kes": "Number of KEs", "bioevent_count_group": "Number of Components"},
+            color_discrete_sequence=BRAND_COLORS['palette']
         )
-      }
-      FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-    }
-    GROUP BY ?graph ?bioevent_count_group
-    ORDER BY ?graph xsd:integer(?bioevent_count_group)
-    """
+        fig_abs.update_layout(template="plotly_white", hovermode="x unified", autosize=True,
+                              margin=dict(l=50, r=20, t=50, b=50),
+                              xaxis=dict(tickmode='array', tickvals=all_versions, ticktext=all_versions, tickangle=-45))
 
-    results = run_sparql_query(query_kec_count)
+        df_delta = df_full.copy()
+        df_delta["total_kes_delta"] = df_delta.groupby("bioevent_count_group")["total_kes"].diff().fillna(0)
 
-    data = []
-    for r in results:
-        if "graph" in r and "bioevent_count_group" in r and "total_kes" in r:
-            data.append({
-                "version": r["graph"]["value"].split("/")[-1],
-                "bioevent_count_group": r["bioevent_count_group"]["value"],
-                "total_kes": int(r["total_kes"]["value"])
-            })
-
-    if not data:
-        print("No data for KE by KEC count plot")
-        return "", ""
-
-    df = pd.DataFrame(data)
-
-    # --- Fill missing groups ---
-    all_versions = sorted(df["version"].unique())
-    all_groups = sorted(df["bioevent_count_group"].unique())
-
-    idx = pd.MultiIndex.from_product([all_versions, all_groups],
-                                     names=["version", "bioevent_count_group"])
-    df_full = df.set_index(["version", "bioevent_count_group"]).reindex(idx, fill_value=0).reset_index()
-
-    # Sort
-    df_full["version_dt"] = pd.to_datetime(df_full["version"], errors="coerce")
-    df_full = df_full.sort_values(["version_dt", "bioevent_count_group"]).drop(columns="version_dt")
-
-    # --- Absolute stacked area plot ---
-    fig_abs = px.area(
-        df_full,
-        x="version",
-        y="total_kes",
-        color="bioevent_count_group",
-        title="KE Distribution by Component Count Over Time",
-        labels={"total_kes": "Number of KEs", "bioevent_count_group": "Number of Components"},
-        color_discrete_sequence=BRAND_COLORS['palette']
-    )
-    fig_abs.update_layout(
-        template="plotly_white",
-        hovermode="x unified",
-        autosize=True,
-        margin=dict(l=50, r=20, t=50, b=50),
-        xaxis=dict(
-            tickmode='array',
-            tickvals=all_versions,
-            ticktext=all_versions,
-            tickangle=-45
+        fig_delta = px.area(
+            df_delta, x="version", y="total_kes_delta", color="bioevent_count_group",
+            title="Change in KE Distribution by Component Count",
+            labels={"total_kes_delta": "Change in KEs", "bioevent_count_group": "Number of Components"},
+            color_discrete_sequence=BRAND_COLORS['palette']
         )
-    )
+        fig_delta.update_layout(template="plotly_white", hovermode="x unified", autosize=True,
+                                margin=dict(l=50, r=20, t=50, b=50),
+                                xaxis=dict(tickmode='array', tickvals=all_versions, ticktext=all_versions, tickangle=-45))
 
-    # --- Delta stacked area plot ---
-    df_delta = df_full.copy()
-    df_delta["total_kes_delta"] = df_delta.groupby("bioevent_count_group")["total_kes"].diff().fillna(0)
+        _plot_data_cache['kes_by_kec_count_absolute'] = df_full.copy()
+        _plot_data_cache['kes_by_kec_count_delta'] = df_delta.copy()
+        _plot_figure_cache['kes_by_kec_count_absolute'] = fig_abs
+        _plot_figure_cache['kes_by_kec_count_delta'] = fig_delta
 
-    fig_delta = px.area(
-        df_delta,
-        x="version",
-        y="total_kes_delta",
-        color="bioevent_count_group",
-        title="Change in KE Distribution by Component Count",
-        labels={"total_kes_delta": "Change in KEs", "bioevent_count_group": "Number of Components"},
-        color_discrete_sequence=BRAND_COLORS['palette']
-    )
-    fig_delta.update_layout(
-        template="plotly_white",
-        hovermode="x unified",
-        autosize=True,
-        margin=dict(l=50, r=20, t=50, b=50),
-        xaxis=dict(
-            tickmode='array',
-            tickvals=all_versions,
-            ticktext=all_versions,
-            tickangle=-45
+        return (
+            pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config={"responsive": True}),
+            pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config={"responsive": True})
         )
-    )
 
-    # Cache data for CSV export
-    _plot_data_cache['kes_by_kec_count_absolute'] = df_full.copy()
-    _plot_data_cache['kes_by_kec_count_delta'] = df_delta.copy()
-
-    # Cache figures for image export
-    _plot_figure_cache['kes_by_kec_count_absolute'] = fig_abs
-    _plot_figure_cache['kes_by_kec_count_delta'] = fig_delta
-
-    return (
-        pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config={"responsive": True}),
-        pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config={"responsive": True})
-    )
+    except Exception as e:
+        logger.error(f"Failed to generate KE by KEC count plots: {str(e)}")
+        return (
+            create_fallback_plot("KE Distribution by Component Count Over Time", str(e)),
+            create_fallback_plot("Change in KE Distribution by Component Count", str(e))
+        )
 
 
 def plot_entity_completeness_trends(label_file="property_labels.csv") -> str:
