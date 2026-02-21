@@ -305,33 +305,30 @@
         </div>
     </div>
 
-    <!-- REMOVED: Composite AOP Completeness by OECD Status - hits Virtuoso execution limits on network query
-    <div class="plot-box" id="aop-completeness-boxplot-by-status">
+    <div class="plot-box" id="oecd-completeness-trend">
         <div class="plot-header">
-            <h3>Composite AOP Completeness by OECD Status</h3>
+            <h3>Mean AOP Completeness by OECD Status Over Time</h3>
             <div style="display: flex; gap: 10px; align-items: center;">
                 <div class="download-dropdown">
                     <button class="download-button dropdown-toggle">Download ▼</button>
                     <div class="dropdown-menu">
-                        <a href="/download/trend/aop_completeness_boxplot_by_status?format=csv" class="dropdown-item">📄 CSV</a>
-                        <a href="/download/trend/aop_completeness_boxplot_by_status?format=png" class="dropdown-item">🖼️ PNG</a>
-                        <a href="/download/trend/aop_completeness_boxplot_by_status?format=svg" class="dropdown-item">📐 SVG</a>
+                        <a href="/download/trend/oecd_completeness_trend?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/oecd_completeness_trend?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/oecd_completeness_trend?format=svg" class="dropdown-item">📐 SVG</a>
                     </div>
                 </div>
             </div>
         </div>
         <p class="plot-description">
-            Shows the distribution of <strong>composite completeness scores</strong> for individual AOPs in each version, <strong>color-coded by OECD approval status</strong>.
-            Each AOP's score is the average of its own property completeness plus the completeness of all its linked Key Events (KEs) and Key Event Relationships (KERs).
-            Status categories include all OECD approval stages present in the data (e.g., Endorsed, Approved, Under Review, Under Development), with each status assigned a distinct color.
-            This reveals how completeness patterns differ across different maturity levels and whether endorsed/approved AOPs tend to be better documented than those still in development.
-            Note: Status data is queried from the latest version and applied across all historical versions for consistency.
+            Shows the mean completeness score per OECD approval status over time.
+            Tracks how documentation quality correlates with maturity level across database versions.
+            Each line represents a different OECD status (e.g., Endorsed, Approved, Under Review, Under Development),
+            with higher completeness indicating more thoroughly documented AOPs in that category.
         </p>
-        <div class="lazy-plot" data-plot-name="aop_completeness_boxplot_by_status">
+        <div class="lazy-plot" data-plot-name="oecd_completeness_trend">
             <!-- Plot will be loaded here via JavaScript -->
         </div>
     </div>
-    -->
     </div>
 </section>
 
