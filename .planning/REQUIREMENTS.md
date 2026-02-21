@@ -21,7 +21,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **RELY-01**: AOP completeness distribution plot loads in under 30 seconds (currently ~75s)
 - [ ] **RELY-02**: AOP completeness by OECD status visualization is restored or replaced with working alternative
 - [x] **RELY-03**: All plot error states use consistent fallback with actionable user-facing messages
-- [ ] **RELY-04**: Every displayed visualization has CSV, PNG, and SVG export options
+- [x] **RELY-04**: Every displayed visualization has CSV, PNG, and SVG export options
 
 ### Data Exploration
 
@@ -108,7 +108,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | RELY-01 | Phase 2 | Pending |
 | RELY-02 | Phase 2 | Pending |
 | RELY-03 | Phase 1 | Complete |
-| RELY-04 | Phase 2 | Pending |
+| RELY-04 | Phase 2 | Complete |
 | EXPL-01 | Phase 4 | Pending |
 | EXPL-02 | Phase 4 | Pending |
 | EXPL-03 | Phase 4 | Pending |
