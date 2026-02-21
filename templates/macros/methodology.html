@@ -1,0 +1,19 @@
+{% macro methodology_note(notes, plot_key) %}
+{% if plot_key in notes %}
+{% set note = notes[plot_key] %}
+<details class="methodology-note">
+    <summary>Methodology</summary>
+    <div class="methodology-content">
+        <p><strong>What this measures:</strong> {{ note.description }}</p>
+        <p><strong>Data source:</strong> {{ note.data_source }}</p>
+        <p><strong>Known limitations:</strong> {{ note.limitations }}</p>
+        {% if note.sparql %}
+        <details class="sparql-query">
+            <summary>View SPARQL Query</summary>
+            <pre><code>{{ note.sparql }}</code></pre>
+        </details>
+        {% endif %}
+    </div>
+</details>
+{% endif %}
+{% endmacro %}
