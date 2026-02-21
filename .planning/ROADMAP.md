@@ -51,10 +51,10 @@ Plans:
 **Plans:** 4 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — SPARQL optimization (boxplot to startup) and OECD completeness trend visualization (Wave 1)
-- [ ] 02-02-PLAN.md — Export infrastructure: add data caches for CSV export, versioned filenames (Wave 1)
-- [ ] 02-03-PLAN.md — Methodology notes: JSON data file, Jinja2 macro, CSS, applied to all plots (Wave 1)
-- [ ] 02-04-PLAN.md — Reliability audit and user verification checkpoint (Wave 2)
+- [x] 02-01-PLAN.md — SPARQL optimization (boxplot to startup) and OECD completeness trend visualization (Wave 1)
+- [x] 02-02-PLAN.md — Export infrastructure: add data caches for CSV export, versioned filenames (Wave 1)
+- [x] 02-03-PLAN.md — Methodology notes: JSON data file, Jinja2 macro, CSS, applied to all plots (Wave 1)
+- [x] 02-04-PLAN.md — Reliability audit and user verification checkpoint (Wave 2) -- issues found
 
 ### Phase 3: Network Analysis
 **Goal**: Users can explore the AOP-Wiki as an interactive network, identifying structurally important Key Events and discovering community groupings (Issue #11)
@@ -127,7 +127,7 @@ Note: Phase 2 and Phase 3 can execute in parallel (both depend only on Phase 1).
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation and Cleanup | 4/4 | Complete | 2026-02-20 |
-| 2. Reliability and Completeness | 0/4 | Planned | - |
+| 2. Reliability and Completeness | 4/4 | Complete (issues found) | 2026-02-21 |
 | 3. Network Analysis | 0/3 | Not started | - |
 | 4. Entity Exploration | 0/3 | Not started | - |
 | 5. Advanced Analytics | 0/2 | Not started | - |
