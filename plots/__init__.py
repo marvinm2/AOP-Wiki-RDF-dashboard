@@ -119,6 +119,7 @@ from .shared import (
     get_properties_for_entity,
     safe_plot_execution,
     create_fallback_plot,
+    build_export_filename,
     export_figure_as_image,
     get_csv_with_metadata,
     create_bulk_download,
@@ -163,6 +164,7 @@ from .trends_plots import (
     # Entity completeness analysis
     plot_entity_completeness_trends,
     plot_aop_completeness_boxplot,
+    plot_oecd_completeness_trend,
 )
 
 # Import all current snapshot plot functions
@@ -208,6 +210,7 @@ __all__ = [
     'get_properties_for_entity',
     'safe_plot_execution',
     'create_fallback_plot',
+    'build_export_filename',
     'export_figure_as_image',
     'get_csv_with_metadata',
     'create_bulk_download',
@@ -234,6 +237,7 @@ __all__ = [
     'plot_aop_lifetime',
     'plot_entity_completeness_trends',
     'plot_aop_completeness_boxplot',
+    'plot_oecd_completeness_trend',
 
     # Current snapshot functions
     'plot_latest_entity_counts',
@@ -277,6 +281,7 @@ def get_available_functions():
             'plot_aop_lifetime',
             'plot_entity_completeness_trends',
             'plot_aop_completeness_boxplot',
+            'plot_oecd_completeness_trend',
         ],
         'current_snapshots': [
             'plot_latest_entity_counts',

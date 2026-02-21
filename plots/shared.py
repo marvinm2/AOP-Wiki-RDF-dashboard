@@ -981,6 +981,35 @@ def get_all_versions() -> list[dict]:
         return []
 
 
+def build_export_filename(plot_name: str, format: str, version: str = None) -> str:
+    """Build self-documenting export filename with date and optional version.
+
+    For trend plots (multi-version): includes export date only.
+    For latest plots (single version): includes both version and export date.
+
+    Args:
+        plot_name: Name of the plot (underscores will be converted to hyphens)
+        format: File format extension (csv, png, svg)
+        version: Optional version string for latest-data exports
+
+    Returns:
+        str: Filename like 'aop-entity-counts_2026-02-21_v2025-12-01.csv'
+
+    Examples:
+        >>> build_export_filename('latest_entity_counts', 'csv', '2025-12-01')
+        'latest-entity-counts_2026-02-21_v2025-12-01.csv'
+        >>> build_export_filename('ke_components_absolute', 'png')
+        'ke-components-absolute_2026-02-21.png'
+    """
+    from datetime import datetime
+    date_str = datetime.now().strftime('%Y-%m-%d')
+    clean_name = plot_name.replace('_', '-')
+
+    if version:
+        return f"{clean_name}_{date_str}_v{version}.{format}"
+    return f"{clean_name}_{date_str}.{format}"
+
+
 def export_figure_as_image(plot_name: str, format: str = 'png', width: int = 1200, height: int = 800) -> Optional[bytes]:
     """Export a cached Plotly figure as PNG or SVG image.
 

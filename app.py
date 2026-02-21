@@ -46,6 +46,8 @@ configure_logging()
 from flask import Flask, render_template, jsonify, request, Response, url_for, redirect
 import pandas as pd
 import time
+import os
+import json
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -60,6 +62,11 @@ app = Flask(
     static_folder="static",     # This is default, but good to be explicit
     template_folder="templates"
 )
+
+# Load methodology notes for plot documentation
+methodology_notes_path = os.path.join(app.static_folder, 'data', 'methodology_notes.json')
+with open(methodology_notes_path, 'r') as f:
+    methodology_notes = json.load(f)
 
 from plots import (
     plot_main_graph,
@@ -78,6 +85,7 @@ from plots import (
     plot_stressor_property_presence,
     plot_entity_completeness_trends,
     plot_aop_completeness_boxplot,
+    plot_oecd_completeness_trend,
     plot_kes_by_kec_count,
     plot_latest_entity_counts,
     plot_latest_ke_components,
@@ -99,6 +107,7 @@ from plots import (
     get_properties_for_entity,
     _plot_data_cache,
     _plot_figure_cache,
+    build_export_filename,
     export_figure_as_image,
     get_csv_with_metadata,
     create_bulk_download
@@ -171,6 +180,7 @@ def compute_plots_parallel() -> dict:
         ('entity_completeness_trends', lambda: safe_plot_execution(plot_entity_completeness_trends)),
         # Re-enabled after SPARQL optimization (reduced from 10 queries to 4, 410K rows to ~20K)
         ('aop_completeness_boxplot', lambda: safe_plot_execution(plot_aop_completeness_boxplot)),
+        ('oecd_completeness_trend', lambda: safe_plot_execution(plot_oecd_completeness_trend)),
         ('kes_by_kec_count', lambda: safe_plot_execution(plot_kes_by_kec_count)),
         ('latest_entity_counts', lambda: safe_plot_execution(plot_latest_entity_counts)),
         ('latest_ke_components', lambda: safe_plot_execution(plot_latest_ke_components)),
@@ -253,6 +263,7 @@ graph_ker_prop_abs, graph_ker_prop_pct = plot_results.get('ker_property_presence
 graph_stressor_prop_abs, graph_stressor_prop_pct = plot_results.get('stressor_property_presence', ("", ""))
 graph_entity_completeness = plot_results.get('entity_completeness_trends') or ""
 graph_aop_completeness_boxplot = plot_results.get('aop_completeness_boxplot') or ""
+graph_oecd_completeness_trend = plot_results.get('oecd_completeness_trend') or ""
 graph_kec_count_abs, graph_kec_count_delta = plot_results.get('kes_by_kec_count', ("", ""))
 
 # Latest data plots
@@ -438,7 +449,7 @@ def download_latest_entity_counts():
             return Response(
                 csv_data,
                 mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={plot_name}.csv'}
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, "csv", request.args.get("version"))}'}
             )
 
         elif export_format in ['png', 'svg']:
@@ -450,7 +461,7 @@ def download_latest_entity_counts():
             return Response(
                 image_bytes,
                 mimetype=mimetype,
-                headers={'Content-Disposition': f'attachment; filename={plot_name}.{export_format}'}
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, export_format, request.args.get("version"))}'}
             )
 
         else:
@@ -476,7 +487,7 @@ def download_latest_ke_components():
             return Response(
                 csv_data,
                 mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={plot_name}.csv'}
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, "csv", request.args.get("version"))}'}
             )
 
         elif export_format in ['png', 'svg']:
@@ -488,7 +499,7 @@ def download_latest_ke_components():
             return Response(
                 image_bytes,
                 mimetype=mimetype,
-                headers={'Content-Disposition': f'attachment; filename={plot_name}.{export_format}'}
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, export_format, request.args.get("version"))}'}
             )
 
         else:
@@ -514,7 +525,7 @@ def download_latest_network_density():
             return Response(
                 csv_data,
                 mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={plot_name}.csv'}
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, "csv", request.args.get("version"))}'}
             )
 
         elif export_format in ['png', 'svg']:
@@ -526,7 +537,7 @@ def download_latest_network_density():
             return Response(
                 image_bytes,
                 mimetype=mimetype,
-                headers={'Content-Disposition': f'attachment; filename={plot_name}.{export_format}'}
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, export_format, request.args.get("version"))}'}
             )
 
         else:
@@ -552,7 +563,7 @@ def download_latest_avg_per_aop():
             return Response(
                 csv_data,
                 mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={plot_name}.csv'}
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, "csv", request.args.get("version"))}'}
             )
 
         elif export_format in ['png', 'svg']:
@@ -564,7 +575,7 @@ def download_latest_avg_per_aop():
             return Response(
                 image_bytes,
                 mimetype=mimetype,
-                headers={'Content-Disposition': f'attachment; filename={plot_name}.{export_format}'}
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, export_format, request.args.get("version"))}'}
             )
 
         else:
@@ -590,7 +601,7 @@ def download_latest_process_usage():
             return Response(
                 csv_data,
                 mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={plot_name}.csv'}
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, "csv", request.args.get("version"))}'}
             )
 
         elif export_format in ['png', 'svg']:
@@ -602,7 +613,7 @@ def download_latest_process_usage():
             return Response(
                 image_bytes,
                 mimetype=mimetype,
-                headers={'Content-Disposition': f'attachment; filename={plot_name}.{export_format}'}
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, export_format, request.args.get("version"))}'}
             )
 
         else:
@@ -628,7 +639,7 @@ def download_latest_object_usage():
             return Response(
                 csv_data,
                 mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={plot_name}.csv'}
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, "csv", request.args.get("version"))}'}
             )
 
         elif export_format in ['png', 'svg']:
@@ -640,7 +651,7 @@ def download_latest_object_usage():
             return Response(
                 image_bytes,
                 mimetype=mimetype,
-                headers={'Content-Disposition': f'attachment; filename={plot_name}.{export_format}'}
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, export_format, request.args.get("version"))}'}
             )
 
         else:
@@ -666,7 +677,7 @@ def download_latest_aop_completeness():
             return Response(
                 csv_data,
                 mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={plot_name}.csv'}
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, "csv", request.args.get("version"))}'}
             )
 
         elif export_format in ['png', 'svg']:
@@ -678,7 +689,7 @@ def download_latest_aop_completeness():
             return Response(
                 image_bytes,
                 mimetype=mimetype,
-                headers={'Content-Disposition': f'attachment; filename={plot_name}.{export_format}'}
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, export_format, request.args.get("version"))}'}
             )
 
         else:
@@ -704,7 +715,7 @@ def download_latest_aop_completeness_by_status():
             return Response(
                 csv_data,
                 mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={plot_name}.csv'}
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, "csv", request.args.get("version"))}'}
             )
 
         elif export_format in ['png', 'svg']:
@@ -716,7 +727,7 @@ def download_latest_aop_completeness_by_status():
             return Response(
                 image_bytes,
                 mimetype=mimetype,
-                headers={'Content-Disposition': f'attachment; filename={plot_name}.{export_format}'}
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, export_format, request.args.get("version"))}'}
             )
 
         else:
@@ -742,7 +753,7 @@ def download_latest_ke_completeness_by_status():
             return Response(
                 csv_data,
                 mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={plot_name}.csv'}
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, "csv", request.args.get("version"))}'}
             )
 
         elif export_format in ['png', 'svg']:
@@ -754,7 +765,7 @@ def download_latest_ke_completeness_by_status():
             return Response(
                 image_bytes,
                 mimetype=mimetype,
-                headers={'Content-Disposition': f'attachment; filename={plot_name}.{export_format}'}
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, export_format, request.args.get("version"))}'}
             )
 
         else:
@@ -780,7 +791,7 @@ def download_latest_ker_completeness_by_status():
             return Response(
                 csv_data,
                 mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={plot_name}.csv'}
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, "csv", request.args.get("version"))}'}
             )
 
         elif export_format in ['png', 'svg']:
@@ -792,7 +803,7 @@ def download_latest_ker_completeness_by_status():
             return Response(
                 image_bytes,
                 mimetype=mimetype,
-                headers={'Content-Disposition': f'attachment; filename={plot_name}.{export_format}'}
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, export_format, request.args.get("version"))}'}
             )
 
         else:
@@ -818,7 +829,7 @@ def download_ke_property_presence_absolute():
             return Response(
                 csv_data,
                 mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={plot_name}.csv'}
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, "csv", request.args.get("version"))}'}
             )
 
         elif export_format in ['png', 'svg']:
@@ -830,7 +841,7 @@ def download_ke_property_presence_absolute():
             return Response(
                 image_bytes,
                 mimetype=mimetype,
-                headers={'Content-Disposition': f'attachment; filename={plot_name}.{export_format}'}
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, export_format, request.args.get("version"))}'}
             )
 
         else:
@@ -856,7 +867,7 @@ def download_ke_property_presence_percentage():
             return Response(
                 csv_data,
                 mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={plot_name}.csv'}
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, "csv", request.args.get("version"))}'}
             )
 
         elif export_format in ['png', 'svg']:
@@ -868,7 +879,7 @@ def download_ke_property_presence_percentage():
             return Response(
                 image_bytes,
                 mimetype=mimetype,
-                headers={'Content-Disposition': f'attachment; filename={plot_name}.{export_format}'}
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, export_format, request.args.get("version"))}'}
             )
 
         else:
@@ -894,7 +905,7 @@ def download_ker_property_presence_absolute():
             return Response(
                 csv_data,
                 mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={plot_name}.csv'}
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, "csv", request.args.get("version"))}'}
             )
 
         elif export_format in ['png', 'svg']:
@@ -906,7 +917,7 @@ def download_ker_property_presence_absolute():
             return Response(
                 image_bytes,
                 mimetype=mimetype,
-                headers={'Content-Disposition': f'attachment; filename={plot_name}.{export_format}'}
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, export_format, request.args.get("version"))}'}
             )
 
         else:
@@ -932,7 +943,7 @@ def download_ker_property_presence_percentage():
             return Response(
                 csv_data,
                 mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={plot_name}.csv'}
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, "csv", request.args.get("version"))}'}
             )
 
         elif export_format in ['png', 'svg']:
@@ -944,7 +955,7 @@ def download_ker_property_presence_percentage():
             return Response(
                 image_bytes,
                 mimetype=mimetype,
-                headers={'Content-Disposition': f'attachment; filename={plot_name}.{export_format}'}
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, export_format, request.args.get("version"))}'}
             )
 
         else:
@@ -970,7 +981,7 @@ def download_stressor_property_presence_absolute():
             return Response(
                 csv_data,
                 mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={plot_name}.csv'}
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, "csv", request.args.get("version"))}'}
             )
 
         elif export_format in ['png', 'svg']:
@@ -982,7 +993,7 @@ def download_stressor_property_presence_absolute():
             return Response(
                 image_bytes,
                 mimetype=mimetype,
-                headers={'Content-Disposition': f'attachment; filename={plot_name}.{export_format}'}
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, export_format, request.args.get("version"))}'}
             )
 
         else:
@@ -1008,7 +1019,7 @@ def download_stressor_property_presence_percentage():
             return Response(
                 csv_data,
                 mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={plot_name}.csv'}
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, "csv", request.args.get("version"))}'}
             )
 
         elif export_format in ['png', 'svg']:
@@ -1020,7 +1031,7 @@ def download_stressor_property_presence_percentage():
             return Response(
                 image_bytes,
                 mimetype=mimetype,
-                headers={'Content-Disposition': f'attachment; filename={plot_name}.{export_format}'}
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, export_format, request.args.get("version"))}'}
             )
 
         else:
@@ -1046,7 +1057,7 @@ def download_latest_ke_annotation_depth():
             return Response(
                 csv_data,
                 mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={plot_name}.csv'}
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, "csv", request.args.get("version"))}'}
             )
 
         elif export_format in ['png', 'svg']:
@@ -1058,7 +1069,7 @@ def download_latest_ke_annotation_depth():
             return Response(
                 image_bytes,
                 mimetype=mimetype,
-                headers={'Content-Disposition': f'attachment; filename={plot_name}.{export_format}'}
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, export_format, request.args.get("version"))}'}
             )
 
         else:
@@ -1084,7 +1095,7 @@ def download_main_graph_absolute():
             return Response(
                 csv_data,
                 mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={plot_name}.csv'}
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, "csv", request.args.get("version"))}'}
             )
 
         elif export_format in ['png', 'svg']:
@@ -1096,7 +1107,7 @@ def download_main_graph_absolute():
             return Response(
                 image_bytes,
                 mimetype=mimetype,
-                headers={'Content-Disposition': f'attachment; filename={plot_name}.{export_format}'}
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, export_format, request.args.get("version"))}'}
             )
 
         else:
@@ -1122,7 +1133,7 @@ def download_main_graph_delta():
             return Response(
                 csv_data,
                 mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={plot_name}.csv'}
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, "csv", request.args.get("version"))}'}
             )
 
         elif export_format in ['png', 'svg']:
@@ -1134,7 +1145,7 @@ def download_main_graph_delta():
             return Response(
                 image_bytes,
                 mimetype=mimetype,
-                headers={'Content-Disposition': f'attachment; filename={plot_name}.{export_format}'}
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, export_format, request.args.get("version"))}'}
             )
 
         else:
@@ -1172,7 +1183,7 @@ def download_trend_plot(plot_name):
             return Response(
                 csv_data,
                 mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={plot_name}.csv'}
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, "csv", request.args.get("version"))}'}
             )
 
         elif export_format in ['png', 'svg']:
@@ -1184,7 +1195,7 @@ def download_trend_plot(plot_name):
             return Response(
                 image_bytes,
                 mimetype=mimetype,
-                headers={'Content-Disposition': f'attachment; filename={plot_name}.{export_format}'}
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, export_format, request.args.get("version"))}'}
             )
 
         else:
@@ -1447,6 +1458,7 @@ def get_plot(plot_name):
         'stressor_property_presence_percentage': graph_stressor_prop_pct,
         'entity_completeness_trends': graph_entity_completeness,
         'aop_completeness_boxplot': graph_aop_completeness_boxplot,
+        'oecd_completeness_trend': graph_oecd_completeness_trend,
         'kes_by_kec_count_absolute': graph_kec_count_abs,
         'kes_by_kec_count_delta': graph_kec_count_delta
     }
@@ -1586,7 +1598,7 @@ def database_snapshot():
     Displays key metrics and visualizations from any version of the AOP-Wiki
     database, allowing users to explore current and historical snapshots.
     """
-    return render_template("latest.html")
+    return render_template("latest.html", methodology_notes=methodology_notes)
 
 
 @app.route("/latest")
@@ -1602,7 +1614,7 @@ def historical_trends():
     Displays evolution and growth patterns of the AOP-Wiki database
     over time using quarterly releases.
     """
-    return render_template("trends_page.html")
+    return render_template("trends_page.html", methodology_notes=methodology_notes)
 
 
 @app.route("/dashboard")
