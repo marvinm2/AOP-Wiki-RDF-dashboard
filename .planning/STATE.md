@@ -54,6 +54,8 @@ Recent decisions affecting current work:
 - [01-04]: Detect 'Data Unavailable' sentinel string in fallback HTML to distinguish from legitimate content
 - [02-02]: Used request.args.get('version') uniformly for all routes; trend routes get None, latest routes get version from version-selector.js
 - [02-02]: 12 data cache keys were already present (not 20 as estimated); only 6 functions needed updates
+- [Phase 02-01]: Used per-version parallel SPARQL queries (4 workers) instead of single cross-version query to avoid Virtuoso limits
+- [Phase 02-01]: Line chart with marker shapes for OECD status visualization (aggregated means vs raw distributions)
 
 ### Pending Todos
 
@@ -67,5 +69,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-21
-Stopped at: Completed 02-02-PLAN.md
-Resume file: .planning/phases/02-reliability-and-completeness/02-02-SUMMARY.md
+Stopped at: Completed 02-01-PLAN.md (parallel with 02-02, 02-03)
+Resume file: .planning/phases/02-reliability-and-completeness/02-01-SUMMARY.md
