@@ -2604,6 +2604,203 @@ def plot_aop_completeness_boxplot(label_file="property_labels.csv") -> str:
         logger.error(f"Error creating composite AOP completeness boxplot: {str(e)}")
         return create_fallback_plot("Composite AOP Completeness Distribution", f"Error: {str(e)}")
 
+
+def plot_oecd_completeness_trend(label_file="property_labels.csv") -> str:
+    """Generate OECD completeness trend visualization showing mean completeness per OECD status over time.
+
+    Replaces the removed plot_aop_completeness_boxplot_by_status() which hit Virtuoso limits.
+    This version queries aggregated means per status per version (~5 rows per version),
+    producing ~75 total data points instead of 240K raw rows.
+
+    Strategy:
+        - For each version, query per-AOP property counts and OECD status
+        - Compute mean completeness per OECD status in Python
+        - Plot as a line chart with one line per status
+
+    Args:
+        label_file: Path to CSV file containing property labels and types
+
+    Returns:
+        HTML string containing the Plotly line chart visualization
+    """
+    global _plot_data_cache, _plot_figure_cache
+
+    try:
+        # Load property labels
+        default_properties = [
+            {"uri": "http://purl.org/dc/elements/1.1/title", "label": "Title", "type": "Essential", "applies_to": "AOP|KE|KER|Stressor"},
+            {"uri": "http://purl.org/dc/elements/1.1/creator", "label": "Creator", "type": "Metadata", "applies_to": "AOP|KE|KER"}
+        ]
+        df_labels = safe_read_csv(label_file, default_properties)
+
+        if df_labels.empty:
+            return create_fallback_plot("OECD Completeness Trend", "No property labels available")
+
+        # Filter properties applicable to AOPs
+        aop_props_df = df_labels[
+            df_labels["applies_to"].fillna("").str.contains("AOP", case=False, na=False)
+        ]
+        if aop_props_df.empty:
+            return create_fallback_plot("OECD Completeness Trend", "No AOP properties configured")
+
+        aop_property_uris = set(aop_props_df["uri"].tolist())
+        total_properties = len(aop_property_uris)
+
+        if total_properties == 0:
+            return create_fallback_plot("OECD Completeness Trend", "No AOP properties configured")
+
+        # Build property filter for SPARQL
+        prop_filter_values = ", ".join([f"<{uri}>" for uri in aop_property_uris])
+
+        # Get all versions
+        versions = get_all_versions()
+        if not versions:
+            return create_fallback_plot("OECD Completeness Trend", "No versions available")
+
+        logger.info(f"OECD completeness trend: querying {len(versions)} versions with {total_properties} AOP properties")
+
+        # Query function for a single version
+        def query_version(version_info):
+            """Query per-AOP property count and OECD status for a single version."""
+            graph_uri = version_info["graph_uri"]
+            version_str = version_info["version"]
+
+            query = f"""
+            SELECT ?aop (STR(?status_obj) AS ?status) (COUNT(DISTINCT ?p) AS ?prop_count)
+            WHERE {{
+                GRAPH <{graph_uri}> {{
+                    ?aop a aopo:AdverseOutcomePathway .
+                    OPTIONAL {{
+                        ?aop <http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25688> ?status_obj .
+                    }}
+                    ?aop ?p ?o .
+                    FILTER(?p IN ({prop_filter_values}))
+                }}
+            }}
+            GROUP BY ?aop ?status_obj
+            """
+
+            try:
+                results = run_sparql_query_with_retry(query, max_retries=2)
+                if not results:
+                    return []
+
+                # Collect per-AOP completeness with status
+                version_data = []
+                for r in results:
+                    status = r.get("status", {}).get("value", "No Status") if "status" in r else "No Status"
+                    prop_count = int(r["prop_count"]["value"])
+                    completeness = (prop_count / total_properties) * 100
+
+                    version_data.append({
+                        "version": version_str,
+                        "status": status,
+                        "completeness": completeness
+                    })
+
+                return version_data
+            except Exception as e:
+                logger.warning(f"OECD completeness query failed for version {version_str}: {e}")
+                return []
+
+        # Query versions in parallel (4 workers to avoid overloading endpoint)
+        all_data = []
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            future_to_version = {
+                executor.submit(query_version, v): v["version"]
+                for v in versions
+            }
+            for future in as_completed(future_to_version):
+                version_str = future_to_version[future]
+                try:
+                    result = future.result(timeout=60)
+                    all_data.extend(result)
+                except Exception as e:
+                    logger.warning(f"OECD completeness query timed out for version {version_str}: {e}")
+
+        if not all_data:
+            return create_fallback_plot("OECD Completeness Trend", "No completeness data available")
+
+        # Create DataFrame and compute mean completeness per status per version
+        df_raw = pd.DataFrame(all_data)
+
+        # Aggregate: mean completeness per (version, status)
+        df = df_raw.groupby(["version", "status"], as_index=False).agg(
+            mean_completeness=("completeness", "mean"),
+            aop_count=("completeness", "count")
+        )
+
+        # Sort by version date
+        df["version_dt"] = pd.to_datetime(df["version"], errors="coerce")
+        df = df.sort_values("version_dt")
+
+        # Cache data for CSV export
+        _plot_data_cache['oecd_completeness_trend'] = df.copy()
+
+        logger.info(f"OECD completeness trend: {len(df)} data points across {df['version'].nunique()} versions, {df['status'].nunique()} statuses")
+
+        # Use Plotly qualitative colors for OECD statuses
+        unique_statuses = sorted(df['status'].unique())
+        plotly_colors = px.colors.qualitative.Plotly
+        status_color_map = {
+            status: plotly_colors[i % len(plotly_colors)]
+            for i, status in enumerate(unique_statuses)
+        }
+
+        # Create line chart
+        fig = px.line(
+            df,
+            x="version",
+            y="mean_completeness",
+            color="status",
+            markers=True,
+            title="Mean AOP Completeness by OECD Status Over Time",
+            labels={
+                "mean_completeness": "Mean Completeness (%)",
+                "status": "OECD Status",
+                "version": "Version"
+            },
+            color_discrete_map=status_color_map
+        )
+
+        # Apply marker shapes for visual distinction
+        marker_symbols = ['circle', 'square', 'diamond', 'triangle-up', 'cross',
+                          'star', 'hexagon', 'pentagon', 'triangle-down', 'x']
+        for i, trace in enumerate(fig.data):
+            trace.update(
+                marker=dict(symbol=marker_symbols[i % len(marker_symbols)], size=9),
+                line=dict(width=2.5)
+            )
+
+        fig.update_layout(
+            template="plotly_white",
+            hovermode="x unified",
+            autosize=True,
+            margin=dict(l=50, r=20, t=50, b=50),
+            yaxis=dict(title="Mean Completeness (%)", range=[0, 105]),
+            xaxis=dict(title="Version", tickangle=-45),
+            legend=dict(
+                title="OECD Status",
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="right",
+                x=1
+            )
+        )
+
+        plotly_config = {"responsive": True}
+
+        # Cache figure for image export
+        _plot_figure_cache['oecd_completeness_trend'] = fig
+
+        return pio.to_html(fig, full_html=False, include_plotlyjs=False, config=plotly_config)
+
+    except Exception as e:
+        logger.error(f"Error creating OECD completeness trend: {str(e)}")
+        return create_fallback_plot("OECD Completeness Trend", f"Error: {str(e)}")
+
+
 def plot_aop_completeness_boxplot_by_status():
     """
     Plot composite AOP completeness distribution grouped by OECD status across all versions.
