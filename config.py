@@ -84,7 +84,8 @@ class Config:
     
     # Performance Configuration
     PARALLEL_WORKERS = int(os.getenv("PARALLEL_WORKERS", "5"))
-    PLOT_TIMEOUT = int(os.getenv("PLOT_TIMEOUT", "60"))
+    PLOT_TIMEOUT = int(os.getenv("PLOT_TIMEOUT", "120"))
+    SPARQL_SLOW_TIMEOUT = int(os.getenv("SPARQL_SLOW_TIMEOUT", "60"))
     
     # Logging Configuration
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
