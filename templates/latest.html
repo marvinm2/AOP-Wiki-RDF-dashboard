@@ -10,6 +10,8 @@
 </head>
 
 <body>
+{% from 'macros/methodology.html' import methodology_note %}
+
 <header>
     <h1>Database Snapshot</h1>
     <p style="text-align:center; max-width:800px; margin:10px auto; color:white;">
@@ -105,6 +107,7 @@
             <p class="plot-description">
                 Total number of each entity type and unique authors in the latest version of the AOP-Wiki database.
             </p>
+            {{ methodology_note(methodology_notes, 'latest_entity_counts') }}
             <div class="lazy-plot" data-plot-name="latest_entity_counts">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
@@ -130,6 +133,7 @@
             <p class="plot-description">
                 Analysis of AOP connectivity based on shared Key Events. Connected AOPs share at least one Key Event with other AOPs, while isolated AOPs have unique Key Events.
             </p>
+            {{ methodology_note(methodology_notes, 'latest_aop_connectivity') }}
             <div class="lazy-plot" data-plot-name="latest_aop_connectivity">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
@@ -149,6 +153,7 @@
             <p class="plot-description">
                 Average number of Key Events and Key Event Relationships per AOP in the current database.
             </p>
+            {{ methodology_note(methodology_notes, 'latest_avg_per_aop') }}
             <div class="lazy-plot" data-plot-name="latest_avg_per_aop">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
@@ -174,6 +179,7 @@
             <p class="plot-description">
                 Distribution of Key Event component annotations (Process, Object, Action) in the current database.
             </p>
+            {{ methodology_note(methodology_notes, 'latest_ke_components') }}
             <div class="lazy-plot" data-plot-name="latest_ke_components">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
@@ -193,6 +199,7 @@
             <p class="plot-description">
                 Distribution of annotation depth for Key Events, showing how thoroughly they are documented.
             </p>
+            {{ methodology_note(methodology_notes, 'latest_ke_annotation_depth') }}
             <div class="lazy-plot" data-plot-name="latest_ke_annotation_depth">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
@@ -218,6 +225,7 @@
             <p class="plot-description">
                 Analysis of AOP data completeness showing the distribution of essential vs optional fields.
             </p>
+            {{ methodology_note(methodology_notes, 'latest_aop_completeness') }}
             <div class="lazy-plot" data-plot-name="latest_aop_completeness">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
@@ -242,6 +250,7 @@
                 <strong>Assessment</strong> (Evidence, Plausibility), and
                 <strong>Metadata</strong> (Dates, Identifiers).
             </p>
+            {{ methodology_note(methodology_notes, 'latest_aop_completeness_by_status') }}
             <details style="margin-top: 10px;">
                 <summary style="cursor: pointer; color: #307BBF; font-weight: 500;">Show property details ▼</summary>
                 <div id="aop-properties-details" class="property-details" data-entity-type="AOP" style="margin-top: 10px; padding: 10px; background-color: #f9f9f9; border-radius: 4px; font-size: 13px;">
@@ -272,6 +281,7 @@
                 <strong>Assessment</strong> (Evidence, Measurement), and
                 <strong>Metadata</strong> (Dates, Links).
             </p>
+            {{ methodology_note(methodology_notes, 'latest_ke_completeness_by_status') }}
             <details style="margin-top: 10px;">
                 <summary style="cursor: pointer; color: #307BBF; font-weight: 500;">Show property details ▼</summary>
                 <div id="ke-properties-details" class="property-details" data-entity-type="KE" style="margin-top: 10px; padding: 10px; background-color: #f9f9f9; border-radius: 4px; font-size: 13px;">
@@ -301,6 +311,7 @@
                 <strong>Context</strong> (Applicability, Evidence type), and
                 <strong>Metadata</strong> (Dates, Links).
             </p>
+            {{ methodology_note(methodology_notes, 'latest_ker_completeness_by_status') }}
             <details style="margin-top: 10px;">
                 <summary style="cursor: pointer; color: #307BBF; font-weight: 500;">Show property details ▼</summary>
                 <div id="ker-properties-details" class="property-details" data-entity-type="KER" style="margin-top: 10px; padding: 10px; background-color: #f9f9f9; border-radius: 4px; font-size: 13px;">
@@ -326,6 +337,7 @@
             <p class="plot-description">
                 Distribution of biological process ontology terms used in Key Event annotations.
             </p>
+            {{ methodology_note(methodology_notes, 'latest_process_usage') }}
             <div class="lazy-plot" data-plot-name="latest_process_usage">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
@@ -345,6 +357,7 @@
             <p class="plot-description">
                 Distribution of biological object ontology terms used in Key Event annotations.
             </p>
+            {{ methodology_note(methodology_notes, 'latest_object_usage') }}
             <div class="lazy-plot" data-plot-name="latest_object_usage">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>

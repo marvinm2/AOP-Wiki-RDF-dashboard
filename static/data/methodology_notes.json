@@ -1,0 +1,198 @@
+{
+    "latest_entity_counts": {
+        "title": "Entity Counts",
+        "description": "Counts the total number of each major entity type (AOPs, Key Events, Key Event Relationships, Stressors) and unique authors in the selected version of the AOP-Wiki RDF database. Provides a high-level overview of database size and composition.",
+        "data_source": "SPARQL queries against the AOP-Wiki RDF endpoint count instances of each entity class (aopo:AdverseOutcomePathway, aopo:KeyEvent, aopo:KeyEventRelationship, nci:C54571 for Stressors) and distinct creator URIs within a single named graph version.",
+        "limitations": "Data reflects the RDF transformation of AOP-Wiki, not the raw database. Author counts are based on unique dc:creator URIs and may not correspond exactly to AOP-Wiki user accounts. Entities without RDF type annotations would not be counted.",
+        "sparql": "SELECT ?graph (COUNT(?aop) AS ?count)\nWHERE {\n  GRAPH ?graph {\n    ?aop a aopo:AdverseOutcomePathway .\n  }\n}\nGROUP BY ?graph\nORDER BY DESC(?graph) LIMIT 1"
+    },
+    "latest_aop_connectivity": {
+        "title": "AOP Connectivity",
+        "description": "Analyzes the connectivity of AOPs based on shared Key Events. Connected AOPs share at least one Key Event with other AOPs, while isolated AOPs have entirely unique Key Events. This reveals the degree of overlap and interconnection in the AOP knowledge base.",
+        "data_source": "Two SPARQL queries: one counts total AOPs, the other counts AOPs that share at least one Key Event with another AOP (via aopo:has_key_event). The difference gives the isolated AOP count.",
+        "limitations": "Connectivity is determined solely by shared Key Events declared via aopo:has_key_event. Implicit relationships or shared stressors are not considered. Network density depends on explicitly declared KE-KER relationships in the RDF data.",
+        "sparql": "SELECT ?graph (COUNT(DISTINCT ?aop1) AS ?connected_aops)\nWHERE {\n  GRAPH ?graph {\n    ?aop1 aopo:has_key_event ?ke .\n    ?aop2 aopo:has_key_event ?ke .\n    FILTER(?aop1 != ?aop2)\n  }\n}\nGROUP BY ?graph\nORDER BY DESC(?graph) LIMIT 1"
+    },
+    "latest_avg_per_aop": {
+        "title": "Average Components per AOP",
+        "description": "Calculates the average number of Key Events and Key Event Relationships per AOP in the selected database version. This metric indicates the typical structural complexity of AOPs.",
+        "data_source": "SPARQL queries count the total number of AOP-to-KE and AOP-to-KER relationships (via aopo:has_key_event and aopo:has_key_event_relationship), then divide by the total number of AOPs.",
+        "limitations": "Averages can be skewed by a few very large or very small AOPs. The metric does not distinguish between well-developed and stub AOPs. Relationships must be explicitly declared in RDF.",
+        "sparql": "SELECT ?graph\n  (COUNT(?aop) AS ?count)\n  (COUNT(?ke) AS ?ke_count)\n  (COUNT(?ker) AS ?ker_count)\nWHERE {\n  GRAPH ?graph {\n    ?aop a aopo:AdverseOutcomePathway .\n    OPTIONAL { ?aop aopo:has_key_event ?ke . }\n    OPTIONAL { ?aop aopo:has_key_event_relationship ?ker . }\n  }\n}\nGROUP BY ?graph\nORDER BY DESC(?graph) LIMIT 1"
+    },
+    "latest_ke_components": {
+        "title": "KE Component Distribution",
+        "description": "Shows the distribution of Key Event Component annotations (Biological Process, Biological Object, and Action) across all Key Events. Each KE can have up to three component annotations describing the biological context.",
+        "data_source": "SPARQL queries count Key Events that have annotations for each component type: biological processes (via aopo:has_biological_process), biological objects (via aopo:has_biological_object), and actions (via aopo:has_action).",
+        "limitations": "Only counts presence/absence of each component type, not the quality or specificity of annotations. KEs without any component annotations are not shown. Some KEs may have multiple annotations of the same type.",
+        "sparql": "SELECT ?graph\n  (COUNT(DISTINCT ?process) AS ?processes)\n  (COUNT(DISTINCT ?object) AS ?objects)\n  (COUNT(DISTINCT ?action) AS ?actions)\nWHERE {\n  GRAPH ?graph {\n    ?ke a aopo:KeyEvent .\n    OPTIONAL { ?ke aopo:has_biological_process ?process . }\n    OPTIONAL { ?ke aopo:has_biological_object ?object . }\n    OPTIONAL { ?ke aopo:has_action ?action . }\n  }\n}\nGROUP BY ?graph\nORDER BY DESC(?graph) LIMIT 1"
+    },
+    "latest_ke_annotation_depth": {
+        "title": "KE Annotation Depth",
+        "description": "Measures how thoroughly each Key Event is annotated by counting how many of the three possible KE Component types (Process, Object, Action) each KE has. Shows the distribution across 0, 1, 2, or 3 annotations per KE.",
+        "data_source": "SPARQL query counts distinct component types per KE using OPTIONAL patterns for each component type (biological process, biological object, action), then groups KEs by their annotation count.",
+        "limitations": "Treats all component types equally regardless of scientific importance. A KE with 3 low-quality annotations ranks higher than one with 1 highly specific annotation. Only measures breadth, not depth of annotation.",
+        "sparql": "SELECT ?graph ?ke\n  (COUNT(DISTINCT ?process) AS ?p)\n  (COUNT(DISTINCT ?object) AS ?o)\n  (COUNT(DISTINCT ?action) AS ?a)\nWHERE {\n  GRAPH ?graph {\n    ?ke a aopo:KeyEvent .\n    OPTIONAL { ?ke aopo:has_biological_process ?process . }\n    OPTIONAL { ?ke aopo:has_biological_object ?object . }\n    OPTIONAL { ?ke aopo:has_action ?action . }\n  }\n}\nGROUP BY ?graph ?ke\nORDER BY DESC(?graph)"
+    },
+    "latest_aop_completeness": {
+        "title": "AOP Completeness",
+        "description": "Analyzes how completely AOPs are documented by measuring the presence of key metadata properties. Shows the distribution of completeness scores across all AOPs, where completeness is the fraction of non-ubiquitous properties that are filled in.",
+        "data_source": "Properties are loaded from property_labels.csv which defines expected properties per entity type. For each AOP, SPARQL queries check presence of each property. Properties that are 100% present (always filled) are excluded to focus on informative variation.",
+        "limitations": "Completeness is based on property presence, not quality or accuracy of the data. Properties always present (100%) are excluded from the calculation. The property list is defined externally and may not capture all relevant metadata.",
+        "sparql": "SELECT ?graph ?aop\n  (GROUP_CONCAT(DISTINCT ?prop; separator=',') AS ?present_props)\nWHERE {\n  GRAPH ?graph {\n    ?aop a aopo:AdverseOutcomePathway .\n    ?aop ?prop [] .\n    FILTER(?prop IN ({property_list}))\n  }\n}\nGROUP BY ?graph ?aop\nORDER BY DESC(?graph)"
+    },
+    "latest_aop_completeness_by_status": {
+        "title": "AOP Completeness by OECD Status",
+        "description": "Compares AOP completeness scores across OECD approval status categories (e.g., Endorsed, Under Review, Under Development). Reveals whether more mature AOPs tend to be better documented. Properties are grouped into categories: Essential, Content, Context, Assessment, and Metadata.",
+        "data_source": "Combines AOP completeness data with OECD status information. SPARQL queries retrieve both property presence counts and the OECD status for each AOP. Status is determined via the aopo:has_oecd_status predicate.",
+        "limitations": "OECD status data is version-specific and may change between releases. Some AOPs may lack a status annotation. Properties always present (100%) are excluded from completeness calculation. Status categories reflect the OECD approval pipeline stages present in the data.",
+        "sparql": "SELECT ?graph ?aop ?status\n  (GROUP_CONCAT(DISTINCT ?prop; separator=',') AS ?present_props)\nWHERE {\n  GRAPH ?graph {\n    ?aop a aopo:AdverseOutcomePathway .\n    ?aop ?prop [] .\n    OPTIONAL { ?aop aopo:has_oecd_status ?status . }\n    FILTER(?prop IN ({property_list}))\n  }\n}\nGROUP BY ?graph ?aop ?status"
+    },
+    "latest_ke_completeness_by_status": {
+        "title": "KE Completeness by AOP OECD Status",
+        "description": "Measures completeness of Key Events based on the OECD status of the AOPs they belong to. KEs linked to multiple AOPs with different statuses are counted for each status. Property categories include Essential (Title, Description), Content (Biological components), Context (Applicability), Assessment (Evidence), and Metadata.",
+        "data_source": "SPARQL queries join KE property presence data with AOP status information via the aopo:has_key_event relationship. Each KE inherits the status of its parent AOP(s).",
+        "limitations": "A KE belonging to multiple AOPs with different OECD statuses will appear in each status group, potentially inflating counts. KEs not linked to any AOP are excluded. Properties always present are excluded from completeness scores.",
+        "sparql": "SELECT ?graph ?ke ?status\n  (COUNT(DISTINCT ?prop) AS ?prop_count)\nWHERE {\n  GRAPH ?graph {\n    ?aop aopo:has_key_event ?ke .\n    ?aop aopo:has_oecd_status ?status .\n    ?ke ?prop [] .\n    FILTER(?prop IN ({property_list}))\n  }\n}\nGROUP BY ?graph ?ke ?status"
+    },
+    "latest_ker_completeness_by_status": {
+        "title": "KER Completeness by AOP OECD Status",
+        "description": "Measures completeness of Key Event Relationships based on the OECD status of the AOPs they belong to. KERs linked to multiple AOPs with different statuses are counted for each status. Property categories include Essential, Content, Context, and Metadata.",
+        "data_source": "SPARQL queries join KER property presence data with AOP status information via the aopo:has_key_event_relationship predicate. Each KER inherits the status of its parent AOP(s).",
+        "limitations": "A KER belonging to multiple AOPs with different OECD statuses will appear in each status group. KERs not linked to any AOP are excluded. Properties always present are excluded from completeness scores.",
+        "sparql": "SELECT ?graph ?ker ?status\n  (COUNT(DISTINCT ?prop) AS ?prop_count)\nWHERE {\n  GRAPH ?graph {\n    ?aop aopo:has_key_event_relationship ?ker .\n    ?aop aopo:has_oecd_status ?status .\n    ?ker ?prop [] .\n    FILTER(?prop IN ({property_list}))\n  }\n}\nGROUP BY ?graph ?ker ?status"
+    },
+    "latest_process_usage": {
+        "title": "Biological Process Usage",
+        "description": "Shows the distribution of biological process ontology terms used in Key Event annotations. Identifies which ontologies (e.g., GO, MESH, NCIT) are most commonly referenced for describing biological processes in KE component annotations.",
+        "data_source": "SPARQL queries retrieve all biological process URIs from KE component annotations (via aopo:has_biological_process), then group them by their ontology source namespace.",
+        "limitations": "Only covers processes explicitly annotated in the RDF data. Ontology classification is based on URI prefix patterns. Some processes may be classified differently across ontologies.",
+        "sparql": "SELECT ?graph ?process (COUNT(?process) AS ?count)\nWHERE {\n  GRAPH ?graph {\n    ?ke aopo:has_biological_process ?process .\n  }\n}\nGROUP BY ?graph ?process\nORDER BY DESC(?graph)"
+    },
+    "latest_object_usage": {
+        "title": "Biological Object Usage",
+        "description": "Shows the distribution of biological object ontology terms used in Key Event annotations. Identifies which ontologies are most commonly referenced for describing biological objects (molecules, genes, proteins, etc.) in KE component annotations.",
+        "data_source": "SPARQL queries retrieve all biological object URIs from KE component annotations (via aopo:has_biological_object), then group them by their ontology source namespace.",
+        "limitations": "Only covers objects explicitly annotated in the RDF data. Ontology classification is based on URI prefix patterns. Multiple ontology terms may refer to the same biological entity.",
+        "sparql": "SELECT ?graph ?object (COUNT(?object) AS ?count)\nWHERE {\n  GRAPH ?graph {\n    ?ke aopo:has_biological_object ?object .\n  }\n}\nGROUP BY ?graph ?object\nORDER BY DESC(?graph)"
+    },
+    "aop_entity_counts": {
+        "title": "AOP Entity Counts Over Time",
+        "description": "Tracks the total number of AOPs, Key Events (KEs), Key Event Relationships (KERs), and Stressors across all available database versions. Shows how the knowledge base has grown over time through quarterly RDF releases.",
+        "data_source": "Four separate SPARQL queries count instances of each entity class (aopo:AdverseOutcomePathway, aopo:KeyEvent, aopo:KeyEventRelationship, nci:C54571) across all named graph versions. Results are merged into a unified time series.",
+        "limitations": "Data reflects the RDF transformation, not the raw AOP-Wiki database. Entity counts include all instances regardless of completeness or quality. Some versions may have data quality variations due to changes in the RDF conversion pipeline.",
+        "sparql": "SELECT ?graph (COUNT(?aop) AS ?count)\nWHERE {\n  GRAPH ?graph {\n    ?aop a aopo:AdverseOutcomePathway .\n  }\n}\nGROUP BY ?graph\nORDER BY ?graph"
+    },
+    "aop_property_presence": {
+        "title": "AOP Property Presence Over Time",
+        "description": "Tracks which metadata properties are present in AOPs over time. Shows absolute counts of AOPs containing each property per version. Properties that are always 100% present are excluded to highlight meaningful variation in documentation completeness.",
+        "data_source": "Properties are defined in property_labels.csv. For each version, SPARQL queries check how many AOPs have each property present. Uses CSV-based property loading and GROUP_CONCAT aggregation for efficiency.",
+        "limitations": "Properties always present (100%) are excluded for clarity. The actual SPARQL query is dynamically generated from the property list and varies per entity type. Measures presence only, not quality of property values.",
+        "sparql": "SELECT ?graph ?aop\n  (GROUP_CONCAT(DISTINCT ?prop; separator=',') AS ?present_props)\nWHERE {\n  GRAPH ?graph {\n    ?aop a aopo:AdverseOutcomePathway .\n    ?aop ?prop [] .\n    FILTER(?prop IN ({property_list}))\n  }\n}\nGROUP BY ?graph ?aop"
+    },
+    "ke_property_presence": {
+        "title": "KE Property Presence Over Time",
+        "description": "Tracks which metadata properties are present in Key Events over time. Identifies completeness patterns and annotation trends. Uses marker shapes for visual distinction between property lines.",
+        "data_source": "Properties are defined in property_labels.csv filtered for KE entity type. SPARQL queries check property presence across all Key Events in each version using GROUP_CONCAT aggregation.",
+        "limitations": "Properties always present (100%) are excluded for clarity. The actual SPARQL query is dynamically generated from the property list. Measures presence only, not quality of property values. Uses marker shapes for visual distinction.",
+        "sparql": "SELECT ?graph ?ke\n  (GROUP_CONCAT(DISTINCT ?prop; separator=',') AS ?present_props)\nWHERE {\n  GRAPH ?graph {\n    ?ke a aopo:KeyEvent .\n    ?ke ?prop [] .\n    FILTER(?prop IN ({property_list}))\n  }\n}\nGROUP BY ?graph ?ke"
+    },
+    "ker_property_presence": {
+        "title": "KER Property Presence Over Time",
+        "description": "Tracks which metadata properties are present in Key Event Relationships over time. Monitors evidence and annotation quality across versions. Uses marker shapes for visual distinction between property lines.",
+        "data_source": "Properties are defined in property_labels.csv filtered for KER entity type. SPARQL queries check property presence across all KERs in each version using GROUP_CONCAT aggregation.",
+        "limitations": "Properties always present (100%) are excluded for clarity. The actual SPARQL query is dynamically generated from the property list. Measures presence only, not quality of property values.",
+        "sparql": "SELECT ?graph ?ker\n  (GROUP_CONCAT(DISTINCT ?prop; separator=',') AS ?present_props)\nWHERE {\n  GRAPH ?graph {\n    ?ker a aopo:KeyEventRelationship .\n    ?ker ?prop [] .\n    FILTER(?prop IN ({property_list}))\n  }\n}\nGROUP BY ?graph ?ker"
+    },
+    "stressor_property_presence": {
+        "title": "Stressor Property Presence Over Time",
+        "description": "Tracks which metadata properties are present in Stressors over time. Identifies documentation patterns and completeness trends for stressor entities. Uses marker shapes for visual distinction.",
+        "data_source": "Properties are defined in property_labels.csv filtered for Stressor entity type. SPARQL queries check property presence across all Stressors in each version using GROUP_CONCAT aggregation.",
+        "limitations": "Properties always present (100%) are excluded for clarity. The actual SPARQL query is dynamically generated from the property list. Stressor RDF type is nci:C54571, which may not capture all stressor-related entities.",
+        "sparql": "SELECT ?graph ?stressor\n  (GROUP_CONCAT(DISTINCT ?prop; separator=',') AS ?present_props)\nWHERE {\n  GRAPH ?graph {\n    ?stressor a nci:C54571 .\n    ?stressor ?prop [] .\n    FILTER(?prop IN ({property_list}))\n  }\n}\nGROUP BY ?graph ?stressor"
+    },
+    "entity_completeness_trends": {
+        "title": "Average Entity Completeness Over Time",
+        "description": "Shows the average completeness percentage for AOPs, Key Events, Key Event Relationships, and Stressors over time. Completeness is the fraction of non-ubiquitous properties each entity has filled in, averaged across all entities of that type per version.",
+        "data_source": "Combines property presence data from SPARQL queries with the property definitions in property_labels.csv. For each entity type and version, calculates what fraction of expected (non-100%) properties are present, then averages across all entities.",
+        "limitations": "Excludes properties that are 100% present (always filled in) to focus on optional properties reflecting data richness. Averages can mask bimodal distributions where some entities are very complete and others are very sparse.",
+        "sparql": "SELECT ?graph ?entity\n  (GROUP_CONCAT(DISTINCT ?prop; separator=',') AS ?present_props)\nWHERE {\n  GRAPH ?graph {\n    ?entity a {entity_class} .\n    ?entity ?prop [] .\n    FILTER(?prop IN ({property_list}))\n  }\n}\nGROUP BY ?graph ?entity"
+    },
+    "aop_completeness_boxplot": {
+        "title": "Composite AOP Completeness Distribution Over Time",
+        "description": "Shows the distribution of composite completeness scores for individual AOPs per version. Each AOP's score combines its own property completeness with the average completeness of its linked Key Events and Key Event Relationships, giving a holistic view of how well-documented each AOP network is.",
+        "data_source": "Pre-computed at startup using optimized SPARQL queries (reduced from 10 to 4 queries). Retrieves AOP, KE, and KER property presence data, calculates individual completeness scores, then aggregates into composite scores per AOP. Uses GROUP_CONCAT for efficient property counting.",
+        "limitations": "Composite scores weight AOP, KE, and KER completeness equally. Excludes 100%-present properties. Box plots show quartiles (Q1, median, Q3) with whiskers at 1.5x IQR. AOPs with no linked KEs or KERs use only their own completeness. Query may take 30-75 seconds on large datasets.",
+        "sparql": "SELECT ?graph ?aop\n  (GROUP_CONCAT(DISTINCT ?prop; separator=',') AS ?aop_props)\nWHERE {\n  GRAPH ?graph {\n    ?aop a aopo:AdverseOutcomePathway .\n    ?aop ?prop [] .\n    FILTER(?prop IN ({aop_property_list}))\n  }\n}\nGROUP BY ?graph ?aop"
+    },
+    "oecd_completeness_trend": {
+        "title": "OECD Completeness Trend",
+        "description": "Tracks the mean completeness percentage per OECD approval status category across database versions. Shows how documentation quality correlates with the approval pipeline stage over time.",
+        "data_source": "Combines AOP completeness data with OECD status annotations. For each version and status, calculates the average completeness across all AOPs in that status category.",
+        "limitations": "OECD status data is version-specific and may change between releases. Status categories depend on what is present in the data. Some AOPs may lack status annotations and are excluded from this analysis.",
+        "sparql": "SELECT ?graph ?aop ?status\n  (GROUP_CONCAT(DISTINCT ?prop; separator=',') AS ?present_props)\nWHERE {\n  GRAPH ?graph {\n    ?aop a aopo:AdverseOutcomePathway .\n    ?aop aopo:has_oecd_status ?status .\n    ?aop ?prop [] .\n    FILTER(?prop IN ({property_list}))\n  }\n}\nGROUP BY ?graph ?aop ?status"
+    },
+    "average_components_per_aop": {
+        "title": "Average KEs and KERs per AOP Over Time",
+        "description": "Tracks how densely connected each AOP is on average over time, measured by the number of Key Events and Key Event Relationships per AOP in each version. Indicates whether newer AOPs tend to be more or less complex.",
+        "data_source": "SPARQL queries count total AOP, KE-to-AOP, and KER-to-AOP relationships across all versions, then compute the ratio per version.",
+        "limitations": "Averages can be dominated by a few very large or very small AOPs. Does not distinguish between well-developed and stub AOPs. Only counts explicitly declared relationships.",
+        "sparql": "SELECT ?graph\n  (COUNT(DISTINCT ?aop) AS ?aop_count)\n  (COUNT(?ke) AS ?ke_count)\n  (COUNT(?ker) AS ?ker_count)\nWHERE {\n  GRAPH ?graph {\n    ?aop a aopo:AdverseOutcomePathway .\n    OPTIONAL { ?aop aopo:has_key_event ?ke . }\n    OPTIONAL { ?aop aopo:has_key_event_relationship ?ker . }\n  }\n}\nGROUP BY ?graph\nORDER BY ?graph"
+    },
+    "aop_network_density": {
+        "title": "AOP Network Density Over Time",
+        "description": "Measures how densely connected the KE-KER graph is over time. Network density is the ratio of actual edges (KERs) to the maximum possible edges between KE nodes, showing whether the knowledge base is becoming more interconnected.",
+        "data_source": "SPARQL queries count unique Key Events (nodes) and Key Event Relationships (edges) per version. Density = edges / (nodes * (nodes - 1) / 2) for an undirected graph interpretation.",
+        "limitations": "Network density depends on explicitly declared KE-KER relationships in the RDF data. Adding many new KEs without corresponding KERs will decrease density. The metric is sensitive to the number of isolated or poorly connected nodes.",
+        "sparql": "SELECT ?graph\n  (COUNT(DISTINCT ?ke) AS ?nodes)\n  (COUNT(DISTINCT ?ker) AS ?edges)\nWHERE {\n  GRAPH ?graph {\n    ?ke a aopo:KeyEvent .\n    OPTIONAL { ?ker a aopo:KeyEventRelationship . }\n  }\n}\nGROUP BY ?graph\nORDER BY ?graph"
+    },
+    "aop_authors": {
+        "title": "Authors of AOPs Over Time",
+        "description": "Tracks the number of unique authors contributing to AOPs over time. Shows how the contributor base has grown across database versions.",
+        "data_source": "SPARQL queries count distinct dc:creator URIs across all AOPs per version. Each unique creator URI is counted once per version.",
+        "limitations": "Author counts are based on unique dc:creator URIs and may not match AOP-Wiki user accounts exactly. Co-authorship is counted per unique URI. Authors who contribute to non-AOP entities are not included.",
+        "sparql": "SELECT ?graph (COUNT(DISTINCT ?author) AS ?count)\nWHERE {\n  GRAPH ?graph {\n    ?aop a aopo:AdverseOutcomePathway .\n    ?aop dc:creator ?author .\n  }\n}\nGROUP BY ?graph\nORDER BY ?graph"
+    },
+    "aop_lifetime": {
+        "title": "AOP Creation and Modification Timeline",
+        "description": "Visualizes temporal patterns of AOP creation and modification. Includes three views: (1) number of AOPs created per year, (2) number of AOPs last modified per year, and (3) a scatter plot of creation date vs. last modification date for each AOP.",
+        "data_source": "SPARQL queries retrieve dc:date (creation) and dcterms:modified (last modification) timestamps for all AOPs in the latest version. Dates are parsed and grouped by year for the histogram views.",
+        "limitations": "Creation and modification dates reflect what is stored in the RDF data, which may differ from the AOP-Wiki web interface timestamps. Some AOPs may have missing or malformed date values. Only the latest version's date information is used.",
+        "sparql": "SELECT ?aop ?created ?modified\nWHERE {\n  GRAPH ?graph {\n    ?aop a aopo:AdverseOutcomePathway .\n    OPTIONAL { ?aop dc:date ?created . }\n    OPTIONAL { ?aop dcterms:modified ?modified . }\n  }\n}\nORDER BY DESC(?graph)"
+    },
+    "ke_component_annotations": {
+        "title": "KE Component Annotations Over Time",
+        "description": "Tracks how many Key Event annotations include Process, Object, and Action elements over time. Shows the absolute number of each component type across database versions.",
+        "data_source": "SPARQL queries count KEs with each component type (aopo:has_biological_process, aopo:has_biological_object, aopo:has_action) per version. Totals represent the number of KE-to-component relationships.",
+        "limitations": "Counts the number of annotations, not unique terms. A KE with multiple process annotations contributes multiple counts. Growth in annotations may reflect both new KEs and enrichment of existing ones.",
+        "sparql": "SELECT ?graph\n  (COUNT(DISTINCT ?process) AS ?processes)\n  (COUNT(DISTINCT ?object) AS ?objects)\n  (COUNT(DISTINCT ?action) AS ?actions)\nWHERE {\n  GRAPH ?graph {\n    ?ke a aopo:KeyEvent .\n    OPTIONAL { ?ke aopo:has_biological_process ?process . }\n    OPTIONAL { ?ke aopo:has_biological_object ?object . }\n    OPTIONAL { ?ke aopo:has_action ?action . }\n  }\n}\nGROUP BY ?graph\nORDER BY ?graph"
+    },
+    "ke_components_percentage": {
+        "title": "KE Components as Percentage of Total KEs",
+        "description": "Shows how many Key Events have Process, Object, and Action annotations as a percentage of all KEs per version. Normalizes for growth in total KE count to reveal annotation coverage trends.",
+        "data_source": "Uses the same SPARQL query as KE Component Annotations, but divides each component count by the total KE count per version to produce percentages.",
+        "limitations": "Percentage calculations assume consistent definition of what constitutes a KE across versions. Changes in RDF conversion methodology could affect comparability between versions.",
+        "sparql": "SELECT ?graph\n  (COUNT(DISTINCT ?ke) AS ?total_kes)\n  (COUNT(DISTINCT ?process_ke) AS ?with_process)\nWHERE {\n  GRAPH ?graph {\n    ?ke a aopo:KeyEvent .\n    OPTIONAL { ?ke aopo:has_biological_process ?p . BIND(?ke AS ?process_ke) }\n  }\n}\nGROUP BY ?graph\nORDER BY ?graph"
+    },
+    "unique_ke_components": {
+        "title": "Unique KE Component Annotations Over Time",
+        "description": "Tracks the total number of unique (distinct) Process, Object, and Action annotations used in Key Events over time. Unlike the component count, this measures the vocabulary diversity of annotations.",
+        "data_source": "SPARQL queries count distinct URIs for each component type (biological processes, objects, actions) across all KEs per version.",
+        "limitations": "Unique counts are based on distinct URIs, so the same biological concept referenced by different ontology URIs would be counted separately. Does not measure the frequency of use for each unique term.",
+        "sparql": "SELECT ?graph\n  (COUNT(DISTINCT ?process) AS ?unique_processes)\n  (COUNT(DISTINCT ?object) AS ?unique_objects)\n  (COUNT(DISTINCT ?action) AS ?unique_actions)\nWHERE {\n  GRAPH ?graph {\n    ?ke a aopo:KeyEvent .\n    OPTIONAL { ?ke aopo:has_biological_process ?process . }\n    OPTIONAL { ?ke aopo:has_biological_object ?object . }\n    OPTIONAL { ?ke aopo:has_action ?action . }\n  }\n}\nGROUP BY ?graph\nORDER BY ?graph"
+    },
+    "bio_annotations": {
+        "title": "Biological Process and Object Annotations Over Time",
+        "description": "Tracks KE annotations with biological processes and objects grouped by ontology source. Shows which ontologies (GO, MESH, NCIT, etc.) are most commonly used for annotating Key Events over time.",
+        "data_source": "SPARQL queries retrieve all biological process and object URIs from KE annotations, classify them by ontology namespace prefix, and count occurrences per version.",
+        "limitations": "Ontology classification is based on URI prefix pattern matching. Some URIs may not match known prefixes and would be classified as 'Other'. Does not measure the quality or specificity of ontology term usage.",
+        "sparql": "SELECT ?graph ?process (COUNT(?process) AS ?count)\nWHERE {\n  GRAPH ?graph {\n    ?ke aopo:has_biological_process ?process .\n  }\n}\nGROUP BY ?graph ?process\nORDER BY ?graph"
+    },
+    "kes_by_kec_count": {
+        "title": "KEs by Number of KE Components Over Time",
+        "description": "Tracks how many Key Events contain a specific number of Key Event Components (0, 1, 2, or 3) over time. Reveals annotation completeness trends and whether the community is enriching existing KEs or primarily creating new ones.",
+        "data_source": "For each version, SPARQL queries count the component types per KE, then aggregate KEs by their component count (0 through 3). Results show the distribution shift over time.",
+        "limitations": "Only counts distinct component types (max 3: Process, Object, Action), not total annotations. A KE with multiple processes but no objects or actions would count as 1. Does not measure annotation quality.",
+        "sparql": "SELECT ?graph ?ke\n  (COUNT(DISTINCT ?process) AS ?p)\n  (COUNT(DISTINCT ?object) AS ?o)\n  (COUNT(DISTINCT ?action) AS ?a)\nWHERE {\n  GRAPH ?graph {\n    ?ke a aopo:KeyEvent .\n    OPTIONAL { ?ke aopo:has_biological_process ?process . }\n    OPTIONAL { ?ke aopo:has_biological_object ?object . }\n    OPTIONAL { ?ke aopo:has_action ?action . }\n  }\n}\nGROUP BY ?graph ?ke\nORDER BY ?graph"
+    }
+}
