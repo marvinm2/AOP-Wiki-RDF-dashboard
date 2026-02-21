@@ -72,9 +72,10 @@
             </div>
         </div>
         <p class="plot-description">
-            Tracks the total number of AOPs, Key Events (KEs), Key Event Relationships (KERs), 
+            Tracks the total number of AOPs, Key Events (KEs), Key Event Relationships (KERs),
             and Stressors over time.
         </p>
+        {{ methodology_note(methodology_notes, 'aop_entity_counts') }}
         <div class="abs">
             <div class="lazy-plot" data-plot-name="aop_entity_counts_absolute">
                 <!-- Plot will be loaded here via JavaScript -->
@@ -114,9 +115,10 @@
             </div>
         </div>
         <p class="plot-description">
-            Shows how many AOPs contain each property over time. 
+            Shows how many AOPs contain each property over time.
             Properties always present (100%) are excluded for clarity.
         </p>
+        {{ methodology_note(methodology_notes, 'aop_property_presence') }}
         <div class="abs">
             <div class="lazy-plot" data-plot-name="aop_property_presence_absolute">
                 <!-- Plot will be loaded here via JavaScript -->
@@ -157,6 +159,7 @@
             Tracks which metadata properties are present in Key Events over time. Identifies completeness patterns and annotation trends.
             Uses marker shapes for visual distinction.
         </p>
+        {{ methodology_note(methodology_notes, 'ke_property_presence') }}
         <div class="abs">
             <div class="lazy-plot" data-plot-name="ke_property_presence_absolute">
                 <!-- Plot will be loaded here via JavaScript -->
@@ -197,6 +200,7 @@
             Tracks which metadata properties are present in Key Event Relationships over time. Monitors evidence and annotation quality.
             Uses marker shapes for visual distinction.
         </p>
+        {{ methodology_note(methodology_notes, 'ker_property_presence') }}
         <div class="abs">
             <div class="lazy-plot" data-plot-name="ker_property_presence_absolute">
                 <!-- Plot will be loaded here via JavaScript -->
@@ -237,6 +241,7 @@
             Tracks which metadata properties are present in Stressors over time. Identifies documentation patterns and completeness trends.
             Uses marker shapes for visual distinction.
         </p>
+        {{ methodology_note(methodology_notes, 'stressor_property_presence') }}
         <div class="abs">
             <div class="lazy-plot" data-plot-name="stressor_property_presence_absolute">
                 <!-- Plot will be loaded here via JavaScript -->
@@ -274,6 +279,7 @@
             Completeness is calculated as the percentage of non-ubiquitous properties each entity has filled in,
             then averaged across all entities of that type in each version.
         </p>
+        {{ methodology_note(methodology_notes, 'entity_completeness_trends') }}
         <div class="lazy-plot" data-plot-name="entity_completeness_trends">
             <!-- Plot will be loaded here via JavaScript -->
         </div>
@@ -300,6 +306,7 @@
             The box shows quartiles (Q1, median, Q3), whiskers extend to 1.5×IQR, and points show outliers.
             Excludes 100% present properties like the average plot above.
         </p>
+        {{ methodology_note(methodology_notes, 'aop_completeness_boxplot') }}
         <div class="lazy-plot" data-plot-name="aop_completeness_boxplot">
             <!-- Plot will be loaded here via JavaScript -->
         </div>
@@ -325,6 +332,7 @@
             Each line represents a different OECD status (e.g., Endorsed, Approved, Under Review, Under Development),
             with higher completeness indicating more thoroughly documented AOPs in that category.
         </p>
+        {% if 'oecd_completeness_trend' in methodology_notes %}{{ methodology_note(methodology_notes, 'oecd_completeness_trend') }}{% endif %}
         <div class="lazy-plot" data-plot-name="oecd_completeness_trend">
             <!-- Plot will be loaded here via JavaScript -->
         </div>
@@ -360,9 +368,10 @@
             </div>
         </div>
         <p class="plot-description">
-            Shows how densely connected each AOP is on average, 
+            Shows how densely connected each AOP is on average,
             measured by the number of Key Events and Key Event Relationships per AOP.
         </p>
+        {{ methodology_note(methodology_notes, 'average_components_per_aop') }}
         <div class="abs">
             <div class="lazy-plot" data-plot-name="average_components_per_aop_absolute">
                 <!-- Plot will be loaded here via JavaScript -->
@@ -391,6 +400,7 @@
             Shows how densely connected the KE-KER graph is over time,
             calculated as the ratio of edges to possible connections between nodes.
         </p>
+        {{ methodology_note(methodology_notes, 'aop_network_density') }}
         <div class="lazy-plot" data-plot-name="aop_network_density">
             <!-- Plot will be loaded here via JavaScript -->
         </div>
@@ -429,6 +439,7 @@
         <p class="plot-description">
             Tracks the number of unique authors contributing to AOPs over time.
         </p>
+        {{ methodology_note(methodology_notes, 'aop_authors') }}
         <div class="abs">
             <div class="lazy-plot" data-plot-name="aop_authors_absolute">
                 <!-- Plot will be loaded here via JavaScript -->
@@ -457,6 +468,7 @@
         <p class="plot-description">
             Number of unique AOPs first created in each year.
         </p>
+        {{ methodology_note(methodology_notes, 'aop_lifetime') }}
         <div class="lazy-plot" data-plot-name="aops_created_over_time">
             <!-- Plot will be loaded here via JavaScript -->
         </div>
@@ -536,6 +548,7 @@
         <p class="plot-description">
             Tracks how many Key Event annotations include Process, Object, and Action elements over time.
         </p>
+        {{ methodology_note(methodology_notes, 'ke_component_annotations') }}
         <div class="abs">
             <div class="lazy-plot" data-plot-name="ke_component_annotations_absolute">
                 <!-- Plot will be loaded here via JavaScript -->
@@ -574,6 +587,7 @@
         <p class="plot-description">
             Shows how many Key Events have Process, Object, and Action annotations as a percentage of all KEs per version.
         </p>
+        {{ methodology_note(methodology_notes, 'ke_components_percentage') }}
         <div class="abs">
             <div class="lazy-plot" data-plot-name="ke_components_percentage_absolute">
                 <!-- Plot will be loaded here via JavaScript -->
@@ -612,6 +626,7 @@
         <p class="plot-description">
             Tracks the total number of unique Process, Object, and Action annotations used in Key Events over time.
         </p>
+        {{ methodology_note(methodology_notes, 'unique_ke_components') }}
         <div class="abs">
             <div class="lazy-plot" data-plot-name="unique_ke_components_absolute">
                 <!-- Plot will be loaded here via JavaScript -->
@@ -650,6 +665,7 @@
         <p class="plot-description">
             Shows KE annotations with biological processes grouped by ontology.
         </p>
+        {{ methodology_note(methodology_notes, 'bio_annotations') }}
         <div class="abs">
             <div class="lazy-plot" data-plot-name="biological_process_annotations_absolute">
                 <!-- Plot will be loaded here via JavaScript -->
@@ -724,9 +740,10 @@
             </div>
         </div>
         <p class="plot-description">
-            Tracks how many Key Events contain a specific number of Key Event Components (KECs) 
+            Tracks how many Key Events contain a specific number of Key Event Components (KECs)
             over time, showing annotation completeness.
         </p>
+        {{ methodology_note(methodology_notes, 'kes_by_kec_count') }}
         <div class="abs">
             <div class="lazy-plot" data-plot-name="kes_by_kec_count_absolute">
                 <!-- Plot will be loaded here via JavaScript -->
@@ -770,7 +787,6 @@ document.querySelectorAll(".plot-toggle").forEach(toggle => {
                 abs.style.display = isDelta ? "none" : "block";
                 delta.style.display = isDelta ? "block" : "none";
             }
-            // ✅ Sync individual checkboxes
             if (checkbox) {
                 checkbox.checked = isDelta;
             }
