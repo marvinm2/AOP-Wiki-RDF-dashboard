@@ -5,32 +5,33 @@
 See: .planning/PROJECT.md (updated 2026-02-20)
 
 **Core value:** Researchers, curators, and regulators can explore AOP-Wiki data across any version to understand how the knowledge base evolves over time — reliably and without timeouts.
-**Current focus:** Phase 1: Foundation and Cleanup
+**Current focus:** Phase 2: Reliability and Completeness
 
 ## Current Position
 
-Phase: 1 of 6 (Foundation and Cleanup) -- COMPLETE
-Plan: 4 of 4 in current phase
-Status: Phase Complete
-Last activity: 2026-02-20 — Completed 01-04-PLAN.md
+Phase: 2 of 6 (Reliability and Completeness)
+Plan: 2 of 4 in current phase
+Status: In Progress
+Last activity: 2026-02-21 — Completed 02-02-PLAN.md
 
-Progress: [██████░░░░] 57%
+Progress: [███████░░░] 67%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
+- Total plans completed: 6
 - Average duration: ~5 min
-- Total execution time: ~0.3 hours
+- Total execution time: ~0.5 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01 | 4/4 | ~19 min | ~5 min |
+| 02 | 2/4 | ~10 min | ~5 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (4m), 01-02 (8m), 01-03 (6m), 01-04 (1m)
+- Last 5 plans: 01-02 (8m), 01-03 (6m), 01-04 (1m), 02-01 (5m), 02-02 (5m)
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -51,6 +52,8 @@ Recent decisions affecting current work:
 - [01-02]: JSON logging configured centrally in config.py before any other imports
 - [01-04]: Generalized tuple fallback by counting str elements in annotation rather than hardcoding function names
 - [01-04]: Detect 'Data Unavailable' sentinel string in fallback HTML to distinguish from legitimate content
+- [02-02]: Used request.args.get('version') uniformly for all routes; trend routes get None, latest routes get version from version-selector.js
+- [02-02]: 12 data cache keys were already present (not 20 as estimated); only 6 functions needed updates
 
 ### Pending Todos
 
@@ -63,6 +66,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-20
-Stopped at: Completed 01-04-PLAN.md (Phase 1 complete)
-Resume file: .planning/phases/01-foundation-and-cleanup/01-04-SUMMARY.md
+Last session: 2026-02-21
+Stopped at: Completed 02-02-PLAN.md
+Resume file: .planning/phases/02-reliability-and-completeness/02-02-SUMMARY.md
