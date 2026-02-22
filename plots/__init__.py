@@ -167,6 +167,14 @@ from .trends_plots import (
     plot_oecd_completeness_trend,
 )
 
+# Import network analysis functions
+from .network import (
+    build_aop_network,
+    compute_network_metrics,
+    graph_to_cytoscape_json,
+    get_or_compute_network,
+)
+
 # Import all current snapshot plot functions
 from .latest_plots import (
     # Database state analysis
@@ -253,6 +261,12 @@ __all__ = [
     'plot_latest_aop_completeness_by_status',
     'plot_latest_ke_completeness_by_status',
     'plot_latest_ker_completeness_by_status',
+
+    # Network analysis functions
+    'build_aop_network',
+    'compute_network_metrics',
+    'graph_to_cytoscape_json',
+    'get_or_compute_network',
 ]
 
 # Module-level convenience functions
@@ -297,6 +311,12 @@ def get_available_functions():
             'plot_latest_aop_completeness_by_status',
             'plot_latest_ke_completeness_by_status',
             'plot_latest_ker_completeness_by_status',
+        ],
+        'network_analysis': [
+            'build_aop_network',
+            'compute_network_metrics',
+            'graph_to_cytoscape_json',
+            'get_or_compute_network',
         ],
         'utilities': [
             'run_sparql_query',
