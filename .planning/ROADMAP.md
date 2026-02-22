@@ -56,7 +56,7 @@ Plans:
 - [x] 02-03-PLAN.md — Methodology notes: JSON data file, Jinja2 macro, CSS, applied to all plots (Wave 1)
 - [x] 02-04-PLAN.md — Reliability audit and user verification checkpoint (Wave 2) -- issues found
 - [ ] 02-05-PLAN.md — Gap closure: fix KE component SPARQL predicates and boxplot data truncation (Wave 1)
-- [ ] 02-06-PLAN.md — Gap closure: OECD layout fix, missing methodology notes, limitations cleanup (Wave 1)
+- [x] 02-06-PLAN.md — Gap closure: OECD layout fix, missing methodology notes, limitations cleanup (Wave 1)
 
 ### Phase 3: Network Analysis
 **Goal**: Users can explore the AOP-Wiki as an interactive network, identifying structurally important Key Events and discovering community groupings (Issue #11)
@@ -129,7 +129,7 @@ Note: Phase 2 and Phase 3 can execute in parallel (both depend only on Phase 1).
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation and Cleanup | 4/4 | Complete | 2026-02-20 |
-| 2. Reliability and Completeness | 4/6 | Gap closure planned | 2026-02-21 |
+| 2. Reliability and Completeness | 5/6 | In Progress | 2026-02-22 |
 | 3. Network Analysis | 0/3 | Not started | - |
 | 4. Entity Exploration | 0/3 | Not started | - |
 | 5. Advanced Analytics | 0/2 | Not started | - |

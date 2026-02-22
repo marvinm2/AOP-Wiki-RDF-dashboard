@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-02-20)
 ## Current Position
 
 Phase: 2 of 6 (Reliability and Completeness)
-Plan: 4 of 4 in current phase
-Status: Complete (with issues)
-Last activity: 2026-02-21 — Completed 02-04-PLAN.md (verification found 4 issues)
+Plan: 6 of 6 in current phase
+Status: Complete
+Last activity: 2026-02-22 — Completed 02-06-PLAN.md (gap closure: layout fixes + methodology notes cleanup)
 
 Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 8
-- Average duration: ~6 min
-- Total execution time: ~0.7 hours
+- Total plans completed: 10
+- Average duration: ~5 min
+- Total execution time: ~0.8 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01 | 4/4 | ~19 min | ~5 min |
-| 02 | 4/4 | ~21 min | ~5 min |
+| 02 | 6/6 | ~27 min | ~5 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-04 (1m), 02-01 (5m), 02-02 (5m), 02-03 (8m), 02-04 (3m)
+- Last 5 plans: 02-02 (5m), 02-03 (8m), 02-04 (3m), 02-05 (3m), 02-06 (3m)
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -61,6 +61,9 @@ Recent decisions affecting current work:
 - [02-03]: Virtuoso tuning documented as recommendations only, not applied in Docker config
 - [02-04]: All trend plot functions wrapped in try/except with create_fallback_plot for graceful degradation
 - [02-04]: Used errors='coerce' universally on pd.to_datetime calls for malformed date safety
+- [02-06]: Centered horizontal legends (xanchor=center) for better visual balance with multi-status legends
+- [02-06]: Methodology note limitations should contain only methodological/data-quality caveats, no performance or implementation details
+- [02-06]: Varied presence-only limitation text per entity type for contextual clarity
 
 ### Pending Todos
 
@@ -69,10 +72,10 @@ None yet.
 ### Verification Issues (Phase 2)
 
 User verification of Phase 2 delivery found 4 issues requiring follow-up:
-1. OECD plot title and legend overlap (cosmetic)
-2. Composite AOP Completeness Distribution only has pre-2020 data (possible Virtuoso limit)
-3. Methodology notes incomplete on some plots; performance limitations unnecessary for average users
-4. Some KE component annotation plots broken (not rendering)
+1. ~~OECD plot title and legend overlap (cosmetic)~~ -- RESOLVED in 02-06
+2. Composite AOP Completeness Distribution only has pre-2020 data (possible Virtuoso limit) -- addressed in 02-05
+3. ~~Methodology notes incomplete on some plots; performance limitations unnecessary for average users~~ -- RESOLVED in 02-06
+4. Some KE component annotation plots broken (not rendering) -- addressed in 02-05
 
 ### Blockers/Concerns
 
@@ -81,6 +84,6 @@ User verification of Phase 2 delivery found 4 issues requiring follow-up:
 
 ## Session Continuity
 
-Last session: 2026-02-21
-Stopped at: Completed 02-04-PLAN.md (Phase 2 complete with issues)
-Resume file: .planning/phases/02-reliability-and-completeness/02-04-SUMMARY.md
+Last session: 2026-02-22
+Stopped at: Completed 02-06-PLAN.md (Phase 2 fully complete, all gap closure done)
+Resume file: .planning/phases/02-reliability-and-completeness/02-06-SUMMARY.md
