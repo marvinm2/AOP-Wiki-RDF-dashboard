@@ -175,7 +175,6 @@ async function initNetworkGraph() {
         setupSearch(cy);
         setupFilters(cy);
         setupMetricSelector(cy);
-        setupTabs();
 
         // Apply initial metric-based sizing with actual data range
         updateNodeSizing(cy, currentMetric);
@@ -1001,4 +1000,7 @@ function debounce(fn, delay) {
 // Entry Point
 // ============================================================
 
-document.addEventListener('DOMContentLoaded', initNetworkGraph);
+document.addEventListener('DOMContentLoaded', function () {
+    setupTabs();
+    initNetworkGraph();
+});
