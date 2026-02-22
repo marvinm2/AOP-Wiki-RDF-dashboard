@@ -227,6 +227,8 @@ For questions, issues, or feature requests:
 2. Review existing issues in the project repository
 3. Contact the VHP4Safety development team
 
+Development of this dashboard is supported by [Claude](https://claude.ai) (Anthropic).
+
 ## Related Projects
 
 - **VHP4Safety**: Virtual Human Platform for safety assessment
