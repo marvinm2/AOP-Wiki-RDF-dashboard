@@ -1,28 +1,22 @@
 """AOP-Wiki RDF Dashboard - Network Graph Construction and Analysis.
 
 This module builds an interactive network graph from AOP-Wiki RDF data using
-NetworkX. It queries the SPARQL endpoint for the latest version's AOP-KE-KER
-topology, constructs a bipartite graph (AOPs and KEs as nodes, memberships and
-KERs as edges), computes centrality metrics (degree, betweenness, closeness,
-PageRank) and Louvain community detection, then converts the result to
-Cytoscape.js JSON format for frontend rendering.
+NetworkX. It queries the SPARQL endpoint for the latest version's KE-KER
+topology, constructs a directed graph (KEs as nodes, KERs as edges), computes
+centrality metrics (degree, betweenness, closeness, PageRank) and Louvain
+community detection, then converts the result to Cytoscape.js JSON format for
+frontend rendering.
 
 Core Components:
-    - Graph construction from 4 bulk SPARQL queries
+    - Graph construction from 2 bulk SPARQL queries (KEs + KERs)
     - Centrality metrics computation (degree, betweenness, closeness, PageRank)
     - Louvain community detection with deterministic seeding
     - Cytoscape.js JSON conversion with VHP4Safety brand colors
     - Lazy computation with module-level caching
 
 Data Flow:
-    SPARQL endpoint -> 4 bulk queries -> NetworkX graph -> metrics + communities
+    SPARQL endpoint -> 2 bulk queries -> NetworkX graph -> metrics + communities
     -> Cytoscape.js JSON -> cached for subsequent requests
-
-Performance:
-    - 4 SPARQL round-trips (bulk queries, not per-entity)
-    - NetworkX metrics computed in <1s for ~2,000 node graph
-    - Lazy-loaded on first /network page access (not at startup)
-    - Cached in memory for subsequent requests
 
 Usage:
     >>> from plots.network import get_or_compute_network
@@ -51,49 +45,21 @@ _network_cache: Dict = {}
 
 
 def build_aop_network() -> nx.Graph:
-    """Build bipartite AOP-KE network graph from SPARQL endpoint data.
+    """Build KE-KER network graph from SPARQL endpoint data.
 
-    Queries the SPARQL endpoint with 4 bulk queries against the latest version
-    graph to retrieve AOPs, KEs, AOP-KE membership edges, and KER edges. Builds
-    a NetworkX undirected graph with typed nodes and edges.
-
-    The 4 queries are:
-        1. AOPs with title, OECD status, and foaf:page
-        2. KEs with title and foaf:page
-        3. AOP-KE membership edges via aopo:has_key_event
-        4. KER edges with upstream/downstream KEs
+    Queries the SPARQL endpoint with 2 bulk queries against the latest version
+    graph to retrieve Key Events and Key Event Relationships. Builds a NetworkX
+    undirected graph with KE nodes and KER edges.
 
     Returns:
-        nx.Graph: NetworkX graph with node attributes (type, label, uri,
-            wiki_url, oecd_status) and edge attributes (type: 'membership'
-            or 'ker').
-
-    Example:
-        >>> G = build_aop_network()
-        >>> print(f"Nodes: {G.number_of_nodes()}, Edges: {G.number_of_edges()}")
+        nx.Graph: NetworkX graph with KE node attributes (type, label, uri,
+            wiki_url) and KER edge attributes (type='ker').
     """
     version = get_latest_version()
     target_graph = f"http://aopwiki.org/graph/{version}"
-    logger.info(f"Building AOP network from graph: {target_graph}")
+    logger.info(f"Building KE-KER network from graph: {target_graph}")
 
-    # Query 1: Get all AOPs with title, OECD status, and foaf:page
-    aop_query = f"""
-    SELECT ?aop
-           (SAMPLE(?t) AS ?title)
-           (SAMPLE(STR(?s)) AS ?status)
-           (SAMPLE(STR(?p)) AS ?page)
-    WHERE {{
-        GRAPH <{target_graph}> {{
-            ?aop a aopo:AdverseOutcomePathway .
-            OPTIONAL {{ ?aop dc:title ?t }}
-            OPTIONAL {{ ?aop <http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25688> ?s }}
-            OPTIONAL {{ ?aop foaf:page ?p }}
-        }}
-    }}
-    GROUP BY ?aop
-    """
-
-    # Query 2: Get all KEs with title and foaf:page
+    # Query 1: Get all KEs with title and foaf:page
     ke_query = f"""
     SELECT ?ke
            (SAMPLE(?t) AS ?title)
@@ -108,18 +74,7 @@ def build_aop_network() -> nx.Graph:
     GROUP BY ?ke
     """
 
-    # Query 3: Get AOP-KE membership edges
-    membership_query = f"""
-    SELECT ?aop ?ke
-    WHERE {{
-        GRAPH <{target_graph}> {{
-            ?aop a aopo:AdverseOutcomePathway ;
-                 aopo:has_key_event ?ke .
-        }}
-    }}
-    """
-
-    # Query 4: Get KER edges with upstream/downstream KEs
+    # Query 2: Get KER edges with upstream/downstream KEs
     ker_query = f"""
     SELECT ?ker ?upstream ?downstream
     WHERE {{
@@ -134,21 +89,6 @@ def build_aop_network() -> nx.Graph:
     # Build NetworkX graph
     G = nx.Graph()
 
-    # Add AOP nodes
-    aop_results = run_sparql_query_with_retry(aop_query)
-    for r in aop_results:
-        aop_uri = r['aop']['value']
-        aop_id = aop_uri.split('/')[-1]
-        G.add_node(
-            aop_id,
-            type='AOP',
-            label=r.get('title', {}).get('value', aop_id),
-            uri=aop_uri,
-            wiki_url=r.get('page', {}).get('value', ''),
-            oecd_status=r.get('status', {}).get('value', 'Unknown'),
-        )
-    logger.info(f"Added {len(aop_results)} AOP nodes")
-
     # Add KE nodes
     ke_results = run_sparql_query_with_retry(ke_query)
     for r in ke_results:
@@ -160,20 +100,8 @@ def build_aop_network() -> nx.Graph:
             label=r.get('title', {}).get('value', ke_id),
             uri=ke_uri,
             wiki_url=r.get('page', {}).get('value', ''),
-            oecd_status='',
         )
     logger.info(f"Added {len(ke_results)} KE nodes")
-
-    # Add membership edges (AOP -> KE)
-    membership_results = run_sparql_query_with_retry(membership_query)
-    membership_count = 0
-    for r in membership_results:
-        aop_id = r['aop']['value'].split('/')[-1]
-        ke_id = r['ke']['value'].split('/')[-1]
-        if aop_id in G and ke_id in G:
-            G.add_edge(aop_id, ke_id, type='membership')
-            membership_count += 1
-    logger.info(f"Added {membership_count} membership edges")
 
     # Add KER edges (upstream KE -> downstream KE)
     ker_results = run_sparql_query_with_retry(ker_query)
@@ -223,7 +151,7 @@ def compute_network_metrics(G: nx.Graph) -> Tuple[pd.DataFrame, List[Dict]]:
         logger.warning("Empty graph, returning empty metrics")
         empty_df = pd.DataFrame(
             columns=['id', 'label', 'type', 'uri', 'wiki_url',
-                     'oecd_status', 'degree', 'betweenness', 'closeness',
+                     'degree', 'betweenness', 'closeness',
                      'pagerank', 'community']
         )
         return empty_df, []
@@ -253,7 +181,6 @@ def compute_network_metrics(G: nx.Graph) -> Tuple[pd.DataFrame, List[Dict]]:
             'type': node_data.get('type', 'Unknown'),
             'uri': node_data.get('uri', ''),
             'wiki_url': node_data.get('wiki_url', ''),
-            'oecd_status': node_data.get('oecd_status', ''),
             'degree': round(degree[node], 4),
             'betweenness': round(betweenness[node], 4),
             'closeness': round(closeness[node], 4),
@@ -329,13 +256,12 @@ def graph_to_cytoscape_json(
         if row is not None:
             community_idx = int(row['community'])
             community_color = palette[community_idx % len(palette)]
-            node_type = row['type']
 
             elements.append({
                 'data': {
                     'id': str(node_id),
                     'label': str(row['label']),
-                    'type': node_type,
+                    'type': 'KE',
                     'degree': float(row['degree']),
                     'betweenness': float(row['betweenness']),
                     'closeness': float(row['closeness']),
@@ -344,8 +270,6 @@ def graph_to_cytoscape_json(
                     'color': community_color,
                     'uri': str(row.get('uri', '')),
                     'wiki_url': str(row.get('wiki_url', '')),
-                    'oecd_status': str(row.get('oecd_status', '')),
-                    'shape': 'round-rectangle' if node_type == 'AOP' else 'ellipse',
                 }
             })
 
@@ -414,10 +338,6 @@ def get_or_compute_network() -> Dict:
         # Convert to Cytoscape.js JSON
         elements = graph_to_cytoscape_json(G, metrics_df)
 
-        # Count node types
-        aop_count = sum(1 for _, d in G.nodes(data=True) if d.get('type') == 'AOP')
-        ke_count = sum(1 for _, d in G.nodes(data=True) if d.get('type') == 'KE')
-
         # Assemble result
         result = {
             'elements': elements,
@@ -427,8 +347,8 @@ def get_or_compute_network() -> Dict:
             'stats': {
                 'nodes': G.number_of_nodes(),
                 'edges': G.number_of_edges(),
-                'aop_count': aop_count,
-                'ke_count': ke_count,
+                'ke_count': G.number_of_nodes(),
+                'ker_count': G.number_of_edges(),
                 'communities': len(communities_list),
             },
         }

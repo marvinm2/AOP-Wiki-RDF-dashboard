@@ -89,24 +89,7 @@ async function initNetworkGraph() {
             boxSelectionEnabled: true,
             style: [
                 {
-                    selector: 'node[type="AOP"]',
-                    style: {
-                        'shape': 'round-rectangle',
-                        'background-color': 'data(color)',
-                        'label': 'data(label)',
-                        'width': 'mapData(pagerank, 0, 0.01, 25, 90)',
-                        'height': 'mapData(pagerank, 0, 0.01, 25, 90)',
-                        'font-size': '8px',
-                        'text-wrap': 'ellipsis',
-                        'text-max-width': '80px',
-                        'min-zoomed-font-size': 12,
-                        'text-valign': 'center',
-                        'text-halign': 'center',
-                        'color': '#29235C'
-                    }
-                },
-                {
-                    selector: 'node[type="KE"]',
+                    selector: 'node',
                     style: {
                         'shape': 'ellipse',
                         'background-color': 'data(color)',
@@ -115,7 +98,7 @@ async function initNetworkGraph() {
                         'height': 'mapData(pagerank, 0, 0.01, 15, 70)',
                         'font-size': '7px',
                         'text-wrap': 'ellipsis',
-                        'text-max-width': '60px',
+                        'text-max-width': '80px',
                         'min-zoomed-font-size': 12,
                         'text-valign': 'center',
                         'text-halign': 'center',
@@ -130,22 +113,13 @@ async function initNetworkGraph() {
                     }
                 },
                 {
-                    selector: 'edge[type="membership"]',
+                    selector: 'edge',
                     style: {
                         'line-color': '#93D5F6',
-                        'opacity': 0.4,
-                        'width': 1,
-                        'curve-style': 'bezier'
-                    }
-                },
-                {
-                    selector: 'edge[type="ker"]',
-                    style: {
-                        'line-color': '#E6007E',
-                        'opacity': 0.6,
-                        'width': 2,
+                        'opacity': 0.5,
+                        'width': 1.5,
                         'target-arrow-shape': 'triangle',
-                        'target-arrow-color': '#E6007E',
+                        'target-arrow-color': '#93D5F6',
                         'curve-style': 'bezier'
                     }
                 }
@@ -273,20 +247,8 @@ function showInfoPanel(nodeData, nodeId) {
     // Type badge
     const typeBadge = document.getElementById('info-type-badge');
     if (typeBadge) {
-        typeBadge.textContent = nodeData.type;
-        typeBadge.className = 'type-badge ' + (nodeData.type === 'AOP' ? 'aop' : 'ke');
-    }
-
-    // OECD status (AOP only)
-    const oecdRow = document.getElementById('info-panel-oecd');
-    const oecdValue = document.getElementById('info-oecd-value');
-    if (oecdRow && oecdValue) {
-        if (nodeData.type === 'AOP' && nodeData.oecd_status) {
-            oecdRow.style.display = 'flex';
-            oecdValue.textContent = nodeData.oecd_status;
-        } else {
-            oecdRow.style.display = 'none';
-        }
+        typeBadge.textContent = 'Key Event';
+        typeBadge.className = 'type-badge ke';
     }
 
     // Centrality metrics
@@ -316,13 +278,6 @@ function showInfoPanel(nodeData, nodeId) {
         } else {
             neighbors.forEach(function (n) {
                 const li = document.createElement('li');
-                const badge = document.createElement('span');
-                badge.className = 'type-badge ' + (n.data('type') === 'AOP' ? 'aop' : 'ke');
-                badge.textContent = n.data('type');
-                badge.style.fontSize = '10px';
-                badge.style.padding = '1px 6px';
-                badge.style.marginRight = '6px';
-                li.appendChild(badge);
                 li.appendChild(document.createTextNode(n.data('label') || n.id()));
                 li.dataset.nodeId = n.id();
                 li.addEventListener('click', function () {
@@ -496,9 +451,6 @@ function setupSearch(cyInstance) {
  * @param {cytoscape.Core} cyInstance
  */
 function setupFilters(cyInstance) {
-    const filterAop = document.getElementById('filter-aop');
-    const filterKe = document.getElementById('filter-ke');
-    const oecdCheckboxes = document.querySelectorAll('.filter-oecd');
     const communitySelect = document.getElementById('filter-community');
     const resetBtn = document.getElementById('reset-filters');
 
@@ -506,20 +458,11 @@ function setupFilters(cyInstance) {
         applyFilters(cyInstance);
     };
 
-    // Attach change handlers
-    if (filterAop) filterAop.addEventListener('change', applyCurrentFilters);
-    if (filterKe) filterKe.addEventListener('change', applyCurrentFilters);
-    oecdCheckboxes.forEach(function (cb) {
-        cb.addEventListener('change', applyCurrentFilters);
-    });
     if (communitySelect) communitySelect.addEventListener('change', applyCurrentFilters);
 
     // Reset filters
     if (resetBtn) {
         resetBtn.addEventListener('click', function () {
-            if (filterAop) filterAop.checked = true;
-            if (filterKe) filterKe.checked = true;
-            oecdCheckboxes.forEach(function (cb) { cb.checked = true; });
             if (communitySelect) communitySelect.value = 'all';
             applyFilters(cyInstance);
         });
@@ -531,46 +474,17 @@ function setupFilters(cyInstance) {
  * @param {cytoscape.Core} cyInstance
  */
 function applyFilters(cyInstance) {
-    const showAop = document.getElementById('filter-aop');
-    const showKe = document.getElementById('filter-ke');
     const communitySelect = document.getElementById('filter-community');
     const communityValue = communitySelect ? communitySelect.value : 'all';
 
-    // Collect checked OECD statuses
-    const oecdCheckboxes = document.querySelectorAll('.filter-oecd');
-    const checkedStatuses = [];
-    oecdCheckboxes.forEach(function (cb) {
-        if (cb.checked) checkedStatuses.push(cb.value);
-    });
-
     // Start by showing all elements
     cyInstance.elements().show();
-
-    // Hide AOP nodes if unchecked
-    if (showAop && !showAop.checked) {
-        cyInstance.nodes('[type="AOP"]').hide();
-    }
-
-    // Hide KE nodes if unchecked
-    if (showKe && !showKe.checked) {
-        cyInstance.nodes('[type="KE"]').hide();
-    }
-
-    // Filter AOP nodes by OECD status
-    if (showAop && showAop.checked) {
-        cyInstance.nodes('[type="AOP"]').forEach(function (n) {
-            const status = n.data('oecd_status') || 'Unknown';
-            if (!checkedStatuses.includes(status)) {
-                n.hide();
-            }
-        });
-    }
 
     // Community filter
     if (communityValue !== 'all') {
         const communityId = parseInt(communityValue, 10);
         cyInstance.nodes().forEach(function (n) {
-            if (n.visible() && n.data('community') !== communityId) {
+            if (n.data('community') !== communityId) {
                 n.hide();
             }
         });
@@ -624,8 +538,6 @@ function populateCommunityDropdown(cyInstance) {
 function updateFilteredStats(cyInstance) {
     const visibleNodes = cyInstance.nodes().filter(function (n) { return n.visible(); });
     const visibleEdges = cyInstance.edges().filter(function (e) { return e.visible(); });
-    const aopCount = visibleNodes.filter(function (n) { return n.data('type') === 'AOP'; }).length;
-    const keCount = visibleNodes.filter(function (n) { return n.data('type') === 'KE'; }).length;
 
     // Count unique communities among visible nodes
     const visibleCommunities = new Set();
@@ -636,8 +548,8 @@ function updateFilteredStats(cyInstance) {
     updateStatsBar({
         nodes: visibleNodes.length,
         edges: visibleEdges.length,
-        aop_count: aopCount,
-        ke_count: keCount,
+        ke_count: visibleNodes.length,
+        ker_count: visibleEdges.length,
         communities: visibleCommunities.size
     });
 }
@@ -955,8 +867,8 @@ function updateStatsBar(stats) {
 
     setVal('stat-nodes', stats.nodes);
     setVal('stat-edges', stats.edges);
-    setVal('stat-aops', stats.aop_count);
     setVal('stat-kes', stats.ke_count);
+    setVal('stat-kers', stats.ker_count);
     setVal('stat-communities', stats.communities);
 }
 

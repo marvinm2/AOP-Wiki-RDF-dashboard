@@ -18,8 +18,8 @@
 <header>
     <h1>Network Analysis</h1>
     <p style="text-align:center; max-width:800px; margin:10px auto; color:white;">
-        Interactive AOP-KE bipartite network exploration with centrality metrics,
-        community detection, and graph visualization.
+        Interactive Key Event network exploration with centrality metrics,
+        community detection, and KER-based graph visualization.
     </p>
 </header>
 
@@ -42,35 +42,6 @@
 
         <!-- Filter Panel -->
         <div class="filter-panel">
-            <div class="filter-group">
-                <label class="filter-label">Node Type:</label>
-                <label class="checkbox-label">
-                    <input type="checkbox" id="filter-aop" checked> AOPs
-                </label>
-                <label class="checkbox-label">
-                    <input type="checkbox" id="filter-ke" checked> Key Events
-                </label>
-            </div>
-
-            <div class="filter-group">
-                <label class="filter-label">OECD Status:</label>
-                <label class="checkbox-label">
-                    <input type="checkbox" class="filter-oecd" value="Endorsed" checked> Endorsed
-                </label>
-                <label class="checkbox-label">
-                    <input type="checkbox" class="filter-oecd" value="Under Review" checked> Under Review
-                </label>
-                <label class="checkbox-label">
-                    <input type="checkbox" class="filter-oecd" value="Under Development" checked> Under Development
-                </label>
-                <label class="checkbox-label">
-                    <input type="checkbox" class="filter-oecd" value="EAGMST Approved" checked> EAGMST Approved
-                </label>
-                <label class="checkbox-label">
-                    <input type="checkbox" class="filter-oecd" value="WPHA/WNT Endorsed" checked> WPHA/WNT Endorsed
-                </label>
-            </div>
-
             <div class="filter-group">
                 <label class="filter-label">Community:</label>
                 <select id="filter-community" class="filter-select">
@@ -116,11 +87,7 @@
             <div class="info-panel-content">
                 <div id="info-panel-type" class="info-row">
                     <span class="info-label">Type:</span>
-                    <span id="info-type-badge" class="type-badge"></span>
-                </div>
-                <div id="info-panel-oecd" class="info-row" style="display:none;">
-                    <span class="info-label">OECD Status:</span>
-                    <span id="info-oecd-value"></span>
+                    <span id="info-type-badge" class="type-badge ke">Key Event</span>
                 </div>
                 <div class="info-section">
                     <h4>Centrality Metrics</h4>
@@ -172,12 +139,12 @@
                 <div class="stat-label">Total Edges</div>
             </div>
             <div class="stat-item">
-                <div class="stat-value" id="stat-aops">-</div>
-                <div class="stat-label">AOPs</div>
-            </div>
-            <div class="stat-item">
                 <div class="stat-value" id="stat-kes">-</div>
                 <div class="stat-label">Key Events</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="stat-kers">-</div>
+                <div class="stat-label">KERs</div>
             </div>
             <div class="stat-item">
                 <div class="stat-value" id="stat-communities">-</div>
