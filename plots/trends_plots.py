@@ -2323,10 +2323,10 @@ def plot_entity_completeness_trends(label_file="property_labels.csv") -> str:
         template="plotly_white",
         hovermode="x unified",
         autosize=True,
-        margin=dict(l=50, r=20, t=50, b=50),
+        margin=dict(l=50, r=20, t=100, b=50),
         yaxis=dict(title="Average Completeness (%)", range=[0, 105]),
         xaxis=dict(title="Version", tickangle=-45),
-        legend=dict(title="Entity Type", orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        legend=dict(title="Entity Type", orientation="h", yanchor="bottom", y=1.10, xanchor="center", x=0.5)
     )
 
     config = {"responsive": True}
@@ -2911,16 +2911,16 @@ def plot_oecd_completeness_trend(label_file="property_labels.csv") -> str:
             template="plotly_white",
             hovermode="x unified",
             autosize=True,
-            margin=dict(l=50, r=20, t=50, b=50),
+            margin=dict(l=50, r=20, t=120, b=50),
             yaxis=dict(title="Mean Completeness (%)", range=[0, 105]),
             xaxis=dict(title="Version", tickangle=-45),
             legend=dict(
                 title="OECD Status",
                 orientation="h",
                 yanchor="bottom",
-                y=1.02,
-                xanchor="right",
-                x=1
+                y=1.15,
+                xanchor="center",
+                x=0.5
             )
         )
 
