@@ -6,3 +6,4 @@ SPARQLWrapper~=2.0
 gunicorn~=25.1
 python-json-logger~=2.0
 requests~=2.32
+networkx~=3.4
