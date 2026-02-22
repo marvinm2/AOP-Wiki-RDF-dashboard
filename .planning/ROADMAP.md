@@ -13,7 +13,7 @@ This roadmap transforms the AOP-Wiki RDF Dashboard from a functioning but fragil
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation and Cleanup** - Eliminate technical debt, production-ready infrastructure, developer guardrails (completed 2026-02-20)
-- [x] **Phase 2: Reliability and Completeness** - All plots load reliably, full export coverage, methodology transparency (completed 2026-02-22)
+- [ ] **Phase 2: Reliability and Completeness** - All plots load reliably, full export coverage, methodology transparency
 - [ ] **Phase 3: Network Analysis** - Interactive AOP network graph with centrality metrics, PageRank, and community detection
 - [ ] **Phase 4: Entity Exploration** - Deep-dive views for AOPs, KEs, and stressors with shareable URLs
 - [ ] **Phase 5: Advanced Analytics** - Stressor-AOP mapping, data quality scoring, ontology coverage analysis
@@ -48,15 +48,16 @@ Plans:
   2. AOP completeness by OECD status is visualized through a working alternative that does not hit Virtuoso limits
   3. Every displayed plot has CSV, PNG, and SVG download buttons that produce valid files with metadata
   4. Every plot has an expandable methodology note visible to the user explaining what it measures and how data is sourced
-**Plans:** 6/6 plans complete
+**Plans:** 7 plans (6 complete + 1 UAT gap closure)
 
 Plans:
 - [x] 02-01-PLAN.md — SPARQL optimization (boxplot to startup) and OECD completeness trend visualization (Wave 1)
 - [x] 02-02-PLAN.md — Export infrastructure: add data caches for CSV export, versioned filenames (Wave 1)
 - [x] 02-03-PLAN.md — Methodology notes: JSON data file, Jinja2 macro, CSS, applied to all plots (Wave 1)
 - [x] 02-04-PLAN.md — Reliability audit and user verification checkpoint (Wave 2) -- issues found
-- [ ] 02-05-PLAN.md — Gap closure: fix KE component SPARQL predicates and boxplot data truncation (Wave 1)
+- [x] 02-05-PLAN.md — Gap closure: fix KE component SPARQL predicates and boxplot data truncation (Wave 1)
 - [x] 02-06-PLAN.md — Gap closure: OECD layout fix, missing methodology notes, limitations cleanup (Wave 1)
+- [ ] 02-07-PLAN.md — UAT gap closure: OECD right-side legend, PNG/SVG export coverage, data scope caveat (Wave 1)
 
 ### Phase 3: Network Analysis
 **Goal**: Users can explore the AOP-Wiki as an interactive network, identifying structurally important Key Events and discovering community groupings (Issue #11)
@@ -129,7 +130,7 @@ Note: Phase 2 and Phase 3 can execute in parallel (both depend only on Phase 1).
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation and Cleanup | 4/4 | Complete | 2026-02-20 |
-| 2. Reliability and Completeness | 5/6 | Complete    | 2026-02-22 |
+| 2. Reliability and Completeness | 6/7 | UAT gap closure | - |
 | 3. Network Analysis | 0/3 | Not started | - |
 | 4. Entity Exploration | 0/3 | Not started | - |
 | 5. Advanced Analytics | 0/2 | Not started | - |
