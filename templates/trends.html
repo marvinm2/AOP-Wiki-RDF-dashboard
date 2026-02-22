@@ -490,6 +490,7 @@
         <p class="plot-description">
             Tracks how many unique AOPs were last modified in each year.
         </p>
+        {{ methodology_note(methodology_notes, 'aop_lifetime') }}
         <div class="lazy-plot" data-plot-name="aops_modified_over_time">
             <!-- Plot will be loaded here via JavaScript -->
         </div>
@@ -511,6 +512,7 @@
         <p class="plot-description">
             Scatter plot showing when each AOP was created versus when it was last updated.
         </p>
+        {{ methodology_note(methodology_notes, 'aop_lifetime') }}
         <div class="lazy-plot" data-plot-name="aop_creation_vs_modification_timeline">
             <!-- Plot will be loaded here via JavaScript -->
         </div>
