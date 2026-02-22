@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Network Analysis - AOP-Wiki RDF Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/lazy-loading.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/network.css') }}">
+    <script src="https://unpkg.com/cytoscape@3.33.1/dist/cytoscape.min.js"></script>
+    <script src="https://unpkg.com/cytoscape-fcose@2.2.0/cytoscape-fcose.js"></script>
+</head>
+
+<body>
+
+<header>
+    <h1>Network Analysis</h1>
+    <p style="text-align:center; max-width:800px; margin:10px auto; color:white;">
+        Interactive AOP-KE bipartite network exploration with centrality metrics,
+        community detection, and graph visualization.
+    </p>
+</header>
+
+<!-- Navigation Bar -->
+<div class="page-navigation">
+    <a href="/" class="nav-link">Back to Home</a>
+    <a href="/snapshot" class="nav-link">Database Snapshot</a>
+    <a href="/trends" class="nav-link">Historical Trends</a>
+</div>
+
+<!-- Tab Navigation -->
+<div class="network-page">
+    <div class="tab-nav">
+        <button class="tab-btn active" data-tab="graph-view">Graph View</button>
+        <button class="tab-btn" data-tab="metrics-view">Metrics &amp; Communities</button>
+    </div>
+
+    <!-- Graph View Tab -->
+    <div class="tab-content active" id="graph-view">
+
+        <!-- Filter Panel -->
+        <div class="filter-panel">
+            <div class="filter-group">
+                <label class="filter-label">Node Type:</label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="filter-aop" checked> AOPs
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="filter-ke" checked> Key Events
+                </label>
+            </div>
+
+            <div class="filter-group">
+                <label class="filter-label">OECD Status:</label>
+                <label class="checkbox-label">
+                    <input type="checkbox" class="filter-oecd" value="Endorsed" checked> Endorsed
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" class="filter-oecd" value="Under Review" checked> Under Review
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" class="filter-oecd" value="Under Development" checked> Under Development
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" class="filter-oecd" value="EAGMST Approved" checked> EAGMST Approved
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" class="filter-oecd" value="WPHA/WNT Endorsed" checked> WPHA/WNT Endorsed
+                </label>
+            </div>
+
+            <div class="filter-group">
+                <label class="filter-label">Community:</label>
+                <select id="filter-community" class="filter-select">
+                    <option value="all">All Communities</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label class="filter-label">Size by:</label>
+                <select id="metric-selector" class="filter-select">
+                    <option value="pagerank" selected>PageRank</option>
+                    <option value="degree">Degree</option>
+                    <option value="betweenness">Betweenness</option>
+                    <option value="closeness">Closeness</option>
+                </select>
+            </div>
+
+            <button id="reset-filters" class="reset-btn">Reset Filters</button>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="search-container">
+            <input type="text" id="node-search" class="search-input" placeholder="Search nodes by name or ID...">
+            <div id="search-results" class="search-results" style="display:none;"></div>
+        </div>
+
+        <!-- Graph Container with Loading Overlay -->
+        <div class="graph-wrapper">
+            <div id="cy-container"></div>
+            <div id="loading-overlay" class="loading-overlay">
+                <div class="spinner"></div>
+                <p>Computing network analysis...</p>
+                <p class="loading-sub">This may take a moment on first load</p>
+            </div>
+        </div>
+
+        <!-- Info Panel (right sidebar) -->
+        <div id="info-panel" class="info-panel">
+            <div class="info-panel-header">
+                <h3 id="info-panel-title">Node Details</h3>
+                <button id="info-panel-close" class="close-btn">&times;</button>
+            </div>
+            <div class="info-panel-content">
+                <div id="info-panel-type" class="info-row">
+                    <span class="info-label">Type:</span>
+                    <span id="info-type-badge" class="type-badge"></span>
+                </div>
+                <div id="info-panel-oecd" class="info-row" style="display:none;">
+                    <span class="info-label">OECD Status:</span>
+                    <span id="info-oecd-value"></span>
+                </div>
+                <div class="info-section">
+                    <h4>Centrality Metrics</h4>
+                    <div class="info-row">
+                        <span class="info-label">Degree:</span>
+                        <span id="info-degree" class="metric-value">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Betweenness:</span>
+                        <span id="info-betweenness" class="metric-value">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Closeness:</span>
+                        <span id="info-closeness" class="metric-value">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">PageRank:</span>
+                        <span id="info-pagerank" class="metric-value">-</span>
+                    </div>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Community:</span>
+                    <span id="info-community" class="metric-value">-</span>
+                </div>
+                <div class="info-section">
+                    <h4>Connected Nodes</h4>
+                    <ul id="info-neighbors" class="neighbor-list"></ul>
+                </div>
+                <div class="info-section">
+                    <a id="info-wiki-link" href="#" target="_blank" class="wiki-link">
+                        View on AOP-Wiki
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Metrics & Communities Tab -->
+    <div class="tab-content" id="metrics-view">
+
+        <!-- Stats Bar -->
+        <div id="stats-bar" class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-value" id="stat-nodes">-</div>
+                <div class="stat-label">Total Nodes</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="stat-edges">-</div>
+                <div class="stat-label">Total Edges</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="stat-aops">-</div>
+                <div class="stat-label">AOPs</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="stat-kes">-</div>
+                <div class="stat-label">Key Events</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="stat-communities">-</div>
+                <div class="stat-label">Communities</div>
+            </div>
+        </div>
+
+        <!-- Export Buttons -->
+        <div class="export-section">
+            <a href="/download/network/metrics" class="export-btn">Download Metrics CSV</a>
+            <a href="/download/network/graph" class="export-btn">Download Graph JSON</a>
+        </div>
+
+        <!-- Metrics Table -->
+        <div class="metrics-section">
+            <h2 class="section-title">Centrality Metrics</h2>
+            <div class="table-scroll">
+                <table class="metrics-table" id="metrics-table">
+                    <thead>
+                        <tr>
+                            <th data-sort="label" class="sortable">Node <span class="sort-indicator"></span></th>
+                            <th data-sort="type" class="sortable">Type <span class="sort-indicator"></span></th>
+                            <th data-sort="degree" class="sortable">Degree <span class="sort-indicator"></span></th>
+                            <th data-sort="betweenness" class="sortable">Betweenness <span class="sort-indicator"></span></th>
+                            <th data-sort="closeness" class="sortable">Closeness <span class="sort-indicator"></span></th>
+                            <th data-sort="pagerank" class="sortable">PageRank <span class="sort-indicator"></span></th>
+                            <th data-sort="community" class="sortable">Community <span class="sort-indicator"></span></th>
+                        </tr>
+                    </thead>
+                    <tbody id="metrics-tbody">
+                        <tr><td colspan="7" style="text-align:center;">Loading metrics...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Community Summary -->
+        <div class="community-section">
+            <h2 class="section-title">Community Summary</h2>
+            <p id="community-count" class="community-count-text">Loading...</p>
+            <div id="community-cards" class="community-cards">
+                <!-- Community cards will be populated by JS -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer>
+    <div class="footer-content">
+        AOP-Wiki RDF Monitoring Service — Built for VHP4Safety  |
+        <a href="https://aopwiki.cloud.vhp4safety.nl" target="_blank">AOP-Wiki SPARQL Endpoint</a>  |
+        <a href="https://github.com/marvinm2/AOP-Wiki-RDF-dashboard" target="_blank">GitHub Repository</a>
+    </div>
+</footer>
+
+<script src="{{ url_for('static', filename='js/network-graph.js') }}"></script>
+</body>
+</html>
