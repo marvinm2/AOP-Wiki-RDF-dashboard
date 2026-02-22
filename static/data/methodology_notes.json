@@ -87,28 +87,28 @@
         "title": "AOP Property Presence Over Time",
         "description": "Tracks which metadata properties are present in AOPs over time. Shows absolute counts of AOPs containing each property per version. Properties that are always 100% present are excluded to highlight meaningful variation in documentation completeness.",
         "data_source": "Properties are defined in property_labels.csv. For each version, SPARQL queries check how many AOPs have each property present. Uses CSV-based property loading and GROUP_CONCAT aggregation for efficiency.",
-        "limitations": "Properties always present (100%) are excluded for clarity. The actual SPARQL query is dynamically generated from the property list and varies per entity type. Measures presence only, not quality of property values.",
+        "limitations": "Properties always present (100%) are excluded for clarity. Measures presence only, not quality of property values.",
         "sparql": "SELECT ?graph ?aop\n  (GROUP_CONCAT(DISTINCT ?prop; separator=',') AS ?present_props)\nWHERE {\n  GRAPH ?graph {\n    ?aop a aopo:AdverseOutcomePathway .\n    ?aop ?prop [] .\n    FILTER(?prop IN ({property_list}))\n  }\n}\nGROUP BY ?graph ?aop"
     },
     "ke_property_presence": {
         "title": "KE Property Presence Over Time",
         "description": "Tracks which metadata properties are present in Key Events over time. Identifies completeness patterns and annotation trends. Uses marker shapes for visual distinction between property lines.",
         "data_source": "Properties are defined in property_labels.csv filtered for KE entity type. SPARQL queries check property presence across all Key Events in each version using GROUP_CONCAT aggregation.",
-        "limitations": "Properties always present (100%) are excluded for clarity. The actual SPARQL query is dynamically generated from the property list. Measures presence only, not quality of property values. Uses marker shapes for visual distinction.",
+        "limitations": "Properties always present (100%) are excluded for clarity. Measures presence of each property, not quality or accuracy of the values stored.",
         "sparql": "SELECT ?graph ?ke\n  (GROUP_CONCAT(DISTINCT ?prop; separator=',') AS ?present_props)\nWHERE {\n  GRAPH ?graph {\n    ?ke a aopo:KeyEvent .\n    ?ke ?prop [] .\n    FILTER(?prop IN ({property_list}))\n  }\n}\nGROUP BY ?graph ?ke"
     },
     "ker_property_presence": {
         "title": "KER Property Presence Over Time",
         "description": "Tracks which metadata properties are present in Key Event Relationships over time. Monitors evidence and annotation quality across versions. Uses marker shapes for visual distinction between property lines.",
         "data_source": "Properties are defined in property_labels.csv filtered for KER entity type. SPARQL queries check property presence across all KERs in each version using GROUP_CONCAT aggregation.",
-        "limitations": "Properties always present (100%) are excluded for clarity. The actual SPARQL query is dynamically generated from the property list. Measures presence only, not quality of property values.",
+        "limitations": "Properties always present (100%) are excluded for clarity. Measures presence of each property, not the strength or quality of evidence recorded.",
         "sparql": "SELECT ?graph ?ker\n  (GROUP_CONCAT(DISTINCT ?prop; separator=',') AS ?present_props)\nWHERE {\n  GRAPH ?graph {\n    ?ker a aopo:KeyEventRelationship .\n    ?ker ?prop [] .\n    FILTER(?prop IN ({property_list}))\n  }\n}\nGROUP BY ?graph ?ker"
     },
     "stressor_property_presence": {
         "title": "Stressor Property Presence Over Time",
         "description": "Tracks which metadata properties are present in Stressors over time. Identifies documentation patterns and completeness trends for stressor entities. Uses marker shapes for visual distinction.",
         "data_source": "Properties are defined in property_labels.csv filtered for Stressor entity type. SPARQL queries check property presence across all Stressors in each version using GROUP_CONCAT aggregation.",
-        "limitations": "Properties always present (100%) are excluded for clarity. The actual SPARQL query is dynamically generated from the property list. Stressor RDF type is nci:C54571, which may not capture all stressor-related entities.",
+        "limitations": "Properties always present (100%) are excluded for clarity. Stressors are identified by the NCI Thesaurus type (nci:C54571), which may not capture all stressor-related entities in the knowledge base.",
         "sparql": "SELECT ?graph ?stressor\n  (GROUP_CONCAT(DISTINCT ?prop; separator=',') AS ?present_props)\nWHERE {\n  GRAPH ?graph {\n    ?stressor a nci:C54571 .\n    ?stressor ?prop [] .\n    FILTER(?prop IN ({property_list}))\n  }\n}\nGROUP BY ?graph ?stressor"
     },
     "entity_completeness_trends": {
@@ -121,8 +121,8 @@
     "aop_completeness_boxplot": {
         "title": "Composite AOP Completeness Distribution Over Time",
         "description": "Shows the distribution of composite completeness scores for individual AOPs per version. Each AOP's score combines its own property completeness with the average completeness of its linked Key Events and Key Event Relationships, giving a holistic view of how well-documented each AOP network is.",
-        "data_source": "Pre-computed at startup using optimized SPARQL queries (reduced from 10 to 4 queries). Retrieves AOP, KE, and KER property presence data, calculates individual completeness scores, then aggregates into composite scores per AOP. Uses GROUP_CONCAT for efficient property counting.",
-        "limitations": "Composite scores weight AOP, KE, and KER completeness equally. Excludes 100%-present properties. Box plots show quartiles (Q1, median, Q3) with whiskers at 1.5x IQR. AOPs with no linked KEs or KERs use only their own completeness. Query may take 30-75 seconds on large datasets.",
+        "data_source": "Pre-computed at startup from SPARQL queries. Retrieves AOP, KE, and KER property presence data, calculates individual completeness scores, then aggregates into composite scores per AOP.",
+        "limitations": "Composite scores weight AOP, KE, and KER completeness equally. Excludes 100%-present properties. Box plots show quartiles (Q1, median, Q3) with whiskers at 1.5x IQR. AOPs with no linked KEs or KERs use only their own completeness.",
         "sparql": "SELECT ?graph ?aop\n  (GROUP_CONCAT(DISTINCT ?prop; separator=',') AS ?aop_props)\nWHERE {\n  GRAPH ?graph {\n    ?aop a aopo:AdverseOutcomePathway .\n    ?aop ?prop [] .\n    FILTER(?prop IN ({aop_property_list}))\n  }\n}\nGROUP BY ?graph ?aop"
     },
     "oecd_completeness_trend": {
