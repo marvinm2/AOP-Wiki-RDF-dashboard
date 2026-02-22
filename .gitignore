@@ -1,0 +1,7 @@
+/.claude/
+/.planning/
+/__pycache__/
+CLAUDE.md
+IMPROVEMENTS_SUMMARY.md
+app.log
+app_new.log
