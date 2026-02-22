@@ -110,7 +110,8 @@ from plots import (
     build_export_filename,
     export_figure_as_image,
     get_csv_with_metadata,
-    create_bulk_download
+    create_bulk_download,
+    get_or_compute_network
 )
 
 def compute_plots_parallel() -> dict:
@@ -1631,6 +1632,98 @@ def dashboard():
     the original tabbed interface.
     """
     return render_template("index.html", lazy_loading=True)
+
+
+@app.route("/network")
+def network_page():
+    """Serve the Network Analysis page."""
+    return render_template("network.html")
+
+
+@app.route("/api/network/graph")
+def api_network_graph():
+    """API endpoint: full graph data in Cytoscape.js JSON format."""
+    try:
+        graph_data = get_or_compute_network()
+        return jsonify({
+            'elements': graph_data['elements'],
+            'version': graph_data['version'],
+            'stats': graph_data['stats']
+        })
+    except Exception as e:
+        logger.error(f"Network graph API error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route("/api/network/metrics")
+def api_network_metrics():
+    """API endpoint: centrality metrics as JSON for sortable table."""
+    try:
+        graph_data = get_or_compute_network()
+        return jsonify({
+            'metrics': graph_data['metrics'],
+            'version': graph_data['version']
+        })
+    except Exception as e:
+        logger.error(f"Network metrics API error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route("/api/network/communities")
+def api_network_communities():
+    """API endpoint: community detection results."""
+    try:
+        graph_data = get_or_compute_network()
+        return jsonify({
+            'communities': graph_data['communities'],
+            'version': graph_data['version']
+        })
+    except Exception as e:
+        logger.error(f"Network communities API error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route("/download/network/metrics")
+def download_network_metrics():
+    """Download network centrality metrics as CSV."""
+    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
+    try:
+        # Ensure network data has been computed so cache is populated
+        get_or_compute_network()
+        csv_data = get_csv_with_metadata('network_metrics', include_metadata=include_metadata)
+        if not csv_data:
+            return "No network metrics data available for download", 404
+        return Response(
+            csv_data,
+            mimetype='text/csv',
+            headers={'Content-Disposition': f'attachment; filename={build_export_filename("network_metrics", "csv")}'}
+        )
+    except Exception as e:
+        logger.error(f"Network metrics download error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route("/download/network/graph")
+def download_network_graph():
+    """Download network graph structure as JSON."""
+    try:
+        graph_data = get_or_compute_network()
+        export_data = {
+            'metadata': {
+                'export_date': pd.Timestamp.now().isoformat(),
+                'version': graph_data['version'],
+                'stats': graph_data['stats']
+            },
+            'elements': graph_data['elements']
+        }
+        return Response(
+            json.dumps(export_data, indent=2),
+            mimetype='application/json',
+            headers={'Content-Disposition': f'attachment; filename=network_graph_{graph_data["version"]}.json'}
+        )
+    except Exception as e:
+        logger.error(f"Network graph download error: {e}")
+        return jsonify({'error': str(e)}), 500
 
 
 # Run the Flask app
