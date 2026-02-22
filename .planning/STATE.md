@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-20)
 
 **Core value:** Researchers, curators, and regulators can explore AOP-Wiki data across any version to understand how the knowledge base evolves over time — reliably and without timeouts.
-**Current focus:** Phase 3: Network Analysis
+**Current focus:** Phase 3: Network Analysis (Complete) -- Next: Phase 4: Entity Exploration
 
 ## Current Position
 
 Phase: 3 of 6 (Network Analysis)
-Plan: 3 of 4 in current phase
-Status: In Progress
-Last activity: 2026-02-22 — Completed 03-03-PLAN.md (Network graph frontend interactivity)
+Plan: 4 of 4 in current phase (COMPLETE)
+Status: Phase Complete
+Last activity: 2026-02-22 — Completed 03-04-PLAN.md (Network analysis verification and UAT)
 
-Progress: [██████████████------] 75%
+Progress: [████████████████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 14
-- Average duration: ~4 min
-- Total execution time: ~0.95 hours
+- Total plans completed: 15
+- Average duration: ~4.5 min
+- Total execution time: ~1.1 hours
 
 **By Phase:**
 
@@ -29,11 +29,11 @@ Progress: [██████████████------] 75%
 |-------|-------|-------|----------|
 | 01 | 4/4 | ~19 min | ~5 min |
 | 02 | 7/7 | ~29 min | ~4 min |
-| 03 | 3/4 | ~10 min | ~3.3 min |
+| 03 | 4/4 | ~40 min | ~10 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-06 (3m), 02-07 (2m), 03-01 (3m), 03-02 (4m), 03-03 (3m)
-- Trend: Stable
+- Last 5 plans: 02-07 (2m), 03-01 (3m), 03-02 (4m), 03-03 (3m), 03-04 (30m)
+- Trend: 03-04 was longer due to multi-round UAT with user
 
 *Updated after each plan completion*
 | Phase 02 P05 | 9min | 2 tasks | 2 files |
@@ -41,6 +41,7 @@ Progress: [██████████████------] 75%
 | Phase 03 P01 | 3min | 2 tasks | 3 files |
 | Phase 03 P02 | 4min | 2 tasks | 6 files |
 | Phase 03 P03 | 3min | 1 tasks | 1 files |
+| Phase 03 P04 | 30min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -83,6 +84,9 @@ Recent decisions affecting current work:
 - [03-03]: Search matches both node label and ID for broader discoverability
 - [03-03]: Community dropdown populated dynamically from graph data after Cytoscape initialization
 - [03-03]: XSS prevention via escapeHtml utility on all dynamic HTML interpolation from SPARQL data
+- [03-04]: Simplified network to KE nodes + KER edges only (removed AOP nodes) per user feedback for clearer topology
+- [03-04]: Added scipy as explicit dependency since NetworkX Louvain community detection requires it
+- [03-04]: CDN dependency chain for fcose layout: layout-base -> cose-base -> cytoscape-fcose
 
 ### Pending Todos
 
@@ -103,5 +107,5 @@ User verification of Phase 2 delivery found 4 issues requiring follow-up:
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Completed 03-03-PLAN.md (Network graph frontend interactivity)
-Resume file: .planning/phases/03-network-analysis/03-03-SUMMARY.md
+Stopped at: Completed 03-04-PLAN.md (Network analysis verification and UAT) -- Phase 3 complete
+Resume file: .planning/phases/03-network-analysis/03-04-SUMMARY.md
