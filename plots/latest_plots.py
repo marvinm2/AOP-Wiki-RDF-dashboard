@@ -296,35 +296,49 @@ def plot_latest_ke_components(version: str = None) -> str:
     """Create a pie chart showing the current KE component distribution."""
     global _plot_data_cache
 
-    # Build graph filter based on version parameter
-    where_filter, order_limit = _build_graph_filter(version)
+    # Determine target graph directly to avoid Virtuoso cross-graph timeout
+    # with triple OPTIONALs on bioevent sub-predicates
+    if version:
+        target_graph = f"http://aopwiki.org/graph/{version}"
+        latest_version = version
+    else:
+        # Get the latest graph
+        version_query = """
+        SELECT ?graph
+        WHERE {
+            GRAPH ?graph { ?s a aopo:KeyEvent . }
+            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        GROUP BY ?graph
+        ORDER BY DESC(?graph)
+        LIMIT 1
+        """
+        version_results = run_sparql_query(version_query)
+        if not version_results:
+            return create_fallback_plot("KE Component Distribution", "No graphs available")
+        target_graph = version_results[0]["graph"]["value"]
+        latest_version = target_graph.split("/")[-1]
 
     query_components = f"""
-    SELECT ?graph
-           (COUNT(?process) AS ?process_count)
+    SELECT (COUNT(?process) AS ?process_count)
            (COUNT(?object) AS ?object_count)
            (COUNT(?action) AS ?action_count)
     WHERE {{
-      GRAPH ?graph {{
+      GRAPH <{target_graph}> {{
         ?ke a aopo:KeyEvent ;
             aopo:hasBiologicalEvent ?bioevent .
         OPTIONAL {{ ?bioevent aopo:hasProcess ?process . }}
         OPTIONAL {{ ?bioevent aopo:hasObject ?object . }}
         OPTIONAL {{ ?bioevent aopo:hasAction ?action . }}
       }}
-      FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-      {where_filter}
     }}
-    GROUP BY ?graph
-    {order_limit}
     """
 
     results = run_sparql_query(query_components)
     if not results:
-        return "<p>No data available</p>"
+        return create_fallback_plot("KE Component Distribution", "No data available")
 
     result = results[0]
-    latest_version = result["graph"]["value"].split("/")[-1]
 
     data = [
         {"Component": "Process", "Count": int(result["process_count"]["value"])},
@@ -547,12 +561,33 @@ def plot_latest_avg_per_aop(version: str = None) -> str:
 
 def plot_latest_ontology_usage(version: str = None) -> str:
     """Create a chart showing current ontology usage."""
-    where_filter, order_limit = _build_graph_filter(version)
+
+    # Determine target graph directly for reliable query execution
+    if version:
+        target_graph = f"http://aopwiki.org/graph/{version}"
+        latest_version = version
+    else:
+        # Get the latest graph
+        version_query = """
+        SELECT ?graph
+        WHERE {
+            GRAPH ?graph { ?s a aopo:KeyEvent . }
+            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        GROUP BY ?graph
+        ORDER BY DESC(?graph)
+        LIMIT 1
+        """
+        version_results = run_sparql_query(version_query)
+        if not version_results:
+            return create_fallback_plot("Ontology Usage", "No graphs available")
+        target_graph = version_results[0]["graph"]["value"]
+        latest_version = target_graph.split("/")[-1]
 
     query = f"""
-    SELECT ?graph ?ontology (COUNT(DISTINCT ?term) AS ?count)
+    SELECT ?ontology (COUNT(DISTINCT ?term) AS ?count)
     WHERE {{
-      GRAPH ?graph {{
+      GRAPH <{target_graph}> {{
         ?ke a aopo:KeyEvent ;
             aopo:hasBiologicalEvent ?bioevent .
         {{
@@ -572,19 +607,14 @@ def plot_latest_ontology_usage(version: str = None) -> str:
           IF(STRSTARTS(STR(?term), "http://purl.org/commons/record/mesh/"), "MESH",
           IF(STRSTARTS(STR(?term), "http://purl.obolibrary.org/obo/HP_"), "HP", "OTHER"))))))) AS ?ontology)
       }}
-      FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-      {where_filter}
     }}
-    GROUP BY ?graph ?ontology
-    {order_limit}
+    GROUP BY ?ontology
     """
 
     results = run_sparql_query(query)
     if not results:
         return create_fallback_plot("Ontology Usage", "No ontology data available")
 
-    # Get only the latest version
-    latest_version = results[0]["graph"]["value"].split("/")[-1]
     latest_data = results
 
     data = []

@@ -716,44 +716,89 @@ def plot_aop_lifetime() -> tuple[str, str, str]:
         return fallback_created, fallback_modified, fallback_scatter
 
 
+def _query_ke_components_version(version_info, use_distinct=False):
+    """Query KE component counts for a single version graph.
+
+    Args:
+        version_info: Dict with 'version' and 'graph_uri' keys
+        use_distinct: If True, count DISTINCT values (for unique component queries)
+
+    Returns:
+        Dict with version, Process, Object, Action counts, or None on error
+    """
+    graph_uri = version_info["graph_uri"]
+    version_str = version_info["version"]
+    distinct = "DISTINCT " if use_distinct else ""
+
+    query = f"""
+    SELECT (COUNT({distinct}?process) AS ?process_count)
+           (COUNT({distinct}?object) AS ?object_count)
+           (COUNT({distinct}?action) AS ?action_count)
+    WHERE {{
+      GRAPH <{graph_uri}> {{
+        ?ke a aopo:KeyEvent ;
+            aopo:hasBiologicalEvent ?bioevent .
+        OPTIONAL {{ ?bioevent aopo:hasProcess ?process . }}
+        OPTIONAL {{ ?bioevent aopo:hasObject ?object . }}
+        OPTIONAL {{ ?bioevent aopo:hasAction ?action . }}
+      }}
+    }}
+    """
+
+    try:
+        results = run_sparql_query_with_retry(query, max_retries=2)
+        if results:
+            r = results[0]
+            return {
+                "version": version_str,
+                "Process": int(r["process_count"]["value"]),
+                "Object": int(r["object_count"]["value"]),
+                "Action": int(r["action_count"]["value"])
+            }
+    except Exception as e:
+        logger.warning(f"KE components query failed for version {version_str}: {e}")
+    return None
+
+
 def plot_ke_components() -> tuple[str, str]:
     """Generate KE component annotation visualization with absolute and delta views."""
     global _plot_data_cache, _plot_figure_cache
 
     try:
-        query_components = """
-        SELECT ?graph
-               (COUNT(?process) AS ?process_count)
-               (COUNT(?object) AS ?object_count)
-               (COUNT(?action) AS ?action_count)
-        WHERE {
-          GRAPH ?graph {
-            ?ke a aopo:KeyEvent ;
-                aopo:hasBiologicalEvent ?bioevent .
-            OPTIONAL { ?bioevent aopo:hasProcess ?process . }
-            OPTIONAL { ?bioevent aopo:hasObject ?object . }
-            OPTIONAL { ?bioevent aopo:hasAction ?action . }
-          }
-          FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-        }
-        GROUP BY ?graph
-        """
+        versions = get_all_versions()
+        if not versions:
+            logger.warning("No versions available for KE components query")
+            return (
+                create_fallback_plot("KE Component Annotations Over Time", "No data available"),
+                create_fallback_plot("Change in KE Component Annotations", "No data available")
+            )
 
-        results_components = run_sparql_query(query_components)
+        logger.info(f"KE components: querying {len(versions)} versions in parallel")
 
-        if not results_components:
+        # Query each version in parallel to avoid Virtuoso cross-graph timeout
+        data = []
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            futures = {
+                executor.submit(_query_ke_components_version, v): v["version"]
+                for v in versions
+            }
+            for future in as_completed(futures):
+                version_str = futures[future]
+                try:
+                    result = future.result(timeout=60)
+                    if result:
+                        data.append(result)
+                except Exception as e:
+                    logger.warning(f"KE components query timed out for version {version_str}: {e}")
+
+        if not data:
             logger.warning("KE components query returned no results")
             return (
                 create_fallback_plot("KE Component Annotations Over Time", "No data available"),
                 create_fallback_plot("Change in KE Component Annotations", "No data available")
             )
 
-        df_components = pd.DataFrame([{
-            "version": r["graph"]["value"].split("/")[-1],
-            "Process": int(r["process_count"]["value"]),
-            "Object": int(r["object_count"]["value"]),
-            "Action": int(r["action_count"]["value"])
-        } for r in results_components])
+        df_components = pd.DataFrame(data)
 
         if df_components.empty:
             logger.warning("KE components DataFrame is empty")
@@ -849,73 +894,98 @@ def plot_ke_components() -> tuple[str, str]:
         )
 
 
+def _query_ke_components_percentage_version(version_info):
+    """Query KE component counts and total KEs for a single version graph.
+
+    Returns:
+        Dict with version, Process, Object, Action, TotalKEs counts, or None on error
+    """
+    graph_uri = version_info["graph_uri"]
+    version_str = version_info["version"]
+
+    # Query components
+    query_comp = f"""
+    SELECT (COUNT(?process) AS ?process_count)
+           (COUNT(?object) AS ?object_count)
+           (COUNT(?action) AS ?action_count)
+    WHERE {{
+      GRAPH <{graph_uri}> {{
+        ?ke a aopo:KeyEvent ;
+            aopo:hasBiologicalEvent ?bioevent .
+        OPTIONAL {{ ?bioevent aopo:hasProcess ?process . }}
+        OPTIONAL {{ ?bioevent aopo:hasObject ?object . }}
+        OPTIONAL {{ ?bioevent aopo:hasAction ?action . }}
+      }}
+    }}
+    """
+
+    # Query total KEs
+    query_total = f"""
+    SELECT (COUNT(?ke) AS ?total_kes)
+    WHERE {{
+      GRAPH <{graph_uri}> {{
+        ?ke a aopo:KeyEvent .
+      }}
+    }}
+    """
+
+    try:
+        results_comp = run_sparql_query_with_retry(query_comp, max_retries=2)
+        results_total = run_sparql_query_with_retry(query_total, max_retries=2)
+        if results_comp and results_total:
+            rc = results_comp[0]
+            rt = results_total[0]
+            return {
+                "version": version_str,
+                "Process": int(rc["process_count"]["value"]),
+                "Object": int(rc["object_count"]["value"]),
+                "Action": int(rc["action_count"]["value"]),
+                "TotalKEs": int(rt["total_kes"]["value"])
+            }
+    except Exception as e:
+        logger.warning(f"KE components percentage query failed for version {version_str}: {e}")
+    return None
+
+
 def plot_ke_components_percentage() -> tuple[str, str]:
     """Generate KE component percentage visualization with absolute and delta views."""
     global _plot_data_cache, _plot_figure_cache
 
     try:
-        query_components = """
-        SELECT ?graph
-               (COUNT(?process) AS ?process_count)
-               (COUNT(?object) AS ?object_count)
-               (COUNT(?action) AS ?action_count)
-        WHERE {
-          GRAPH ?graph {
-            ?ke a aopo:KeyEvent ;
-                aopo:hasBiologicalEvent ?bioevent .
-            OPTIONAL { ?bioevent aopo:hasProcess ?process . }
-            OPTIONAL { ?bioevent aopo:hasObject ?object . }
-            OPTIONAL { ?bioevent aopo:hasAction ?action . }
-          }
-          FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-        }
-        GROUP BY ?graph
-        """
+        versions = get_all_versions()
+        if not versions:
+            logger.warning("No versions available for KE components percentage query")
+            return (
+                create_fallback_plot("KE Component Annotations as Percentage Over Time", "No data available"),
+                create_fallback_plot("Change in KE Component Percentage", "No data available")
+            )
 
-        query_total_kes = """
-        SELECT ?graph (COUNT(?ke) AS ?total_kes)
-        WHERE {
-          GRAPH ?graph {
-            ?ke a aopo:KeyEvent .
-          }
-          FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-        }
-        GROUP BY ?graph
-        """
+        logger.info(f"KE components percentage: querying {len(versions)} versions in parallel")
 
-        # Run queries
-        results_components = run_sparql_query(query_components)
-        results_total_kes = run_sparql_query(query_total_kes)
+        # Query each version in parallel
+        data = []
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            futures = {
+                executor.submit(_query_ke_components_percentage_version, v): v["version"]
+                for v in versions
+            }
+            for future in as_completed(futures):
+                version_str = futures[future]
+                try:
+                    result = future.result(timeout=60)
+                    if result:
+                        data.append(result)
+                except Exception as e:
+                    logger.warning(f"KE components percentage query timed out for version {version_str}: {e}")
 
-        if not results_components or not results_total_kes:
+        if not data:
             logger.warning("KE components percentage query returned no results")
             return (
                 create_fallback_plot("KE Component Annotations as Percentage Over Time", "No data available"),
                 create_fallback_plot("Change in KE Component Percentage", "No data available")
             )
 
-        # DataFrames
-        df_components = pd.DataFrame([{
-            "version": r["graph"]["value"].split("/")[-1],
-            "Process": int(r["process_count"]["value"]),
-            "Object": int(r["object_count"]["value"]),
-            "Action": int(r["action_count"]["value"])
-        } for r in results_components])
-
-        df_total = pd.DataFrame([{
-            "version": r["graph"]["value"].split("/")[-1],
-            "TotalKEs": int(r["total_kes"]["value"])
-        } for r in results_total_kes])
-
-        if df_components.empty or df_total.empty:
-            logger.warning("KE components percentage DataFrames are empty")
-            return (
-                create_fallback_plot("KE Component Annotations as Percentage Over Time", "No data available"),
-                create_fallback_plot("Change in KE Component Percentage", "No data available")
-            )
-
-        # Merge for percentage calculation
-        df_merged = df_components.merge(df_total, on="version", how="inner")
+        df_merged = pd.DataFrame(data)
 
         # Filter out versions with zero total KEs to avoid division by zero
         df_merged = df_merged[df_merged["TotalKEs"] > 0]
@@ -1024,39 +1094,40 @@ def plot_unique_ke_components() -> tuple[str, str]:
     global _plot_data_cache, _plot_figure_cache
 
     try:
-        query_unique_components = """
-        SELECT ?graph
-               (COUNT(DISTINCT ?process) AS ?process_count)
-               (COUNT(DISTINCT ?object) AS ?object_count)
-               (COUNT(DISTINCT ?action) AS ?action_count)
-        WHERE {
-          GRAPH ?graph {
-            ?ke a aopo:KeyEvent ;
-                aopo:hasBiologicalEvent ?bioevent .
-            OPTIONAL { ?bioevent aopo:hasProcess ?process . }
-            OPTIONAL { ?bioevent aopo:hasObject ?object . }
-            OPTIONAL { ?bioevent aopo:hasAction ?action . }
-          }
-          FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-        }
-        GROUP BY ?graph
-        """
+        versions = get_all_versions()
+        if not versions:
+            logger.warning("No versions available for unique KE components query")
+            return (
+                create_fallback_plot("Unique KE Component Annotations Over Time", "No data available"),
+                create_fallback_plot("Change in Unique KE Component Annotations", "No data available")
+            )
 
-        results_unique = run_sparql_query(query_unique_components)
+        logger.info(f"Unique KE components: querying {len(versions)} versions in parallel")
 
-        if not results_unique:
+        # Query each version in parallel using shared helper with use_distinct=True
+        data = []
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            futures = {
+                executor.submit(_query_ke_components_version, v, True): v["version"]
+                for v in versions
+            }
+            for future in as_completed(futures):
+                version_str = futures[future]
+                try:
+                    result = future.result(timeout=60)
+                    if result:
+                        data.append(result)
+                except Exception as e:
+                    logger.warning(f"Unique KE components query timed out for version {version_str}: {e}")
+
+        if not data:
             logger.warning("Unique KE components query returned no results")
             return (
                 create_fallback_plot("Unique KE Component Annotations Over Time", "No data available"),
                 create_fallback_plot("Change in Unique KE Component Annotations", "No data available")
             )
 
-        df_unique = pd.DataFrame([{
-            "version": r["graph"]["value"].split("/")[-1],
-            "Process": int(r["process_count"]["value"]),
-            "Object": int(r["object_count"]["value"]),
-            "Action": int(r["action_count"]["value"])
-        } for r in results_unique])
+        df_unique = pd.DataFrame(data)
 
         if df_unique.empty:
             logger.warning("Unique KE components DataFrame is empty")
