@@ -3062,16 +3062,16 @@ def plot_oecd_completeness_trend(label_file="property_labels.csv") -> str:
             template="plotly_white",
             hovermode="x unified",
             autosize=True,
-            margin=dict(l=50, r=20, t=120, b=50),
+            margin=dict(l=50, r=150, t=50, b=50),
             yaxis=dict(title="Mean Completeness (%)", range=[0, 105]),
             xaxis=dict(title="Version", tickangle=-45),
             legend=dict(
                 title="OECD Status",
-                orientation="h",
-                yanchor="bottom",
-                y=1.15,
-                xanchor="center",
-                x=0.5
+                orientation="v",
+                yanchor="top",
+                y=1,
+                xanchor="left",
+                x=1.02
             )
         )
 

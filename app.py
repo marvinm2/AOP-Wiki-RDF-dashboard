@@ -190,6 +190,9 @@ def compute_plots_parallel() -> dict:
         ('latest_process_usage', lambda: safe_plot_execution(plot_latest_process_usage)),
         ('latest_object_usage', lambda: safe_plot_execution(plot_latest_object_usage)),
         ('latest_aop_completeness', lambda: safe_plot_execution(plot_latest_aop_completeness)),
+        ('latest_aop_completeness_by_status', lambda: safe_plot_execution(plot_latest_aop_completeness_by_status)),
+        ('latest_ke_completeness_by_status', lambda: safe_plot_execution(plot_latest_ke_completeness_by_status)),
+        ('latest_ker_completeness_by_status', lambda: safe_plot_execution(plot_latest_ker_completeness_by_status)),
         ('latest_database_summary', lambda: safe_plot_execution(plot_latest_database_summary)),
         ('latest_ke_annotation_depth', lambda: safe_plot_execution(plot_latest_ke_annotation_depth)),
     ]
@@ -277,6 +280,9 @@ latest_object_usage = plot_results.get('latest_object_usage') or ""
 latest_aop_completeness = plot_results.get('latest_aop_completeness') or ""
 latest_database_summary = plot_results.get('latest_database_summary') or ""
 latest_ke_annotation_depth = plot_results.get('latest_ke_annotation_depth') or ""
+latest_aop_completeness_by_status_html = plot_results.get('latest_aop_completeness_by_status') or ""
+latest_ke_completeness_by_status_html = plot_results.get('latest_ke_completeness_by_status') or ""
+latest_ker_completeness_by_status_html = plot_results.get('latest_ker_completeness_by_status') or ""
 # --- End of precomputed plots ---
 
 @app.route("/health")
