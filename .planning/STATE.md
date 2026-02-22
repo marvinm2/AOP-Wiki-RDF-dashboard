@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-20)
 ## Current Position
 
 Phase: 2 of 6 (Reliability and Completeness)
-Plan: 6 of 6 in current phase
-Status: Complete
-Last activity: 2026-02-22 — Completed 02-06-PLAN.md (gap closure: layout fixes + methodology notes cleanup)
+Plan: 5 of 6 in current phase
+Status: In Progress
+Last activity: 2026-02-22 — Completed 02-05-PLAN.md (gap closure: KE component SPARQL + boxplot per-version queries)
 
-Progress: [██████████] 100%
+Progress: [█████████░] 90%
 
 ## Performance Metrics
 
@@ -35,6 +35,7 @@ Progress: [██████████] 100%
 - Trend: Stable
 
 *Updated after each plan completion*
+| Phase 02 P05 | 9min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -64,6 +65,8 @@ Recent decisions affecting current work:
 - [02-06]: Centered horizontal legends (xanchor=center) for better visual balance with multi-status legends
 - [02-06]: Methodology note limitations should contain only methodological/data-quality caveats, no performance or implementation details
 - [02-06]: Varied presence-only limitation text per entity type for contextual clarity
+- [Phase 02]: Root cause of KE component failures was Virtuoso 400s execution time limit on triple-OPTIONAL cross-product, not wrong predicates
+- [Phase 02]: Direct GRAPH <uri> targeting preferred over GRAPH ?graph + FILTER for latest-data single-version queries
 
 ### Pending Todos
 
@@ -85,5 +88,5 @@ User verification of Phase 2 delivery found 4 issues requiring follow-up:
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Completed 02-06-PLAN.md (Phase 2 fully complete, all gap closure done)
-Resume file: .planning/phases/02-reliability-and-completeness/02-06-SUMMARY.md
+Stopped at: Completed 02-05-PLAN.md (gap closure: KE component + boxplot per-version queries)
+Resume file: .planning/phases/02-reliability-and-completeness/02-05-SUMMARY.md
