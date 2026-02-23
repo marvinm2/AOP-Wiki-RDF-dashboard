@@ -1,45 +1,28 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Historical Trends - AOP-Wiki RDF Dashboard</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/lazy-loading.css') }}">
+{% extends 'base.html' %}
+
+{% block title %}Historical Trends - AOP-Wiki RDF Dashboard{% endblock %}
+
+{% block head_extra %}
     <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
-</head>
+{% endblock %}
 
-<body>
-{% from 'macros/methodology.html' import methodology_note %}
-{% from 'macros/data_table.html' import data_table_toggle %}
-
-<header>
+{% block page_header %}
+<div class="page-title-section">
     <h1>Historical Trends Analysis</h1>
-    <p style="text-align:center; max-width:800px; margin:10px auto; color:white;">
+    <p>
         Evolution and growth patterns of the AOP-Wiki database over time, using quarterly releases.
         Explore how the knowledge base has developed and changed across versions.
     </p>
-</header>
-
-<!-- Navigation Bar -->
-<div class="page-navigation">
-    <a href="/" class="nav-link">Back to Home</a>
-    <a href="/snapshot" class="nav-link">Database Snapshot</a>
-    <a href="/network" class="nav-link">Network Analysis</a>
 </div>
+{% endblock %}
 
+{% block content %}
+{% from 'macros/methodology.html' import methodology_note %}
+{% from 'macros/data_table.html' import data_table_toggle %}
 
 {% include 'trends.html' %}
+{% endblock %}
 
-<footer>
-    <div class="footer-content">
-        AOP-Wiki RDF Monitoring Service — Built for VHP4Safety  |
-        <a href="https://aopwiki.cloud.vhp4safety.nl" target="_blank">AOP-Wiki SPARQL Endpoint</a>  |
-        <a href="https://github.com/marvinm2/AOP-Wiki-RDF-dashboard" target="_blank">GitHub Repository</a>
-    </div>
-</footer>
-
-<script src="{{ url_for('static', filename='js/lazy-loading.js') }}"></script>
+{% block scripts_extra %}
 <script src="{{ url_for('static', filename='js/raw-data-tables.js') }}"></script>
-</body>
-</html>
+{% endblock %}

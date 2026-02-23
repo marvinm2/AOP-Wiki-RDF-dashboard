@@ -1,10 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AOP-Wiki Dashboard Status</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+{% extends 'base.html' %}
+
+{% block title %}AOP-Wiki Dashboard Status{% endblock %}
+
+{% block head_extra %}
     <script>
         function refreshStatus() {
             fetch('/health')
@@ -14,7 +12,7 @@
                     document.getElementById('sparql-status').textContent = data.sparql_endpoint;
                     document.getElementById('plots-status').textContent = data.plots_loaded;
                     document.getElementById('timestamp').textContent = new Date(data.timestamp * 1000).toLocaleString();
-                    
+
                     // Update status color
                     const statusElement = document.getElementById('status');
                     statusElement.className = data.status === 'healthy' ? 'status-healthy' : 'status-degraded';
@@ -25,10 +23,10 @@
                     document.getElementById('status').className = 'status-error';
                 });
         }
-        
+
         // Refresh every 30 seconds
         setInterval(refreshStatus, 30000);
-        
+
         // Initial load
         document.addEventListener('DOMContentLoaded', refreshStatus);
     </script>
@@ -55,13 +53,16 @@
             border-bottom: none;
         }
     </style>
-</head>
-<body>
-    <header>
-        <h1>AOP-Wiki Dashboard Status</h1>
-        <p>Real-time system health and performance monitoring</p>
-    </header>
+{% endblock %}
 
+{% block page_header %}
+<div class="page-title-section">
+    <h1>Dashboard Status</h1>
+    <p>Real-time system health and performance monitoring</p>
+</div>
+{% endblock %}
+
+{% block content %}
     <div class="status-card">
         <h2>System Status</h2>
         <div class="status-item">
@@ -84,13 +85,5 @@
 
     <div style="text-align: center; margin: 20px;">
         <button onclick="refreshStatus()" class="nav-button">Refresh Status</button>
-        <a href="/" class="nav-button" style="text-decoration: none; display: inline-block;">Back to Dashboard</a>
     </div>
-
-    <footer>
-        <div class="footer-content">
-            AOP-Wiki RDF Monitoring Service — Built for VHP4Safety
-        </div>
-    </footer>
-</body>
-</html>
+{% endblock %}

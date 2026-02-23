@@ -105,6 +105,8 @@ from plots import (
     plot_latest_entity_by_oecd_status,
     plot_latest_ke_reuse,
     plot_latest_ke_reuse_distribution,
+    plot_latest_ontology_diversity,
+    plot_ontology_term_growth,
     check_sparql_endpoint_health,
     safe_plot_execution,
     get_latest_version,
@@ -201,6 +203,7 @@ def compute_plots_parallel() -> dict:
         ('latest_ker_completeness_by_status', lambda: safe_plot_execution(plot_latest_ker_completeness_by_status)),
         ('latest_database_summary', lambda: safe_plot_execution(plot_latest_database_summary)),
         ('latest_ke_annotation_depth', lambda: safe_plot_execution(plot_latest_ke_annotation_depth)),
+        ('ontology_term_growth', lambda: safe_plot_execution(plot_ontology_term_growth)),
     ]
     
     results = {}
@@ -274,6 +277,14 @@ graph_entity_completeness = plot_results.get('entity_completeness_trends') or ""
 graph_aop_completeness_boxplot = plot_results.get('aop_completeness_boxplot') or ""
 graph_oecd_completeness_trend = plot_results.get('oecd_completeness_trend') or ""
 graph_kec_count_abs, graph_kec_count_delta = plot_results.get('kes_by_kec_count', ("", ""))
+
+# Curation and ontology trends
+try:
+    graph_ontology_growth_abs, graph_ontology_growth_delta, _ = plot_results.get('ontology_term_growth', ("", "", None))
+    if graph_ontology_growth_abs is None:
+        graph_ontology_growth_abs = graph_ontology_growth_delta = ""
+except (TypeError, ValueError):
+    graph_ontology_growth_abs = graph_ontology_growth_delta = ""
 
 # Latest data plots
 latest_entity_counts = plot_results.get('latest_entity_counts') or ""
@@ -403,7 +414,7 @@ def status_page():
         This endpoint is intended for human monitoring and debugging,
         while /health is designed for automated systems.
     """
-    return render_template("status.html")
+    return render_template("status.html", active_page='status')
 
 @app.route("/download/latest_entity_counts")
 def download_latest_entity_counts():
@@ -1583,7 +1594,9 @@ def get_plot(plot_name):
         'aop_completeness_boxplot': graph_aop_completeness_boxplot,
         'oecd_completeness_trend': graph_oecd_completeness_trend,
         'kes_by_kec_count_absolute': graph_kec_count_abs,
-        'kes_by_kec_count_delta': graph_kec_count_delta
+        'kes_by_kec_count_delta': graph_kec_count_delta,
+        'ontology_term_growth_absolute': graph_ontology_growth_abs,
+        'ontology_term_growth_delta': graph_ontology_growth_delta,
     }
 
     # Handle latest_* plots dynamically with version support
@@ -1606,6 +1619,7 @@ def get_plot(plot_name):
         'latest_entity_by_oecd_status': plot_latest_entity_by_oecd_status,
         'latest_ke_reuse': plot_latest_ke_reuse,
         'latest_ke_reuse_distribution': plot_latest_ke_reuse_distribution,
+        'latest_ontology_diversity': plot_latest_ontology_diversity,
     }
 
     # Handle latest_* plots without version support yet (use pre-computed)
@@ -1726,7 +1740,7 @@ def database_snapshot():
     Displays key metrics and visualizations from any version of the AOP-Wiki
     database, allowing users to explore current and historical snapshots.
     """
-    return render_template("latest.html", methodology_notes=methodology_notes)
+    return render_template("latest.html", methodology_notes=methodology_notes, active_page='snapshot')
 
 
 @app.route("/latest")
@@ -1742,7 +1756,7 @@ def historical_trends():
     Displays evolution and growth patterns of the AOP-Wiki database
     over time using quarterly releases.
     """
-    return render_template("trends_page.html", methodology_notes=methodology_notes)
+    return render_template("trends_page.html", methodology_notes=methodology_notes, active_page='trends')
 
 
 @app.route("/dashboard")
@@ -1758,7 +1772,7 @@ def dashboard():
 @app.route("/network")
 def network_page():
     """Serve the Network Analysis page."""
-    return render_template("network.html")
+    return render_template("network.html", active_page='network')
 
 
 @app.route("/api/network/graph")

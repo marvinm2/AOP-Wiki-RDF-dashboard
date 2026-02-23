@@ -1,35 +1,26 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Network Analysis - AOP-Wiki RDF Dashboard</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/lazy-loading.css') }}">
+{% extends 'base.html' %}
+
+{% block title %}Network Analysis - AOP-Wiki RDF Dashboard{% endblock %}
+
+{% block head_extra %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/network.css') }}">
     <script src="https://unpkg.com/cytoscape@3.33.1/dist/cytoscape.min.js"></script>
     <script src="https://unpkg.com/layout-base@2.0.1/layout-base.js"></script>
     <script src="https://unpkg.com/cose-base@2.2.0/cose-base.js"></script>
     <script src="https://unpkg.com/cytoscape-fcose@2.2.0/cytoscape-fcose.js"></script>
-</head>
+{% endblock %}
 
-<body>
-
-<header>
+{% block page_header %}
+<div class="page-title-section">
     <h1>Network Analysis</h1>
-    <p style="text-align:center; max-width:800px; margin:10px auto; color:white;">
+    <p>
         Interactive Key Event network exploration with centrality metrics,
         community detection, and KER-based graph visualization.
     </p>
-</header>
-
-<!-- Navigation Bar -->
-<div class="page-navigation">
-    <a href="/" class="nav-link">Back to Home</a>
-    <a href="/snapshot" class="nav-link">Database Snapshot</a>
-    <a href="/trends" class="nav-link">Historical Trends</a>
 </div>
+{% endblock %}
 
+{% block content %}
 <!-- Tab Navigation -->
 <div class="network-page">
     <div class="tab-nav">
@@ -191,15 +182,8 @@
         </div>
     </div>
 </div>
+{% endblock %}
 
-<footer>
-    <div class="footer-content">
-        AOP-Wiki RDF Monitoring Service — Built for VHP4Safety  |
-        <a href="https://aopwiki.cloud.vhp4safety.nl" target="_blank">AOP-Wiki SPARQL Endpoint</a>  |
-        <a href="https://github.com/marvinm2/AOP-Wiki-RDF-dashboard" target="_blank">GitHub Repository</a>
-    </div>
-</footer>
-
+{% block scripts_extra %}
 <script src="{{ url_for('static', filename='js/network-graph.js') }}"></script>
-</body>
-</html>
+{% endblock %}
