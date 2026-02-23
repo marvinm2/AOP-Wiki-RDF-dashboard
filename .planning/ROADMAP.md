@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 2: Reliability and Completeness** - All plots load reliably, full export coverage, methodology transparency
 - [x] **Phase 3: Network Analysis** - Interactive AOP network graph with centrality metrics, PageRank, and community detection (completed 2026-02-23)
 - [x] **Phase 4: Entity Exploration** - Deep-dive views for AOPs, KEs, and stressors with shareable URLs (completed 2026-02-23)
-- [ ] **Phase 5: Polish & Consistency** - House style colors, landing page, plot uniformity, navigation redesign
+- [x] **Phase 5: Polish & Consistency** - House style colors, landing page, plot uniformity, navigation redesign (completed 2026-02-23)
 - [ ] **Phase 6: VHP Platform Deployment** - Production deployment on VHP4Safety with CORS and health probe integration
 
 ## Phase Details
@@ -106,13 +106,13 @@ Plans:
   4. Header and footer are redesigned with house style; version selector is in the navigation bar
   5. About page is accessible from navigation with project info and contact/issue-reporting link
   6. Dashboard is readable on tablets (basic responsive)
-**Plans:** 3/4 plans executed
+**Plans:** 4/4 plans complete
 
 Plans:
-- [ ] 05-01-PLAN.md — Color system foundation: BRAND_COLORS, Plotly custom template, CSS custom properties (Wave 1)
-- [ ] 05-02-PLAN.md — Base template + navigation redesign: Jinja2 inheritance, header/footer, version selector in nav (Wave 2)
-- [ ] 05-03-PLAN.md — Plot uniformity: standardize all ~57 plot renderings with custom template and render helper (Wave 2)
-- [ ] 05-04-PLAN.md — Landing page hub + About page + visual verification checkpoint (Wave 3)
+- [x] 05-01-PLAN.md — Color system foundation: BRAND_COLORS, Plotly custom template, CSS custom properties (Wave 1)
+- [x] 05-02-PLAN.md — Base template + navigation redesign: Jinja2 inheritance, header/footer, version selector in nav (Wave 2)
+- [x] 05-03-PLAN.md — Plot uniformity: standardize all ~57 plot renderings with custom template and render helper (Wave 2)
+- [x] 05-04-PLAN.md — Landing page hub + About page + visual verification checkpoint (Wave 3)
 
 **Deferred to v2 backlog:** Advanced Analytics (stressor-AOP mapping, data quality scoring, ontology coverage analysis — previously ANLY-01, ANLY-02, ANLY-03)
 
@@ -142,5 +142,5 @@ Note: Phase 2 and Phase 3 can execute in parallel (both depend only on Phase 1).
 | 2. Reliability and Completeness | 6/7 | UAT gap closure | - |
 | 3. Network Analysis | 5/5 | Complete | 2026-02-23 |
 | 4. Dashboard Enrichment & Raw Data | 0/3 | Complete    | 2026-02-23 |
-| 5. Polish & Consistency | 3/4 | In Progress|  |
+| 5. Polish & Consistency | 4/4 | Complete | 2026-02-23 |
 | 6. VHP Platform Deployment | 0/2 | Not started | - |
