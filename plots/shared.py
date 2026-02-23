@@ -54,6 +54,7 @@ Author:
 import os
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import plotly.io as pio
 from SPARQLWrapper import SPARQLWrapper, JSON, SPARQLExceptions
 import time
@@ -183,30 +184,28 @@ MAX_RETRIES = Config.SPARQL_MAX_RETRIES
 RETRY_DELAY = Config.SPARQL_RETRY_DELAY
 TIMEOUT = Config.SPARQL_TIMEOUT
 
-# Official House Style Color Palette
+# Official House Style Color Palette — single source of truth for all chart colors
 BRAND_COLORS = {
-    # Primary house style colors
-    'primary': '#29235C',      # Primary Dark (Main brand color)
-    'secondary': '#E6007E',    # Primary Magenta (Accent color)
-    'accent': '#307BBF',       # Primary Blue (Supporting blue)
-    'light': '#93D5F6',        # Sky Blue (Light accent)
-    'content': '#EB5B25',      # Orange (Content highlight)
-
-    # Full palette using official house style colors
+    'primary': '#29235C',      # VHP4Safety deep purple
+    'magenta': '#E6007E',      # VHP4Safety magenta (CTA)
+    'blue': '#307BBF',         # VHP4Safety blue (navigation)
+    'light_blue': '#009FE3',   # VHP4Safety light blue
+    'orange': '#EB5B25',       # VHP4Safety orange
+    'sky_blue': '#93D5F6',     # VHP4Safety sky blue
+    'deep_magenta': '#9A1C57', # Deep magenta accent
+    'teal': '#45A6B2',         # Teal accent
+    'dark_teal': '#005A6C',    # Dark teal
+    'violet': '#64358C',       # Violet accent
+    'warm_pink': '#B81178',    # Warm pink accent
     'palette': [
-        '#29235C',  # Primary Dark
-        '#E6007E',  # Primary Magenta
-        '#307BBF',  # Primary Blue
-        '#009FE3',  # Light Blue
-        '#EB5B25',  # Orange
-        '#93D5F6',  # Sky Blue
-        '#9A1C57',  # Deep Magenta
-        '#45A6B2',  # Teal
-        '#B81178',  # Purple
-        '#005A6C',  # Dark Teal
-        '#64358C'   # Violet
+        '#29235C', '#E6007E', '#307BBF', '#009FE3', '#EB5B25',
+        '#93D5F6', '#9A1C57', '#45A6B2', '#B81178', '#005A6C', '#64358C',
     ],
-
+    # Legacy aliases for backward compatibility
+    'secondary': '#E6007E',
+    'accent': '#307BBF',
+    'light': '#93D5F6',
+    'content': '#EB5B25',
     # Property type colors using house style palette
     'type_colors': {
         'Essential': '#29235C',    # Primary Dark
@@ -218,17 +217,73 @@ BRAND_COLORS = {
     }
 }
 
-# Plotly configuration for consistent styling and downloads
-config = {
+# VHP4Safety Plotly custom template — registered as default so all figures get brand styling
+_vhp4safety_template = go.layout.Template(
+    layout=go.Layout(
+        colorway=BRAND_COLORS['palette'],
+        font=dict(family="Arial, sans-serif", size=13, color=BRAND_COLORS['primary']),
+        paper_bgcolor="white",
+        plot_bgcolor="white",
+        hovermode="x unified",
+        autosize=True,
+        margin=dict(l=60, r=30, t=50, b=60),
+        legend=dict(
+            orientation="v",
+            yanchor="top",
+            y=1.0,
+            xanchor="left",
+            x=1.02,
+            font=dict(size=11),
+        ),
+        xaxis=dict(
+            gridcolor="#e0e0e0",
+            linecolor="#cccccc",
+            zeroline=False,
+            tickfont=dict(size=11),
+        ),
+        yaxis=dict(
+            gridcolor="#e0e0e0",
+            linecolor="#cccccc",
+            zeroline=False,
+            tickfont=dict(size=11),
+        ),
+    )
+)
+
+pio.templates["vhp4safety"] = _vhp4safety_template
+pio.templates.default = "plotly_white+vhp4safety"
+
+# Standardized Plotly HTML config for all to_html() calls
+PLOTLY_HTML_CONFIG = {
     "responsive": True,
+    "displayModeBar": "hover",
+    "displaylogo": False,
+    "modeBarButtonsToRemove": ["lasso2d", "select2d"],
     "toImageButtonOptions": {
-        "format": "png",       # You can also allow 'svg', 'jpeg', 'webp'
-        "filename": "plot_download",
-        "height": 500,         # Increased resolution
+        "format": "png",
+        "filename": "aopwiki_plot",
+        "height": 500,
         "width": 800,
-        "scale": 4             # Multiplies resolution
+        "scale": 4,
     }
 }
+
+# Legacy alias for backward compatibility (old name: config)
+config = PLOTLY_HTML_CONFIG
+
+
+def render_plot_html(fig, include_plotlyjs=False):
+    """Render a Plotly figure to HTML with standardized config.
+
+    Uses shared PLOTLY_HTML_CONFIG for consistent toolbar behavior
+    (hidden until hover, no Plotly logo, responsive sizing).
+    """
+    return pio.to_html(
+        fig,
+        full_html=False,
+        include_plotlyjs=include_plotlyjs,
+        config=PLOTLY_HTML_CONFIG,
+    )
 
 # Global data cache for CSV export functionality (TTL + LRU eviction, pinned latest version)
 _plot_data_cache = VersionedPlotCache(max_versions=5, ttl_seconds=1800)
