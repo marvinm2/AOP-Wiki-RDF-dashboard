@@ -6,18 +6,6 @@
     <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
 {% endblock %}
 
-{% block version_selector %}
-<!-- Version Selector (visible only on this page) -->
-<div class="version-selector-container">
-    <label for="version-selector" class="version-selector-label">
-        <span class="label-icon">View Version:</span>
-    </label>
-    <select id="version-selector" class="version-selector">
-        <option value="">Loading versions...</option>
-    </select>
-</div>
-{% endblock %}
-
 {% block page_header %}
 <div class="page-title-section">
     <h1>Database Snapshot</h1>
@@ -25,6 +13,15 @@
         Key metrics and visualizations from the selected version of the AOP-Wiki database.
         Use the version selector to compare different database snapshots over time.
     </p>
+</div>
+<!-- Version Selector (below nav, inside page content) -->
+<div class="version-selector-container">
+    <label for="version-selector" class="version-selector-label">
+        <span class="label-icon">View Version:</span>
+    </label>
+    <select id="version-selector" class="version-selector">
+        <option value="">Loading versions...</option>
+    </select>
 </div>
 {% endblock %}
 

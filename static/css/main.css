@@ -55,6 +55,13 @@ body {
     overflow-x: hidden;
 }
 
+/* Sticky footer: push footer to bottom even on short-content pages */
+body.site-body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
 header {
     background-color: var(--color-nav-bg);
     padding: 20px;
@@ -1108,11 +1115,7 @@ footer img {
     background: transparent;
 }
 
-.nav-version-selector {
-    margin-left: 16px;
-    display: flex;
-    align-items: center;
-}
+/* nav-version-selector removed: version selector now lives inside page content */
 
 /* ==========================================================================
    Main Footer (base.html)
@@ -1124,7 +1127,7 @@ footer img {
     padding: 30px 20px;
     text-align: center;
     width: 100%;
-    margin-top: 40px;
+    margin-top: auto;
 }
 
 .footer-container {
@@ -1188,6 +1191,7 @@ footer img {
     max-width: var(--content-max-width);
     margin: 0 auto;
     padding: 0 20px;
+    flex: 1;
 }
 
 /* Page header block inside base.html main area */
@@ -1238,13 +1242,6 @@ footer img {
         padding: 6px 12px;
         font-size: var(--font-size-xs);
         line-height: normal;
-    }
-
-    .nav-version-selector {
-        flex: 1 1 100%;
-        justify-content: center;
-        margin-left: 0;
-        padding-bottom: 8px;
     }
 
     .page-content {

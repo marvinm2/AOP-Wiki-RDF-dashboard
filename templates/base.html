@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/lazy-loading.css') }}">
     {% block head_extra %}{% endblock %}
 </head>
-<body>
+<body class="site-body">
     <nav class="main-nav">
         <div class="nav-container">
             <a href="/" class="nav-brand">AOP-Wiki RDF Dashboard</a>
@@ -18,9 +18,7 @@
                 <a href="/network" class="nav-link {% if active_page == 'network' %}active{% endif %}">Network Analysis</a>
                 <a href="/about" class="nav-link {% if active_page == 'about' %}active{% endif %}">About</a>
             </div>
-            <div class="nav-version-selector">
-                {% block version_selector %}{% endblock %}
-            </div>
+            {# Version selector removed from nav for layout consistency across pages #}
         </div>
     </nav>
 
@@ -38,7 +36,7 @@
                 <span class="footer-project-name">AOP-Wiki RDF Dashboard</span>
             </div>
             <div class="footer-links">
-                <a href="https://aopwiki.cloud.vhp4safety.nl" target="_blank" rel="noopener">SPARQL Endpoint</a>
+                <a href="#" title="Coming soon">SPARQL Endpoint</a>
                 <a href="https://github.com/marvinm2/AOP-Wiki-RDF-dashboard" target="_blank" rel="noopener">GitHub</a>
                 <a href="https://github.com/marvinm2/AOP-Wiki-RDF-dashboard/issues" target="_blank" rel="noopener">Report an Issue</a>
             </div>

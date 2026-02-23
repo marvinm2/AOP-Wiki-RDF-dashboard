@@ -201,6 +201,17 @@ BRAND_COLORS = {
         '#29235C', '#E6007E', '#307BBF', '#009FE3', '#EB5B25',
         '#93D5F6', '#9A1C57', '#45A6B2', '#B81178', '#005A6C', '#64358C',
     ],
+    # OECD Status color mapping — consistent across all OECD-related plots
+    'oecd_status': {
+        'EAGMST Under Review': '#307BBF',      # blue
+        'Under Development': '#009FE3',         # light blue
+        'TFHA/WNT Endorsed': '#29235C',         # primary (deep purple)
+        'WNT Endorsed': '#E6007E',              # magenta
+        'Approved': '#EB5B25',                  # orange
+        'No Status': '#999999',                 # grey
+        'EAGMST Under Development': '#45A6B2',  # teal
+        'Not OECD': '#93D5F6',                  # sky blue
+    },
     # Legacy aliases for backward compatibility
     'secondary': '#E6007E',
     'accent': '#307BBF',
