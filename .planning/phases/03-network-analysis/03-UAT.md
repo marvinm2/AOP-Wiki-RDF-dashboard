@@ -1,5 +1,5 @@
 ---
-status: complete
+status: diagnosed
 phase: 03-network-analysis
 source: [03-01-SUMMARY.md, 03-02-SUMMARY.md, 03-03-SUMMARY.md, 03-04-SUMMARY.md]
 started: 2026-02-23T10:00:00Z
@@ -65,7 +65,12 @@ skipped: 0
   reason: "User reported: does not work: No network metrics data available for download"
   severity: major
   test: 8
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
+  root_cause: "get_or_compute_network() only populates _plot_data_cache['network_metrics'] on first call. Subsequent calls return from _network_cache (no TTL) without re-populating _plot_data_cache (TTL=1800s). After 30 min, the CSV export cache entry expires and download returns 404."
+  artifacts:
+    - path: "plots/network.py"
+      issue: "Cache-hit fast path (lines 322-324) skips _plot_data_cache re-population"
+    - path: "app.py"
+      issue: "Download endpoint depends on _plot_data_cache which expires independently"
+  missing:
+    - "Re-populate _plot_data_cache['network_metrics'] from _network_cache when cache-hit path is taken and entry has expired"
+  debug_session: ".planning/debug/network-export-download.md"

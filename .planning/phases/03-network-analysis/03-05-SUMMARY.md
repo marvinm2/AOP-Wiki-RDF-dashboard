@@ -60,7 +60,7 @@ Each task was committed atomically:
 
 1. **Task 1: Fix cache-hit path to re-populate _plot_data_cache on TTL expiry** - `d94dffd` (fix)
 
-**Plan metadata:** TBD (docs: complete plan)
+**Plan metadata:** `61fc0bc` (docs: complete plan)
 
 ## Files Created/Modified
 - `plots/network.py` - Added TTL-expired cache re-population logic in get_or_compute_network() cache-hit path
