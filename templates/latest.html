@@ -88,6 +88,8 @@
     <button class="nav-button" onclick="document.getElementById('database-state').scrollIntoView({behavior:'smooth'});">Database State</button>
     <button class="nav-button" onclick="document.getElementById('network-analysis').scrollIntoView({behavior:'smooth'});">Network Analysis</button>
     <button class="nav-button" onclick="document.getElementById('ke-analysis').scrollIntoView({behavior:'smooth'});">Key Event Analysis</button>
+    <button class="nav-button" onclick="document.getElementById('breakdown-analysis').scrollIntoView({behavior:'smooth'});">Breakdown Analysis</button>
+    <button class="nav-button" onclick="document.getElementById('ke-reuse').scrollIntoView({behavior:'smooth'});">KE Reuse</button>
     <button class="nav-button" onclick="document.getElementById('data-quality').scrollIntoView({behavior:'smooth'});">Data Quality</button>
 </div>
 
@@ -210,6 +212,124 @@
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
             {{ data_table_toggle('latest_ke_annotation_depth') }}
+        </div>
+    </div>
+</section>
+
+<section class="section-block" id="breakdown-analysis">
+    <h2 class="section-header">Breakdown Analysis</h2>
+    <div class="plot-grid">
+        <div class="plot-box">
+            <div class="plot-header">
+                <h3>Key Events by Biological Level of Organization</h3>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/latest/ke_by_bio_level?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/latest/ke_by_bio_level?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/latest/ke_by_bio_level?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+            </div>
+            <p class="plot-description">
+                Distribution of Key Events across biological levels of organization (molecular, cellular, tissue, organ, organism, population). Shows which biological scales are most studied.
+            </p>
+            {{ methodology_note(methodology_notes, 'latest_ke_by_bio_level') }}
+            <div class="lazy-plot" data-plot-name="latest_ke_by_bio_level">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+            {{ data_table_toggle('latest_ke_by_bio_level') }}
+        </div>
+        <div class="plot-box">
+            <div class="plot-header">
+                <h3>Taxonomic Group Distribution Across AOPs</h3>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/latest/taxonomic_groups?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/latest/taxonomic_groups?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/latest/taxonomic_groups?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+            </div>
+            <p class="plot-description">
+                Which taxonomic groups (species/organisms) are most represented across AOPs in the current database. Shows the top taxonomic applicability annotations.
+            </p>
+            {{ methodology_note(methodology_notes, 'latest_taxonomic_groups') }}
+            <div class="lazy-plot" data-plot-name="latest_taxonomic_groups">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+            {{ data_table_toggle('latest_taxonomic_groups') }}
+        </div>
+        <div class="plot-box full-width">
+            <div class="plot-header">
+                <h3>Entity Counts by OECD Status</h3>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/latest/entity_by_oecd_status?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/latest/entity_by_oecd_status?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/latest/entity_by_oecd_status?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+            </div>
+            <p class="plot-description">
+                Breakdown of AOPs, Key Events, and Key Event Relationships by their OECD approval status. Shows the curation maturity distribution across entity types.
+            </p>
+            {{ methodology_note(methodology_notes, 'latest_entity_by_oecd_status') }}
+            <div class="lazy-plot" data-plot-name="latest_entity_by_oecd_status">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+            {{ data_table_toggle('latest_entity_by_oecd_status') }}
+        </div>
+    </div>
+</section>
+
+<section class="section-block" id="ke-reuse">
+    <h2 class="section-header">Key Event Reuse Analysis</h2>
+    <div class="plot-grid">
+        <div class="plot-box full-width">
+            <div class="plot-header">
+                <h3>Most Reused Key Events Across AOPs</h3>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/latest/ke_reuse?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/latest/ke_reuse?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/latest/ke_reuse?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+            </div>
+            <p class="plot-description">
+                Top 30 Key Events that appear in the most AOPs, revealing shared biology across pathways.
+                <strong>Click on a bar to open the Key Event in AOP-Wiki.</strong>
+            </p>
+            {{ methodology_note(methodology_notes, 'latest_ke_reuse') }}
+            <div class="lazy-plot" data-plot-name="latest_ke_reuse" id="ke-reuse-plot">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+            {{ data_table_toggle('latest_ke_reuse') }}
+        </div>
+        <div class="plot-box">
+            <div class="plot-header">
+                <h3>Key Event Reuse Distribution</h3>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/latest/ke_reuse_distribution?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/latest/ke_reuse_distribution?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/latest/ke_reuse_distribution?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+            </div>
+            <p class="plot-description">
+                Histogram showing how many AOPs each Key Event belongs to. Most KEs appear in only 1 AOP, but some are shared across many pathways.
+            </p>
+            {{ methodology_note(methodology_notes, 'latest_ke_reuse_distribution') }}
+            <div class="lazy-plot" data-plot-name="latest_ke_reuse_distribution">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+            {{ data_table_toggle('latest_ke_reuse_distribution') }}
         </div>
     </div>
 </section>
@@ -389,6 +509,39 @@
 <script src="{{ url_for('static', filename='js/lazy-loading.js') }}"></script>
 <script src="{{ url_for('static', filename='js/version-selector.js') }}"></script>
 <script src="{{ url_for('static', filename='js/raw-data-tables.js') }}"></script>
+<script>
+// EXPL-04: Click-to-AOP-Wiki handler for KE reuse plot
+// Uses MutationObserver to attach Plotly click handler after lazy-loaded plot renders
+(function() {
+    'use strict';
+    function attachKeReuseClickHandler(plotContainer) {
+        var plotlyDiv = plotContainer.querySelector('.plotly-graph-div, .js-plotly-plot');
+        if (!plotlyDiv) return;
+        plotlyDiv.on('plotly_click', function(eventData) {
+            if (eventData && eventData.points && eventData.points[0] && eventData.points[0].customdata) {
+                var url = eventData.points[0].customdata[0];
+                if (url && url.startsWith('https://aopwiki.org/')) {
+                    window.open(url, '_blank');
+                }
+            }
+        });
+    }
+
+    var keReusePlot = document.getElementById('ke-reuse-plot');
+    if (keReusePlot) {
+        var observer = new MutationObserver(function(mutations) {
+            for (var i = 0; i < mutations.length; i++) {
+                if (keReusePlot.querySelector('.plotly-graph-div, .js-plotly-plot')) {
+                    attachKeReuseClickHandler(keReusePlot);
+                    observer.disconnect();
+                    break;
+                }
+            }
+        });
+        observer.observe(keReusePlot, { childList: true, subtree: true });
+    }
+})();
+</script>
 <script>
 // Load property details dynamically from the API
 document.addEventListener('DOMContentLoaded', function() {

@@ -194,5 +194,40 @@
         "data_source": "For each version, SPARQL queries count the component types per KE, then aggregate KEs by their component count (0 through 3). Results show the distribution shift over time.",
         "limitations": "Only counts distinct component types (max 3: Process, Object, Action), not total annotations. A KE with multiple processes but no objects or actions would count as 1. Does not measure annotation quality. Trend data covers only the published RDF release versions available in the SPARQL endpoint; the AOP-Wiki knowledge base predates the earliest RDF release, so earlier activity is not captured.",
         "sparql": "SELECT ?graph ?ke\n  (COUNT(DISTINCT ?process) AS ?p)\n  (COUNT(DISTINCT ?object) AS ?o)\n  (COUNT(DISTINCT ?action) AS ?a)\nWHERE {\n  GRAPH ?graph {\n    ?ke a aopo:KeyEvent .\n    OPTIONAL { ?ke aopo:has_biological_process ?process . }\n    OPTIONAL { ?ke aopo:has_biological_object ?object . }\n    OPTIONAL { ?ke aopo:has_action ?action . }\n  }\n}\nGROUP BY ?graph ?ke\nORDER BY ?graph"
+    },
+    "latest_ke_by_bio_level": {
+        "title": "Key Events by Biological Level",
+        "description": "Distribution of Key Events across biological levels of organization (molecular, cellular, tissue, organ, organism, population). Reveals which biological scales are most represented in the AOP-Wiki knowledge base.",
+        "data_source": "SPARQL query counts distinct Key Events grouped by their Level of Biological Organisation annotation (NCI Thesaurus property C25664). KEs without this annotation appear as 'Not Annotated'.",
+        "limitations": "Not all Key Events have biological level annotations. Unannotated KEs appear as 'Not Annotated' and may dominate the chart. The level vocabulary depends on how curators annotated each KE. Coverage varies by version as curation progresses.",
+        "sparql": "SELECT ?level_label (COUNT(DISTINCT ?ke) AS ?count)\nWHERE {\n  GRAPH <{graph}> {\n    ?ke a aopo:KeyEvent .\n    OPTIONAL { ?ke <C25664_URI> ?level_obj . }\n    BIND(IF(BOUND(?level_obj), STR(?level_obj), 'Not Annotated') AS ?level_label)\n  }\n}\nGROUP BY ?level_label"
+    },
+    "latest_taxonomic_groups": {
+        "title": "Taxonomic Group Distribution",
+        "description": "Shows which taxonomic groups (species or organisms) are most represented across AOPs via the Taxonomic Applicability annotation. Identifies the most commonly studied organisms in AOP-Wiki.",
+        "data_source": "SPARQL query counts distinct AOPs grouped by their Taxonomic Applicability annotation (NCBI Taxonomy property 131567). Only AOPs with explicit taxonomy annotations are included.",
+        "limitations": "Only AOPs with explicit taxonomic applicability annotations are shown. Many AOPs may lack this annotation entirely. Taxonomy labels are extracted from URIs and may appear as identifiers rather than common species names. A single AOP can have multiple taxonomic applicability annotations.",
+        "sparql": "SELECT ?taxon_label (COUNT(DISTINCT ?aop) AS ?aop_count)\nWHERE {\n  GRAPH <{graph}> {\n    ?aop a aopo:AdverseOutcomePathway .\n    ?aop <NCBITAXON/131567> ?taxon_obj .\n    BIND(STR(?taxon_obj) AS ?taxon_label)\n  }\n}\nGROUP BY ?taxon_label\nORDER BY DESC(?aop_count)\nLIMIT 25"
+    },
+    "latest_entity_by_oecd_status": {
+        "title": "Entity Counts by OECD Status",
+        "description": "Breaks down entity counts (AOPs, Key Events, Key Event Relationships) by OECD approval status category. Shows how curation maturity is distributed across entity types.",
+        "data_source": "Three separate SPARQL queries count AOPs directly by their OECD Status annotation (NCI Thesaurus C25688), and KEs/KERs by the OECD status of their parent AOPs (via aopo:has_key_event and aopo:has_key_event_relationship relationships).",
+        "limitations": "KEs and KERs inherit OECD status from their parent AOPs. A KE belonging to AOPs with different statuses appears in each status group. AOPs without an OECD status annotation appear as 'No Status'. Status categories reflect what is present in the data.",
+        "sparql": "SELECT ?status_label (COUNT(DISTINCT ?aop) AS ?count)\nWHERE {\n  GRAPH <{graph}> {\n    ?aop a aopo:AdverseOutcomePathway .\n    OPTIONAL { ?aop <C25688_URI> ?status_obj . }\n    BIND(IF(BOUND(?status_obj), STR(?status_obj), 'No Status') AS ?status_label)\n  }\n}\nGROUP BY ?status_label"
+    },
+    "latest_ke_reuse": {
+        "title": "Most Reused Key Events",
+        "description": "Shows the top 30 Key Events that appear in the most AOPs, revealing shared biology across adverse outcome pathways. Clicking a bar opens the corresponding KE page on AOP-Wiki.",
+        "data_source": "SPARQL query counts distinct AOPs per Key Event via aopo:has_key_event relationships. Only KEs appearing in more than one AOP are shown. KE titles are retrieved via dc:title.",
+        "limitations": "Limited to the top 30 most reused KEs. KE titles may be truncated for readability. The count reflects explicit aopo:has_key_event declarations in the RDF data. Entity links open https://aopwiki.org/events/{id} in a new tab.",
+        "sparql": "SELECT ?ke (SAMPLE(?title_val) AS ?title) (COUNT(DISTINCT ?aop) AS ?aop_count)\nWHERE {\n  GRAPH <{graph}> {\n    ?aop a aopo:AdverseOutcomePathway ;\n         aopo:has_key_event ?ke .\n    OPTIONAL { ?ke dc:title ?title_val . }\n  }\n}\nGROUP BY ?ke\nHAVING (COUNT(DISTINCT ?aop) > 1)\nORDER BY DESC(?aop_count)\nLIMIT 30"
+    },
+    "latest_ke_reuse_distribution": {
+        "title": "Key Event Reuse Distribution",
+        "description": "Histogram showing the distribution of how many AOPs each Key Event belongs to. Most KEs appear in only 1 AOP, but some are shared across many pathways, indicating shared biological mechanisms.",
+        "data_source": "SPARQL query counts distinct AOPs per Key Event, then bins the results into discrete categories: 1, 2, 3, 4, 5, 6-10, and 11+ AOPs per KE.",
+        "limitations": "Bins KEs into discrete groups for readability. The '6-10' and '11+' bins aggregate multiple values. Only KEs that are linked to at least one AOP via aopo:has_key_event are included. Orphan KEs (not linked to any AOP) are excluded.",
+        "sparql": "SELECT ?ke (COUNT(DISTINCT ?aop) AS ?aop_count)\nWHERE {\n  GRAPH <{graph}> {\n    ?aop a aopo:AdverseOutcomePathway ;\n         aopo:has_key_event ?ke .\n  }\n}\nGROUP BY ?ke"
     }
 }
