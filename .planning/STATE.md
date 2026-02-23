@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-20)
 
 **Core value:** Researchers, curators, and regulators can explore AOP-Wiki data across any version to understand how the knowledge base evolves over time — reliably and without timeouts.
-**Current focus:** Phase 4: Entity Exploration (raw data tables and shareable URLs complete)
+**Current focus:** Phase 4: Entity Exploration (breakdown plots and entity links complete)
 
 ## Current Position
 
 Phase: 4 of 6 (Entity Exploration)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In Progress
-Last activity: 2026-02-23 — Completed 04-01-PLAN.md (Raw data tables and shareable URLs)
+Last activity: 2026-02-23 — Completed 04-02-PLAN.md (Breakdown plots and entity links)
 
-Progress: [██████░░░░░░░░░░░░░░] 33%
+Progress: [█████████░░░░░░░░░░░] 67%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 17
+- Total plans completed: 18
 - Average duration: ~4.4 min
-- Total execution time: ~1.2 hours
+- Total execution time: ~1.3 hours
 
 **By Phase:**
 
@@ -32,8 +32,8 @@ Progress: [██████░░░░░░░░░░░░░░] 33%
 | 03 | 5/5 | ~41 min | ~8 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-02 (4m), 03-03 (3m), 03-04 (30m), 03-05 (1m), 04-01 (6m)
-- Trend: 04-01 standard cross-cutting feature (data tables + URL state)
+- Last 5 plans: 03-03 (3m), 03-04 (30m), 03-05 (1m), 04-01 (6m), 04-02 (6m)
+- Trend: 04-02 standard feature addition (5 new plots + entity links)
 
 *Updated after each plan completion*
 | Phase 02 P05 | 9min | 2 tasks | 2 files |
@@ -44,6 +44,7 @@ Progress: [██████░░░░░░░░░░░░░░] 33%
 | Phase 03 P04 | 30min | 2 tasks | 7 files |
 | Phase 03 P05 | 1min | 1 tasks | 1 files |
 | Phase 04 P01 | 6min | 2 tasks | 8 files |
+| Phase 04 P02 | 6min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -93,6 +94,10 @@ Recent decisions affecting current work:
 - [04-01]: Used absolute plot name as data source for dual-view (abs/delta) plot-boxes since underlying data is same
 - [04-01]: URL state uses history.replaceState to avoid creating browser history entries on version change
 - [04-01]: version-changed custom DOM event pattern for decoupled communication between version-selector and raw-data-tables
+- [04-02]: Generic /download/latest/<plot_name> route instead of individual routes to reduce route proliferation
+- [04-02]: MutationObserver for attaching Plotly click handler on lazy-loaded KE reuse plot
+- [04-02]: OPTIONAL+BIND pattern for SPARQL queries to include unannotated entities as 'Not Annotated'
+- [04-02]: Only KE reuse bar chart gets entity links (EXPL-04) since other plots show aggregate groupings
 
 ### Pending Todos
 
@@ -113,5 +118,5 @@ User verification of Phase 2 delivery found 4 issues requiring follow-up:
 ## Session Continuity
 
 Last session: 2026-02-23
-Stopped at: Completed 04-01-PLAN.md (Raw data tables and shareable URLs)
-Resume file: .planning/phases/04-entity-exploration/04-01-SUMMARY.md
+Stopped at: Completed 04-02-PLAN.md (Breakdown plots and entity links)
+Resume file: .planning/phases/04-entity-exploration/04-02-SUMMARY.md
