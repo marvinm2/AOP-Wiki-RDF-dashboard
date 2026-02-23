@@ -199,6 +199,13 @@ from .latest_plots import (
     plot_latest_aop_completeness_by_status,
     plot_latest_ke_completeness_by_status,
     plot_latest_ker_completeness_by_status,
+
+    # Breakdown analysis (Phase 04-02)
+    plot_latest_ke_by_bio_level,
+    plot_latest_taxonomic_groups,
+    plot_latest_entity_by_oecd_status,
+    plot_latest_ke_reuse,
+    plot_latest_ke_reuse_distribution,
 )
 
 # Define module version and metadata
@@ -261,6 +268,11 @@ __all__ = [
     'plot_latest_aop_completeness_by_status',
     'plot_latest_ke_completeness_by_status',
     'plot_latest_ker_completeness_by_status',
+    'plot_latest_ke_by_bio_level',
+    'plot_latest_taxonomic_groups',
+    'plot_latest_entity_by_oecd_status',
+    'plot_latest_ke_reuse',
+    'plot_latest_ke_reuse_distribution',
 
     # Network analysis functions
     'build_aop_network',
@@ -311,6 +323,11 @@ def get_available_functions():
             'plot_latest_aop_completeness_by_status',
             'plot_latest_ke_completeness_by_status',
             'plot_latest_ker_completeness_by_status',
+            'plot_latest_ke_by_bio_level',
+            'plot_latest_taxonomic_groups',
+            'plot_latest_entity_by_oecd_status',
+            'plot_latest_ke_reuse',
+            'plot_latest_ke_reuse_distribution',
         ],
         'network_analysis': [
             'build_aop_network',

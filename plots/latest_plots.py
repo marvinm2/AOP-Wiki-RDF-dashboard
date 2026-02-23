@@ -1431,6 +1431,582 @@ def plot_latest_aop_completeness_by_status(version: str = None) -> str:
     return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
 
 
+def plot_latest_ke_by_bio_level(version: str = None) -> str:
+    """Show distribution of Key Events across biological levels of organization.
+
+    Args:
+        version: Optional version string. If None, uses latest.
+
+    Returns:
+        str: Plotly HTML string for embedding.
+    """
+    global _plot_data_cache
+
+    # Determine target graph directly for reliable query execution
+    if version:
+        target_graph = f"http://aopwiki.org/graph/{version}"
+        latest_version = version
+    else:
+        version_query = """
+        SELECT ?graph
+        WHERE {
+            GRAPH ?graph { ?s a aopo:KeyEvent . }
+            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        GROUP BY ?graph
+        ORDER BY DESC(?graph)
+        LIMIT 1
+        """
+        version_results = run_sparql_query(version_query)
+        if not version_results:
+            return create_fallback_plot("KE by Biological Level", "No graphs available")
+        target_graph = version_results[0]["graph"]["value"]
+        latest_version = target_graph.split("/")[-1]
+
+    query = f"""
+    SELECT ?level_label (COUNT(DISTINCT ?ke) AS ?count)
+    WHERE {{
+      GRAPH <{target_graph}> {{
+        ?ke a aopo:KeyEvent .
+        OPTIONAL {{
+          ?ke <http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25664> ?level_obj .
+        }}
+        BIND(IF(BOUND(?level_obj), STR(?level_obj), "Not Annotated") AS ?level_label)
+      }}
+    }}
+    GROUP BY ?level_label
+    ORDER BY DESC(?count)
+    """
+
+    results = run_sparql_query(query)
+    if not results:
+        return create_fallback_plot("KE by Biological Level", "No data available")
+
+    data = []
+    total_ke = 0
+    not_annotated_count = 0
+    for r in results:
+        label_raw = r["level_label"]["value"]
+        count = int(r["count"]["value"])
+        total_ke += count
+        # Extract human-readable name from URI or keep as-is
+        if label_raw.startswith("http"):
+            label = label_raw.split("/")[-1].replace("_", " ")
+        else:
+            label = label_raw
+        if label == "Not Annotated":
+            not_annotated_count = count
+        data.append({"Biological Level": label, "KE Count": count})
+
+    if not data:
+        return create_fallback_plot("KE by Biological Level", "No biological level data found")
+
+    df = pd.DataFrame(data).sort_values("KE Count", ascending=True)
+    version_key = version or "latest"
+    df["Version"] = latest_version
+    _plot_data_cache[f'latest_ke_by_bio_level_{version_key}'] = df
+
+    # Build subtitle note if data is very sparse
+    subtitle = ""
+    if total_ke > 0 and not_annotated_count / total_ke > 0.8:
+        subtitle = "<br><sub>Note: >80% of KEs lack biological level annotations</sub>"
+
+    fig = px.bar(
+        df,
+        x="KE Count",
+        y="Biological Level",
+        orientation='h',
+        title=f"Key Events by Biological Level of Organization ({latest_version}){subtitle}",
+        text="KE Count",
+        color="KE Count",
+        color_continuous_scale=[BRAND_COLORS['light'], BRAND_COLORS['primary']],
+    )
+
+    fig.update_traces(textposition='outside')
+    fig.update_layout(
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        title_font_color=BRAND_COLORS['primary'],
+        font=dict(color=BRAND_COLORS['primary']),
+        template="plotly_white",
+        showlegend=False,
+        autosize=True,
+        margin=dict(l=150, r=30, t=80, b=60),
+        yaxis=dict(title=""),
+        xaxis=dict(title="Number of Key Events"),
+        coloraxis_showscale=False,
+    )
+
+    _plot_figure_cache[f'latest_ke_by_bio_level_{version_key}'] = fig
+    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+
+
+def plot_latest_taxonomic_groups(version: str = None) -> str:
+    """Show which taxonomic groups are most represented across AOPs.
+
+    Args:
+        version: Optional version string. If None, uses latest.
+
+    Returns:
+        str: Plotly HTML string for embedding.
+    """
+    global _plot_data_cache
+
+    # Determine target graph
+    if version:
+        target_graph = f"http://aopwiki.org/graph/{version}"
+        latest_version = version
+    else:
+        version_query = """
+        SELECT ?graph
+        WHERE {
+            GRAPH ?graph { ?s a aopo:AdverseOutcomePathway . }
+            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        GROUP BY ?graph
+        ORDER BY DESC(?graph)
+        LIMIT 1
+        """
+        version_results = run_sparql_query(version_query)
+        if not version_results:
+            return create_fallback_plot("Taxonomic Groups", "No graphs available")
+        target_graph = version_results[0]["graph"]["value"]
+        latest_version = target_graph.split("/")[-1]
+
+    # Query taxonomic applicability on AOPs (and KEs as fallback context)
+    query = f"""
+    SELECT ?taxon_label (COUNT(DISTINCT ?aop) AS ?aop_count)
+    WHERE {{
+      GRAPH <{target_graph}> {{
+        ?aop a aopo:AdverseOutcomePathway .
+        ?aop <http://purl.bioontology.org/ontology/NCBITAXON/131567> ?taxon_obj .
+        BIND(STR(?taxon_obj) AS ?taxon_label)
+      }}
+    }}
+    GROUP BY ?taxon_label
+    ORDER BY DESC(?aop_count)
+    LIMIT 25
+    """
+
+    results = run_sparql_query(query)
+    if not results:
+        return create_fallback_plot("Taxonomic Groups", "No taxonomic applicability data found. This annotation may not be present in the current RDF data.")
+
+    data = []
+    for r in results:
+        label_raw = r["taxon_label"]["value"]
+        count = int(r["aop_count"]["value"])
+        # Extract readable name from URI
+        if label_raw.startswith("http"):
+            label = label_raw.split("/")[-1].replace("_", " ")
+        else:
+            label = label_raw
+        data.append({"Taxonomic Group": label, "AOP Count": count})
+
+    if not data:
+        return create_fallback_plot("Taxonomic Groups", "No taxonomic group data found")
+
+    df = pd.DataFrame(data).sort_values("AOP Count", ascending=True)
+    version_key = version or "latest"
+    df["Version"] = latest_version
+    _plot_data_cache[f'latest_taxonomic_groups_{version_key}'] = df
+
+    # Use discrete brand colors
+    palette = BRAND_COLORS['palette']
+
+    fig = px.bar(
+        df,
+        x="AOP Count",
+        y="Taxonomic Group",
+        orientation='h',
+        title=f"Taxonomic Group Distribution Across AOPs ({latest_version})",
+        text="AOP Count",
+        color="Taxonomic Group",
+        color_discrete_sequence=palette,
+    )
+
+    fig.update_traces(textposition='outside')
+    fig.update_layout(
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        title_font_color=BRAND_COLORS['primary'],
+        font=dict(color=BRAND_COLORS['primary']),
+        template="plotly_white",
+        showlegend=False,
+        autosize=True,
+        margin=dict(l=180, r=30, t=60, b=60),
+        yaxis=dict(title=""),
+        xaxis=dict(title="Number of AOPs"),
+    )
+
+    _plot_figure_cache[f'latest_taxonomic_groups_{version_key}'] = fig
+    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+
+
+def plot_latest_entity_by_oecd_status(version: str = None) -> str:
+    """Show entity count breakdowns (AOPs, KEs, KERs) by OECD status.
+
+    Args:
+        version: Optional version string. If None, uses latest.
+
+    Returns:
+        str: Plotly HTML string for embedding.
+    """
+    global _plot_data_cache
+
+    # Determine target graph
+    if version:
+        target_graph = f"http://aopwiki.org/graph/{version}"
+        latest_version = version
+    else:
+        version_query = """
+        SELECT ?graph
+        WHERE {
+            GRAPH ?graph { ?s a aopo:AdverseOutcomePathway . }
+            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        GROUP BY ?graph
+        ORDER BY DESC(?graph)
+        LIMIT 1
+        """
+        version_results = run_sparql_query(version_query)
+        if not version_results:
+            return create_fallback_plot("Entity by OECD Status", "No graphs available")
+        target_graph = version_results[0]["graph"]["value"]
+        latest_version = target_graph.split("/")[-1]
+
+    # Count AOPs by OECD status
+    aop_query = f"""
+    SELECT ?status_label (COUNT(DISTINCT ?aop) AS ?count)
+    WHERE {{
+      GRAPH <{target_graph}> {{
+        ?aop a aopo:AdverseOutcomePathway .
+        OPTIONAL {{
+          ?aop <http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25688> ?status_obj .
+        }}
+        BIND(IF(BOUND(?status_obj), STR(?status_obj), "No Status") AS ?status_label)
+      }}
+    }}
+    GROUP BY ?status_label
+    """
+
+    # Count KEs by OECD status (via parent AOP)
+    ke_query = f"""
+    SELECT ?status_label (COUNT(DISTINCT ?ke) AS ?count)
+    WHERE {{
+      GRAPH <{target_graph}> {{
+        ?aop a aopo:AdverseOutcomePathway ;
+             aopo:has_key_event ?ke .
+        OPTIONAL {{
+          ?aop <http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25688> ?status_obj .
+        }}
+        BIND(IF(BOUND(?status_obj), STR(?status_obj), "No Status") AS ?status_label)
+      }}
+    }}
+    GROUP BY ?status_label
+    """
+
+    # Count KERs by OECD status (via parent AOP)
+    ker_query = f"""
+    SELECT ?status_label (COUNT(DISTINCT ?ker) AS ?count)
+    WHERE {{
+      GRAPH <{target_graph}> {{
+        ?aop a aopo:AdverseOutcomePathway ;
+             aopo:has_key_event_relationship ?ker .
+        OPTIONAL {{
+          ?aop <http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25688> ?status_obj .
+        }}
+        BIND(IF(BOUND(?status_obj), STR(?status_obj), "No Status") AS ?status_label)
+      }}
+    }}
+    GROUP BY ?status_label
+    """
+
+    aop_results = run_sparql_query(aop_query)
+    ke_results = run_sparql_query(ke_query)
+    ker_results = run_sparql_query(ker_query)
+
+    if not aop_results and not ke_results and not ker_results:
+        return create_fallback_plot("Entity by OECD Status", "No OECD status data available")
+
+    data = []
+    for entity_type, results in [("AOPs", aop_results), ("KEs", ke_results), ("KERs", ker_results)]:
+        if results:
+            for r in results:
+                status_raw = r["status_label"]["value"]
+                count = int(r["count"]["value"])
+                # Clean up status label from URI
+                if status_raw.startswith("http"):
+                    status = status_raw.split("/")[-1].replace("_", " ")
+                else:
+                    status = status_raw
+                data.append({
+                    "Entity Type": entity_type,
+                    "OECD Status": status,
+                    "Count": count
+                })
+
+    if not data:
+        return create_fallback_plot("Entity by OECD Status", "No entity status data found")
+
+    df = pd.DataFrame(data)
+    version_key = version or "latest"
+    df["Version"] = latest_version
+    _plot_data_cache[f'latest_entity_by_oecd_status_{version_key}'] = df
+
+    # Color mapping for OECD statuses
+    status_colors = {
+        "EAGMST Under Review": BRAND_COLORS['primary_blue'],
+        "Under Development": BRAND_COLORS['secondary_green'] if 'secondary_green' in BRAND_COLORS else '#45A6B2',
+        "TFHA/WNT Endorsed": BRAND_COLORS['primary'],
+        "Approved": BRAND_COLORS['primary'],
+        "No Status": '#999999',
+    }
+
+    fig = px.bar(
+        df,
+        x="Entity Type",
+        y="Count",
+        color="OECD Status",
+        barmode="group",
+        title=f"Entity Counts by OECD Status ({latest_version})",
+        text="Count",
+        color_discrete_map=status_colors,
+    )
+
+    fig.update_traces(textposition='outside')
+    fig.update_layout(
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        title_font_color=BRAND_COLORS['primary'],
+        font=dict(color=BRAND_COLORS['primary']),
+        template="plotly_white",
+        autosize=True,
+        margin=dict(l=60, r=30, t=60, b=60),
+        yaxis=dict(title="Count"),
+        xaxis=dict(title="Entity Type"),
+        legend=dict(title="OECD Status"),
+    )
+
+    _plot_figure_cache[f'latest_entity_by_oecd_status_{version_key}'] = fig
+    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+
+
+def plot_latest_ke_reuse(version: str = None) -> str:
+    """Show the most reused Key Events across AOPs (top 30).
+
+    Includes AOP-Wiki entity links via Plotly customdata for click-to-open.
+
+    Args:
+        version: Optional version string. If None, uses latest.
+
+    Returns:
+        str: Plotly HTML string for embedding.
+    """
+    global _plot_data_cache
+
+    # Determine target graph
+    if version:
+        target_graph = f"http://aopwiki.org/graph/{version}"
+        latest_version = version
+    else:
+        version_query = """
+        SELECT ?graph
+        WHERE {
+            GRAPH ?graph { ?s a aopo:AdverseOutcomePathway . }
+            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        GROUP BY ?graph
+        ORDER BY DESC(?graph)
+        LIMIT 1
+        """
+        version_results = run_sparql_query(version_query)
+        if not version_results:
+            return create_fallback_plot("Most Reused KEs", "No graphs available")
+        target_graph = version_results[0]["graph"]["value"]
+        latest_version = target_graph.split("/")[-1]
+
+    query = f"""
+    SELECT ?ke (SAMPLE(?title_val) AS ?title) (COUNT(DISTINCT ?aop) AS ?aop_count)
+    WHERE {{
+      GRAPH <{target_graph}> {{
+        ?aop a aopo:AdverseOutcomePathway ;
+             aopo:has_key_event ?ke .
+        OPTIONAL {{ ?ke dc:title ?title_val . }}
+      }}
+    }}
+    GROUP BY ?ke
+    HAVING (COUNT(DISTINCT ?aop) > 1)
+    ORDER BY DESC(?aop_count)
+    LIMIT 30
+    """
+
+    results = run_sparql_query(query)
+    if not results:
+        return create_fallback_plot("Most Reused KEs", "No reused Key Events found")
+
+    data = []
+    for r in results:
+        ke_uri = r["ke"]["value"]
+        ke_id = ke_uri.split("/")[-1]
+        title = r.get("title", {}).get("value", f"KE {ke_id}")
+        aop_count = int(r["aop_count"]["value"])
+        # Truncate title for readability
+        title_display = title[:50] + "..." if len(title) > 50 else title
+        label = f"KE {ke_id}: {title_display}"
+        wiki_url = f"https://aopwiki.org/events/{ke_id}"
+        data.append({
+            "KE": label,
+            "KE ID": ke_id,
+            "Title": title,
+            "AOP Count": aop_count,
+            "wiki_url": wiki_url,
+        })
+
+    if not data:
+        return create_fallback_plot("Most Reused KEs", "No KE reuse data found")
+
+    df = pd.DataFrame(data).sort_values("AOP Count", ascending=True)
+    version_key = version or "latest"
+    df["Version"] = latest_version
+    _plot_data_cache[f'latest_ke_reuse_{version_key}'] = df
+
+    fig = px.bar(
+        df,
+        x="AOP Count",
+        y="KE",
+        orientation='h',
+        title=f"Most Reused Key Events Across AOPs ({latest_version})",
+        text="AOP Count",
+        custom_data=['wiki_url'],
+        color="AOP Count",
+        color_continuous_scale=[BRAND_COLORS['light'], BRAND_COLORS['primary']],
+    )
+
+    fig.update_traces(textposition='outside')
+    fig.update_layout(
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        title_font_color=BRAND_COLORS['primary'],
+        font=dict(color=BRAND_COLORS['primary']),
+        template="plotly_white",
+        showlegend=False,
+        autosize=True,
+        height=max(400, len(data) * 25 + 100),
+        margin=dict(l=300, r=30, t=60, b=60),
+        yaxis=dict(title=""),
+        xaxis=dict(title="Number of AOPs"),
+        coloraxis_showscale=False,
+    )
+
+    _plot_figure_cache[f'latest_ke_reuse_{version_key}'] = fig
+    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+
+
+def plot_latest_ke_reuse_distribution(version: str = None) -> str:
+    """Show the distribution of how many AOPs each KE belongs to (reuse histogram).
+
+    Args:
+        version: Optional version string. If None, uses latest.
+
+    Returns:
+        str: Plotly HTML string for embedding.
+    """
+    global _plot_data_cache
+
+    # Determine target graph
+    if version:
+        target_graph = f"http://aopwiki.org/graph/{version}"
+        latest_version = version
+    else:
+        version_query = """
+        SELECT ?graph
+        WHERE {
+            GRAPH ?graph { ?s a aopo:AdverseOutcomePathway . }
+            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        GROUP BY ?graph
+        ORDER BY DESC(?graph)
+        LIMIT 1
+        """
+        version_results = run_sparql_query(version_query)
+        if not version_results:
+            return create_fallback_plot("KE Reuse Distribution", "No graphs available")
+        target_graph = version_results[0]["graph"]["value"]
+        latest_version = target_graph.split("/")[-1]
+
+    query = f"""
+    SELECT ?ke (COUNT(DISTINCT ?aop) AS ?aop_count)
+    WHERE {{
+      GRAPH <{target_graph}> {{
+        ?aop a aopo:AdverseOutcomePathway ;
+             aopo:has_key_event ?ke .
+      }}
+    }}
+    GROUP BY ?ke
+    """
+
+    results = run_sparql_query(query)
+    if not results:
+        return create_fallback_plot("KE Reuse Distribution", "No KE data available")
+
+    # Count distribution using discrete bins: 1, 2, 3, 4, 5, 6-10, 11+
+    from collections import Counter
+    bin_counts = Counter()
+    for r in results:
+        aop_count = int(r["aop_count"]["value"])
+        if aop_count <= 5:
+            bin_label = str(aop_count)
+        elif aop_count <= 10:
+            bin_label = "6-10"
+        else:
+            bin_label = "11+"
+        bin_counts[bin_label] += 1
+
+    # Order bins properly
+    bin_order = ["1", "2", "3", "4", "5", "6-10", "11+"]
+    data = []
+    for b in bin_order:
+        if b in bin_counts:
+            data.append({"AOPs per KE": b, "Number of KEs": bin_counts[b]})
+
+    if not data:
+        return create_fallback_plot("KE Reuse Distribution", "No distribution data found")
+
+    df = pd.DataFrame(data)
+    version_key = version or "latest"
+    df["Version"] = latest_version
+    _plot_data_cache[f'latest_ke_reuse_distribution_{version_key}'] = df
+
+    fig = px.bar(
+        df,
+        x="AOPs per KE",
+        y="Number of KEs",
+        title=f"Key Event Reuse Distribution ({latest_version})",
+        text="Number of KEs",
+        color="Number of KEs",
+        color_continuous_scale=[BRAND_COLORS['light'], BRAND_COLORS['primary']],
+    )
+
+    fig.update_traces(textposition='outside')
+    fig.update_layout(
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        title_font_color=BRAND_COLORS['primary'],
+        font=dict(color=BRAND_COLORS['primary']),
+        template="plotly_white",
+        showlegend=False,
+        autosize=True,
+        margin=dict(l=60, r=30, t=60, b=60),
+        yaxis=dict(title="Number of Key Events"),
+        xaxis=dict(title="Number of AOPs a KE Belongs To", type='category'),
+        coloraxis_showscale=False,
+    )
+
+    _plot_figure_cache[f'latest_ke_reuse_distribution_{version_key}'] = fig
+    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+
+
 def plot_latest_ke_completeness_by_status(version: str = None) -> str:
     """Create a grouped bar chart showing KE completeness scores grouped by OECD status.
 
