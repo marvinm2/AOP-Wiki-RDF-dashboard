@@ -1,0 +1,8 @@
+{% macro data_table_toggle(plot_name) %}
+<div class="data-table-container" data-table-for="{{ plot_name }}">
+    <button class="data-table-toggle" onclick="toggleDataTable('{{ plot_name }}')">
+        Show Raw Data
+    </button>
+    <div class="data-table-content" style="display:none;"></div>
+</div>
+{% endmacro %}
