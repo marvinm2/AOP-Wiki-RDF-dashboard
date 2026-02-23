@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block title %}About - AOP-Wiki RDF Dashboard{% endblock %}
+
+{% block content %}
+<section class="about-page">
+    <h1>About the AOP-Wiki RDF Dashboard</h1>
+
+    <div class="about-section">
+        <h2>Project Overview</h2>
+        <p>The AOP-Wiki RDF Dashboard provides interactive visualizations and analytics
+           for the Adverse Outcome Pathway (AOP) knowledge base. It monitors quarterly
+           RDF snapshot releases, enabling researchers, curators, and regulators to
+           explore how the AOP-Wiki database evolves over time.</p>
+        <p>The dashboard queries the AOP-Wiki SPARQL endpoint to generate real-time
+           visualizations of entity counts, data quality metrics, network topology,
+           and historical trends across 30+ database versions since April 2018.</p>
+    </div>
+
+    <div class="about-section">
+        <h2>Features</h2>
+        <ul>
+            <li><strong>Database Snapshot:</strong> Current entity counts, distributions,
+                completeness metrics, and data quality analysis for any version</li>
+            <li><strong>Historical Trends:</strong> Growth patterns, annotation progress,
+                and property coverage evolution across all releases</li>
+            <li><strong>Network Analysis:</strong> Interactive Key Event network with
+                centrality metrics, PageRank, and community detection</li>
+            <li><strong>Data Export:</strong> CSV, PNG, and SVG downloads for all
+                visualizations with version-tagged filenames</li>
+        </ul>
+    </div>
+
+    <div class="about-section">
+        <h2>Data Source</h2>
+        <p>All data is sourced from the AOP-Wiki RDF triplestore via SPARQL queries.</p>
+        <p><a href="https://aopwiki.cloud.vhp4safety.nl" target="_blank" rel="noopener"
+              class="about-link">AOP-Wiki SPARQL Endpoint</a></p>
+        <p><a href="https://aopwiki.org" target="_blank" rel="noopener"
+              class="about-link">AOP-Wiki Website</a></p>
+    </div>
+
+    <div class="about-section">
+        <h2>Funding &amp; Acknowledgment</h2>
+        <p>This dashboard is developed within the
+           <a href="https://vhp4safety.nl" target="_blank" rel="noopener">VHP4Safety</a>
+           project (Virtual Human Platform for Safety Assessment), funded by the
+           Dutch Research Council (NWO).</p>
+    </div>
+
+    <div class="about-section">
+        <h2>Contact &amp; Feedback</h2>
+        <p>Found a bug or have a feature request?
+           <a href="https://github.com/marvinm2/AOP-Wiki-RDF-dashboard/issues"
+              target="_blank" rel="noopener" class="about-link">Open an issue on GitHub</a></p>
+        <p>Source code:
+           <a href="https://github.com/marvinm2/AOP-Wiki-RDF-dashboard"
+              target="_blank" rel="noopener" class="about-link">GitHub Repository</a></p>
+    </div>
+</section>
+{% endblock %}
