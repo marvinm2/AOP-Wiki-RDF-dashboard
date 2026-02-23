@@ -518,231 +518,165 @@ footer img {
     }
 }
 
-/* Hero Section Styling */
-.hero-section {
-    background: #29235C;
-    color: white;
-    padding: 40px 20px 30px 20px;
+/* ==========================================================================
+   Landing Page: Navigation Hub
+   ========================================================================== */
+
+.landing-hero {
     text-align: center;
-    margin-bottom: 0;
+    padding: 50px 20px 30px;
 }
 
-.hero-content {
-    max-width: 800px;
-    margin: 0 auto;
-}
-
-.hero-content h2 {
-    font-size: 2.5rem;
-    margin-bottom: 10px;
+.landing-title {
+    color: var(--color-primary);
+    font-size: 2.4rem;
+    margin: 0 0 12px;
     font-weight: 700;
-    color: white;
 }
 
-.hero-subtitle {
-    font-size: 1.2rem;
-    margin-bottom: 40px;
-    opacity: 0.9;
-    font-weight: 300;
-}
-
-/* Action Buttons */
-.action-buttons {
-    display: flex;
-    gap: 30px;
-    justify-content: center;
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-.action-btn {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    padding: 30px 40px;
-    border: none;
-    border-radius: 20px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-align: left;
-    min-width: 280px;
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    color: white;
-}
-
-.action-btn:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
-    background: rgba(255, 255, 255, 0.25);
-    border-color: rgba(255, 255, 255, 0.4);
-}
-
-.action-btn.primary:hover {
-    background: rgba(230, 0, 126, 0.2);
-    border-color: #E6007E;
-}
-
-.action-btn.secondary:hover {
-    background: rgba(48, 123, 191, 0.2);
-    border-color: #307BBF;
-}
-
-.btn-icon {
-    font-size: 3rem;
-    flex-shrink: 0;
-}
-
-.btn-content h3 {
-    font-size: 1.5rem;
-    margin: 0 0 8px 0;
-    font-weight: 600;
-    color: white;
-}
-
-.btn-content p {
-    font-size: 1rem;
-    margin: 0;
-    opacity: 0.9;
-    line-height: 1.4;
-}
-
-/* Mobile Responsive */
-@media (max-width: 768px) {
-    .hero-section {
-        padding: 40px 20px;
-    }
-
-    .hero-content h2 {
-        font-size: 2rem;
-    }
-
-    .hero-subtitle {
-        font-size: 1rem;
-        margin-bottom: 30px;
-    }
-
-    .action-buttons {
-        flex-direction: column;
-        gap: 20px;
-        max-width: 100%;
-    }
-
-    .action-btn {
-        min-width: auto;
-        padding: 24px 20px;
-        gap: 16px;
-    }
-
-    .btn-icon {
-        font-size: 2.5rem;
-    }
-
-    .btn-content h3 {
-        font-size: 1.3rem;
-    }
-
-    .btn-content p {
-        font-size: 0.9rem;
-    }
-}
-
-/* Page Navigation */
-.page-navigation {
-    background: #29235C;
-    padding: 15px 20px;
-    text-align: center;
-    margin-bottom: 20px;
-    display: flex;
-    justify-content: center;
-    gap: 30px;
-}
-
-.nav-link {
-    color: white;
-    text-decoration: none;
-    font-weight: 600;
-    padding: 10px 20px;
-    border-radius: 8px;
-    transition: all 0.3s ease;
-    background: rgba(255, 255, 255, 0.15);
-}
-
-.nav-link:hover {
-    background: rgba(255, 255, 255, 0.25);
-    color: white;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-@media (max-width: 768px) {
-    .page-navigation {
-        flex-direction: column;
-        gap: 15px;
-    }
-}
-
-/* Data Information Section */
-.data-info-section {
-    background: #29235C;
-    color: white;
-    padding: 30px 20px 40px 20px;
-    margin-bottom: 0;
-}
-
-.data-info-content {
-    max-width: 800px;
-    margin: 0 auto;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 40px;
-    text-align: left;
-}
-
-.info-card {
-    background: rgba(255, 255, 255, 0.1);
-    padding: 30px;
-    border-radius: 15px;
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.info-card h3 {
-    color: #93D5F6;
-    margin-top: 0;
-    margin-bottom: 15px;
-    font-size: 1.3rem;
-}
-
-.info-card p {
+.landing-subtitle {
+    color: var(--color-text-secondary);
+    font-size: 1.1rem;
+    max-width: 700px;
+    margin: 0 auto 24px;
     line-height: 1.6;
-    margin-bottom: 15px;
-    opacity: 0.9;
 }
 
-.info-card ul {
-    margin: 15px 0;
-    opacity: 0.9;
+.landing-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
 }
 
-.info-card li {
-    margin-bottom: 8px;
-    line-height: 1.5;
+.stat-badge {
+    display: inline-block;
+    background-color: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 20px;
+    padding: 6px 16px;
+    font-size: var(--font-size-small);
+    color: var(--color-text);
 }
 
-@media (max-width: 768px) {
-    .data-info-section {
-        padding: 40px 20px;
+.stat-badge strong {
+    color: var(--color-primary);
+}
+
+/* Landing Cards */
+.landing-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    max-width: 1000px;
+    margin: 20px auto 40px;
+    padding: 0 20px;
+}
+
+.landing-card {
+    background: var(--color-surface);
+    border-radius: 10px;
+    padding: 30px 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    text-decoration: none;
+    color: var(--color-text);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.landing-card:hover {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
+}
+
+.card-icon {
+    color: var(--color-blue);
+    margin-bottom: 16px;
+}
+
+.landing-card h2 {
+    color: var(--color-primary);
+    font-size: 1.3rem;
+    margin: 0 0 10px;
+}
+
+.landing-card p {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-small);
+    line-height: 1.6;
+    margin: 0 0 16px;
+    flex-grow: 1;
+}
+
+.card-action {
+    color: var(--color-cta);
+    font-weight: 600;
+    font-size: var(--font-size-small);
+}
+
+/* Landing Info (expandable AOP-Wiki intro) */
+.landing-info {
+    max-width: 1000px;
+    margin: 0 auto 40px;
+    padding: 0 20px;
+}
+
+.aopwiki-intro {
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    font-size: var(--font-size-small);
+}
+
+.aopwiki-intro > summary {
+    cursor: pointer;
+    padding: 10px 14px;
+    color: var(--color-blue);
+    font-weight: 500;
+    user-select: none;
+}
+
+.aopwiki-intro > summary:hover {
+    background-color: #f9f9f9;
+}
+
+.intro-content {
+    padding: 14px 18px;
+    background-color: #fafafa;
+    border-top: 1px solid var(--color-border);
+    line-height: 1.6;
+}
+
+.intro-content p {
+    margin: 8px 0;
+}
+
+.intro-content a {
+    color: var(--color-blue);
+    text-decoration: none;
+}
+
+.intro-content a:hover {
+    text-decoration: underline;
+}
+
+/* Landing page responsive */
+@media (max-width: 900px) {
+    .landing-hero {
+        padding: 30px 16px 20px;
     }
 
-    .data-info-content {
+    .landing-title {
+        font-size: 1.8rem;
+    }
+
+    .landing-subtitle {
+        font-size: 1rem;
+    }
+
+    .landing-cards {
         grid-template-columns: 1fr;
-        gap: 30px;
-    }
-
-    .info-card {
-        padding: 25px;
+        gap: 16px;
     }
 }
 

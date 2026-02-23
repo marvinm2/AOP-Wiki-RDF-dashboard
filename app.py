@@ -1724,13 +1724,21 @@ def index():
 
 @app.route("/")
 def landing():
-    """Serve the clean landing page with navigation buttons.
+    """Serve the navigation hub landing page with live data summary.
 
-    This is the new main entry point that provides a clean introduction
-    to the service with prominent navigation buttons to Latest Data and
-    Historical Trends pages.
+    Displays section cards for Database Snapshot, Historical Trends, and
+    Network Analysis. Shows latest version number and headline entity counts
+    from cached startup data. Includes expandable AOP-Wiki introduction.
     """
-    return render_template("landing.html")
+    latest_version = get_latest_version()
+    entity_counts = None
+    cached_df = _plot_data_cache.get('latest_entity_counts')
+    if cached_df is not None and hasattr(cached_df, 'empty') and not cached_df.empty:
+        try:
+            entity_counts = dict(zip(cached_df['Entity'], cached_df['Count']))
+        except (KeyError, TypeError):
+            entity_counts = None
+    return render_template("landing.html", version=latest_version, entity_counts=entity_counts, active_page='home')
 
 
 @app.route("/snapshot")
