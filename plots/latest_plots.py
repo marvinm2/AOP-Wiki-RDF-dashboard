@@ -58,10 +58,15 @@ Author:
 
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import plotly.io as pio
+import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from .shared import (
     BRAND_COLORS, config, _plot_data_cache, _plot_figure_cache, run_sparql_query, safe_read_csv, create_fallback_plot
 )
+
+logger = logging.getLogger(__name__)
 
 
 def _build_graph_filter(version: str = None) -> tuple[str, str]:
@@ -2377,5 +2382,358 @@ def plot_latest_ker_completeness_by_status(version: str = None) -> str:
 
     # Cache the figure object for image export (PNG/SVG/PDF)
     _plot_figure_cache['latest_ker_completeness_by_status'] = fig
+
+    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+
+
+def plot_latest_annotation_heatmap(version: str = None) -> str:
+    """Create a heatmap showing annotation completeness across entity types and property categories.
+
+    Shows a matrix of annotation rates: rows are key properties, columns are entity types
+    (AOP, KE, KER, Stressor). Values represent the percentage of entities with that property filled.
+
+    Uses parallel SPARQL COUNT queries per (entity_type, property) pair for efficiency.
+
+    Args:
+        version: Optional version string for historical snapshots.
+
+    Returns:
+        str: HTML string containing the interactive Plotly heatmap.
+    """
+    global _plot_data_cache
+
+    # Determine target graph
+    if version:
+        target_graph = f"http://aopwiki.org/graph/{version}"
+        latest_version = version
+    else:
+        version_query = """
+        SELECT ?graph
+        WHERE {
+            GRAPH ?graph { ?s a aopo:KeyEvent . }
+            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        GROUP BY ?graph
+        ORDER BY DESC(?graph)
+        LIMIT 1
+        """
+        version_results = run_sparql_query(version_query)
+        if not version_results:
+            return create_fallback_plot("Annotation Completeness Heatmap", "No graphs available")
+        target_graph = version_results[0]["graph"]["value"]
+        latest_version = target_graph.split("/")[-1]
+
+    # Check cache
+    version_key = version or "latest"
+    cache_key = f"latest_annotation_heatmap_{version_key}"
+    if cache_key in _plot_figure_cache:
+        cached_html = _plot_figure_cache.get(cache_key)
+        if cached_html and isinstance(cached_html, str):
+            return cached_html
+
+    # Define key properties per entity type for the heatmap
+    entity_config = {
+        "AOP": {
+            "rdf_type": "aopo:AdverseOutcomePathway",
+            "properties": {
+                "Title": "http://purl.org/dc/elements/1.1/title",
+                "Abstract": "http://purl.org/dc/terms/abstract",
+                "OECD Status": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25688",
+                "Taxonomic Applicability": "http://purl.bioontology.org/ontology/NCBITAXON/131567",
+                "Creator": "http://purl.org/dc/elements/1.1/creator",
+            }
+        },
+        "KE": {
+            "rdf_type": "aopo:KeyEvent",
+            "properties": {
+                "Title": "http://purl.org/dc/elements/1.1/title",
+                "Bio Level": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25664",
+                "Cell Type": "http://aopkb.org/aop_ontology#CellTypeContext",
+                "Organ": "http://aopkb.org/aop_ontology#OrganContext",
+                "Bio Process": "http://purl.obolibrary.org/obo/GO_0008150",
+            }
+        },
+        "KER": {
+            "rdf_type": "aopo:KeyEventRelationship",
+            "properties": {
+                "Title": "http://purl.org/dc/elements/1.1/title",
+                "Description": "http://purl.org/dc/elements/1.1/description",
+                "Evidence": "http://aopkb.org/aop_ontology#has_evidence",
+                "Upstream KE": "http://aopkb.org/aop_ontology#has_upstream_key_event",
+            }
+        },
+        "Stressor": {
+            "rdf_type": "nci:C54571",
+            "properties": {
+                "Title": "http://purl.org/dc/elements/1.1/title",
+                "Description": "http://purl.org/dc/elements/1.1/description",
+                "Chemical Entity": "http://aopkb.org/aop_ontology#has_chemical_entity",
+            }
+        }
+    }
+
+    # Build list of (entity_type, property_label, query) tasks for parallel execution
+    tasks = []
+    for entity_type, cfg in entity_config.items():
+        rdf_type = cfg["rdf_type"]
+        # Total count query
+        total_query = f"""
+        SELECT (COUNT(DISTINCT ?e) AS ?count)
+        WHERE {{
+            GRAPH <{target_graph}> {{ ?e a {rdf_type} . }}
+        }}
+        """
+        tasks.append(("total", entity_type, None, total_query))
+
+        for prop_label, prop_uri in cfg["properties"].items():
+            prop_query = f"""
+            SELECT (COUNT(DISTINCT ?e) AS ?count)
+            WHERE {{
+                GRAPH <{target_graph}> {{
+                    ?e a {rdf_type} .
+                    ?e <{prop_uri}> ?val .
+                }}
+            }}
+            """
+            tasks.append(("property", entity_type, prop_label, prop_query))
+
+    # Execute all queries in parallel
+    query_results = {}
+
+    def _run_query(task_info):
+        task_type, etype, plabel, query = task_info
+        results = run_sparql_query(query)
+        count = int(results[0]["count"]["value"]) if results else 0
+        return (task_type, etype, plabel, count)
+
+    try:
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            futures = {executor.submit(_run_query, t): t for t in tasks}
+            for future in as_completed(futures):
+                try:
+                    task_type, etype, plabel, count = future.result(timeout=30)
+                    if task_type == "total":
+                        query_results.setdefault(etype, {})["_total"] = count
+                    else:
+                        query_results.setdefault(etype, {})[plabel] = count
+                except Exception as e:
+                    logger.warning(f"Annotation heatmap query failed: {e}")
+    except Exception as e:
+        return create_fallback_plot("Annotation Completeness Heatmap", f"Query error: {e}")
+
+    # Build heatmap data
+    all_properties = []
+    for cfg in entity_config.values():
+        for plabel in cfg["properties"]:
+            if plabel not in all_properties:
+                all_properties.append(plabel)
+
+    entity_types = list(entity_config.keys())
+    z_values = []
+    text_values = []
+    flat_data = []
+
+    for prop_label in all_properties:
+        row = []
+        text_row = []
+        for etype in entity_types:
+            total = query_results.get(etype, {}).get("_total", 0)
+            has_prop = query_results.get(etype, {}).get(prop_label, 0)
+            if total > 0 and prop_label in entity_config[etype]["properties"]:
+                pct = round((has_prop / total) * 100, 1)
+            elif prop_label not in entity_config[etype]["properties"]:
+                pct = None  # Property not applicable to this entity type
+            else:
+                pct = 0.0
+            row.append(pct)
+            text_row.append(f"{pct}%" if pct is not None else "N/A")
+            flat_data.append({
+                "Property": prop_label,
+                "Entity Type": etype,
+                "Percentage": pct if pct is not None else 0,
+                "Has Property": has_prop if prop_label in entity_config[etype]["properties"] else 0,
+                "Total Entities": total,
+                "Applicable": prop_label in entity_config[etype]["properties"],
+            })
+        z_values.append(row)
+        text_values.append(text_row)
+
+    if not flat_data:
+        return create_fallback_plot("Annotation Completeness Heatmap", "No data available")
+
+    # Cache data for CSV download
+    df = pd.DataFrame(flat_data)
+    df["Version"] = latest_version
+    _plot_data_cache[cache_key] = df
+
+    # Create heatmap using plotly graph_objects
+    fig = go.Figure(data=go.Heatmap(
+        z=z_values,
+        x=entity_types,
+        y=all_properties,
+        text=text_values,
+        texttemplate="%{text}",
+        textfont={"size": 12},
+        colorscale=[
+            [0, "#ffffff"],
+            [0.5, "#93D5F6"],
+            [1.0, "#29235C"]
+        ],
+        zmin=0,
+        zmax=100,
+        colorbar=dict(title="Coverage %"),
+        hoverongaps=False,
+        hovertemplate="Entity: %{x}<br>Property: %{y}<br>Coverage: %{text}<extra></extra>"
+    ))
+
+    fig.update_layout(
+        title=f"Annotation Completeness Heatmap ({latest_version})",
+        template="plotly_white",
+        autosize=True,
+        margin=dict(l=120, r=20, t=60, b=50),
+        xaxis=dict(title="Entity Type", side="bottom"),
+        yaxis=dict(title="", autorange="reversed"),
+    )
+
+    _plot_figure_cache[cache_key] = fig
+
+    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+
+
+def plot_latest_ontology_diversity(version: str = None) -> str:
+    """Create a bar chart showing unique ontology term counts per ontology source.
+
+    Queries all distinct ontology-linked IRI values from biological process and object
+    annotations, parses the URIs in Python to extract ontology prefixes, and counts
+    unique terms per source (GO, CHEBI, UBERON, etc.).
+
+    Args:
+        version: Optional version string for historical snapshots.
+
+    Returns:
+        str: HTML string containing the interactive Plotly bar chart.
+    """
+    global _plot_data_cache
+
+    # Determine target graph
+    if version:
+        target_graph = f"http://aopwiki.org/graph/{version}"
+        latest_version = version
+    else:
+        version_query = """
+        SELECT ?graph
+        WHERE {
+            GRAPH ?graph { ?s a aopo:KeyEvent . }
+            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        GROUP BY ?graph
+        ORDER BY DESC(?graph)
+        LIMIT 1
+        """
+        version_results = run_sparql_query(version_query)
+        if not version_results:
+            return create_fallback_plot("Ontology Term Diversity", "No graphs available")
+        target_graph = version_results[0]["graph"]["value"]
+        latest_version = target_graph.split("/")[-1]
+
+    # Check cache
+    version_key = version or "latest"
+    cache_key = f"latest_ontology_diversity_{version_key}"
+    if cache_key in _plot_figure_cache:
+        cached_html = _plot_figure_cache.get(cache_key)
+        if cached_html and isinstance(cached_html, str):
+            return cached_html
+
+    # Query all distinct ontology-linked IRI terms
+    query = f"""
+    SELECT DISTINCT ?term
+    WHERE {{
+        GRAPH <{target_graph}> {{
+            {{
+                ?ke a aopo:KeyEvent ;
+                    aopo:hasBiologicalEvent ?be .
+                ?be aopo:hasProcess ?term .
+            }}
+            UNION
+            {{
+                ?ke a aopo:KeyEvent ;
+                    aopo:hasBiologicalEvent ?be .
+                ?be aopo:hasObject ?term .
+            }}
+        }}
+        FILTER(isIRI(?term))
+    }}
+    """
+
+    results = run_sparql_query(query)
+    if not results:
+        return create_fallback_plot("Ontology Term Diversity", "No ontology term data available")
+
+    # Parse URIs to extract ontology prefix and count unique terms
+    prefix_map = {
+        "GO_": "GO",
+        "CHEBI_": "CHEBI",
+        "UBERON_": "UBERON",
+        "NCBITaxon_": "NCBITaxon",
+        "PR_": "PR",
+        "CL_": "CL",
+        "DOID_": "DOID",
+        "HP_": "HP",
+        "MP_": "MP",
+        "NBO_": "NBO",
+        "MI_": "MI",
+        "VT_": "VT",
+    }
+
+    ontology_counts = {}
+    for r in results:
+        term_uri = r["term"]["value"]
+        matched = False
+        for fragment, prefix_name in prefix_map.items():
+            if fragment in term_uri:
+                ontology_counts[prefix_name] = ontology_counts.get(prefix_name, 0) + 1
+                matched = True
+                break
+        if not matched:
+            if "mesh/" in term_uri.lower():
+                ontology_counts["MESH"] = ontology_counts.get("MESH", 0) + 1
+            else:
+                ontology_counts["Other"] = ontology_counts.get("Other", 0) + 1
+
+    if not ontology_counts:
+        return create_fallback_plot("Ontology Term Diversity", "No ontology terms found")
+
+    # Build DataFrame
+    data = [{"Ontology": k, "Unique Terms": v} for k, v in ontology_counts.items()]
+    df = pd.DataFrame(data).sort_values("Unique Terms", ascending=False)
+    df["Version"] = latest_version
+
+    _plot_data_cache[cache_key] = df
+
+    # Create bar chart with brand colors
+    palette = BRAND_COLORS['palette']
+    color_map = {row["Ontology"]: palette[i % len(palette)] for i, row in enumerate(df.to_dict("records"))}
+
+    fig = px.bar(
+        df,
+        x="Ontology",
+        y="Unique Terms",
+        title=f"Ontology Term Diversity ({latest_version})",
+        text="Unique Terms",
+        color="Ontology",
+        color_discrete_map=color_map
+    )
+
+    fig.update_traces(textposition='outside')
+    fig.update_layout(
+        template="plotly_white",
+        showlegend=False,
+        autosize=True,
+        margin=dict(l=50, r=20, t=60, b=50),
+        yaxis=dict(title="Number of Unique Terms"),
+        xaxis=dict(title="Ontology Source")
+    )
+
+    _plot_figure_cache[cache_key] = fig
 
     return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
