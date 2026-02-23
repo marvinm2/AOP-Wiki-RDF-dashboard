@@ -1409,6 +1409,61 @@ def api_get_properties(entity_type):
             "error": str(e)
         }), 500
 
+@app.route("/api/plot-data/<plot_name>")
+def api_plot_data(plot_name):
+    """API endpoint to serve raw data for a plot as JSON.
+
+    Returns the cached DataFrame for a given plot in JSON format,
+    suitable for rendering as an HTML table by the frontend.
+
+    Args:
+        plot_name (str): Name of the plot whose data to retrieve
+
+    Query Parameters:
+        version (str, optional): Version string for latest_* plots
+
+    Returns:
+        dict: JSON with columns, rows, total_rows, truncated, plot_name, success
+    """
+    version = request.args.get('version', None)
+    max_rows = 100
+
+    # Determine cache key
+    if plot_name.startswith('latest_') and version:
+        cache_key = f"{plot_name}_{version}"
+        if cache_key not in _plot_data_cache:
+            cache_key = plot_name
+    else:
+        cache_key = plot_name
+
+    if cache_key not in _plot_data_cache:
+        return jsonify({'error': 'No data available', 'success': False}), 404
+
+    try:
+        df = _plot_data_cache[cache_key]
+        if df is None or (hasattr(df, 'empty') and df.empty):
+            return jsonify({'error': 'No data available', 'success': False}), 404
+
+        total_rows = len(df)
+        truncated = total_rows > max_rows
+        display_df = df.head(max_rows).copy()
+        display_df = display_df.fillna('')
+        columns = list(display_df.columns)
+        rows = display_df.to_dict('records')
+
+        return jsonify({
+            'columns': columns,
+            'rows': rows,
+            'total_rows': total_rows,
+            'truncated': truncated,
+            'plot_name': plot_name,
+            'success': True
+        })
+    except Exception as e:
+        logger.error(f"Error serving plot data for {plot_name}: {e}")
+        return jsonify({'error': str(e), 'success': False}), 500
+
+
 @app.route("/api/plot/<plot_name>")
 def get_plot(plot_name):
     """API endpoint to serve individual plots on demand for lazy loading.
