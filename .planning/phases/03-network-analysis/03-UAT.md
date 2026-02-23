@@ -1,5 +1,5 @@
 ---
-status: diagnosed
+status: resolved
 phase: 03-network-analysis
 source: [03-01-SUMMARY.md, 03-02-SUMMARY.md, 03-03-SUMMARY.md, 03-04-SUMMARY.md]
 started: 2026-02-23T10:00:00Z
@@ -61,7 +61,7 @@ skipped: 0
 ## Gaps
 
 - truth: "Download CSV produces a valid CSV file with network metrics. Download JSON produces a valid JSON file with graph data."
-  status: failed
+  status: resolved
   reason: "User reported: does not work: No network metrics data available for download"
   severity: major
   test: 8
