@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-02-20)
 
 **Core value:** Researchers, curators, and regulators can explore AOP-Wiki data across any version to understand how the knowledge base evolves over time — reliably and without timeouts.
-**Current focus:** Phase 5: Polish & Consistency — Plan 1 complete (Color System & Plotly Template)
+**Current focus:** Phase 5: Polish & Consistency — Plan 2 complete (Base Template & Navigation)
 
 ## Current Position
 
 Phase: 5 of 6 (Polish & Consistency)
-Plan: 1 of 4 in current phase
+Plan: 2 of 4 in current phase
 Status: Executing Phase 5 plans
-Last activity: 2026-02-23 — Completed 05-01 (Color System & Plotly Template)
+Last activity: 2026-02-23 — Completed 05-02 (Base Template & Navigation)
 
 Progress: [████████████████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 20
+- Total plans completed: 21
 - Average duration: ~4.5 min
 - Total execution time: ~1.4 hours
 
@@ -47,6 +47,7 @@ Progress: [████████████████████] 100%
 | Phase 04 P02 | 6min | 2 tasks | 6 files |
 | Phase 04 P03 | 7min | 3 tasks | 8 files |
 | Phase 05 P01 | 2min | 2 tasks | 3 files |
+| Phase 05 P02 | 5min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -105,6 +106,10 @@ Recent decisions affecting current work:
 - [04-03]: Ontology term growth counts unique IRIs not concepts — Phase 5 adds per-term detail
 - [05-01]: Kept legacy aliases (secondary, accent, light, content, config) for backward compatibility with existing plot code
 - [05-01]: Template composited as plotly_white+vhp4safety to inherit plotly_white base and overlay brand styling
+- [05-02]: SVG placeholder logo instead of PNG download (no official high-res logo downloadable via CLI)
+- [05-02]: Navigation is static (scrolls with page), not fixed, to preserve screen real estate for data-dense pages
+- [05-02]: Version selector in nav-version-selector block, visible only on Database Snapshot page
+- [05-02]: Kept legacy CSS rules (.page-navigation, header, footer) for templates not yet migrated (landing.html, index.html)
 
 ### Pending Todos
 
@@ -125,5 +130,5 @@ User verification of Phase 2 delivery found 4 issues requiring follow-up:
 ## Session Continuity
 
 Last session: 2026-02-23
-Stopped at: Completed 05-01-PLAN.md
-Resume file: .planning/phases/05-polish-consistency/05-01-SUMMARY.md
+Stopped at: Completed 05-02-PLAN.md
+Resume file: .planning/phases/05-polish-consistency/05-02-SUMMARY.md
