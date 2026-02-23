@@ -1666,60 +1666,8 @@ def get_plot(plot_name):
 # Set Plotly configuration for static images
 @app.route("/old-dashboard")
 def index():
-    """Serve the main dashboard page with all visualizations.
-    
-    Renders the primary dashboard interface containing all precomputed
-    visualizations in a professional tabbed layout. This is the main
-    entry point for users accessing the AOP-Wiki RDF Dashboard.
-    
-    The dashboard includes:
-        - Latest Data tab: Current snapshot visualizations
-        - Historical Trends tab: Time-series analysis 
-        - Professional navigation with VHP4Safety branding
-        - Interactive Plotly charts with download capabilities
-        - Responsive design for desktop and mobile
-        - CSV export buttons for all visualizations
-    
-    Visualization Categories:
-        Latest Data:
-            - Entity counts (bar chart)
-            - KE component distribution (pie chart)
-            - Network connectivity analysis
-            - Ontology usage statistics
-            - Data completeness metrics
-            
-        Historical Trends:
-            - Main entity evolution over time
-            - Average components per AOP trends
-            - Network density changes
-            - Author contribution patterns
-            - Component annotation trends
-    
-    Returns:
-        str: Rendered HTML template with all visualizations embedded
-    
-    Template Variables:
-        Passes 20+ visualization HTML strings to index.html template:
-        - graph_main_abs, graph_main_delta: Main entity trends
-        - latest_entity_counts: Current entity statistics
-        - latest_ke_components: Component distribution
-        - And many more visualization variables
-    
-    Performance:
-        - All plots are precomputed at startup for fast serving
-        - Uses CDN-hosted Plotly.js for optimal loading
-        - Responsive configuration for all chart types
-        - Global caching prevents recomputation on each request
-    
-    Example:
-        Access the dashboard: http://localhost:5000/
-        
-    Note:
-        If plot generation failed during startup, some visualizations
-        may display error messages or fallback content.
-    """
-    # Serve the original tabbed dashboard (for backward compatibility)
-    return render_template("index.html", lazy_loading=True)
+    """Redirect legacy old-dashboard route to the modern snapshot page."""
+    return redirect(url_for('database_snapshot'))
 
 
 @app.route("/")
@@ -1769,18 +1717,20 @@ def historical_trends():
 
 @app.route("/dashboard")
 def dashboard():
-    """Serve the original tabbed dashboard (legacy route).
-
-    Maintains backward compatibility for users who may have bookmarked
-    the original tabbed interface.
-    """
-    return render_template("index.html", lazy_loading=True)
+    """Redirect legacy dashboard route to the modern snapshot page."""
+    return redirect(url_for('database_snapshot'))
 
 
 @app.route("/network")
 def network_page():
     """Serve the Network Analysis page."""
     return render_template("network.html", active_page='network')
+
+
+@app.route("/about")
+def about():
+    """Serve the About page with project info, funding, and contact links."""
+    return render_template("about.html", active_page='about')
 
 
 @app.route("/api/network/graph")

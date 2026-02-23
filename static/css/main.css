@@ -85,7 +85,7 @@ header {
 }
 
 h1 {
-    color: #ffffff;
+    color: var(--color-primary);
 }
 
 img.logo {
@@ -97,7 +97,7 @@ img.logo {
 
 /* Unified Button Styles */
 button, input[type=button], input[type=submit], input[type=reset] {
-    background-color: #E6007E;
+    background-color: var(--color-cta);
     color: white;
     padding: 10px 20px;
     border: none;
@@ -107,11 +107,11 @@ button, input[type=button], input[type=submit], input[type=reset] {
     font-size: 12pt;
 }
 
-button:hover, 
-input[type=button]:hover, 
-input[type=submit]:hover, 
+button:hover,
+input[type=button]:hover,
+input[type=submit]:hover,
 input[type=reset]:hover {
-    background-color: #005A6C;
+    background-color: var(--color-dark-teal);
 }
 
 input[type="text"], input[type="file"] {
@@ -125,7 +125,7 @@ input[type="text"], input[type="file"] {
 
 /* Navigation and Toggle Buttons */
 .nav-button {
-    background-color: #29235C;
+    background-color: var(--color-primary);
     color: white;
     border: none;
     padding: 10px 20px;
@@ -141,7 +141,7 @@ input[type="text"], input[type="file"] {
 }
 
 .toggle-button {
-    background-color: #E6007E;
+    background-color: var(--color-cta);
     color: white;
     border: none;
     padding: 10px 20px;
@@ -152,7 +152,7 @@ input[type="text"], input[type="file"] {
 }
 
 .toggle-button.active {
-    background-color: #29235C;
+    background-color: var(--color-primary);
 }
 
 /* Footer */
@@ -249,7 +249,7 @@ footer img {
 }
 
 #dropdown-table th {
-    background-color: #307BBF;
+    background-color: var(--color-blue);
     color: white;
     font-weight: bold;
 }
@@ -292,7 +292,7 @@ footer img {
 }
 
 .download-button {
-    background-color: #307BBF;
+    background-color: var(--color-blue);
     color: white;
     padding: 6px 12px;
     border: none;
@@ -338,7 +338,7 @@ footer img {
 }
 
 .dropdown-item {
-    color: #29235C;
+    color: var(--color-primary);
     padding: 10px 16px;
     text-decoration: none;
     display: block;
@@ -347,8 +347,8 @@ footer img {
 }
 
 .dropdown-item:hover {
-    background-color: #f5f5f5;
-    color: #29235C;
+    background-color: var(--color-bg);
+    color: var(--color-primary);
 }
 
 .dropdown-item:first-child {
@@ -370,7 +370,7 @@ footer img {
     margin-top: 5px;
     margin-bottom: 10px;
     font-size: 1rem;
-    color: #333;
+    color: var(--color-text-secondary);
 }
 
 .full-width {
@@ -387,10 +387,10 @@ footer img {
 .section-header {
     width: 100%;
     font-size: 1.8rem;
-    color: #29235C;
+    color: var(--color-primary);
     text-align: center;
     margin: 20px 0;
-    border-bottom: 2px solid #307BBF;
+    border-bottom: 2px solid var(--color-blue);
     padding-bottom: 10px;
 }
 
@@ -410,7 +410,7 @@ footer img {
     margin: 0;
     padding: 0;
     background: transparent;
-    border-bottom: 3px solid #E6007E;
+    border-bottom: 3px solid var(--color-cta);
     position: relative;
     width: 100%;
 }
@@ -420,7 +420,7 @@ footer img {
     border: none;
     cursor: pointer;
     background-color: transparent;
-    color: #29235C;
+    color: var(--color-primary);
     font-weight: 600;
     font-size: 16px;
     border-radius: 0;
@@ -434,13 +434,13 @@ footer img {
 
 .tab-button:hover {
     background-color: rgba(48, 123, 191, 0.1);
-    color: #307BBF;
+    color: var(--color-blue);
 }
 
 .tab-button.active {
     background-color: white;
-    color: #E6007E;
-    border-bottom: 3px solid #E6007E;
+    color: var(--color-cta);
+    border-bottom: 3px solid var(--color-cta);
     box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
 }
 
@@ -451,7 +451,7 @@ footer img {
     left: 0;
     right: 0;
     height: 3px;
-    background: #E6007E;
+    background: var(--color-cta);
     z-index: 1;
 }
 
@@ -479,7 +479,7 @@ footer img {
 }
 
 .tab-intro h2 {
-    color: #29235C;
+    color: var(--color-primary);
     margin-top: 0;
     margin-bottom: 20px;
     font-size: 1.8em;
@@ -680,12 +680,88 @@ footer img {
     }
 }
 
+/* ==========================================================================
+   About Page
+   ========================================================================== */
+
+.about-page {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 30px 20px 40px;
+}
+
+.about-page h1 {
+    color: var(--color-primary);
+    font-size: 2rem;
+    margin-bottom: 30px;
+}
+
+.about-section {
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.about-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.about-section h2 {
+    color: var(--color-primary);
+    font-size: 1.4rem;
+    margin: 0 0 12px;
+}
+
+.about-section p {
+    line-height: 1.6;
+    margin: 0 0 10px;
+}
+
+.about-section ul {
+    line-height: 1.6;
+    padding-left: 24px;
+}
+
+.about-section li {
+    margin-bottom: 8px;
+}
+
+.about-link {
+    color: var(--color-blue);
+    text-decoration: none;
+}
+
+.about-link:hover {
+    text-decoration: underline;
+}
+
+.about-section a:not(.about-link) {
+    color: var(--color-blue);
+    text-decoration: none;
+}
+
+.about-section a:not(.about-link):hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 900px) {
+    .about-page {
+        padding: 20px 16px 30px;
+    }
+
+    .about-page h1 {
+        font-size: 1.6rem;
+    }
+}
+
 /* ============================================
    Version Selector Styles
    ============================================ */
 
 .version-selector-container {
-    background: linear-gradient(135deg, #29235C 0%, #3d3570 100%);
+    background: linear-gradient(135deg, var(--color-primary) 0%, #3d3570 100%);
     padding: 20px 40px;
     margin: 0 auto 30px;
     border-radius: 10px;
@@ -714,10 +790,10 @@ footer img {
 .version-selector {
     padding: 10px 20px;
     font-size: 15px;
-    border: 2px solid #E6007E;
+    border: 2px solid var(--color-cta);
     border-radius: 8px;
     background: white;
-    color: #29235C;
+    color: var(--color-primary);
     cursor: pointer;
     font-weight: 500;
     min-width: 200px;
@@ -725,19 +801,19 @@ footer img {
 }
 
 .version-selector:hover {
-    border-color: #ff1a99;
+    border-color: var(--color-warm-pink);
     box-shadow: 0 2px 8px rgba(230, 0, 126, 0.3);
 }
 
 .version-selector:focus {
     outline: none;
-    border-color: #E6007E;
+    border-color: var(--color-cta);
     box-shadow: 0 0 0 3px rgba(230, 0, 126, 0.2);
 }
 
 /* Version Banner (Historical Version Indicator) */
 .version-banner {
-    background: linear-gradient(135deg, #307BBF 0%, #4a94d4 100%);
+    background: linear-gradient(135deg, var(--color-blue) 0%, #4a94d4 100%);
     color: white;
     padding: 15px 30px;
     margin: 0 auto 20px;
@@ -780,7 +856,7 @@ footer img {
 
 .version-banner-reset {
     background: white;
-    color: #307BBF;
+    color: var(--color-blue);
     border: none;
     padding: 8px 16px;
     border-radius: 6px;
@@ -842,7 +918,7 @@ footer img {
 .methodology-note > summary {
     cursor: pointer;
     padding: 8px 12px;
-    color: #307BBF;
+    color: var(--color-blue);
     font-weight: 500;
     user-select: none;
 }
@@ -890,8 +966,8 @@ footer img {
 
 .data-table-toggle {
     background-color: transparent;
-    color: #307BBF;
-    border: 1px solid #307BBF;
+    color: var(--color-blue);
+    border: 1px solid var(--color-blue);
     padding: 6px 14px;
     border-radius: 4px;
     cursor: pointer;
@@ -901,7 +977,7 @@ footer img {
 }
 
 .data-table-toggle:hover {
-    background-color: #307BBF;
+    background-color: var(--color-blue);
     color: white;
 }
 
@@ -921,7 +997,7 @@ footer img {
 }
 
 .raw-data-table th {
-    background-color: #29235C;
+    background-color: var(--color-primary);
     color: white;
     padding: 8px 10px;
     text-align: left;
