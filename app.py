@@ -100,6 +100,11 @@ from plots import (
     plot_latest_ker_completeness_by_status,
     plot_latest_database_summary,
     plot_latest_ke_annotation_depth,
+    plot_latest_ke_by_bio_level,
+    plot_latest_taxonomic_groups,
+    plot_latest_entity_by_oecd_status,
+    plot_latest_ke_reuse,
+    plot_latest_ke_reuse_distribution,
     check_sparql_endpoint_health,
     safe_plot_execution,
     get_latest_version,
@@ -1086,6 +1091,59 @@ def download_latest_ke_annotation_depth():
         logger.error(f"Download failed for {plot_name}: {str(e)}")
         return f"Download failed: {str(e)}", 500
 
+@app.route("/download/latest/<plot_name>")
+def download_latest_generic(plot_name):
+    """Generic download route for latest-data plots (supports CSV, PNG, SVG).
+
+    Handles any latest_* plot that caches data with a version-keyed cache key.
+    Falls back to the bare plot_name if no versioned key is found.
+
+    Args:
+        plot_name (str): The plot name suffix (e.g., 'ke_by_bio_level')
+    """
+    export_format = request.args.get('format', 'csv').lower()
+    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
+    version = request.args.get('version')
+    version_key = version or "latest"
+    cache_key = f'latest_{plot_name}_{version_key}'
+
+    # Fallback: try without version suffix
+    if cache_key not in _plot_data_cache:
+        cache_key = f'latest_{plot_name}'
+    if cache_key not in _plot_data_cache:
+        cache_key = plot_name
+
+    try:
+        if export_format == 'csv':
+            csv_data = get_csv_with_metadata(cache_key, include_metadata)
+            if not csv_data:
+                return "No data available for download", 404
+
+            return Response(
+                csv_data,
+                mimetype='text/csv',
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(cache_key, "csv", version)}'}
+            )
+
+        elif export_format in ['png', 'svg']:
+            image_bytes = export_figure_as_image(cache_key, export_format)
+            if not image_bytes:
+                return "No figure available for export", 404
+
+            mimetype = f'image/{export_format}'
+            return Response(
+                image_bytes,
+                mimetype=mimetype,
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(cache_key, export_format, version)}'}
+            )
+
+        else:
+            return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
+
+    except Exception as e:
+        logger.error(f"Download failed for latest plot {plot_name}: {str(e)}")
+        return f"Download failed: {str(e)}", 500
+
 @app.route("/download/main_graph_absolute")
 def download_main_graph_absolute():
     """Download CSV data for Main Graph Absolute plot."""
@@ -1236,7 +1294,10 @@ def download_bulk():
             'latest-all': [
                 'latest_entity_counts', 'latest_ke_components', 'latest_aop_connectivity',
                 'latest_avg_per_aop', 'latest_process_usage', 'latest_object_usage',
-                'latest_aop_completeness', 'latest_ke_annotation_depth'
+                'latest_aop_completeness', 'latest_ke_annotation_depth',
+                'latest_ke_by_bio_level', 'latest_taxonomic_groups',
+                'latest_entity_by_oecd_status', 'latest_ke_reuse',
+                'latest_ke_reuse_distribution'
             ],
             'database-state': ['latest_entity_counts'],
             'network-analysis': ['latest_aop_connectivity', 'latest_avg_per_aop'],
@@ -1540,6 +1601,11 @@ def get_plot(plot_name):
         'latest_ontology_usage': plot_latest_ontology_usage,
         'latest_database_summary': plot_latest_database_summary,
         'latest_ke_annotation_depth': plot_latest_ke_annotation_depth,
+        'latest_ke_by_bio_level': plot_latest_ke_by_bio_level,
+        'latest_taxonomic_groups': plot_latest_taxonomic_groups,
+        'latest_entity_by_oecd_status': plot_latest_entity_by_oecd_status,
+        'latest_ke_reuse': plot_latest_ke_reuse,
+        'latest_ke_reuse_distribution': plot_latest_ke_reuse_distribution,
     }
 
     # Handle latest_* plots without version support yet (use pre-computed)
