@@ -1,17 +1,65 @@
+/* ==========================================================================
+   VHP4Safety Brand Color System
+   Source of truth synced with plots/shared.py BRAND_COLORS dict
+   ========================================================================== */
+
+:root {
+    /* Brand Colors — match plots/shared.py BRAND_COLORS */
+    --color-primary: #29235C;
+    --color-magenta: #E6007E;
+    --color-blue: #307BBF;
+    --color-light-blue: #009FE3;
+    --color-orange: #EB5B25;
+    --color-sky-blue: #93D5F6;
+    --color-deep-magenta: #9A1C57;
+    --color-teal: #45A6B2;
+    --color-dark-teal: #005A6C;
+    --color-violet: #64358C;
+    --color-warm-pink: #B81178;
+
+    /* Semantic Aliases */
+    --color-bg: #f5f5f5;
+    --color-surface: #ffffff;
+    --color-text: #29235C;
+    --color-text-secondary: #555555;
+    --color-text-muted: #888888;
+    --color-border: #e0e0e0;
+    --color-border-light: #f0f0f0;
+
+    /* Navigation & Chrome */
+    --color-nav-bg: #29235C;
+    --color-nav-text: #ffffff;
+    --color-nav-hover: #E6007E;
+    --color-footer-bg: #29235C;
+    --color-footer-text: #ffffff;
+    --color-cta: #E6007E;
+
+    /* Typography */
+    --font-family: 'Arial', 'Helvetica Neue', sans-serif;
+    --font-size-base: 16px;
+    --font-size-small: 14px;
+    --font-size-xs: 12px;
+
+    /* Spacing */
+    --nav-height: 64px;
+    --content-max-width: 1400px;
+    --section-padding: 30px;
+}
+
 body {
-    font-family: Arial, sans-serif;
+    font-family: var(--font-family);
     margin: 0;
     padding: 0;
-    background-color: #f5f5f5;
-    color: #29235C;
+    background-color: var(--color-bg);
+    color: var(--color-text);
     overflow-x: hidden;
 }
 
 header {
-    background-color: #29235C;
+    background-color: var(--color-nav-bg);
     padding: 20px;
     text-align: center;
-    color: white;
+    color: var(--color-nav-text);
 }
 
 .center {
@@ -109,10 +157,10 @@ input[type="text"], input[type="file"] {
 
 /* Footer */
 footer {
-    background-color: #29235C;
+    background-color: var(--color-footer-bg);
     padding: 10px;
     text-align: center;
-    color: white;
+    color: var(--color-footer-text);
     position: relative;
     width: 100%;
     bottom: 0;
