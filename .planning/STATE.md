@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-20)
 
 **Core value:** Researchers, curators, and regulators can explore AOP-Wiki data across any version to understand how the knowledge base evolves over time — reliably and without timeouts.
-**Current focus:** Phase 4: Entity Exploration (breakdown plots and entity links complete)
+**Current focus:** Phase 4: Dashboard Enrichment & Raw Data (All plans complete) -- Next: Phase 4 verification
 
 ## Current Position
 
-Phase: 4 of 6 (Entity Exploration)
-Plan: 2 of 3 in current phase
-Status: In Progress
-Last activity: 2026-02-23 — Completed 04-02-PLAN.md (Breakdown plots and entity links)
+Phase: 4 of 6 (Dashboard Enrichment & Raw Data)
+Plan: 3 of 3 in current phase (COMPLETE)
+Status: All plans executed, awaiting verification
+Last activity: 2026-02-23 — Completed 04-03-PLAN.md (Data quality & trends plots)
 
-Progress: [█████████░░░░░░░░░░░] 67%
+Progress: [████████████████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 18
-- Average duration: ~4.4 min
-- Total execution time: ~1.3 hours
+- Total plans completed: 19
+- Average duration: ~4.5 min
+- Total execution time: ~1.4 hours
 
 **By Phase:**
 
@@ -32,8 +32,8 @@ Progress: [█████████░░░░░░░░░░░] 67%
 | 03 | 5/5 | ~41 min | ~8 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-03 (3m), 03-04 (30m), 03-05 (1m), 04-01 (6m), 04-02 (6m)
-- Trend: 04-02 standard feature addition (5 new plots + entity links)
+- Last 5 plans: 03-05 (1m), 04-01 (6m), 04-02 (6m), 04-03 (7m)
+- Trend: 04-03 standard feature addition (4 new plots: heatmap, diversity, 2 trends)
 
 *Updated after each plan completion*
 | Phase 02 P05 | 9min | 2 tasks | 2 files |
@@ -45,6 +45,7 @@ Progress: [█████████░░░░░░░░░░░] 67%
 | Phase 03 P05 | 1min | 1 tasks | 1 files |
 | Phase 04 P01 | 6min | 2 tasks | 8 files |
 | Phase 04 P02 | 6min | 2 tasks | 6 files |
+| Phase 04 P03 | 7min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -98,6 +99,9 @@ Recent decisions affecting current work:
 - [04-02]: MutationObserver for attaching Plotly click handler on lazy-loaded KE reuse plot
 - [04-02]: OPTIONAL+BIND pattern for SPARQL queries to include unannotated entities as 'Not Annotated'
 - [04-02]: Only KE reuse bar chart gets entity links (EXPL-04) since other plots show aggregate groupings
+- [04-03]: Separate COUNT queries per (entity_type, property) for heatmap to avoid cross-product explosion
+- [04-03]: Curation progress uses Title and Description as proxy annotations (simple, interpretable)
+- [04-03]: Ontology term growth counts unique IRIs not concepts — Phase 5 adds per-term detail
 
 ### Pending Todos
 
@@ -118,5 +122,5 @@ User verification of Phase 2 delivery found 4 issues requiring follow-up:
 ## Session Continuity
 
 Last session: 2026-02-23
-Stopped at: Completed 04-02-PLAN.md (Breakdown plots and entity links)
-Resume file: .planning/phases/04-entity-exploration/04-02-SUMMARY.md
+Stopped at: Completed 04-03-PLAN.md (Data quality & trends plots) -- Phase 4 all plans complete
+Resume file: .planning/phases/04-entity-exploration/04-03-SUMMARY.md
