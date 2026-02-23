@@ -58,12 +58,11 @@ Author:
 
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
-import plotly.io as pio
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from .shared import (
-    BRAND_COLORS, config, _plot_data_cache, _plot_figure_cache, run_sparql_query, safe_read_csv, create_fallback_plot
+    BRAND_COLORS, config, _plot_data_cache, _plot_figure_cache, run_sparql_query, safe_read_csv, create_fallback_plot,
+    render_plot_html
 )
 
 logger = logging.getLogger(__name__)
@@ -275,7 +274,6 @@ def plot_latest_entity_counts(version: str = None) -> str:
         df,
         x="Entity",
         y="Count",
-        title=f"Current Database Composition ({latest_version})",
         color="Entity",
         text="Count",
         color_discrete_sequence=BRAND_COLORS['palette']
@@ -283,9 +281,9 @@ def plot_latest_entity_counts(version: str = None) -> str:
 
     fig.update_traces(textposition='outside')
     fig.update_layout(
-        template="plotly_white",
+
         showlegend=False,
-        autosize=True,
+
         margin=dict(l=50, r=20, t=50, b=50),
         yaxis=dict(title="Count"),
         xaxis=dict(title="Entity Type")
@@ -294,7 +292,7 @@ def plot_latest_entity_counts(version: str = None) -> str:
     # Cache the figure object for image export (PNG/SVG/PDF)
     _plot_figure_cache['latest_entity_counts'] = fig
 
-    return pio.to_html(fig, full_html=False, include_plotlyjs="cdn", config={"responsive": True})
+    return render_plot_html(fig)
 
 
 def plot_latest_ke_components(version: str = None) -> str:
@@ -365,21 +363,20 @@ def plot_latest_ke_components(version: str = None) -> str:
         df,
         values="Count",
         names="Component",
-        title=f"Current KE Component Distribution ({latest_version})",
         color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary'], BRAND_COLORS['accent']]
     )
 
     fig.update_traces(textposition='inside', textinfo='percent+label')
     fig.update_layout(
-        template="plotly_white",
-        autosize=True,
+
+
         margin=dict(l=50, r=20, t=50, b=50)
     )
 
     # Cache the figure object for image export (PNG/SVG/PDF)
     _plot_figure_cache['latest_ke_components'] = fig
 
-    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+    return render_plot_html(fig)
 
 
 def plot_latest_network_density(version: str = None) -> str:
@@ -449,14 +446,13 @@ def plot_latest_network_density(version: str = None) -> str:
 
     fig = px.pie(
         df, values="Count", names="Type",
-        title=f"Current AOP Connectivity Analysis ({latest_version})",
         color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary']]
     )
 
     fig.update_traces(textposition='inside', textinfo='percent+label')
     fig.update_layout(
-        template="plotly_white",
-        autosize=True,
+
+
         margin=dict(l=50, r=20, t=50, b=50),
         annotations=[
             dict(text=f"Total AOPs: {total_aops}<br>Connected: {connected_aops}<br>Isolated: {isolated_aops}",
@@ -467,7 +463,7 @@ def plot_latest_network_density(version: str = None) -> str:
     # Cache the figure object for image export (PNG/SVG/PDF)
     _plot_figure_cache['latest_aop_connectivity'] = fig
 
-    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+    return render_plot_html(fig)
 
 
 def plot_latest_avg_per_aop(version: str = None) -> str:
@@ -544,7 +540,6 @@ def plot_latest_avg_per_aop(version: str = None) -> str:
 
     fig = px.bar(
         df, x="Metric", y="Value",
-        title=f"Current Average Connectivity per AOP ({latest_version})",
         color="Metric",
         text="Value",
         color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary']]
@@ -552,16 +547,16 @@ def plot_latest_avg_per_aop(version: str = None) -> str:
 
     fig.update_traces(texttemplate='%{text:.1f}', textposition='outside')
     fig.update_layout(
-        template="plotly_white",
+
         showlegend=False,
-        autosize=True,
+
         margin=dict(l=50, r=20, t=50, b=50)
     )
 
     # Cache the figure object for image export (PNG/SVG/PDF)
     _plot_figure_cache['latest_avg_per_aop'] = fig
 
-    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+    return render_plot_html(fig)
 
 
 def plot_latest_ontology_usage(version: str = None) -> str:
@@ -637,20 +632,19 @@ def plot_latest_ontology_usage(version: str = None) -> str:
 
     fig = px.pie(
         df, values="Terms", names="Ontology",
-        title=f"Current Ontology Term Usage ({latest_version})"
     )
 
     fig.update_traces(textposition='inside', textinfo='percent+label')
     fig.update_layout(
-        template="plotly_white",
-        autosize=True,
+
+
         margin=dict(l=50, r=20, t=50, b=50)
     )
 
     # Cache the figure object for image export (PNG/SVG/PDF)
     _plot_figure_cache['latest_ontology_usage'] = fig
 
-    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+    return render_plot_html(fig)
 
 
 def plot_latest_process_usage(version: str = None) -> str:
@@ -728,21 +722,20 @@ def plot_latest_process_usage(version: str = None) -> str:
 
     fig = px.pie(
         df, values="Count", names="Ontology",
-        title=f"Current Process Ontology Sources ({latest_version})",
         color_discrete_sequence=BRAND_COLORS['palette']
     )
 
     fig.update_traces(textposition='inside', textinfo='percent+label')
     fig.update_layout(
-        template="plotly_white",
-        autosize=True,
+
+
         margin=dict(l=50, r=20, t=50, b=50)
     )
 
     # Cache the figure object for image export (PNG/SVG/PDF)
     _plot_figure_cache['latest_process_usage'] = fig
 
-    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+    return render_plot_html(fig)
 
 
 def plot_latest_object_usage(version: str = None) -> str:
@@ -821,21 +814,20 @@ def plot_latest_object_usage(version: str = None) -> str:
 
     fig = px.pie(
         df, values="Count", names="Ontology",
-        title=f"Current Object Ontology Sources ({latest_version})",
         color_discrete_sequence=BRAND_COLORS['palette']
     )
 
     fig.update_traces(textposition='inside', textinfo='percent+label')
     fig.update_layout(
-        template="plotly_white",
-        autosize=True,
+
+
         margin=dict(l=50, r=20, t=50, b=50)
     )
 
     # Cache the figure object for image export (PNG/SVG/PDF)
     _plot_figure_cache['latest_object_usage'] = fig
 
-    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+    return render_plot_html(fig)
 
 
 def plot_latest_aop_completeness(version: str = None) -> str:
@@ -938,14 +930,13 @@ def plot_latest_aop_completeness(version: str = None) -> str:
 
     fig = px.bar(
         df, x="Property", y="Completeness", color="Type",
-        title=f"Current AOP Data Completeness ({latest_version})",
         text="Completeness",
         color_discrete_map=color_map
     )
     fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
     fig.update_layout(
-        template="plotly_white",
-        autosize=True,
+
+
         margin=dict(l=50, r=20, t=50, b=100),
         yaxis=dict(title="Completeness (%)", range=[0, 105]),
         xaxis=dict(title="AOP Properties", tickangle=45),
@@ -955,7 +946,7 @@ def plot_latest_aop_completeness(version: str = None) -> str:
     # Cache the figure object for image export (PNG/SVG/PDF)
     _plot_figure_cache['latest_aop_completeness'] = fig
 
-    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+    return render_plot_html(fig)
 
 
 def plot_latest_aop_completeness_unique_colors(version: str = None) -> str:
@@ -1055,14 +1046,13 @@ def plot_latest_aop_completeness_unique_colors(version: str = None) -> str:
 
     fig = px.bar(
         df, x="Property", y="Completeness", color="Property",
-        title=f"Current AOP Data Completeness - Enhanced View ({latest_version})",
         text="Completeness",
         color_discrete_map=color_map
     )
     fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
     fig.update_layout(
-        template="plotly_white",
-        autosize=True,
+
+
         height=600,  # Larger height for better visibility
         margin=dict(l=50, r=20, t=70, b=120),  # More space for labels
         yaxis=dict(title="Completeness (%)", range=[0, 105]),
@@ -1073,7 +1063,7 @@ def plot_latest_aop_completeness_unique_colors(version: str = None) -> str:
     # Cache the figure object for image export (PNG/SVG/PDF)
     _plot_figure_cache['latest_aop_completeness_unique'] = fig
 
-    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+    return render_plot_html(fig)
 
 
 def plot_latest_database_summary(version: str = None) -> str:
@@ -1135,7 +1125,6 @@ def plot_latest_database_summary(version: str = None) -> str:
     # Regular bar chart since values are in similar ranges
     fig = px.bar(
         df, x="Entity", y="Count",
-        title=f"Current Core Entity Summary ({latest_version})",
         text="Count",
         color="Entity",
         color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary'], BRAND_COLORS['accent']]
@@ -1143,9 +1132,9 @@ def plot_latest_database_summary(version: str = None) -> str:
 
     fig.update_traces(textposition='outside')
     fig.update_layout(
-        template="plotly_white",
+
         showlegend=False,
-        autosize=True,
+
         margin=dict(l=50, r=20, t=50, b=50),
         yaxis=dict(title="Count")
     )
@@ -1153,7 +1142,7 @@ def plot_latest_database_summary(version: str = None) -> str:
     # Cache the figure object for image export (PNG/SVG/PDF)
     _plot_figure_cache['latest_database_summary'] = fig
 
-    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+    return render_plot_html(fig)
 
 
 def plot_latest_ke_annotation_depth(version: str = None) -> str:
@@ -1231,21 +1220,20 @@ def plot_latest_ke_annotation_depth(version: str = None) -> str:
 
     fig = px.pie(
         df, values="KE Count", names="Depth",
-        title=f"Current KE Annotation Depth Distribution ({latest_version})",
         color_discrete_sequence=BRAND_COLORS['palette']
     )
 
     fig.update_traces(textposition='inside', textinfo='percent+label')
     fig.update_layout(
-        template="plotly_white",
-        autosize=True,
+
+
         margin=dict(l=50, r=20, t=50, b=50)
     )
 
     # Cache the figure object for image export (PNG/SVG/PDF)
     _plot_figure_cache['latest_ke_annotation_depth'] = fig
 
-    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+    return render_plot_html(fig)
 
 
 def plot_latest_aop_completeness_by_status(version: str = None) -> str:
@@ -1414,7 +1402,6 @@ def plot_latest_aop_completeness_by_status(version: str = None) -> str:
         x="OECD Status",
         y="Completeness",
         color="Property Type",
-        title=f"AOP Completeness by OECD Status ({latest_version})",
         text="Completeness",
         color_discrete_map=color_map,
         barmode="group"
@@ -1422,8 +1409,8 @@ def plot_latest_aop_completeness_by_status(version: str = None) -> str:
 
     fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
     fig.update_layout(
-        template="plotly_white",
-        autosize=True,
+
+
         margin=dict(l=50, r=20, t=50, b=100),
         yaxis=dict(title="Completeness (%)", range=[0, 105]),
         xaxis=dict(title="OECD Status", tickangle=45),
@@ -1433,7 +1420,7 @@ def plot_latest_aop_completeness_by_status(version: str = None) -> str:
     # Cache the figure object for image export (PNG/SVG/PDF)
     _plot_figure_cache['latest_aop_completeness_by_status'] = fig
 
-    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+    return render_plot_html(fig)
 
 
 def plot_latest_ke_by_bio_level(version: str = None) -> str:
@@ -1521,7 +1508,6 @@ def plot_latest_ke_by_bio_level(version: str = None) -> str:
         x="KE Count",
         y="Biological Level",
         orientation='h',
-        title=f"Key Events by Biological Level of Organization ({latest_version}){subtitle}",
         text="KE Count",
         color="KE Count",
         color_continuous_scale=[BRAND_COLORS['light'], BRAND_COLORS['primary']],
@@ -1529,13 +1515,13 @@ def plot_latest_ke_by_bio_level(version: str = None) -> str:
 
     fig.update_traces(textposition='outside')
     fig.update_layout(
-        plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(0,0,0,0)',
-        title_font_color=BRAND_COLORS['primary'],
-        font=dict(color=BRAND_COLORS['primary']),
-        template="plotly_white",
+
+
+
+
+
         showlegend=False,
-        autosize=True,
+
         margin=dict(l=150, r=30, t=80, b=60),
         yaxis=dict(title=""),
         xaxis=dict(title="Number of Key Events"),
@@ -1543,7 +1529,7 @@ def plot_latest_ke_by_bio_level(version: str = None) -> str:
     )
 
     _plot_figure_cache[f'latest_ke_by_bio_level_{version_key}'] = fig
-    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+    return render_plot_html(fig)
 
 
 def plot_latest_taxonomic_groups(version: str = None) -> str:
@@ -1624,7 +1610,6 @@ def plot_latest_taxonomic_groups(version: str = None) -> str:
         x="AOP Count",
         y="Taxonomic Group",
         orientation='h',
-        title=f"Taxonomic Group Distribution Across AOPs ({latest_version})",
         text="AOP Count",
         color="Taxonomic Group",
         color_discrete_sequence=palette,
@@ -1632,20 +1617,20 @@ def plot_latest_taxonomic_groups(version: str = None) -> str:
 
     fig.update_traces(textposition='outside')
     fig.update_layout(
-        plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(0,0,0,0)',
-        title_font_color=BRAND_COLORS['primary'],
-        font=dict(color=BRAND_COLORS['primary']),
-        template="plotly_white",
+
+
+
+
+
         showlegend=False,
-        autosize=True,
+
         margin=dict(l=180, r=30, t=60, b=60),
         yaxis=dict(title=""),
         xaxis=dict(title="Number of AOPs"),
     )
 
     _plot_figure_cache[f'latest_taxonomic_groups_{version_key}'] = fig
-    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+    return render_plot_html(fig)
 
 
 def plot_latest_entity_by_oecd_status(version: str = None) -> str:
@@ -1761,8 +1746,8 @@ def plot_latest_entity_by_oecd_status(version: str = None) -> str:
 
     # Color mapping for OECD statuses
     status_colors = {
-        "EAGMST Under Review": BRAND_COLORS['primary_blue'],
-        "Under Development": BRAND_COLORS['secondary_green'] if 'secondary_green' in BRAND_COLORS else '#45A6B2',
+        "EAGMST Under Review": BRAND_COLORS['accent'],
+        "Under Development": '#45A6B2',
         "TFHA/WNT Endorsed": BRAND_COLORS['primary'],
         "Approved": BRAND_COLORS['primary'],
         "No Status": '#999999',
@@ -1774,19 +1759,18 @@ def plot_latest_entity_by_oecd_status(version: str = None) -> str:
         y="Count",
         color="OECD Status",
         barmode="group",
-        title=f"Entity Counts by OECD Status ({latest_version})",
         text="Count",
         color_discrete_map=status_colors,
     )
 
     fig.update_traces(textposition='outside')
     fig.update_layout(
-        plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(0,0,0,0)',
-        title_font_color=BRAND_COLORS['primary'],
-        font=dict(color=BRAND_COLORS['primary']),
-        template="plotly_white",
-        autosize=True,
+
+
+
+
+
+
         margin=dict(l=60, r=30, t=60, b=60),
         yaxis=dict(title="Count"),
         xaxis=dict(title="Entity Type"),
@@ -1794,7 +1778,7 @@ def plot_latest_entity_by_oecd_status(version: str = None) -> str:
     )
 
     _plot_figure_cache[f'latest_entity_by_oecd_status_{version_key}'] = fig
-    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+    return render_plot_html(fig)
 
 
 def plot_latest_ke_reuse(version: str = None) -> str:
@@ -1881,7 +1865,6 @@ def plot_latest_ke_reuse(version: str = None) -> str:
         x="AOP Count",
         y="KE",
         orientation='h',
-        title=f"Most Reused Key Events Across AOPs ({latest_version})",
         text="AOP Count",
         custom_data=['wiki_url'],
         color="AOP Count",
@@ -1890,13 +1873,13 @@ def plot_latest_ke_reuse(version: str = None) -> str:
 
     fig.update_traces(textposition='outside')
     fig.update_layout(
-        plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(0,0,0,0)',
-        title_font_color=BRAND_COLORS['primary'],
-        font=dict(color=BRAND_COLORS['primary']),
-        template="plotly_white",
+
+
+
+
+
         showlegend=False,
-        autosize=True,
+
         height=max(400, len(data) * 25 + 100),
         margin=dict(l=300, r=30, t=60, b=60),
         yaxis=dict(title=""),
@@ -1905,7 +1888,7 @@ def plot_latest_ke_reuse(version: str = None) -> str:
     )
 
     _plot_figure_cache[f'latest_ke_reuse_{version_key}'] = fig
-    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+    return render_plot_html(fig)
 
 
 def plot_latest_ke_reuse_distribution(version: str = None) -> str:
@@ -1987,7 +1970,6 @@ def plot_latest_ke_reuse_distribution(version: str = None) -> str:
         df,
         x="AOPs per KE",
         y="Number of KEs",
-        title=f"Key Event Reuse Distribution ({latest_version})",
         text="Number of KEs",
         color="Number of KEs",
         color_continuous_scale=[BRAND_COLORS['light'], BRAND_COLORS['primary']],
@@ -1995,13 +1977,13 @@ def plot_latest_ke_reuse_distribution(version: str = None) -> str:
 
     fig.update_traces(textposition='outside')
     fig.update_layout(
-        plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(0,0,0,0)',
-        title_font_color=BRAND_COLORS['primary'],
-        font=dict(color=BRAND_COLORS['primary']),
-        template="plotly_white",
+
+
+
+
+
         showlegend=False,
-        autosize=True,
+
         margin=dict(l=60, r=30, t=60, b=60),
         yaxis=dict(title="Number of Key Events"),
         xaxis=dict(title="Number of AOPs a KE Belongs To", type='category'),
@@ -2009,7 +1991,7 @@ def plot_latest_ke_reuse_distribution(version: str = None) -> str:
     )
 
     _plot_figure_cache[f'latest_ke_reuse_distribution_{version_key}'] = fig
-    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+    return render_plot_html(fig)
 
 
 def plot_latest_ke_completeness_by_status(version: str = None) -> str:
@@ -2177,7 +2159,6 @@ def plot_latest_ke_completeness_by_status(version: str = None) -> str:
         x="OECD Status",
         y="Completeness",
         color="Property Type",
-        title=f"KE Completeness by AOP OECD Status ({latest_version})",
         text="Completeness",
         color_discrete_map=color_map,
         barmode="group"
@@ -2185,8 +2166,8 @@ def plot_latest_ke_completeness_by_status(version: str = None) -> str:
 
     fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
     fig.update_layout(
-        template="plotly_white",
-        autosize=True,
+
+
         margin=dict(l=50, r=20, t=50, b=100),
         yaxis=dict(title="Completeness (%)", range=[0, 105]),
         xaxis=dict(title="OECD Status of Parent AOPs", tickangle=45),
@@ -2196,7 +2177,7 @@ def plot_latest_ke_completeness_by_status(version: str = None) -> str:
     # Cache the figure object for image export (PNG/SVG/PDF)
     _plot_figure_cache['latest_ke_completeness_by_status'] = fig
 
-    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+    return render_plot_html(fig)
 
 
 def plot_latest_ker_completeness_by_status(version: str = None) -> str:
@@ -2364,7 +2345,6 @@ def plot_latest_ker_completeness_by_status(version: str = None) -> str:
         x="OECD Status",
         y="Completeness",
         color="Property Type",
-        title=f"KER Completeness by AOP OECD Status ({latest_version})",
         text="Completeness",
         color_discrete_map=color_map,
         barmode="group"
@@ -2372,8 +2352,8 @@ def plot_latest_ker_completeness_by_status(version: str = None) -> str:
 
     fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
     fig.update_layout(
-        template="plotly_white",
-        autosize=True,
+
+
         margin=dict(l=50, r=20, t=50, b=100),
         yaxis=dict(title="Completeness (%)", range=[0, 105]),
         xaxis=dict(title="OECD Status of Parent AOPs", tickangle=45),
@@ -2383,221 +2363,10 @@ def plot_latest_ker_completeness_by_status(version: str = None) -> str:
     # Cache the figure object for image export (PNG/SVG/PDF)
     _plot_figure_cache['latest_ker_completeness_by_status'] = fig
 
-    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+    return render_plot_html(fig)
 
 
-def plot_latest_annotation_heatmap(version: str = None) -> str:
-    """Create a heatmap showing annotation completeness across entity types and property categories.
-
-    Shows a matrix of annotation rates: rows are key properties, columns are entity types
-    (AOP, KE, KER, Stressor). Values represent the percentage of entities with that property filled.
-
-    Uses parallel SPARQL COUNT queries per (entity_type, property) pair for efficiency.
-
-    Args:
-        version: Optional version string for historical snapshots.
-
-    Returns:
-        str: HTML string containing the interactive Plotly heatmap.
-    """
-    global _plot_data_cache
-
-    # Determine target graph
-    if version:
-        target_graph = f"http://aopwiki.org/graph/{version}"
-        latest_version = version
-    else:
-        version_query = """
-        SELECT ?graph
-        WHERE {
-            GRAPH ?graph { ?s a aopo:KeyEvent . }
-            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-        }
-        GROUP BY ?graph
-        ORDER BY DESC(?graph)
-        LIMIT 1
-        """
-        version_results = run_sparql_query(version_query)
-        if not version_results:
-            return create_fallback_plot("Annotation Completeness Heatmap", "No graphs available")
-        target_graph = version_results[0]["graph"]["value"]
-        latest_version = target_graph.split("/")[-1]
-
-    # Check cache
-    version_key = version or "latest"
-    cache_key = f"latest_annotation_heatmap_{version_key}"
-    if cache_key in _plot_figure_cache:
-        cached_html = _plot_figure_cache.get(cache_key)
-        if cached_html and isinstance(cached_html, str):
-            return cached_html
-
-    # Define key properties per entity type for the heatmap
-    entity_config = {
-        "AOP": {
-            "rdf_type": "aopo:AdverseOutcomePathway",
-            "properties": {
-                "Title": "http://purl.org/dc/elements/1.1/title",
-                "Abstract": "http://purl.org/dc/terms/abstract",
-                "OECD Status": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25688",
-                "Taxonomic Applicability": "http://purl.bioontology.org/ontology/NCBITAXON/131567",
-                "Creator": "http://purl.org/dc/elements/1.1/creator",
-            }
-        },
-        "KE": {
-            "rdf_type": "aopo:KeyEvent",
-            "properties": {
-                "Title": "http://purl.org/dc/elements/1.1/title",
-                "Bio Level": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25664",
-                "Cell Type": "http://aopkb.org/aop_ontology#CellTypeContext",
-                "Organ": "http://aopkb.org/aop_ontology#OrganContext",
-                "Bio Process": "http://purl.obolibrary.org/obo/GO_0008150",
-            }
-        },
-        "KER": {
-            "rdf_type": "aopo:KeyEventRelationship",
-            "properties": {
-                "Title": "http://purl.org/dc/elements/1.1/title",
-                "Description": "http://purl.org/dc/elements/1.1/description",
-                "Evidence": "http://aopkb.org/aop_ontology#has_evidence",
-                "Upstream KE": "http://aopkb.org/aop_ontology#has_upstream_key_event",
-            }
-        },
-        "Stressor": {
-            "rdf_type": "nci:C54571",
-            "properties": {
-                "Title": "http://purl.org/dc/elements/1.1/title",
-                "Description": "http://purl.org/dc/elements/1.1/description",
-                "Chemical Entity": "http://aopkb.org/aop_ontology#has_chemical_entity",
-            }
-        }
-    }
-
-    # Build list of (entity_type, property_label, query) tasks for parallel execution
-    tasks = []
-    for entity_type, cfg in entity_config.items():
-        rdf_type = cfg["rdf_type"]
-        # Total count query
-        total_query = f"""
-        SELECT (COUNT(DISTINCT ?e) AS ?count)
-        WHERE {{
-            GRAPH <{target_graph}> {{ ?e a {rdf_type} . }}
-        }}
-        """
-        tasks.append(("total", entity_type, None, total_query))
-
-        for prop_label, prop_uri in cfg["properties"].items():
-            prop_query = f"""
-            SELECT (COUNT(DISTINCT ?e) AS ?count)
-            WHERE {{
-                GRAPH <{target_graph}> {{
-                    ?e a {rdf_type} .
-                    ?e <{prop_uri}> ?val .
-                }}
-            }}
-            """
-            tasks.append(("property", entity_type, prop_label, prop_query))
-
-    # Execute all queries in parallel
-    query_results = {}
-
-    def _run_query(task_info):
-        task_type, etype, plabel, query = task_info
-        results = run_sparql_query(query)
-        count = int(results[0]["count"]["value"]) if results else 0
-        return (task_type, etype, plabel, count)
-
-    try:
-        with ThreadPoolExecutor(max_workers=5) as executor:
-            futures = {executor.submit(_run_query, t): t for t in tasks}
-            for future in as_completed(futures):
-                try:
-                    task_type, etype, plabel, count = future.result(timeout=30)
-                    if task_type == "total":
-                        query_results.setdefault(etype, {})["_total"] = count
-                    else:
-                        query_results.setdefault(etype, {})[plabel] = count
-                except Exception as e:
-                    logger.warning(f"Annotation heatmap query failed: {e}")
-    except Exception as e:
-        return create_fallback_plot("Annotation Completeness Heatmap", f"Query error: {e}")
-
-    # Build heatmap data
-    all_properties = []
-    for cfg in entity_config.values():
-        for plabel in cfg["properties"]:
-            if plabel not in all_properties:
-                all_properties.append(plabel)
-
-    entity_types = list(entity_config.keys())
-    z_values = []
-    text_values = []
-    flat_data = []
-
-    for prop_label in all_properties:
-        row = []
-        text_row = []
-        for etype in entity_types:
-            total = query_results.get(etype, {}).get("_total", 0)
-            has_prop = query_results.get(etype, {}).get(prop_label, 0)
-            if total > 0 and prop_label in entity_config[etype]["properties"]:
-                pct = round((has_prop / total) * 100, 1)
-            elif prop_label not in entity_config[etype]["properties"]:
-                pct = None  # Property not applicable to this entity type
-            else:
-                pct = 0.0
-            row.append(pct)
-            text_row.append(f"{pct}%" if pct is not None else "N/A")
-            flat_data.append({
-                "Property": prop_label,
-                "Entity Type": etype,
-                "Percentage": pct if pct is not None else 0,
-                "Has Property": has_prop if prop_label in entity_config[etype]["properties"] else 0,
-                "Total Entities": total,
-                "Applicable": prop_label in entity_config[etype]["properties"],
-            })
-        z_values.append(row)
-        text_values.append(text_row)
-
-    if not flat_data:
-        return create_fallback_plot("Annotation Completeness Heatmap", "No data available")
-
-    # Cache data for CSV download
-    df = pd.DataFrame(flat_data)
-    df["Version"] = latest_version
-    _plot_data_cache[cache_key] = df
-
-    # Create heatmap using plotly graph_objects
-    fig = go.Figure(data=go.Heatmap(
-        z=z_values,
-        x=entity_types,
-        y=all_properties,
-        text=text_values,
-        texttemplate="%{text}",
-        textfont={"size": 12},
-        colorscale=[
-            [0, "#ffffff"],
-            [0.5, "#93D5F6"],
-            [1.0, "#29235C"]
-        ],
-        zmin=0,
-        zmax=100,
-        colorbar=dict(title="Coverage %"),
-        hoverongaps=False,
-        hovertemplate="Entity: %{x}<br>Property: %{y}<br>Coverage: %{text}<extra></extra>"
-    ))
-
-    fig.update_layout(
-        title=f"Annotation Completeness Heatmap ({latest_version})",
-        template="plotly_white",
-        autosize=True,
-        margin=dict(l=120, r=20, t=60, b=50),
-        xaxis=dict(title="Entity Type", side="bottom"),
-        yaxis=dict(title="", autorange="reversed"),
-    )
-
-    _plot_figure_cache[cache_key] = fig
-
-    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+# plot_latest_annotation_heatmap removed — produced non-sensical output per UAT feedback
 
 
 def plot_latest_ontology_diversity(version: str = None) -> str:
@@ -2718,7 +2487,6 @@ def plot_latest_ontology_diversity(version: str = None) -> str:
         df,
         x="Ontology",
         y="Unique Terms",
-        title=f"Ontology Term Diversity ({latest_version})",
         text="Unique Terms",
         color="Ontology",
         color_discrete_map=color_map
@@ -2726,9 +2494,9 @@ def plot_latest_ontology_diversity(version: str = None) -> str:
 
     fig.update_traces(textposition='outside')
     fig.update_layout(
-        template="plotly_white",
+
         showlegend=False,
-        autosize=True,
+
         margin=dict(l=50, r=20, t=60, b=50),
         yaxis=dict(title="Number of Unique Terms"),
         xaxis=dict(title="Ontology Source")
@@ -2736,4 +2504,4 @@ def plot_latest_ontology_diversity(version: str = None) -> str:
 
     _plot_figure_cache[cache_key] = fig
 
-    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+    return render_plot_html(fig)
