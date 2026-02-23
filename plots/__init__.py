@@ -206,6 +206,10 @@ from .latest_plots import (
     plot_latest_entity_by_oecd_status,
     plot_latest_ke_reuse,
     plot_latest_ke_reuse_distribution,
+
+    # Data quality & diversity (Phase 04-03)
+    plot_latest_annotation_heatmap,
+    plot_latest_ontology_diversity,
 )
 
 # Define module version and metadata
@@ -273,6 +277,8 @@ __all__ = [
     'plot_latest_entity_by_oecd_status',
     'plot_latest_ke_reuse',
     'plot_latest_ke_reuse_distribution',
+    'plot_latest_annotation_heatmap',
+    'plot_latest_ontology_diversity',
 
     # Network analysis functions
     'build_aop_network',
@@ -328,6 +334,8 @@ def get_available_functions():
             'plot_latest_entity_by_oecd_status',
             'plot_latest_ke_reuse',
             'plot_latest_ke_reuse_distribution',
+            'plot_latest_annotation_heatmap',
+            'plot_latest_ontology_diversity',
         ],
         'network_analysis': [
             'build_aop_network',
