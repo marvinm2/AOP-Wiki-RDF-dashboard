@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-02-20)
 
 **Core value:** Researchers, curators, and regulators can explore AOP-Wiki data across any version to understand how the knowledge base evolves over time — reliably and without timeouts.
-**Current focus:** Phase 5: Polish & Consistency — Plan 3 complete (Plot Standardization)
+**Current focus:** Phase 5: Polish & Consistency — Complete (all 4 plans done)
 
 ## Current Position
 
 Phase: 5 of 6 (Polish & Consistency)
-Plan: 3 of 4 in current phase
-Status: Executing Phase 5 plans
-Last activity: 2026-02-23 — Completed 05-03 (Plot Standardization)
+Plan: 4 of 4 in current phase
+Status: Phase 5 Complete
+Last activity: 2026-02-23 — Completed 05-04 (Landing Page Hub & About Page)
 
 Progress: [████████████████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 22
+- Total plans completed: 23
 - Average duration: ~4.5 min
 - Total execution time: ~1.4 hours
 
@@ -32,8 +32,8 @@ Progress: [████████████████████] 100%
 | 03 | 5/5 | ~41 min | ~8 min |
 
 **Recent Trend:**
-- Last 5 plans: 04-01 (6m), 04-02 (6m), 04-03 (7m), 05-01 (2m), 05-02 (5m), 05-03 (13m)
-- Trend: 05-03 mechanical refactor across 2 large files (58 plot standardizations)
+- Last 5 plans: 04-03 (7m), 05-01 (2m), 05-02 (5m), 05-03 (13m), 05-04 (15m)
+- Trend: 05-04 included human-verify checkpoint with post-verification fix commit
 
 *Updated after each plan completion*
 | Phase 02 P05 | 9min | 2 tasks | 2 files |
@@ -49,6 +49,7 @@ Progress: [████████████████████] 100%
 | Phase 05 P01 | 2min | 2 tasks | 3 files |
 | Phase 05 P02 | 5min | 2 tasks | 8 files |
 | Phase 05 P03 | 13min | 2 tasks | 2 files |
+| Phase 05 P04 | 15min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -115,6 +116,11 @@ Recent decisions affecting current work:
 - [05-03]: Phase 5 right-side vertical legend decision supersedes Phase 02-06 centered horizontal legend
 - [05-03]: Kept OECD legend title="OECD Status" as intentional per-plot customization (position from template)
 - [05-03]: All rendering via render_plot_html(fig) — no direct pio.to_html or fig.to_html anywhere
+- [05-04]: Version selector moved out of nav bar into /snapshot page content for nav consistency across pages
+- [05-04]: Sticky footer via flexbox min-height: 100vh pattern
+- [05-04]: OECD status colors centralized in BRAND_COLORS['oecd_status'] for consistency between latest and trend views
+- [05-04]: SPARQL endpoint links set to href="#" with "coming soon" until multi-graph URL is provided
+- [05-04]: Legacy routes /old-dashboard and /dashboard redirect to /snapshot
 
 ### Pending Todos
 
@@ -135,5 +141,5 @@ User verification of Phase 2 delivery found 4 issues requiring follow-up:
 ## Session Continuity
 
 Last session: 2026-02-23
-Stopped at: Completed 05-03-PLAN.md
-Resume file: .planning/phases/05-polish-consistency/05-03-SUMMARY.md
+Stopped at: Completed 05-04-PLAN.md (Phase 5 complete)
+Resume file: .planning/phases/05-polish-consistency/05-04-SUMMARY.md
