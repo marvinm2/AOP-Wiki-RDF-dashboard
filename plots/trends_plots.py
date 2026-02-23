@@ -3414,3 +3414,326 @@ def plot_aop_completeness_boxplot_by_status():
     except Exception as e:
         logger.error(f"Error creating status-separated AOP completeness boxplot: {str(e)}")
         return create_fallback_plot("Composite AOP Completeness by OECD Status", f"Error: {str(e)}")
+
+
+def plot_curation_progress() -> tuple[str, str, pd.DataFrame]:
+    """Show curation progress across versions: entity counts vs annotation coverage.
+
+    Tracks total entities, entities with title, and entities with description across
+    all versions to reveal whether annotation coverage is growing with entity count.
+
+    Uses per-version parallel SPARQL queries for efficiency.
+
+    Returns:
+        tuple: (absolute_html, delta_html, curation_df)
+    """
+    global _plot_data_cache, _plot_figure_cache
+
+    try:
+        versions = get_all_versions()
+        if not versions:
+            fallback = create_fallback_plot("Curation Progress", "No versions available")
+            return (fallback, fallback, pd.DataFrame())
+
+        def _query_version(ver_info):
+            """Query entity count and annotation counts for a single version."""
+            graph_uri = ver_info['graph_uri']
+            version = ver_info['version']
+
+            # Count total entities (AOP + KE + KER + Stressor)
+            total_query = f"""
+            SELECT
+                (COUNT(DISTINCT ?aop) AS ?aops)
+                (COUNT(DISTINCT ?ke) AS ?kes)
+                (COUNT(DISTINCT ?ker) AS ?kers)
+                (COUNT(DISTINCT ?stressor) AS ?stressors)
+            WHERE {{
+                GRAPH <{graph_uri}> {{
+                    {{ ?aop a aopo:AdverseOutcomePathway . }}
+                    UNION
+                    {{ ?ke a aopo:KeyEvent . }}
+                    UNION
+                    {{ ?ker a aopo:KeyEventRelationship . }}
+                    UNION
+                    {{ ?stressor a nci:C54571 . }}
+                }}
+            }}
+            """
+
+            # Count entities with dc:title
+            title_query = f"""
+            SELECT (COUNT(DISTINCT ?e) AS ?count)
+            WHERE {{
+                GRAPH <{graph_uri}> {{
+                    {{ ?e a aopo:AdverseOutcomePathway . }}
+                    UNION
+                    {{ ?e a aopo:KeyEvent . }}
+                    UNION
+                    {{ ?e a aopo:KeyEventRelationship . }}
+                    UNION
+                    {{ ?e a nci:C54571 . }}
+                    ?e <http://purl.org/dc/elements/1.1/title> ?title .
+                }}
+            }}
+            """
+
+            # Count entities with dc:description
+            desc_query = f"""
+            SELECT (COUNT(DISTINCT ?e) AS ?count)
+            WHERE {{
+                GRAPH <{graph_uri}> {{
+                    {{ ?e a aopo:AdverseOutcomePathway . }}
+                    UNION
+                    {{ ?e a aopo:KeyEvent . }}
+                    UNION
+                    {{ ?e a aopo:KeyEventRelationship . }}
+                    UNION
+                    {{ ?e a nci:C54571 . }}
+                    ?e <http://purl.org/dc/elements/1.1/description> ?desc .
+                }}
+            }}
+            """
+
+            total_results = run_sparql_query(total_query)
+            title_results = run_sparql_query(title_query)
+            desc_results = run_sparql_query(desc_query)
+
+            total_entities = 0
+            if total_results:
+                r = total_results[0]
+                total_entities = (
+                    int(r.get("aops", {}).get("value", 0)) +
+                    int(r.get("kes", {}).get("value", 0)) +
+                    int(r.get("kers", {}).get("value", 0)) +
+                    int(r.get("stressors", {}).get("value", 0))
+                )
+
+            with_title = int(title_results[0]["count"]["value"]) if title_results else 0
+            with_desc = int(desc_results[0]["count"]["value"]) if desc_results else 0
+
+            return {
+                "version": version,
+                "Total Entities": total_entities,
+                "With Title": with_title,
+                "With Description": with_desc,
+            }
+
+        # Execute per-version queries in parallel
+        rows = []
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            futures = {executor.submit(_query_version, v): v for v in versions}
+            for future in as_completed(futures):
+                try:
+                    row = future.result(timeout=60)
+                    rows.append(row)
+                except Exception as e:
+                    ver = futures[future]
+                    logger.warning(f"Curation progress query failed for {ver['version']}: {e}")
+
+        if not rows:
+            fallback = create_fallback_plot("Curation Progress", "No data collected")
+            return (fallback, fallback, pd.DataFrame())
+
+        df = pd.DataFrame(rows)
+        df["version_dt"] = pd.to_datetime(df["version"], errors="coerce")
+        df = df.sort_values("version_dt").reset_index(drop=True)
+
+        # Melt for line chart
+        df_melt = df.melt(
+            id_vars=["version", "version_dt"],
+            value_vars=["Total Entities", "With Title", "With Description"],
+            var_name="Metric",
+            value_name="Count"
+        )
+
+        # --- Absolute line chart ---
+        fig_abs = px.line(
+            df_melt,
+            x="version",
+            y="Count",
+            color="Metric",
+            title="Curation Progress Over Time",
+            markers=True,
+            labels={"Count": "Entity Count", "version": "Version"},
+            color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary'], BRAND_COLORS['accent']]
+        )
+        fig_abs.update_layout(
+            template="plotly_white",
+            hovermode="x unified",
+            autosize=True,
+            margin=dict(l=50, r=20, t=50, b=80),
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5)
+        )
+        fig_abs.update_xaxes(tickangle=-45)
+
+        # --- Delta bar chart ---
+        df_delta = df.copy()
+        for col in ["Total Entities", "With Title", "With Description"]:
+            df_delta[col] = df_delta[col].diff().fillna(0).astype(int)
+
+        df_delta_melt = df_delta.melt(
+            id_vars=["version", "version_dt"],
+            value_vars=["Total Entities", "With Title", "With Description"],
+            var_name="Metric",
+            value_name="Change"
+        )
+
+        fig_delta = px.bar(
+            df_delta_melt,
+            x="version",
+            y="Change",
+            color="Metric",
+            barmode="group",
+            title="Curation Progress: Change per Version",
+            labels={"Change": "Change in Count", "version": "Version"},
+            color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary'], BRAND_COLORS['accent']]
+        )
+        fig_delta.update_layout(
+            template="plotly_white",
+            hovermode="x unified",
+            autosize=True,
+            margin=dict(l=50, r=20, t=50, b=80),
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5)
+        )
+        fig_delta.update_xaxes(tickangle=-45)
+
+        # Cache
+        _plot_data_cache['curation_progress_absolute'] = df.drop(columns=["version_dt"]).copy()
+        _plot_data_cache['curation_progress_delta'] = df_delta.drop(columns=["version_dt"]).copy()
+        _plot_figure_cache['curation_progress_absolute'] = fig_abs
+        _plot_figure_cache['curation_progress_delta'] = fig_delta
+
+        return (
+            pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config={"responsive": True}),
+            pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config={"responsive": True}),
+            df.drop(columns=["version_dt"])
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to generate curation progress plots: {str(e)}")
+        fallback = create_fallback_plot("Curation Progress", f"Error: {str(e)}")
+        return (fallback, fallback, pd.DataFrame())
+
+
+def plot_ontology_term_growth() -> tuple[str, str, pd.DataFrame]:
+    """Show growth of unique ontology terms used across versions.
+
+    Tracks the total count of unique ontology-linked IRI terms (from biological
+    process and object annotations) across all versions.
+
+    Uses per-version parallel SPARQL queries for efficiency.
+
+    Returns:
+        tuple: (absolute_html, delta_html, growth_df)
+    """
+    global _plot_data_cache, _plot_figure_cache
+
+    try:
+        versions = get_all_versions()
+        if not versions:
+            fallback = create_fallback_plot("Ontology Term Growth", "No versions available")
+            return (fallback, fallback, pd.DataFrame())
+
+        def _query_version(ver_info):
+            """Count unique ontology terms for a single version."""
+            graph_uri = ver_info['graph_uri']
+            version = ver_info['version']
+
+            query = f"""
+            SELECT (COUNT(DISTINCT ?term) AS ?unique_terms)
+            WHERE {{
+                GRAPH <{graph_uri}> {{
+                    {{
+                        ?ke a aopo:KeyEvent ;
+                            aopo:hasBiologicalEvent ?be .
+                        ?be aopo:hasProcess ?term .
+                    }}
+                    UNION
+                    {{
+                        ?ke a aopo:KeyEvent ;
+                            aopo:hasBiologicalEvent ?be .
+                        ?be aopo:hasObject ?term .
+                    }}
+                }}
+                FILTER(isIRI(?term))
+            }}
+            """
+
+            results = run_sparql_query(query)
+            count = int(results[0]["unique_terms"]["value"]) if results else 0
+            return {"version": version, "Unique Terms": count}
+
+        # Execute per-version queries in parallel
+        rows = []
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            futures = {executor.submit(_query_version, v): v for v in versions}
+            for future in as_completed(futures):
+                try:
+                    row = future.result(timeout=60)
+                    rows.append(row)
+                except Exception as e:
+                    ver = futures[future]
+                    logger.warning(f"Ontology term growth query failed for {ver['version']}: {e}")
+
+        if not rows:
+            fallback = create_fallback_plot("Ontology Term Growth", "No data collected")
+            return (fallback, fallback, pd.DataFrame())
+
+        df = pd.DataFrame(rows)
+        df["version_dt"] = pd.to_datetime(df["version"], errors="coerce")
+        df = df.sort_values("version_dt").reset_index(drop=True)
+
+        # --- Absolute line chart ---
+        fig_abs = px.line(
+            df,
+            x="version",
+            y="Unique Terms",
+            title="Ontology Term Growth Over Time",
+            markers=True,
+            labels={"Unique Terms": "Unique Ontology Terms", "version": "Version"},
+        )
+        fig_abs.update_traces(line_color=BRAND_COLORS['primary'], marker_color=BRAND_COLORS['primary'])
+        fig_abs.update_layout(
+            template="plotly_white",
+            hovermode="x unified",
+            autosize=True,
+            margin=dict(l=50, r=20, t=50, b=80)
+        )
+        fig_abs.update_xaxes(tickangle=-45)
+
+        # --- Delta bar chart ---
+        df_delta = df.copy()
+        df_delta["New Terms"] = df_delta["Unique Terms"].diff().fillna(0).astype(int)
+
+        fig_delta = px.bar(
+            df_delta,
+            x="version",
+            y="New Terms",
+            title="Ontology Term Growth: New Terms per Version",
+            labels={"New Terms": "New Terms Added", "version": "Version"},
+        )
+        fig_delta.update_traces(marker_color=BRAND_COLORS['secondary'])
+        fig_delta.update_layout(
+            template="plotly_white",
+            hovermode="x unified",
+            autosize=True,
+            margin=dict(l=50, r=20, t=50, b=80)
+        )
+        fig_delta.update_xaxes(tickangle=-45)
+
+        # Cache
+        _plot_data_cache['ontology_term_growth_absolute'] = df.drop(columns=["version_dt"]).copy()
+        _plot_data_cache['ontology_term_growth_delta'] = df_delta.drop(columns=["version_dt"]).copy()
+        _plot_figure_cache['ontology_term_growth_absolute'] = fig_abs
+        _plot_figure_cache['ontology_term_growth_delta'] = fig_delta
+
+        return (
+            pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config={"responsive": True}),
+            pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config={"responsive": True}),
+            df.drop(columns=["version_dt"])
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to generate ontology term growth plots: {str(e)}")
+        fallback = create_fallback_plot("Ontology Term Growth", f"Error: {str(e)}")
+        return (fallback, fallback, pd.DataFrame())

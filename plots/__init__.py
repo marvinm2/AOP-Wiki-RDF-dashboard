@@ -165,6 +165,10 @@ from .trends_plots import (
     plot_entity_completeness_trends,
     plot_aop_completeness_boxplot,
     plot_oecd_completeness_trend,
+
+    # Curation & ontology trends (Phase 04-03)
+    plot_curation_progress,
+    plot_ontology_term_growth,
 )
 
 # Import network analysis functions
@@ -257,6 +261,8 @@ __all__ = [
     'plot_entity_completeness_trends',
     'plot_aop_completeness_boxplot',
     'plot_oecd_completeness_trend',
+    'plot_curation_progress',
+    'plot_ontology_term_growth',
 
     # Current snapshot functions
     'plot_latest_entity_counts',
@@ -314,6 +320,8 @@ def get_available_functions():
             'plot_entity_completeness_trends',
             'plot_aop_completeness_boxplot',
             'plot_oecd_completeness_trend',
+            'plot_curation_progress',
+            'plot_ontology_term_growth',
         ],
         'current_snapshots': [
             'plot_latest_entity_counts',
