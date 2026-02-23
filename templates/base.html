@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}AOP-Wiki RDF Dashboard{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/lazy-loading.css') }}">
+    {% block head_extra %}{% endblock %}
+</head>
+<body>
+    <nav class="main-nav">
+        <div class="nav-container">
+            <a href="/" class="nav-brand">AOP-Wiki RDF Dashboard</a>
+            <div class="nav-links">
+                <a href="/snapshot" class="nav-link {% if active_page == 'snapshot' %}active{% endif %}">Database Snapshot</a>
+                <a href="/trends" class="nav-link {% if active_page == 'trends' %}active{% endif %}">Historical Trends</a>
+                <a href="/network" class="nav-link {% if active_page == 'network' %}active{% endif %}">Network Analysis</a>
+                <a href="/about" class="nav-link {% if active_page == 'about' %}active{% endif %}">About</a>
+            </div>
+            <div class="nav-version-selector">
+                {% block version_selector %}{% endblock %}
+            </div>
+        </div>
+    </nav>
+
+    <main class="page-content">
+        {% block page_header %}{% endblock %}
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="main-footer">
+        <div class="footer-container">
+            <div class="footer-branding">
+                <img src="{{ url_for('static', filename='images/vhp4safety-logo.svg') }}"
+                     alt="VHP4Safety" class="footer-logo"
+                     onerror="this.style.display='none'">
+                <span class="footer-project-name">AOP-Wiki RDF Dashboard</span>
+            </div>
+            <div class="footer-links">
+                <a href="https://aopwiki.cloud.vhp4safety.nl" target="_blank" rel="noopener">SPARQL Endpoint</a>
+                <a href="https://github.com/marvinm2/AOP-Wiki-RDF-dashboard" target="_blank" rel="noopener">GitHub</a>
+                <a href="https://github.com/marvinm2/AOP-Wiki-RDF-dashboard/issues" target="_blank" rel="noopener">Report an Issue</a>
+            </div>
+            <div class="footer-funding">
+                Developed within the <a href="https://vhp4safety.nl" target="_blank" rel="noopener">VHP4Safety</a> project, funded by NWO
+            </div>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/lazy-loading.js') }}"></script>
+    {% block scripts_extra %}{% endblock %}
+</body>
+</html>
