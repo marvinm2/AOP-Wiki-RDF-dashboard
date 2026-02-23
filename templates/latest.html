@@ -11,6 +11,7 @@
 
 <body>
 {% from 'macros/methodology.html' import methodology_note %}
+{% from 'macros/data_table.html' import data_table_toggle %}
 
 <header>
     <h1>Database Snapshot</h1>
@@ -112,6 +113,7 @@
             <div class="lazy-plot" data-plot-name="latest_entity_counts">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
+            {{ data_table_toggle('latest_entity_counts') }}
         </div>
     </div>
 </section>
@@ -138,6 +140,7 @@
             <div class="lazy-plot" data-plot-name="latest_aop_connectivity">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
+            {{ data_table_toggle('latest_aop_connectivity') }}
         </div>
         <div class="plot-box">
             <div class="plot-header">
@@ -158,6 +161,7 @@
             <div class="lazy-plot" data-plot-name="latest_avg_per_aop">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
+            {{ data_table_toggle('latest_avg_per_aop') }}
         </div>
     </div>
 </section>
@@ -184,6 +188,7 @@
             <div class="lazy-plot" data-plot-name="latest_ke_components">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
+            {{ data_table_toggle('latest_ke_components') }}
         </div>
         <div class="plot-box">
             <div class="plot-header">
@@ -204,6 +209,7 @@
             <div class="lazy-plot" data-plot-name="latest_ke_annotation_depth">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
+            {{ data_table_toggle('latest_ke_annotation_depth') }}
         </div>
     </div>
 </section>
@@ -230,6 +236,7 @@
             <div class="lazy-plot" data-plot-name="latest_aop_completeness">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
+            {{ data_table_toggle('latest_aop_completeness') }}
         </div>
         <div class="plot-box full-width">
             <div class="plot-header">
@@ -261,6 +268,7 @@
             <div class="lazy-plot" data-plot-name="latest_aop_completeness_by_status">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
+            {{ data_table_toggle('latest_aop_completeness_by_status') }}
         </div>
         <div class="plot-box full-width">
             <div class="plot-header">
@@ -292,6 +300,7 @@
             <div class="lazy-plot" data-plot-name="latest_ke_completeness_by_status">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
+            {{ data_table_toggle('latest_ke_completeness_by_status') }}
         </div>
         <div class="plot-box full-width">
             <div class="plot-header">
@@ -322,6 +331,7 @@
             <div class="lazy-plot" data-plot-name="latest_ker_completeness_by_status">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
+            {{ data_table_toggle('latest_ker_completeness_by_status') }}
         </div>
         <div class="plot-box">
             <div class="plot-header">
@@ -342,6 +352,7 @@
             <div class="lazy-plot" data-plot-name="latest_process_usage">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
+            {{ data_table_toggle('latest_process_usage') }}
         </div>
         <div class="plot-box">
             <div class="plot-header">
@@ -362,6 +373,7 @@
             <div class="lazy-plot" data-plot-name="latest_object_usage">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
+            {{ data_table_toggle('latest_object_usage') }}
         </div>
     </div>
 </section>
@@ -376,6 +388,7 @@
 
 <script src="{{ url_for('static', filename='js/lazy-loading.js') }}"></script>
 <script src="{{ url_for('static', filename='js/version-selector.js') }}"></script>
+<script src="{{ url_for('static', filename='js/raw-data-tables.js') }}"></script>
 <script>
 // Load property details dynamically from the API
 document.addEventListener('DOMContentLoaded', function() {

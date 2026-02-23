@@ -11,6 +11,7 @@
 
 <body>
 {% from 'macros/methodology.html' import methodology_note %}
+{% from 'macros/data_table.html' import data_table_toggle %}
 
 <header>
     <h1>Historical Trends Analysis</h1>
@@ -39,5 +40,6 @@
 </footer>
 
 <script src="{{ url_for('static', filename='js/lazy-loading.js') }}"></script>
+<script src="{{ url_for('static', filename='js/raw-data-tables.js') }}"></script>
 </body>
 </html>

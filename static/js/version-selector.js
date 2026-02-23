@@ -28,6 +28,39 @@
     ];
 
     /**
+     * Update the URL with the current version selection (without page reload)
+     */
+    function updateURLState(version) {
+        var params = new URLSearchParams(window.location.search);
+        if (version && version !== '') {
+            params.set('version', version);
+        } else {
+            params.delete('version');
+        }
+        var newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+        history.replaceState(null, '', newUrl);
+    }
+
+    /**
+     * Restore version selection from URL ?version= parameter
+     */
+    function restoreVersionFromURL() {
+        var params = new URLSearchParams(window.location.search);
+        var version = params.get('version');
+        if (version) {
+            var selector = document.getElementById('version-selector');
+            if (selector) {
+                var option = Array.from(selector.options).find(function(o) { return o.value === version; });
+                if (option) {
+                    selector.value = version;
+                    // Trigger change event to load plots for this version
+                    selector.dispatchEvent(new Event('change'));
+                }
+            }
+        }
+    }
+
+    /**
      * Initialize version selector on page load
      */
     async function initVersionSelector() {
@@ -61,6 +94,9 @@
 
             // Set up event listeners
             setupEventListeners();
+
+            // Restore version from URL if present (must happen after options are populated)
+            restoreVersionFromURL();
 
             console.log('Version selector initialization complete!');
 
@@ -133,9 +169,15 @@
         console.log(`Version changed: ${selectedVersion} → ${newVersion || 'latest'}`);
         selectedVersion = newVersion;
 
+        // Update URL with version parameter
+        updateURLState(selectedVersion || '');
+
         // Update UI to show selected version
         console.log('Updating version banner...');
         updateVersionBanner();
+
+        // Dispatch version-changed event so data tables can reset
+        document.dispatchEvent(new CustomEvent('version-changed', { detail: { version: selectedVersion } }));
 
         // Reload all versioned plots
         console.log('Starting plot reload...');
