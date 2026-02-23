@@ -2,7 +2,7 @@
 
 ## Overview
 
-This roadmap transforms the AOP-Wiki RDF Dashboard from a functioning but fragile monitoring tool into a reliable, feature-complete exploration platform deployed on VHP4Safety. The journey starts by stabilizing the existing foundation (removing legacy code, fixing unbounded caches, production-readying the server), then making all existing plots reliable and complete, then adding the flagship network analysis capability, then building entity drill-down views, then adding advanced analytics, and finally deploying to the VHP platform. Each phase delivers a coherent, verifiable capability that builds on the previous one.
+This roadmap transforms the AOP-Wiki RDF Dashboard from a functioning but fragile monitoring tool into a reliable, feature-complete exploration platform deployed on VHP4Safety. The journey starts by stabilizing the existing foundation (removing legacy code, fixing unbounded caches, production-readying the server), then making all existing plots reliable and complete, then adding the flagship network analysis capability, then building entity drill-down views, then polishing the visual identity and consistency, and finally deploying to the VHP platform. Each phase delivers a coherent, verifiable capability that builds on the previous one.
 
 ## Phases
 
@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 2: Reliability and Completeness** - All plots load reliably, full export coverage, methodology transparency
 - [x] **Phase 3: Network Analysis** - Interactive AOP network graph with centrality metrics, PageRank, and community detection (completed 2026-02-23)
 - [x] **Phase 4: Entity Exploration** - Deep-dive views for AOPs, KEs, and stressors with shareable URLs (completed 2026-02-23)
-- [ ] **Phase 5: Advanced Analytics** - Stressor-AOP mapping, data quality scoring, ontology coverage analysis
+- [ ] **Phase 5: Polish & Consistency** - House style colors, landing page, plot uniformity, navigation redesign
 - [ ] **Phase 6: VHP Platform Deployment** - Production deployment on VHP4Safety with CORS and health probe integration
 
 ## Phase Details
@@ -85,7 +85,7 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. User can toggle a raw data table beneath each plot showing the underlying data (existing + new plots)
   2. URL encodes version selection via ?version= parameter for shareable views
-  3. 9 new plots render on the dashboard: biological level, taxonomy, OECD status, KE reuse (2 views), annotation heatmap, ontology diversity, curation progress, ontology term growth
+  3. 7 new plots render on the dashboard: biological level, taxonomy, OECD status, KE reuse (2 views), ontology diversity, ontology term growth
   4. Entity links in KE reuse plot open corresponding AOP-Wiki source pages
   5. All new plots have methodology notes, CSV downloads, lazy loading, and version selector support
 **Plans:** 3/3 plans complete
@@ -95,23 +95,28 @@ Plans:
 - [ ] 04-02-PLAN.md — Breakdown plots: bio level, taxonomy, OECD status, KE reuse (Wave 2)
 - [ ] 04-03-PLAN.md — Data quality + trends: annotation heatmap, ontology diversity/growth, curation progress (Wave 3)
 
-### Phase 5: Advanced Analytics
-**Goal**: Users can explore higher-order relationships and data quality patterns across the AOP-Wiki knowledge base
-**Depends on**: Phase 3, Phase 4
-**Requirements**: ANLY-01, ANLY-02, ANLY-03
+### Phase 5: Polish & Consistency
+**Goal**: The dashboard has a cohesive visual identity with unified house style colors, a polished landing page, standardized plot styling, and redesigned navigation — making the existing feature set look and feel professional
+**Depends on**: Phase 4
+**Requirements**: Visual consistency, brand alignment, UX polish
 **Success Criteria** (what must be TRUE):
-  1. User can view stressor-to-AOP mapping as an interactive network or Sankey diagram showing which stressors connect to which AOPs
-  2. User can see a composite data quality score per AOP that combines completeness, annotation depth, and network connectivity into a single comparable metric
-  3. User can view ontology coverage analysis showing which GO/CHEBI/UBERON terms are used in AOP-Wiki versus what is available, identifying annotation gaps
+  1. All plots use colors from a central color system (Python config + CSS variables) derived from VHP4Safety brand palette
+  2. Landing page serves as a navigation hub with icon+description cards, light live data, expandable AOP-Wiki intro, and funding acknowledgment
+  3. All existing plots have uniform white backgrounds, right-side legends, hover-visible toolbars, and consistent typography/spacing
+  4. Header and footer are redesigned with house style; version selector is in the navigation bar
+  5. About page is accessible from navigation with project info and contact/issue-reporting link
+  6. Dashboard is readable on tablets (basic responsive)
 **Plans**: TBD
 
 Plans:
 - [ ] 05-01: TBD
 - [ ] 05-02: TBD
 
+**Deferred to v2 backlog:** Advanced Analytics (stressor-AOP mapping, data quality scoring, ontology coverage analysis — previously ANLY-01, ANLY-02, ANLY-03)
+
 ### Phase 6: VHP Platform Deployment
 **Goal**: The dashboard is publicly accessible on the VHP4Safety platform with production-grade reliability
-**Depends on**: Phase 1, Phase 2 (minimum); Phase 5 (full feature set)
+**Depends on**: Phase 1, Phase 2 (minimum); Phase 5 (polished UI)
 **Requirements**: INFR-05, INFR-06
 **Success Criteria** (what must be TRUE):
   1. Dashboard is accessible at its VHP4Safety URL and serves all pages without error
@@ -135,5 +140,5 @@ Note: Phase 2 and Phase 3 can execute in parallel (both depend only on Phase 1).
 | 2. Reliability and Completeness | 6/7 | UAT gap closure | - |
 | 3. Network Analysis | 5/5 | Complete | 2026-02-23 |
 | 4. Dashboard Enrichment & Raw Data | 0/3 | Complete    | 2026-02-23 |
-| 5. Advanced Analytics | 0/2 | Not started | - |
+| 5. Polish & Consistency | 0/2 | Not started | - |
 | 6. VHP Platform Deployment | 0/2 | Not started | - |
