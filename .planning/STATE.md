@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-02-20)
 
 **Core value:** Researchers, curators, and regulators can explore AOP-Wiki data across any version to understand how the knowledge base evolves over time — reliably and without timeouts.
-**Current focus:** Phase 5: Polish & Consistency — Plan 2 complete (Base Template & Navigation)
+**Current focus:** Phase 5: Polish & Consistency — Plan 3 complete (Plot Standardization)
 
 ## Current Position
 
 Phase: 5 of 6 (Polish & Consistency)
-Plan: 2 of 4 in current phase
+Plan: 3 of 4 in current phase
 Status: Executing Phase 5 plans
-Last activity: 2026-02-23 — Completed 05-02 (Base Template & Navigation)
+Last activity: 2026-02-23 — Completed 05-03 (Plot Standardization)
 
 Progress: [████████████████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 21
+- Total plans completed: 22
 - Average duration: ~4.5 min
 - Total execution time: ~1.4 hours
 
@@ -32,8 +32,8 @@ Progress: [████████████████████] 100%
 | 03 | 5/5 | ~41 min | ~8 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-05 (1m), 04-01 (6m), 04-02 (6m), 04-03 (7m)
-- Trend: 04-03 standard feature addition (4 new plots: heatmap, diversity, 2 trends)
+- Last 5 plans: 04-01 (6m), 04-02 (6m), 04-03 (7m), 05-01 (2m), 05-02 (5m), 05-03 (13m)
+- Trend: 05-03 mechanical refactor across 2 large files (58 plot standardizations)
 
 *Updated after each plan completion*
 | Phase 02 P05 | 9min | 2 tasks | 2 files |
@@ -48,6 +48,7 @@ Progress: [████████████████████] 100%
 | Phase 04 P03 | 7min | 3 tasks | 8 files |
 | Phase 05 P01 | 2min | 2 tasks | 3 files |
 | Phase 05 P02 | 5min | 2 tasks | 8 files |
+| Phase 05 P03 | 13min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -110,6 +111,10 @@ Recent decisions affecting current work:
 - [05-02]: Navigation is static (scrolls with page), not fixed, to preserve screen real estate for data-dense pages
 - [05-02]: Version selector in nav-version-selector block, visible only on Database Snapshot page
 - [05-02]: Kept legacy CSS rules (.page-navigation, header, footer) for templates not yet migrated (landing.html, index.html)
+- [05-03]: Removed all Plotly figure titles — HTML headings provide context for every plot
+- [05-03]: Phase 5 right-side vertical legend decision supersedes Phase 02-06 centered horizontal legend
+- [05-03]: Kept OECD legend title="OECD Status" as intentional per-plot customization (position from template)
+- [05-03]: All rendering via render_plot_html(fig) — no direct pio.to_html or fig.to_html anywhere
 
 ### Pending Todos
 
@@ -130,5 +135,5 @@ User verification of Phase 2 delivery found 4 issues requiring follow-up:
 ## Session Continuity
 
 Last session: 2026-02-23
-Stopped at: Completed 05-02-PLAN.md
-Resume file: .planning/phases/05-polish-consistency/05-02-SUMMARY.md
+Stopped at: Completed 05-03-PLAN.md
+Resume file: .planning/phases/05-polish-consistency/05-03-SUMMARY.md
