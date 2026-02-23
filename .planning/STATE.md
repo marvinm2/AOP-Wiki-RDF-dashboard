@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-20)
 
 **Core value:** Researchers, curators, and regulators can explore AOP-Wiki data across any version to understand how the knowledge base evolves over time — reliably and without timeouts.
-**Current focus:** Phase 4: Dashboard Enrichment & Raw Data (All plans complete) -- Next: Phase 4 verification
+**Current focus:** Phase 5: Polish & Consistency — context gathered, ready for planning
 
 ## Current Position
 
-Phase: 4 of 6 (Dashboard Enrichment & Raw Data)
-Plan: 3 of 3 in current phase (COMPLETE)
-Status: All plans executed, awaiting verification
-Last activity: 2026-02-23 — Completed 04-03-PLAN.md (Data quality & trends plots)
+Phase: 5 of 6 (Polish & Consistency)
+Plan: 0 of TBD in current phase
+Status: Context gathered — ready for planning
+Last activity: 2026-02-23 — Phase 5 redefined and context captured
 
 Progress: [████████████████████] 100%
 
@@ -122,5 +122,5 @@ User verification of Phase 2 delivery found 4 issues requiring follow-up:
 ## Session Continuity
 
 Last session: 2026-02-23
-Stopped at: Completed 04-03-PLAN.md (Data quality & trends plots) -- Phase 4 all plans complete
-Resume file: .planning/phases/04-entity-exploration/04-03-SUMMARY.md
+Stopped at: Phase 5 context gathered — redefined as Polish & Consistency (Advanced Analytics deferred to v2)
+Resume file: .planning/phases/05-polish-consistency/05-CONTEXT.md
