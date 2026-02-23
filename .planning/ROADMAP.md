@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Foundation and Cleanup** - Eliminate technical debt, production-ready infrastructure, developer guardrails (completed 2026-02-20)
 - [ ] **Phase 2: Reliability and Completeness** - All plots load reliably, full export coverage, methodology transparency
 - [x] **Phase 3: Network Analysis** - Interactive AOP network graph with centrality metrics, PageRank, and community detection (completed 2026-02-23)
-- [ ] **Phase 4: Entity Exploration** - Deep-dive views for AOPs, KEs, and stressors with shareable URLs
+- [x] **Phase 4: Entity Exploration** - Deep-dive views for AOPs, KEs, and stressors with shareable URLs (completed 2026-02-23)
 - [ ] **Phase 5: Advanced Analytics** - Stressor-AOP mapping, data quality scoring, ontology coverage analysis
 - [ ] **Phase 6: VHP Platform Deployment** - Production deployment on VHP4Safety with CORS and health probe integration
 
@@ -88,7 +88,7 @@ Plans:
   3. 9 new plots render on the dashboard: biological level, taxonomy, OECD status, KE reuse (2 views), annotation heatmap, ontology diversity, curation progress, ontology term growth
   4. Entity links in KE reuse plot open corresponding AOP-Wiki source pages
   5. All new plots have methodology notes, CSV downloads, lazy loading, and version selector support
-**Plans:** 3 plans
+**Plans:** 3/3 plans complete
 
 Plans:
 - [ ] 04-01-PLAN.md — Raw data table infrastructure + shareable URLs (Wave 1)
@@ -134,6 +134,6 @@ Note: Phase 2 and Phase 3 can execute in parallel (both depend only on Phase 1).
 | 1. Foundation and Cleanup | 4/4 | Complete | 2026-02-20 |
 | 2. Reliability and Completeness | 6/7 | UAT gap closure | - |
 | 3. Network Analysis | 5/5 | Complete | 2026-02-23 |
-| 4. Dashboard Enrichment & Raw Data | 0/3 | Planned | - |
+| 4. Dashboard Enrichment & Raw Data | 0/3 | Complete    | 2026-02-23 |
 | 5. Advanced Analytics | 0/2 | Not started | - |
 | 6. VHP Platform Deployment | 0/2 | Not started | - |
