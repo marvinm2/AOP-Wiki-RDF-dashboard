@@ -53,7 +53,6 @@ Author:
 
 import pandas as pd
 import plotly.express as px
-import plotly.io as pio
 import logging
 from functools import reduce
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -61,7 +60,7 @@ from .shared import (
     BRAND_COLORS, config, _plot_data_cache, _plot_figure_cache,
     run_sparql_query, run_sparql_query_with_retry, extract_counts,
     safe_read_csv, create_fallback_plot, get_properties_for_entity,
-    get_all_versions
+    get_all_versions, render_plot_html
 )
 
 logger = logging.getLogger(__name__)
@@ -220,13 +219,10 @@ def plot_main_graph() -> tuple[str, str, pd.DataFrame]:
         df_abs_melted["Count"] = pd.to_numeric(df_abs_melted["Count"], errors="coerce").fillna(0).astype(int)
         fig_abs = px.line(
             df_abs_melted, x="version", y="Count", color="Entity", markers=True,
-            title="Entity Evolution Over Time",
+
             color_discrete_sequence=BRAND_COLORS['palette']
         )
         fig_abs.update_layout(
-            template="plotly_white",
-            hovermode="x unified",
-            autosize=True,   # Let Plotly resize dynamically
             margin=dict(l=50, r=20, t=50, b=50)
         )
         fig_abs.update_xaxes(
@@ -251,13 +247,10 @@ def plot_main_graph() -> tuple[str, str, pd.DataFrame]:
 
         fig_delta = px.line(
             df_delta_melted, x="version", y="Count", color="Entity", markers=True,
-            title="Entity Change Between Versions",
+
             color_discrete_sequence=BRAND_COLORS['palette']
         )
         fig_delta.update_layout(
-            template="plotly_white",
-            hovermode="x unified",
-            autosize=True,
             margin=dict(l=50, r=20, t=50, b=50)
         )
         fig_delta.update_xaxes(
@@ -276,8 +269,8 @@ def plot_main_graph() -> tuple[str, str, pd.DataFrame]:
         _plot_figure_cache['aop_entity_counts_delta'] = fig_delta
 
         return (
-            pio.to_html(fig_abs, full_html=False, include_plotlyjs="cdn", config={"responsive": True}),
-            pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config={"responsive": True}),
+            render_plot_html(fig_abs),
+            render_plot_html(fig_delta),
             df_all
         )
 
@@ -370,12 +363,8 @@ def plot_avg_per_aop() -> tuple[str, str]:
         })
 
         fig_abs = px.line(df_melted, x="version", y="Average", color="Metric", markers=True,
-                          title="Average Components per AOP Over Time",
                           color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary']])
         fig_abs.update_layout(
-            template="plotly_white",
-            hovermode="x unified",
-            autosize=True,
             margin=dict(l=50, r=20, t=50, b=50)
         )
         fig_abs.update_xaxes(
@@ -400,12 +389,8 @@ def plot_avg_per_aop() -> tuple[str, str]:
             "avg_KERs_per_AOP_Δ": "Δ KERs per AOP"
         })
         fig_delta = px.line(df_delta_melted, x="version", y="Δ Average", color="Metric", markers=True,
-                            title="Change in Average Components per AOP",
                             color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary']])
         fig_delta.update_layout(
-            template="plotly_white",
-            hovermode="x unified",
-            autosize=True,
             margin=dict(l=50, r=20, t=50, b=50)
         )
         fig_delta.update_xaxes(
@@ -424,8 +409,8 @@ def plot_avg_per_aop() -> tuple[str, str]:
         _plot_figure_cache['average_components_per_aop_delta'] = fig_delta
 
         return (
-            pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config={"responsive": True}),
-            pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config={"responsive": True})
+            render_plot_html(fig_abs),
+            render_plot_html(fig_delta)
         )
 
     except Exception as e:
@@ -484,15 +469,11 @@ def plot_network_density() -> str:
             df_density,
             x="version",
             y="density",
-            title="Network Density Evolution Over Time",
             markers=True,
             labels={"density": "Graph Density"},
             color_discrete_sequence=[BRAND_COLORS['accent']]
         )
         fig.update_layout(
-            template="plotly_white",
-            hovermode="x unified",
-            autosize=True,
             margin=dict(l=50, r=20, t=50, b=50)
         )
         fig.update_xaxes(
@@ -508,7 +489,7 @@ def plot_network_density() -> str:
         # Cache figure for image export
         _plot_figure_cache['aop_network_density'] = fig
 
-        return pio.to_html(fig, full_html=False, include_plotlyjs=False, config={"responsive": True})
+        return render_plot_html(fig)
 
     except Exception as e:
         logger.error(f"Failed to generate network density plot: {str(e)}")
@@ -559,12 +540,8 @@ def plot_author_counts() -> tuple[str, str]:
 
         # Absolute
         fig_abs = px.line(df_authors, x="version", y="author_count", markers=True,
-                          title="Author Contributions Over Time",
                           color_discrete_sequence=[BRAND_COLORS['secondary']])
         fig_abs.update_layout(
-            template="plotly_white",
-            hovermode="x unified",
-            autosize=True,
             margin=dict(l=50, r=20, t=50, b=50)
         )
         fig_abs.update_xaxes(
@@ -577,12 +554,8 @@ def plot_author_counts() -> tuple[str, str]:
         # Delta
         df_authors["author_count_Δ"] = df_authors["author_count"].diff().fillna(0)
         fig_delta = px.line(df_authors, x="version", y="author_count_Δ", markers=True,
-                            title="Change in Author Contributions",
                             color_discrete_sequence=[BRAND_COLORS['light']])
         fig_delta.update_layout(
-            template="plotly_white",
-            hovermode="x unified",
-            autosize=True,
             margin=dict(l=50, r=20, t=50, b=50)
         )
         fig_delta.update_xaxes(
@@ -601,8 +574,8 @@ def plot_author_counts() -> tuple[str, str]:
         _plot_figure_cache['aop_authors_delta'] = fig_delta
 
         return (
-            pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config={"responsive": True}),
-            pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config={"responsive": True})
+            render_plot_html(fig_abs),
+            render_plot_html(fig_delta)
         )
 
     except Exception as e:
@@ -673,11 +646,10 @@ def plot_aop_lifetime() -> tuple[str, str, str]:
         html1 = fallback_created
         try:
             fig1 = px.histogram(df_created, x="year_created",
-                                title="AOP Creation Timeline",
                                 labels={"year_created": "Year", "count": "AOP Count"},
                                 color_discrete_sequence=[BRAND_COLORS['primary']])
-            fig1.update_layout(template="plotly_white", height=400)
-            html1 = pio.to_html(fig1, full_html=False, include_plotlyjs="cdn")
+            fig1.update_layout(height=400)
+            html1 = render_plot_html(fig1)
             _plot_figure_cache['aops_created_over_time'] = fig1
         except Exception as e:
             logger.error(f"Failed to generate AOP creation timeline plot: {str(e)}")
@@ -686,11 +658,10 @@ def plot_aop_lifetime() -> tuple[str, str, str]:
         html2 = fallback_modified
         try:
             fig2 = px.histogram(df_modified, x="year_modified",
-                                title="AOP Modification Timeline",
                                 labels={"year_modified": "Year", "count": "AOP Count"},
                                 color_discrete_sequence=[BRAND_COLORS['secondary']])
-            fig2.update_layout(template="plotly_white", height=400)
-            html2 = pio.to_html(fig2, full_html=False, include_plotlyjs=False)
+            fig2.update_layout(height=400)
+            html2 = render_plot_html(fig2)
             _plot_figure_cache['aops_modified_over_time'] = fig2
         except Exception as e:
             logger.error(f"Failed to generate AOP modification timeline plot: {str(e)}")
@@ -699,12 +670,11 @@ def plot_aop_lifetime() -> tuple[str, str, str]:
         html3 = fallback_scatter
         try:
             fig3 = px.scatter(df_lifetime, x="created", y="modified", hover_name="aop",
-                              title="AOP Creation vs. Modification Timeline",
                               labels={"created": "Created", "modified": "Modified"},
                               color_discrete_sequence=[BRAND_COLORS['accent']],
                               render_mode='svg')
-            fig3.update_layout(template="plotly_white", height=500)
-            html3 = pio.to_html(fig3, full_html=False, include_plotlyjs=False)
+            fig3.update_layout(height=500)
+            html3 = render_plot_html(fig3)
             _plot_figure_cache['aop_creation_vs_modification_timeline'] = fig3
         except Exception as e:
             logger.error(f"Failed to generate AOP creation vs modification scatter plot: {str(e)}")
@@ -823,14 +793,10 @@ def plot_ke_components() -> tuple[str, str]:
             x="version",
             y="Count",
             color="Component",
-            title="KE Component Annotations Over Time",
             markers=True,
             color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary'], BRAND_COLORS['accent']]
         )
         fig_abs.update_layout(
-            template="plotly_white",
-            hovermode="x unified",
-            autosize=True,
             margin=dict(l=50, r=20, t=50, b=50)
         )
         fig_abs.update_xaxes(
@@ -856,14 +822,10 @@ def plot_ke_components() -> tuple[str, str]:
             x="version",
             y="Change",
             color="Component",
-            title="Change in KE Component Annotations",
             markers=True,
             color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary'], BRAND_COLORS['accent']]
         )
         fig_delta.update_layout(
-            template="plotly_white",
-            hovermode="x unified",
-            autosize=True,
             margin=dict(l=50, r=20, t=50, b=50)
         )
         fig_delta.update_xaxes(
@@ -882,8 +844,8 @@ def plot_ke_components() -> tuple[str, str]:
         _plot_figure_cache['ke_component_annotations_delta'] = fig_delta
 
         return (
-            pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config={"responsive": True}),
-            pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config={"responsive": True})
+            render_plot_html(fig_abs),
+            render_plot_html(fig_delta)
         )
 
     except Exception as e:
@@ -1017,14 +979,10 @@ def plot_ke_components_percentage() -> tuple[str, str]:
             x="version",
             y="Percentage",
             color="Component",
-            title="KE Component Annotations as Percentage Over Time",
             markers=True,
             color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary'], BRAND_COLORS['accent']]
         )
         fig_abs.update_layout(
-            template="plotly_white",
-            hovermode="x unified",
-            autosize=True,
             yaxis=dict(title="Percentage (%)"),
             margin=dict(l=50, r=20, t=50, b=50)
         )
@@ -1050,14 +1008,10 @@ def plot_ke_components_percentage() -> tuple[str, str]:
             x="version",
             y="Percentage Change",
             color="Component",
-            title="Change in KE Component Percentage",
             markers=True,
             color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary'], BRAND_COLORS['accent']]
         )
         fig_delta.update_layout(
-            template="plotly_white",
-            hovermode="x unified",
-            autosize=True,
             yaxis=dict(title="Percentage Change (%)"),
             margin=dict(l=50, r=20, t=50, b=50)
         )
@@ -1077,8 +1031,8 @@ def plot_ke_components_percentage() -> tuple[str, str]:
         _plot_figure_cache['ke_components_percentage_delta'] = fig_delta
 
         return (
-            pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config=config),
-            pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config=config)
+            render_plot_html(fig_abs),
+            render_plot_html(fig_delta)
         )
 
     except Exception as e:
@@ -1152,14 +1106,10 @@ def plot_unique_ke_components() -> tuple[str, str]:
             x="version",
             y="Unique Count",
             color="Component",
-            title="Unique KE Component Annotations Over Time",
             markers=True,
             color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary'], BRAND_COLORS['accent']]
         )
         fig_abs.update_layout(
-            template="plotly_white",
-            hovermode="x unified",
-            autosize=True,
             margin=dict(l=50, r=20, t=50, b=50)
         )
         fig_abs.update_xaxes(
@@ -1185,14 +1135,10 @@ def plot_unique_ke_components() -> tuple[str, str]:
             x="version",
             y="Change",
             color="Component",
-            title="Change in Unique KE Component Annotations",
             markers=True,
             color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary'], BRAND_COLORS['accent']]
         )
         fig_delta.update_layout(
-            template="plotly_white",
-            hovermode="x unified",
-            autosize=True,
             margin=dict(l=50, r=20, t=50, b=50)
         )
         fig_delta.update_xaxes(
@@ -1211,8 +1157,8 @@ def plot_unique_ke_components() -> tuple[str, str]:
         _plot_figure_cache['unique_ke_components_delta'] = fig_delta
 
         return (
-            pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config={"responsive": True}),
-            pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config={"responsive": True})
+            render_plot_html(fig_abs),
+            render_plot_html(fig_delta)
         )
 
     except Exception as e:
@@ -1284,11 +1230,10 @@ def plot_bio_processes() -> tuple[str, str]:
             y="count",
             color="ontology",
             barmode="group",
-            title="Biological Process Annotations by Ontology Over Time",
             labels={"count": "Annotated KEs", "ontology": "Ontology"},
             color_discrete_sequence=BRAND_COLORS['palette']
         )
-        fig_abs.update_layout(template="plotly_white", hovermode="x unified", autosize=True)
+        # Template defaults handle styling
         fig_abs.update_xaxes(tickmode='array', tickvals=df_ont["version"], ticktext=df_ont["version"], tickangle=-45)
 
         # --- Delta calculation ---
@@ -1301,11 +1246,10 @@ def plot_bio_processes() -> tuple[str, str]:
             y="count",
             color="ontology",
             barmode="group",
-            title="Change in Biological Process Annotations by Ontology",
             labels={"count": "Change in Annotated KEs", "ontology": "Ontology"},
             color_discrete_sequence=BRAND_COLORS['palette']
         )
-        fig_delta.update_layout(template="plotly_white", hovermode="x unified", autosize=True)
+        # Template defaults handle styling
         fig_delta.update_xaxes(tickmode='array', tickvals=df_ont["version"], ticktext=df_ont["version"], tickangle=-45)
 
         # Cache data for CSV export
@@ -1317,8 +1261,8 @@ def plot_bio_processes() -> tuple[str, str]:
         _plot_figure_cache['biological_process_annotations_delta'] = fig_delta
 
         return (
-            pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config={"responsive": True}),
-            pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config={"responsive": True})
+            render_plot_html(fig_abs),
+            render_plot_html(fig_delta)
         )
 
     except Exception as e:
@@ -1393,11 +1337,10 @@ def plot_bio_objects() -> tuple[str, str]:
             y="count",
             color="ontology",
             barmode="group",
-            title="Biological Object Annotations by Ontology Over Time",
             labels={"count": "Annotated KEs", "ontology": "Ontology"},
             color_discrete_sequence=BRAND_COLORS['palette']
         )
-        fig_abs.update_layout(template="plotly_white", hovermode="x unified", autosize=True)
+        # Template defaults handle styling
         fig_abs.update_xaxes(tickmode='array', tickvals=df_obj["version"], ticktext=df_obj["version"], tickangle=-45)
 
         # --- Delta calculation ---
@@ -1410,11 +1353,10 @@ def plot_bio_objects() -> tuple[str, str]:
             y="count",
             color="ontology",
             barmode="group",
-            title="Change in Biological Object Annotations by Ontology",
             labels={"count": "Change in Annotated KEs", "ontology": "Ontology"},
             color_discrete_sequence=BRAND_COLORS['palette']
         )
-        fig_delta.update_layout(template="plotly_white", hovermode="x unified", autosize=True)
+        # Template defaults handle styling
         fig_delta.update_xaxes(tickmode='array', tickvals=df_obj["version"], ticktext=df_obj["version"], tickangle=-45)
 
         # Cache data for CSV export
@@ -1426,8 +1368,8 @@ def plot_bio_objects() -> tuple[str, str]:
         _plot_figure_cache['biological_object_annotations_delta'] = fig_delta
 
         return (
-            pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config={"responsive": True}),
-            pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config={"responsive": True})
+            render_plot_html(fig_abs),
+            render_plot_html(fig_delta)
         )
 
     except Exception as e:
@@ -1576,7 +1518,6 @@ def plot_aop_property_presence(label_file="property_labels.csv") -> tuple[str, s
             y="count",
             color="display_label",
             markers=True,
-            title="Property Presence in AOPs Over Time (Count)",
             labels={"count": "Number of AOPs", "display_label": "Property"},
             color_discrete_sequence=BRAND_COLORS['palette']
         )
@@ -1586,9 +1527,6 @@ def plot_aop_property_presence(label_file="property_labels.csv") -> tuple[str, s
             trace.update(marker=dict(symbol=marker_symbols[i % len(marker_symbols)], size=8))
 
         fig_abs.update_layout(
-            template="plotly_white",
-            hovermode="x unified",
-            autosize=True,
             margin=dict(l=50, r=20, t=50, b=50)
         )
 
@@ -1599,7 +1537,6 @@ def plot_aop_property_presence(label_file="property_labels.csv") -> tuple[str, s
             y="percentage",
             color="display_label",
             markers=True,
-            title="Property Presence in AOPs Over Time (Percentage)",
             labels={"percentage": "Percentage (%)", "display_label": "Property"},
             color_discrete_sequence=BRAND_COLORS['palette']
         )
@@ -1609,30 +1546,16 @@ def plot_aop_property_presence(label_file="property_labels.csv") -> tuple[str, s
             trace.update(marker=dict(symbol=marker_symbols[i % len(marker_symbols)], size=8))
 
         fig_delta.update_layout(
-            template="plotly_white",
-            hovermode="x unified",
-            autosize=True,
             margin=dict(l=50, r=20, t=50, b=50)
         )
-
-        config = {
-            "responsive": True,
-            "toImageButtonOptions": {
-                "format": "png",
-                "filename": "aop_property_presence",
-                "height": 1000,
-                "width": 1600,
-                "scale": 4
-            }
-        }
 
         # Cache figures for image export
         _plot_figure_cache['aop_property_presence_absolute'] = fig_abs
         _plot_figure_cache['aop_property_presence_percentage'] = fig_delta
 
         return (
-            pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config=config),
-            pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config=config)
+            render_plot_html(fig_abs),
+            render_plot_html(fig_delta)
         )
 
     except Exception as e:
@@ -1760,30 +1683,25 @@ def plot_ke_property_presence(label_file="property_labels.csv") -> tuple[str, st
                           'pentagon', 'hexagon', 'octagon', 'triangle-down', 'triangle-left', 'triangle-right']
 
         fig_abs = px.line(df, x="version", y="count", color="display_label", markers=True,
-                          title="Property Presence in Key Events Over Time (Count)",
                           labels={"count": "Number of KEs", "display_label": "Property"},
                           color_discrete_sequence=BRAND_COLORS['palette'])
         for i, trace in enumerate(fig_abs.data):
             trace.update(marker=dict(symbol=marker_symbols[i % len(marker_symbols)], size=8))
-        fig_abs.update_layout(template="plotly_white", hovermode="x unified", autosize=True,
-                              margin=dict(l=50, r=20, t=50, b=50))
+        fig_abs.update_layout(margin=dict(l=50, r=20, t=50, b=50))
 
         fig_delta = px.line(df, x="version", y="percentage", color="display_label", markers=True,
-                            title="Property Presence in Key Events Over Time (Percentage)",
                             labels={"percentage": "Percentage (%)", "display_label": "Property"},
                             color_discrete_sequence=BRAND_COLORS['palette'])
         for i, trace in enumerate(fig_delta.data):
             trace.update(marker=dict(symbol=marker_symbols[i % len(marker_symbols)], size=8))
-        fig_delta.update_layout(template="plotly_white", hovermode="x unified", autosize=True,
-                                margin=dict(l=50, r=20, t=50, b=50))
+        fig_delta.update_layout(margin=dict(l=50, r=20, t=50, b=50))
 
-        config = {"responsive": True}
         _plot_figure_cache['ke_property_presence_absolute'] = fig_abs
         _plot_figure_cache['ke_property_presence_percentage'] = fig_delta
 
         return (
-            pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config=config),
-            pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config=config)
+            render_plot_html(fig_abs),
+            render_plot_html(fig_delta)
         )
 
     except Exception as e:
@@ -1887,30 +1805,25 @@ def plot_ker_property_presence(label_file="property_labels.csv") -> tuple[str, s
                           'pentagon', 'hexagon', 'octagon', 'triangle-down', 'triangle-left', 'triangle-right']
 
         fig_abs = px.line(df, x="version", y="count", color="display_label", markers=True,
-                          title="Property Presence in Key Event Relationships Over Time (Count)",
                           labels={"count": "Number of KERs", "display_label": "Property"},
                           color_discrete_sequence=BRAND_COLORS['palette'])
         for i, trace in enumerate(fig_abs.data):
             trace.update(marker=dict(symbol=marker_symbols[i % len(marker_symbols)], size=8))
-        fig_abs.update_layout(template="plotly_white", hovermode="x unified", autosize=True,
-                              margin=dict(l=50, r=20, t=50, b=50))
+        fig_abs.update_layout(margin=dict(l=50, r=20, t=50, b=50))
 
         fig_delta = px.line(df, x="version", y="percentage", color="display_label", markers=True,
-                            title="Property Presence in Key Event Relationships Over Time (Percentage)",
                             labels={"percentage": "Percentage (%)", "display_label": "Property"},
                             color_discrete_sequence=BRAND_COLORS['palette'])
         for i, trace in enumerate(fig_delta.data):
             trace.update(marker=dict(symbol=marker_symbols[i % len(marker_symbols)], size=8))
-        fig_delta.update_layout(template="plotly_white", hovermode="x unified", autosize=True,
-                                margin=dict(l=50, r=20, t=50, b=50))
+        fig_delta.update_layout(margin=dict(l=50, r=20, t=50, b=50))
 
-        config = {"responsive": True}
         _plot_figure_cache['ker_property_presence_absolute'] = fig_abs
         _plot_figure_cache['ker_property_presence_percentage'] = fig_delta
 
         return (
-            pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config=config),
-            pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config=config)
+            render_plot_html(fig_abs),
+            render_plot_html(fig_delta)
         )
 
     except Exception as e:
@@ -2014,30 +1927,25 @@ def plot_stressor_property_presence(label_file="property_labels.csv") -> tuple[s
                           'pentagon', 'hexagon', 'octagon', 'triangle-down', 'triangle-left', 'triangle-right']
 
         fig_abs = px.line(df, x="version", y="count", color="display_label", markers=True,
-                          title="Property Presence in Stressors Over Time (Count)",
                           labels={"count": "Number of Stressors", "display_label": "Property"},
                           color_discrete_sequence=BRAND_COLORS['palette'])
         for i, trace in enumerate(fig_abs.data):
             trace.update(marker=dict(symbol=marker_symbols[i % len(marker_symbols)], size=8))
-        fig_abs.update_layout(template="plotly_white", hovermode="x unified", autosize=True,
-                              margin=dict(l=50, r=20, t=50, b=50))
+        fig_abs.update_layout(margin=dict(l=50, r=20, t=50, b=50))
 
         fig_delta = px.line(df, x="version", y="percentage", color="display_label", markers=True,
-                            title="Property Presence in Stressors Over Time (Percentage)",
                             labels={"percentage": "Percentage (%)", "display_label": "Property"},
                             color_discrete_sequence=BRAND_COLORS['palette'])
         for i, trace in enumerate(fig_delta.data):
             trace.update(marker=dict(symbol=marker_symbols[i % len(marker_symbols)], size=8))
-        fig_delta.update_layout(template="plotly_white", hovermode="x unified", autosize=True,
-                                margin=dict(l=50, r=20, t=50, b=50))
+        fig_delta.update_layout(margin=dict(l=50, r=20, t=50, b=50))
 
-        config = {"responsive": True}
         _plot_figure_cache['stressor_property_presence_absolute'] = fig_abs
         _plot_figure_cache['stressor_property_presence_percentage'] = fig_delta
 
         return (
-            pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config=config),
-            pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config=config)
+            render_plot_html(fig_abs),
+            render_plot_html(fig_delta)
         )
 
     except Exception as e:
@@ -2120,12 +2028,10 @@ def plot_kes_by_kec_count() -> tuple[str, str]:
 
         fig_abs = px.area(
             df_full, x="version", y="total_kes", color="bioevent_count_group",
-            title="KE Distribution by Component Count Over Time",
             labels={"total_kes": "Number of KEs", "bioevent_count_group": "Number of Components"},
             color_discrete_sequence=BRAND_COLORS['palette']
         )
-        fig_abs.update_layout(template="plotly_white", hovermode="x unified", autosize=True,
-                              margin=dict(l=50, r=20, t=50, b=50),
+        fig_abs.update_layout(margin=dict(l=50, r=20, t=50, b=50),
                               xaxis=dict(tickmode='array', tickvals=all_versions, ticktext=all_versions, tickangle=-45))
 
         df_delta = df_full.copy()
@@ -2133,12 +2039,10 @@ def plot_kes_by_kec_count() -> tuple[str, str]:
 
         fig_delta = px.area(
             df_delta, x="version", y="total_kes_delta", color="bioevent_count_group",
-            title="Change in KE Distribution by Component Count",
             labels={"total_kes_delta": "Change in KEs", "bioevent_count_group": "Number of Components"},
             color_discrete_sequence=BRAND_COLORS['palette']
         )
-        fig_delta.update_layout(template="plotly_white", hovermode="x unified", autosize=True,
-                                margin=dict(l=50, r=20, t=50, b=50),
+        fig_delta.update_layout(margin=dict(l=50, r=20, t=50, b=50),
                                 xaxis=dict(tickmode='array', tickvals=all_versions, ticktext=all_versions, tickangle=-45))
 
         _plot_data_cache['kes_by_kec_count_absolute'] = df_full.copy()
@@ -2147,8 +2051,8 @@ def plot_kes_by_kec_count() -> tuple[str, str]:
         _plot_figure_cache['kes_by_kec_count_delta'] = fig_delta
 
         return (
-            pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config={"responsive": True}),
-            pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config={"responsive": True})
+            render_plot_html(fig_abs),
+            render_plot_html(fig_delta)
         )
 
     except Exception as e:
@@ -2373,7 +2277,6 @@ def plot_entity_completeness_trends(label_file="property_labels.csv") -> str:
         y="avg_completeness",
         color="entity_type",
         markers=True,
-        title="Entity Completeness Over Time (Excluding 100% Present Properties)",
         labels={
             "avg_completeness": "Average Completeness (%)",
             "entity_type": "Entity Type",
@@ -2391,21 +2294,15 @@ def plot_entity_completeness_trends(label_file="property_labels.csv") -> str:
         )
 
     fig.update_layout(
-        template="plotly_white",
-        hovermode="x unified",
-        autosize=True,
-        margin=dict(l=50, r=20, t=100, b=50),
+        margin=dict(l=50, r=20, t=50, b=50),
         yaxis=dict(title="Average Completeness (%)", range=[0, 105]),
         xaxis=dict(title="Version", tickangle=-45),
-        legend=dict(title="Entity Type", orientation="h", yanchor="bottom", y=1.10, xanchor="center", x=0.5)
     )
-
-    config = {"responsive": True}
 
     # Cache figure for image export
     _plot_figure_cache['entity_completeness_trends'] = fig
 
-    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config=config)
+    return render_plot_html(fig)
 
 
 def _query_boxplot_version(version_info, aop_props, ke_props, ker_props, all_props):
@@ -2858,7 +2755,6 @@ def plot_aop_completeness_boxplot(label_file="property_labels.csv") -> str:
             df,
             x="version",
             y="completeness",
-            title="Composite AOP Completeness Distribution Over Time",
             labels={
                 "completeness": "Composite Completeness (%)",
                 "version": "Version"
@@ -2871,20 +2767,16 @@ def plot_aop_completeness_boxplot(label_file="property_labels.csv") -> str:
         )
 
         fig.update_layout(
-            template="plotly_white",
-            autosize=True,
             margin=dict(l=50, r=20, t=50, b=100),
             yaxis=dict(title="Composite Completeness (%)", range=[0, 105]),
             xaxis=dict(title="Version", tickangle=-45),
             showlegend=False
         )
 
-        config = {"responsive": True}
-
         # Cache figure for image export
         _plot_figure_cache['aop_completeness_boxplot'] = fig
 
-        return pio.to_html(fig, full_html=False, include_plotlyjs=False, config=config)
+        return render_plot_html(fig)
 
     except Exception as e:
         logger.error(f"Error creating composite AOP completeness boxplot: {str(e)}")
@@ -3040,7 +2932,6 @@ def plot_oecd_completeness_trend(label_file="property_labels.csv") -> str:
             y="mean_completeness",
             color="status",
             markers=True,
-            title="Mean AOP Completeness by OECD Status Over Time",
             labels={
                 "mean_completeness": "Mean Completeness (%)",
                 "status": "OECD Status",
@@ -3059,28 +2950,16 @@ def plot_oecd_completeness_trend(label_file="property_labels.csv") -> str:
             )
 
         fig.update_layout(
-            template="plotly_white",
-            hovermode="x unified",
-            autosize=True,
             margin=dict(l=50, r=150, t=50, b=50),
             yaxis=dict(title="Mean Completeness (%)", range=[0, 105]),
             xaxis=dict(title="Version", tickangle=-45),
-            legend=dict(
-                title="OECD Status",
-                orientation="v",
-                yanchor="top",
-                y=1,
-                xanchor="left",
-                x=1.02
-            )
+            legend=dict(title="OECD Status")
         )
-
-        plotly_config = {"responsive": True}
 
         # Cache figure for image export
         _plot_figure_cache['oecd_completeness_trend'] = fig
 
-        return pio.to_html(fig, full_html=False, include_plotlyjs=False, config=plotly_config)
+        return render_plot_html(fig)
 
     except Exception as e:
         logger.error(f"Error creating OECD completeness trend: {str(e)}")
@@ -3102,7 +2981,6 @@ def plot_aop_completeness_boxplot_by_status():
     """
     import pandas as pd
     import plotly.express as px
-    import plotly.io as pio
 
     # Load properties from CSV for each entity type
     default_properties = [
@@ -3373,7 +3251,6 @@ def plot_aop_completeness_boxplot_by_status():
             x="version",
             y="completeness",
             color="status",
-            title="Composite AOP Completeness Distribution by OECD Status",
             labels={
                 "completeness": "Composite Completeness (%)",
                 "version": "Version",
@@ -3388,231 +3265,24 @@ def plot_aop_completeness_boxplot_by_status():
         )
         
         fig.update_layout(
-            template="plotly_white",
-            autosize=True,
             margin=dict(l=50, r=20, t=50, b=100),
             yaxis=dict(title="Composite Completeness (%)", range=[0, 105]),
             xaxis=dict(title="Version", tickangle=-45),
             showlegend=True,
-            legend=dict(
-                title="OECD Status",
-                orientation="v",
-                yanchor="top",
-                y=1,
-                xanchor="left",
-                x=1.02
-            )
+            legend=dict(title="OECD Status")
         )
-        
-        config = {"responsive": True}
         
         # Cache figure for image export
         _plot_figure_cache['aop_completeness_boxplot_by_status'] = fig
         
-        return pio.to_html(fig, full_html=False, include_plotlyjs=False, config=config)
+        return render_plot_html(fig)
     
     except Exception as e:
         logger.error(f"Error creating status-separated AOP completeness boxplot: {str(e)}")
         return create_fallback_plot("Composite AOP Completeness by OECD Status", f"Error: {str(e)}")
 
 
-def plot_curation_progress() -> tuple[str, str, pd.DataFrame]:
-    """Show curation progress across versions: entity counts vs annotation coverage.
-
-    Tracks total entities, entities with title, and entities with description across
-    all versions to reveal whether annotation coverage is growing with entity count.
-
-    Uses per-version parallel SPARQL queries for efficiency.
-
-    Returns:
-        tuple: (absolute_html, delta_html, curation_df)
-    """
-    global _plot_data_cache, _plot_figure_cache
-
-    try:
-        versions = get_all_versions()
-        if not versions:
-            fallback = create_fallback_plot("Curation Progress", "No versions available")
-            return (fallback, fallback, pd.DataFrame())
-
-        def _query_version(ver_info):
-            """Query entity count and annotation counts for a single version."""
-            graph_uri = ver_info['graph_uri']
-            version = ver_info['version']
-
-            # Count total entities (AOP + KE + KER + Stressor)
-            total_query = f"""
-            SELECT
-                (COUNT(DISTINCT ?aop) AS ?aops)
-                (COUNT(DISTINCT ?ke) AS ?kes)
-                (COUNT(DISTINCT ?ker) AS ?kers)
-                (COUNT(DISTINCT ?stressor) AS ?stressors)
-            WHERE {{
-                GRAPH <{graph_uri}> {{
-                    {{ ?aop a aopo:AdverseOutcomePathway . }}
-                    UNION
-                    {{ ?ke a aopo:KeyEvent . }}
-                    UNION
-                    {{ ?ker a aopo:KeyEventRelationship . }}
-                    UNION
-                    {{ ?stressor a nci:C54571 . }}
-                }}
-            }}
-            """
-
-            # Count entities with dc:title
-            title_query = f"""
-            SELECT (COUNT(DISTINCT ?e) AS ?count)
-            WHERE {{
-                GRAPH <{graph_uri}> {{
-                    {{ ?e a aopo:AdverseOutcomePathway . }}
-                    UNION
-                    {{ ?e a aopo:KeyEvent . }}
-                    UNION
-                    {{ ?e a aopo:KeyEventRelationship . }}
-                    UNION
-                    {{ ?e a nci:C54571 . }}
-                    ?e <http://purl.org/dc/elements/1.1/title> ?title .
-                }}
-            }}
-            """
-
-            # Count entities with dc:description
-            desc_query = f"""
-            SELECT (COUNT(DISTINCT ?e) AS ?count)
-            WHERE {{
-                GRAPH <{graph_uri}> {{
-                    {{ ?e a aopo:AdverseOutcomePathway . }}
-                    UNION
-                    {{ ?e a aopo:KeyEvent . }}
-                    UNION
-                    {{ ?e a aopo:KeyEventRelationship . }}
-                    UNION
-                    {{ ?e a nci:C54571 . }}
-                    ?e <http://purl.org/dc/elements/1.1/description> ?desc .
-                }}
-            }}
-            """
-
-            total_results = run_sparql_query(total_query)
-            title_results = run_sparql_query(title_query)
-            desc_results = run_sparql_query(desc_query)
-
-            total_entities = 0
-            if total_results:
-                r = total_results[0]
-                total_entities = (
-                    int(r.get("aops", {}).get("value", 0)) +
-                    int(r.get("kes", {}).get("value", 0)) +
-                    int(r.get("kers", {}).get("value", 0)) +
-                    int(r.get("stressors", {}).get("value", 0))
-                )
-
-            with_title = int(title_results[0]["count"]["value"]) if title_results else 0
-            with_desc = int(desc_results[0]["count"]["value"]) if desc_results else 0
-
-            return {
-                "version": version,
-                "Total Entities": total_entities,
-                "With Title": with_title,
-                "With Description": with_desc,
-            }
-
-        # Execute per-version queries in parallel
-        rows = []
-        with ThreadPoolExecutor(max_workers=4) as executor:
-            futures = {executor.submit(_query_version, v): v for v in versions}
-            for future in as_completed(futures):
-                try:
-                    row = future.result(timeout=60)
-                    rows.append(row)
-                except Exception as e:
-                    ver = futures[future]
-                    logger.warning(f"Curation progress query failed for {ver['version']}: {e}")
-
-        if not rows:
-            fallback = create_fallback_plot("Curation Progress", "No data collected")
-            return (fallback, fallback, pd.DataFrame())
-
-        df = pd.DataFrame(rows)
-        df["version_dt"] = pd.to_datetime(df["version"], errors="coerce")
-        df = df.sort_values("version_dt").reset_index(drop=True)
-
-        # Melt for line chart
-        df_melt = df.melt(
-            id_vars=["version", "version_dt"],
-            value_vars=["Total Entities", "With Title", "With Description"],
-            var_name="Metric",
-            value_name="Count"
-        )
-
-        # --- Absolute line chart ---
-        fig_abs = px.line(
-            df_melt,
-            x="version",
-            y="Count",
-            color="Metric",
-            title="Curation Progress Over Time",
-            markers=True,
-            labels={"Count": "Entity Count", "version": "Version"},
-            color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary'], BRAND_COLORS['accent']]
-        )
-        fig_abs.update_layout(
-            template="plotly_white",
-            hovermode="x unified",
-            autosize=True,
-            margin=dict(l=50, r=20, t=50, b=80),
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5)
-        )
-        fig_abs.update_xaxes(tickangle=-45)
-
-        # --- Delta bar chart ---
-        df_delta = df.copy()
-        for col in ["Total Entities", "With Title", "With Description"]:
-            df_delta[col] = df_delta[col].diff().fillna(0).astype(int)
-
-        df_delta_melt = df_delta.melt(
-            id_vars=["version", "version_dt"],
-            value_vars=["Total Entities", "With Title", "With Description"],
-            var_name="Metric",
-            value_name="Change"
-        )
-
-        fig_delta = px.bar(
-            df_delta_melt,
-            x="version",
-            y="Change",
-            color="Metric",
-            barmode="group",
-            title="Curation Progress: Change per Version",
-            labels={"Change": "Change in Count", "version": "Version"},
-            color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary'], BRAND_COLORS['accent']]
-        )
-        fig_delta.update_layout(
-            template="plotly_white",
-            hovermode="x unified",
-            autosize=True,
-            margin=dict(l=50, r=20, t=50, b=80),
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5)
-        )
-        fig_delta.update_xaxes(tickangle=-45)
-
-        # Cache
-        _plot_data_cache['curation_progress_absolute'] = df.drop(columns=["version_dt"]).copy()
-        _plot_data_cache['curation_progress_delta'] = df_delta.drop(columns=["version_dt"]).copy()
-        _plot_figure_cache['curation_progress_absolute'] = fig_abs
-        _plot_figure_cache['curation_progress_delta'] = fig_delta
-
-        return (
-            pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config={"responsive": True}),
-            pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config={"responsive": True}),
-            df.drop(columns=["version_dt"])
-        )
-
-    except Exception as e:
-        logger.error(f"Failed to generate curation progress plots: {str(e)}")
-        fallback = create_fallback_plot("Curation Progress", f"Error: {str(e)}")
-        return (fallback, fallback, pd.DataFrame())
+# plot_curation_progress removed — produced non-sensical output per UAT feedback
 
 
 def plot_ontology_term_growth() -> tuple[str, str, pd.DataFrame]:
@@ -3688,15 +3358,11 @@ def plot_ontology_term_growth() -> tuple[str, str, pd.DataFrame]:
             df,
             x="version",
             y="Unique Terms",
-            title="Ontology Term Growth Over Time",
             markers=True,
             labels={"Unique Terms": "Unique Ontology Terms", "version": "Version"},
         )
         fig_abs.update_traces(line_color=BRAND_COLORS['primary'], marker_color=BRAND_COLORS['primary'])
         fig_abs.update_layout(
-            template="plotly_white",
-            hovermode="x unified",
-            autosize=True,
             margin=dict(l=50, r=20, t=50, b=80)
         )
         fig_abs.update_xaxes(tickangle=-45)
@@ -3709,14 +3375,10 @@ def plot_ontology_term_growth() -> tuple[str, str, pd.DataFrame]:
             df_delta,
             x="version",
             y="New Terms",
-            title="Ontology Term Growth: New Terms per Version",
             labels={"New Terms": "New Terms Added", "version": "Version"},
         )
         fig_delta.update_traces(marker_color=BRAND_COLORS['secondary'])
         fig_delta.update_layout(
-            template="plotly_white",
-            hovermode="x unified",
-            autosize=True,
             margin=dict(l=50, r=20, t=50, b=80)
         )
         fig_delta.update_xaxes(tickangle=-45)
@@ -3728,8 +3390,8 @@ def plot_ontology_term_growth() -> tuple[str, str, pd.DataFrame]:
         _plot_figure_cache['ontology_term_growth_delta'] = fig_delta
 
         return (
-            pio.to_html(fig_abs, full_html=False, include_plotlyjs=False, config={"responsive": True}),
-            pio.to_html(fig_delta, full_html=False, include_plotlyjs=False, config={"responsive": True}),
+            render_plot_html(fig_abs),
+            render_plot_html(fig_delta),
             df.drop(columns=["version_dt"])
         )
 
