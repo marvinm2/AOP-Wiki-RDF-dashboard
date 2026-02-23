@@ -320,6 +320,15 @@ def get_or_compute_network() -> Dict:
     global _network_cache
 
     if _network_cache:
+        # Re-populate _plot_data_cache if the TTL-based entry has expired.
+        # _network_cache has no TTL (lives forever), but _plot_data_cache
+        # uses VersionedPlotCache with TTL=1800s. After expiry, the CSV
+        # download endpoint can't find the metrics and returns 404.
+        if 'network_metrics' not in _plot_data_cache:
+            metrics_records = _network_cache.get('metrics', [])
+            if metrics_records:
+                _plot_data_cache['network_metrics'] = pd.DataFrame(metrics_records)
+                logger.info("Re-populated _plot_data_cache['network_metrics'] from network cache")
         logger.info("Returning cached network data")
         return _network_cache
 
