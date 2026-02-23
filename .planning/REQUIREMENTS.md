@@ -28,7 +28,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **EXPL-01**: User can view individual AOP detail page showing all properties, KEs, KERs, and relationships
 - [ ] **EXPL-02**: User can view individual KE detail page showing all properties and connected AOPs
 - [ ] **EXPL-03**: User can view individual stressor detail page showing all properties and connected AOPs
-- [ ] **EXPL-04**: Entity names and IDs in plots link directly to corresponding AOP-Wiki source pages
+- [x] **EXPL-04**: Entity names and IDs in plots link directly to corresponding AOP-Wiki source pages
 - [x] **EXPL-05**: User can toggle a raw data table view beneath each plot showing the underlying data
 - [x] **EXPL-06**: URL encodes version and active plot state so users can share specific views
 - [x] **EXPL-07**: Each plot has an expandable methodology note explaining what it measures and how
@@ -112,7 +112,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EXPL-01 | Phase 4 | Pending |
 | EXPL-02 | Phase 4 | Pending |
 | EXPL-03 | Phase 4 | Pending |
-| EXPL-04 | Phase 4 | Pending |
+| EXPL-04 | Phase 4 | Complete |
 | EXPL-05 | Phase 4 | Complete |
 | EXPL-06 | Phase 4 | Complete |
 | EXPL-07 | Phase 2 | Complete |
