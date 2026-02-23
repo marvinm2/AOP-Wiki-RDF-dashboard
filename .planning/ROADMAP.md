@@ -78,22 +78,22 @@ Plans:
 - [x] 03-04-PLAN.md — Automated verification and user acceptance checkpoint (Wave 4)
 - [x] 03-05-PLAN.md — UAT gap closure: fix network metrics CSV export cache desync (Wave 1)
 
-### Phase 4: Entity Exploration
-**Goal**: Users can drill down from any aggregate visualization into individual AOP, KE, and stressor detail views, share specific views via URL, and see raw data behind plots
+### Phase 4: Dashboard Enrichment & Raw Data
+**Goal**: The dashboard is enriched with new plot variations (breakdowns by biological level, taxonomy, OECD status; KE reuse; data quality insights) and raw data tables beneath all plots, with shareable URLs for version state
 **Depends on**: Phase 2, Phase 3
-**Requirements**: EXPL-01, EXPL-02, EXPL-03, EXPL-04, EXPL-05, EXPL-06
+**Requirements**: EXPL-04, EXPL-05, EXPL-06 (EXPL-01, EXPL-02, EXPL-03 deferred)
 **Success Criteria** (what must be TRUE):
-  1. User can navigate to an individual AOP detail page showing all properties, constituent KEs, KERs, and relationships
-  2. User can navigate to individual KE and stressor detail pages showing all properties and connected AOPs
-  3. Entity names and IDs displayed in plots and network graph are clickable links to the corresponding AOP-Wiki source pages
-  4. User can toggle a raw data table beneath each plot showing the underlying data that produced the visualization
-  5. URL encodes current version selection, active plot, and entity view — copying and sharing the URL restores the exact view
-**Plans**: TBD
+  1. User can toggle a raw data table beneath each plot showing the underlying data (existing + new plots)
+  2. URL encodes version selection via ?version= parameter for shareable views
+  3. 9 new plots render on the dashboard: biological level, taxonomy, OECD status, KE reuse (2 views), annotation heatmap, ontology diversity, curation progress, ontology term growth
+  4. Entity links in KE reuse plot open corresponding AOP-Wiki source pages
+  5. All new plots have methodology notes, CSV downloads, lazy loading, and version selector support
+**Plans:** 3 plans
 
 Plans:
-- [ ] 04-01: TBD
-- [ ] 04-02: TBD
-- [ ] 04-03: TBD
+- [ ] 04-01-PLAN.md — Raw data table infrastructure + shareable URLs (Wave 1)
+- [ ] 04-02-PLAN.md — Breakdown plots: bio level, taxonomy, OECD status, KE reuse (Wave 2)
+- [ ] 04-03-PLAN.md — Data quality + trends: annotation heatmap, ontology diversity/growth, curation progress (Wave 3)
 
 ### Phase 5: Advanced Analytics
 **Goal**: Users can explore higher-order relationships and data quality patterns across the AOP-Wiki knowledge base
@@ -134,6 +134,6 @@ Note: Phase 2 and Phase 3 can execute in parallel (both depend only on Phase 1).
 | 1. Foundation and Cleanup | 4/4 | Complete | 2026-02-20 |
 | 2. Reliability and Completeness | 6/7 | UAT gap closure | - |
 | 3. Network Analysis | 5/5 | Complete | 2026-02-23 |
-| 4. Entity Exploration | 0/3 | Not started | - |
+| 4. Dashboard Enrichment & Raw Data | 0/3 | Planned | - |
 | 5. Advanced Analytics | 0/2 | Not started | - |
 | 6. VHP Platform Deployment | 0/2 | Not started | - |
