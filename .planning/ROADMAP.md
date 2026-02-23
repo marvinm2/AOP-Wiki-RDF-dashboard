@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation and Cleanup** - Eliminate technical debt, production-ready infrastructure, developer guardrails (completed 2026-02-20)
 - [ ] **Phase 2: Reliability and Completeness** - All plots load reliably, full export coverage, methodology transparency
-- [x] **Phase 3: Network Analysis** - Interactive AOP network graph with centrality metrics, PageRank, and community detection (completed 2026-02-22)
+- [ ] **Phase 3: Network Analysis** - Interactive AOP network graph with centrality metrics, PageRank, and community detection (UAT gap closure)
 - [ ] **Phase 4: Entity Exploration** - Deep-dive views for AOPs, KEs, and stressors with shareable URLs
 - [ ] **Phase 5: Advanced Analytics** - Stressor-AOP mapping, data quality scoring, ontology coverage analysis
 - [ ] **Phase 6: VHP Platform Deployment** - Production deployment on VHP4Safety with CORS and health probe integration
@@ -69,13 +69,14 @@ Plans:
   3. User can view PageRank scores ranking Key Events by structural importance, displayed alongside centrality metrics
   4. User can see community/cluster groupings of related AOPs with distinct visual coloring on the network graph
   5. Network graph performs acceptably under real data load — page remains responsive during interaction (no browser freezes or multi-second delays on node click/filter)
-**Plans:** 4 plans (4 complete)
+**Plans:** 5 plans (4 complete + 1 UAT gap closure)
 
 Plans:
 - [x] 03-01-PLAN.md — Backend graph data layer: SPARQL queries, NetworkX graph, metrics, JSON conversion (Wave 1)
 - [x] 03-02-PLAN.md — Flask routes, network page template, CSS, landing page navigation (Wave 2)
 - [x] 03-03-PLAN.md — Frontend Cytoscape.js interactivity: graph rendering, search, filters, metrics table (Wave 3)
 - [x] 03-04-PLAN.md — Automated verification and user acceptance checkpoint (Wave 4)
+- [ ] 03-05-PLAN.md — UAT gap closure: fix network metrics CSV export cache desync (Wave 1)
 
 ### Phase 4: Entity Exploration
 **Goal**: Users can drill down from any aggregate visualization into individual AOP, KE, and stressor detail views, share specific views via URL, and see raw data behind plots
@@ -132,7 +133,7 @@ Note: Phase 2 and Phase 3 can execute in parallel (both depend only on Phase 1).
 |-------|----------------|--------|-----------|
 | 1. Foundation and Cleanup | 4/4 | Complete | 2026-02-20 |
 | 2. Reliability and Completeness | 6/7 | UAT gap closure | - |
-| 3. Network Analysis | 4/4 | Complete | 2026-02-22 |
+| 3. Network Analysis | 4/5 | UAT gap closure | - |
 | 4. Entity Exploration | 0/3 | Not started | - |
 | 5. Advanced Analytics | 0/2 | Not started | - |
 | 6. VHP Platform Deployment | 0/2 | Not started | - |
