@@ -129,7 +129,9 @@ from .shared import (
 
     # Constants and configuration
     BRAND_COLORS,
+    PLOTLY_HTML_CONFIG,
     config,
+    render_plot_html,
     _plot_data_cache,
     _plot_figure_cache,
 )
@@ -166,8 +168,7 @@ from .trends_plots import (
     plot_aop_completeness_boxplot,
     plot_oecd_completeness_trend,
 
-    # Curation & ontology trends (Phase 04-03)
-    plot_curation_progress,
+    # Ontology trends (Phase 04-03)
     plot_ontology_term_growth,
 )
 
@@ -212,7 +213,6 @@ from .latest_plots import (
     plot_latest_ke_reuse_distribution,
 
     # Data quality & diversity (Phase 04-03)
-    plot_latest_annotation_heatmap,
     plot_latest_ontology_diversity,
 )
 
@@ -238,7 +238,9 @@ __all__ = [
     'get_csv_with_metadata',
     'create_bulk_download',
     'BRAND_COLORS',
+    'PLOTLY_HTML_CONFIG',
     'config',
+    'render_plot_html',
     '_plot_data_cache',
     '_plot_figure_cache',
 
@@ -261,7 +263,6 @@ __all__ = [
     'plot_entity_completeness_trends',
     'plot_aop_completeness_boxplot',
     'plot_oecd_completeness_trend',
-    'plot_curation_progress',
     'plot_ontology_term_growth',
 
     # Current snapshot functions
@@ -283,7 +284,6 @@ __all__ = [
     'plot_latest_entity_by_oecd_status',
     'plot_latest_ke_reuse',
     'plot_latest_ke_reuse_distribution',
-    'plot_latest_annotation_heatmap',
     'plot_latest_ontology_diversity',
 
     # Network analysis functions
@@ -320,7 +320,6 @@ def get_available_functions():
             'plot_entity_completeness_trends',
             'plot_aop_completeness_boxplot',
             'plot_oecd_completeness_trend',
-            'plot_curation_progress',
             'plot_ontology_term_growth',
         ],
         'current_snapshots': [
@@ -342,7 +341,6 @@ def get_available_functions():
             'plot_latest_entity_by_oecd_status',
             'plot_latest_ke_reuse',
             'plot_latest_ke_reuse_distribution',
-            'plot_latest_annotation_heatmap',
             'plot_latest_ontology_diversity',
         ],
         'network_analysis': [
