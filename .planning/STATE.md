@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-02-20)
 
 **Core value:** Researchers, curators, and regulators can explore AOP-Wiki data across any version to understand how the knowledge base evolves over time — reliably and without timeouts.
-**Current focus:** Phase 5: Polish & Consistency — context gathered, ready for planning
+**Current focus:** Phase 5: Polish & Consistency — Plan 1 complete (Color System & Plotly Template)
 
 ## Current Position
 
 Phase: 5 of 6 (Polish & Consistency)
-Plan: 0 of TBD in current phase
-Status: Context gathered — ready for planning
-Last activity: 2026-02-23 — Phase 5 redefined and context captured
+Plan: 1 of 4 in current phase
+Status: Executing Phase 5 plans
+Last activity: 2026-02-23 — Completed 05-01 (Color System & Plotly Template)
 
 Progress: [████████████████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 19
+- Total plans completed: 20
 - Average duration: ~4.5 min
 - Total execution time: ~1.4 hours
 
@@ -46,6 +46,7 @@ Progress: [████████████████████] 100%
 | Phase 04 P01 | 6min | 2 tasks | 8 files |
 | Phase 04 P02 | 6min | 2 tasks | 6 files |
 | Phase 04 P03 | 7min | 3 tasks | 8 files |
+| Phase 05 P01 | 2min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -102,6 +103,8 @@ Recent decisions affecting current work:
 - [04-03]: Separate COUNT queries per (entity_type, property) for heatmap to avoid cross-product explosion
 - [04-03]: Curation progress uses Title and Description as proxy annotations (simple, interpretable)
 - [04-03]: Ontology term growth counts unique IRIs not concepts — Phase 5 adds per-term detail
+- [05-01]: Kept legacy aliases (secondary, accent, light, content, config) for backward compatibility with existing plot code
+- [05-01]: Template composited as plotly_white+vhp4safety to inherit plotly_white base and overlay brand styling
 
 ### Pending Todos
 
@@ -122,5 +125,5 @@ User verification of Phase 2 delivery found 4 issues requiring follow-up:
 ## Session Continuity
 
 Last session: 2026-02-23
-Stopped at: Phase 5 context gathered — redefined as Polish & Consistency (Advanced Analytics deferred to v2)
-Resume file: .planning/phases/05-polish-consistency/05-CONTEXT.md
+Stopped at: Completed 05-01-PLAN.md
+Resume file: .planning/phases/05-polish-consistency/05-01-SUMMARY.md
