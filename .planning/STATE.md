@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-20)
 
 **Core value:** Researchers, curators, and regulators can explore AOP-Wiki data across any version to understand how the knowledge base evolves over time — reliably and without timeouts.
-**Current focus:** Phase 3: Network Analysis (All gap closures complete) -- Next: Phase 4: Entity Exploration
+**Current focus:** Phase 4: Entity Exploration (raw data tables and shareable URLs complete)
 
 ## Current Position
 
-Phase: 3 of 6 (Network Analysis)
-Plan: 5 of 5 in current phase (COMPLETE)
-Status: Phase Complete (all gap closures done)
-Last activity: 2026-02-23 — Completed 03-05-PLAN.md (Network metrics CSV cache fix)
+Phase: 4 of 6 (Entity Exploration)
+Plan: 1 of 3 in current phase
+Status: In Progress
+Last activity: 2026-02-23 — Completed 04-01-PLAN.md (Raw data tables and shareable URLs)
 
-Progress: [████████████████████] 100%
+Progress: [██████░░░░░░░░░░░░░░] 33%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 16
-- Average duration: ~4.3 min
-- Total execution time: ~1.1 hours
+- Total plans completed: 17
+- Average duration: ~4.4 min
+- Total execution time: ~1.2 hours
 
 **By Phase:**
 
@@ -32,8 +32,8 @@ Progress: [████████████████████] 100%
 | 03 | 5/5 | ~41 min | ~8 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-01 (3m), 03-02 (4m), 03-03 (3m), 03-04 (30m), 03-05 (1m)
-- Trend: 03-05 was a small targeted fix (cache re-population)
+- Last 5 plans: 03-02 (4m), 03-03 (3m), 03-04 (30m), 03-05 (1m), 04-01 (6m)
+- Trend: 04-01 standard cross-cutting feature (data tables + URL state)
 
 *Updated after each plan completion*
 | Phase 02 P05 | 9min | 2 tasks | 2 files |
@@ -43,6 +43,7 @@ Progress: [████████████████████] 100%
 | Phase 03 P03 | 3min | 1 tasks | 1 files |
 | Phase 03 P04 | 30min | 2 tasks | 7 files |
 | Phase 03 P05 | 1min | 1 tasks | 1 files |
+| Phase 04 P01 | 6min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -89,6 +90,9 @@ Recent decisions affecting current work:
 - [03-04]: Added scipy as explicit dependency since NetworkX Louvain community detection requires it
 - [03-04]: CDN dependency chain for fcose layout: layout-base -> cose-base -> cytoscape-fcose
 - [03-05]: Used VersionedPlotCache.__contains__ TTL check to detect expired entries rather than manual timestamp comparison
+- [04-01]: Used absolute plot name as data source for dual-view (abs/delta) plot-boxes since underlying data is same
+- [04-01]: URL state uses history.replaceState to avoid creating browser history entries on version change
+- [04-01]: version-changed custom DOM event pattern for decoupled communication between version-selector and raw-data-tables
 
 ### Pending Todos
 
@@ -109,5 +113,5 @@ User verification of Phase 2 delivery found 4 issues requiring follow-up:
 ## Session Continuity
 
 Last session: 2026-02-23
-Stopped at: Completed 03-05-PLAN.md (Network metrics CSV cache fix) -- Phase 3 all plans complete
-Resume file: .planning/phases/03-network-analysis/03-05-SUMMARY.md
+Stopped at: Completed 04-01-PLAN.md (Raw data tables and shareable URLs)
+Resume file: .planning/phases/04-entity-exploration/04-01-SUMMARY.md
