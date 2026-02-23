@@ -5,22 +5,22 @@
 See: .planning/PROJECT.md (updated 2026-02-20)
 
 **Core value:** Researchers, curators, and regulators can explore AOP-Wiki data across any version to understand how the knowledge base evolves over time — reliably and without timeouts.
-**Current focus:** Phase 3: Network Analysis (Complete) -- Next: Phase 4: Entity Exploration
+**Current focus:** Phase 3: Network Analysis (All gap closures complete) -- Next: Phase 4: Entity Exploration
 
 ## Current Position
 
 Phase: 3 of 6 (Network Analysis)
-Plan: 4 of 4 in current phase (COMPLETE)
-Status: Phase Complete
-Last activity: 2026-02-22 — Completed 03-04-PLAN.md (Network analysis verification and UAT)
+Plan: 5 of 5 in current phase (COMPLETE)
+Status: Phase Complete (all gap closures done)
+Last activity: 2026-02-23 — Completed 03-05-PLAN.md (Network metrics CSV cache fix)
 
 Progress: [████████████████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 15
-- Average duration: ~4.5 min
+- Total plans completed: 16
+- Average duration: ~4.3 min
 - Total execution time: ~1.1 hours
 
 **By Phase:**
@@ -29,11 +29,11 @@ Progress: [████████████████████] 100%
 |-------|-------|-------|----------|
 | 01 | 4/4 | ~19 min | ~5 min |
 | 02 | 7/7 | ~29 min | ~4 min |
-| 03 | 4/4 | ~40 min | ~10 min |
+| 03 | 5/5 | ~41 min | ~8 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-07 (2m), 03-01 (3m), 03-02 (4m), 03-03 (3m), 03-04 (30m)
-- Trend: 03-04 was longer due to multi-round UAT with user
+- Last 5 plans: 03-01 (3m), 03-02 (4m), 03-03 (3m), 03-04 (30m), 03-05 (1m)
+- Trend: 03-05 was a small targeted fix (cache re-population)
 
 *Updated after each plan completion*
 | Phase 02 P05 | 9min | 2 tasks | 2 files |
@@ -42,6 +42,7 @@ Progress: [████████████████████] 100%
 | Phase 03 P02 | 4min | 2 tasks | 6 files |
 | Phase 03 P03 | 3min | 1 tasks | 1 files |
 | Phase 03 P04 | 30min | 2 tasks | 7 files |
+| Phase 03 P05 | 1min | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -87,6 +88,7 @@ Recent decisions affecting current work:
 - [03-04]: Simplified network to KE nodes + KER edges only (removed AOP nodes) per user feedback for clearer topology
 - [03-04]: Added scipy as explicit dependency since NetworkX Louvain community detection requires it
 - [03-04]: CDN dependency chain for fcose layout: layout-base -> cose-base -> cytoscape-fcose
+- [03-05]: Used VersionedPlotCache.__contains__ TTL check to detect expired entries rather than manual timestamp comparison
 
 ### Pending Todos
 
@@ -106,6 +108,6 @@ User verification of Phase 2 delivery found 4 issues requiring follow-up:
 
 ## Session Continuity
 
-Last session: 2026-02-22
-Stopped at: Completed 03-04-PLAN.md (Network analysis verification and UAT) -- Phase 3 complete
-Resume file: .planning/phases/03-network-analysis/03-04-SUMMARY.md
+Last session: 2026-02-23
+Stopped at: Completed 03-05-PLAN.md (Network metrics CSV cache fix) -- Phase 3 all plans complete
+Resume file: .planning/phases/03-network-analysis/03-05-SUMMARY.md
