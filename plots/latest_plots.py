@@ -1744,14 +1744,8 @@ def plot_latest_entity_by_oecd_status(version: str = None) -> str:
     df["Version"] = latest_version
     _plot_data_cache[f'latest_entity_by_oecd_status_{version_key}'] = df
 
-    # Color mapping for OECD statuses
-    status_colors = {
-        "EAGMST Under Review": BRAND_COLORS['accent'],
-        "Under Development": '#45A6B2',
-        "TFHA/WNT Endorsed": BRAND_COLORS['primary'],
-        "Approved": BRAND_COLORS['primary'],
-        "No Status": '#999999',
-    }
+    # Use shared OECD status color mapping for consistency across plots
+    status_colors = BRAND_COLORS['oecd_status']
 
     fig = px.bar(
         df,

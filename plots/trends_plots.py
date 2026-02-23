@@ -2917,13 +2917,28 @@ def plot_oecd_completeness_trend(label_file="property_labels.csv") -> str:
 
         logger.info(f"OECD completeness trend: {len(df)} data points across {df['version'].nunique()} versions, {df['status'].nunique()} statuses")
 
-        # Use Plotly qualitative colors for OECD statuses
+        # Use shared OECD status brand colors for consistency
+        oecd_colors = BRAND_COLORS['oecd_status']
         unique_statuses = sorted(df['status'].unique())
-        plotly_colors = px.colors.qualitative.Plotly
-        status_color_map = {
-            status: plotly_colors[i % len(plotly_colors)]
-            for i, status in enumerate(unique_statuses)
-        }
+        # Map each status to its brand color, fall back to palette cycling
+        palette = BRAND_COLORS['palette']
+        fallback_idx = 0
+        status_color_map = {}
+        for status in unique_statuses:
+            # Try exact match first, then substring match for URI-based status labels
+            if status in oecd_colors:
+                status_color_map[status] = oecd_colors[status]
+            else:
+                # Check if any key is a substring of the status (handles URI-derived labels)
+                matched = False
+                for key, color in oecd_colors.items():
+                    if key.lower() in status.lower() or status.lower() in key.lower():
+                        status_color_map[status] = color
+                        matched = True
+                        break
+                if not matched:
+                    status_color_map[status] = palette[fallback_idx % len(palette)]
+                    fallback_idx += 1
 
         # Create line chart
         fig = px.line(
