@@ -43,15 +43,9 @@ docker build -t aopwiki-dashboard:latest .
 # Create .env file with Virtuoso admin password
 echo "DBA_PASSWORD=<your-password>" > .env
 
-# Deploy the stack
-docker stack deploy -c stack.yml --env-file .env aopwiki-dashboard
+# Deploy the stack (.env is read automatically from the working directory)
+docker stack deploy -c stack.yml aopwiki-dashboard
 ```
-
-> **Note:** If `--env-file` is not supported by your Swarm version, export the variable first:
-> ```bash
-> export DBA_PASSWORD=<your-password>
-> docker stack deploy -c stack.yml aopwiki-dashboard
-> ```
 
 ## Verify
 
