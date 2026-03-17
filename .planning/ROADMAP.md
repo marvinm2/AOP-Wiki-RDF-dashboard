@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Network Analysis** - Interactive AOP network graph with centrality metrics, PageRank, and community detection (completed 2026-02-23)
 - [x] **Phase 4: Entity Exploration** - Deep-dive views for AOPs, KEs, and stressors with shareable URLs (completed 2026-02-23)
 - [x] **Phase 5: Polish & Consistency** - House style colors, landing page, plot uniformity, navigation redesign (completed 2026-02-23)
-- [ ] **Phase 6: VHP Platform Deployment** - Production deployment on VHP4Safety with CORS and health probe integration
+- [x] **Phase 6: VHP Platform Deployment** - Production deployment on VHP4Safety with CORS and health probe integration (completed 2026-03-17)
 
 ## Phase Details
 
@@ -124,11 +124,11 @@ Plans:
   1. Dashboard is accessible at its VHP4Safety URL and serves all pages without error
   2. CORS headers allow cross-origin requests from the VHP4Safety platform domain
   3. Health probes report accurate status — `/health` responds within 5 seconds, `/status` reflects actual SPARQL endpoint connectivity
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 06-01-PLAN.md — CORS support, startup-aware health endpoint, production SPARQL link (Wave 1)
-- [ ] 06-02-PLAN.md — Docker Swarm stack file and deployment instructions (Wave 2)
+- [x] 06-01-PLAN.md — CORS support, startup-aware health endpoint, production SPARQL link (Wave 1)
+- [x] 06-02-PLAN.md — Docker Swarm stack file and deployment instructions (Wave 2)
 
 ## Progress
 
@@ -143,4 +143,4 @@ Note: Phase 2 and Phase 3 can execute in parallel (both depend only on Phase 1).
 | 3. Network Analysis | 5/5 | Complete | 2026-02-23 |
 | 4. Dashboard Enrichment & Raw Data | 0/3 | Complete    | 2026-02-23 |
 | 5. Polish & Consistency | 4/4 | Complete | 2026-02-23 |
-| 6. VHP Platform Deployment | 1/2 | In Progress|  |
+| 6. VHP Platform Deployment | 2/2 | Complete   | 2026-03-17 |

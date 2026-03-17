@@ -14,7 +14,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **INFR-03**: Application runs under Gunicorn in production (not Flask dev server)
 - [x] **INFR-04**: Cache has eviction policy preventing unbounded memory growth
 - [x] **INFR-05**: CORS headers are configured for cross-origin access on VHP platform
-- [ ] **INFR-06**: Dashboard is deployed and accessible on VHP4Safety platform (Issue #3)
+- [x] **INFR-06**: Dashboard is deployed and accessible on VHP4Safety platform (Issue #3)
 
 ### Reliability
 
@@ -104,7 +104,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INFR-03 | Phase 1 | Complete |
 | INFR-04 | Phase 1 | Complete |
 | INFR-05 | Phase 6 | Complete |
-| INFR-06 | Phase 6 | Pending |
+| INFR-06 | Phase 6 | Complete |
 | RELY-01 | Phase 2 | Complete |
 | RELY-02 | Phase 2 | Complete |
 | RELY-03 | Phase 1 | Complete |

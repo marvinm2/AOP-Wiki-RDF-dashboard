@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: in-progress
-stopped_at: Completed 06-01-PLAN.md
-last_updated: "2026-03-17T14:59:14Z"
-last_activity: 2026-03-17 — Completed 06-01 (App Deployment Prep)
+status: completed
+stopped_at: Completed 06-02-PLAN.md — All plans complete
+last_updated: "2026-03-17T15:45:00Z"
+last_activity: 2026-03-17 — Completed 06-02 (Docker Swarm Stack & Deployment Guide)
 progress:
   total_phases: 6
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 25
-  completed_plans: 24
-  percent: 96
+  completed_plans: 25
+  percent: 100
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-20)
 
 **Core value:** Researchers, curators, and regulators can explore AOP-Wiki data across any version to understand how the knowledge base evolves over time — reliably and without timeouts.
-**Current focus:** Phase 6: VHP Platform Deployment — In Progress (1/2 plans done)
+**Current focus:** v1.0 Milestone Complete -- All 6 phases delivered
 
 ## Current Position
 
 Phase: 6 of 6 (VHP Platform Deployment)
-Plan: 1 of 2 in current phase
-Status: Plan 06-01 Complete
-Last activity: 2026-03-17 — Completed 06-01 (App Deployment Prep)
+Plan: 2 of 2 in current phase
+Status: All plans complete
+Last activity: 2026-03-17 — Completed 06-02 (Docker Swarm Stack & Deployment Guide)
 
-Progress: [██████████] 96%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -67,6 +67,7 @@ Progress: [██████████] 96%
 | Phase 05 P03 | 13min | 2 tasks | 2 files |
 | Phase 05 P04 | 15min | 3 tasks | 9 files |
 | Phase 06 P01 | 2min | 2 tasks | 3 files |
+| Phase 06 P02 | 5min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -140,6 +141,10 @@ Recent decisions affecting current work:
 - [05-04]: Legacy routes /old-dashboard and /dashboard redirect to /snapshot
 - [06-01]: Wildcard CORS (Access-Control-Allow-Origin: *) appropriate for public read-only dashboard
 - [06-01]: _startup_complete flag set synchronously around compute_plots_parallel() for container probe safety
+- [06-02]: Dual-network topology: external 'core' for Traefik routing, internal overlay for Virtuoso-dashboard SPARQL communication
+- [06-02]: No ports exposed directly -- all traffic routed through Traefik with TLS termination
+- [06-02]: Dashboard health probe start_period 120s to tolerate plot precomputation on cold start
+- [06-02]: Virtuoso health probe uses wget (curl not available in Virtuoso image)
 
 ### Pending Todos
 
@@ -155,10 +160,10 @@ User verification of Phase 2 delivery found 4 issues requiring follow-up:
 
 ### Blockers/Concerns
 
-- Phase 6 needs research: VHP4Safety infrastructure specifics (orchestration, probes, CORS domain)
+None -- all phases complete.
 
 ## Session Continuity
 
-Last session: 2026-03-17T14:59:14Z
-Stopped at: Completed 06-01-PLAN.md
-Resume file: .planning/phases/06-vhp-platform-deployment/06-01-SUMMARY.md
+Last session: 2026-03-17T15:45:00Z
+Stopped at: Completed 06-02-PLAN.md — All plans complete
+Resume file: .planning/phases/06-vhp-platform-deployment/06-02-SUMMARY.md
