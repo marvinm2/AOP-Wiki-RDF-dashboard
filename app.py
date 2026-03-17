@@ -44,6 +44,7 @@ from config import Config, configure_logging
 configure_logging()
 
 from flask import Flask, render_template, jsonify, request, Response, url_for, redirect
+from flask_cors import CORS
 import pandas as pd
 import time
 import os
@@ -62,6 +63,7 @@ app = Flask(
     static_folder="static",     # This is default, but good to be explicit
     template_folder="templates"
 )
+CORS(app)  # Wildcard CORS for VHP4Safety cross-origin access
 
 # Load methodology notes for plot documentation
 methodology_notes_path = os.path.join(app.static_folder, 'data', 'methodology_notes.json')
@@ -231,7 +233,9 @@ def compute_plots_parallel() -> dict:
     return results
 
 # --- Precompute plots at startup ---
+_startup_complete = False
 plot_results = compute_plots_parallel()
+_startup_complete = True
 
 # Pin latest version in caches so it is never evicted
 _latest_version = get_latest_version()
@@ -359,6 +363,13 @@ def health_check():
         ...     print(f"Application is degraded: {response.json()}")
     """
     try:
+        if not _startup_complete:
+            return {
+                "status": "starting",
+                "message": "Precomputing visualizations",
+                "timestamp": time.time()
+            }, 503
+
         endpoint_healthy = check_sparql_endpoint_health()
         successful_plots = sum(1 for v in plot_results.values() if v is not None)
         total_plots = len(plot_results)
