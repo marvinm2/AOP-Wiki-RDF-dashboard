@@ -1,0 +1,77 @@
+version: "3.8"
+
+networks:
+  core:
+    external: true
+  internal:
+    driver: overlay
+
+services:
+  dashboard:
+    image: aopwiki-dashboard:latest
+    networks:
+      - core
+      - internal
+    environment:
+      - SPARQL_ENDPOINT=http://virtuoso:8890/sparql
+    deploy:
+      placement:
+        constraints:
+          - node.hostname==h3068544.stratoserver.net
+      restart_policy:
+        condition: on-failure
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.aopwiki-dashboard.rule=Host(`aopwiki-dashboard.cloud.vhp4safety.nl`)
+        - traefik.http.routers.aopwiki-dashboard.entrypoints=websecure
+        - traefik.http.routers.aopwiki-dashboard.tls=true
+        - traefik.http.routers.aopwiki-dashboard.tls.certresolver=letsencrypt
+        - traefik.http.services.aopwiki-dashboard.loadbalancer.server.port=5000
+        - traefik.docker.network=core
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5000/health')\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+  virtuoso:
+    image: openlink/virtuoso-opensource-7
+    networks:
+      - core
+      - internal
+    environment:
+      - DBA_PASSWORD=${DBA_PASSWORD}
+      - VIRT_Parameters_DirsAllowed=., ../vad, /usr/share/proj, /database/data
+    volumes:
+      - /mnt/gluster/aopwiki-dashboard/virtuoso-data:/database/data
+    deploy:
+      placement:
+        constraints:
+          - node.hostname==h3068544.stratoserver.net
+      restart_policy:
+        condition: on-failure
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.aopwiki-multirdf.rule=Host(`aopwiki-multirdf.vhp4safety.nl`)
+        - traefik.http.routers.aopwiki-multirdf.entrypoints=websecure
+        - traefik.http.routers.aopwiki-multirdf.tls=true
+        - traefik.http.routers.aopwiki-multirdf.tls.certresolver=letsencrypt
+        - traefik.http.services.aopwiki-multirdf.loadbalancer.server.port=8890
+        - traefik.docker.network=core
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 2G
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- 'http://localhost:8890/sparql?query=ASK+%7B%7D' || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
