@@ -124,11 +124,11 @@ Plans:
   1. Dashboard is accessible at its VHP4Safety URL and serves all pages without error
   2. CORS headers allow cross-origin requests from the VHP4Safety platform domain
   3. Health probes report accurate status — `/health` responds within 5 seconds, `/status` reflects actual SPARQL endpoint connectivity
-**Plans**: TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] 06-01: TBD
-- [ ] 06-02: TBD
+- [ ] 06-01-PLAN.md — CORS support, startup-aware health endpoint, production SPARQL link (Wave 1)
+- [ ] 06-02-PLAN.md — Docker Swarm stack file and deployment instructions (Wave 2)
 
 ## Progress
 
