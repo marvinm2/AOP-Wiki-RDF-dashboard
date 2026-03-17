@@ -1,3 +1,19 @@
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: milestone
+status: in-progress
+stopped_at: Completed 06-01-PLAN.md
+last_updated: "2026-03-17T14:59:14Z"
+last_activity: 2026-03-17 — Completed 06-01 (App Deployment Prep)
+progress:
+  total_phases: 6
+  completed_phases: 5
+  total_plans: 25
+  completed_plans: 24
+  percent: 96
+---
+
 # Project State
 
 ## Project Reference
@@ -5,22 +21,22 @@
 See: .planning/PROJECT.md (updated 2026-02-20)
 
 **Core value:** Researchers, curators, and regulators can explore AOP-Wiki data across any version to understand how the knowledge base evolves over time — reliably and without timeouts.
-**Current focus:** Phase 5: Polish & Consistency — Complete (all 4 plans done)
+**Current focus:** Phase 6: VHP Platform Deployment — In Progress (1/2 plans done)
 
 ## Current Position
 
-Phase: 5 of 6 (Polish & Consistency)
-Plan: 4 of 4 in current phase
-Status: Phase 5 Complete
-Last activity: 2026-02-23 — Completed 05-04 (Landing Page Hub & About Page)
+Phase: 6 of 6 (VHP Platform Deployment)
+Plan: 1 of 2 in current phase
+Status: Plan 06-01 Complete
+Last activity: 2026-03-17 — Completed 06-01 (App Deployment Prep)
 
-Progress: [████████████████████] 100%
+Progress: [██████████] 96%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 23
-- Average duration: ~4.5 min
+- Total plans completed: 24
+- Average duration: ~4.4 min
 - Total execution time: ~1.4 hours
 
 **By Phase:**
@@ -50,6 +66,7 @@ Progress: [████████████████████] 100%
 | Phase 05 P02 | 5min | 2 tasks | 8 files |
 | Phase 05 P03 | 13min | 2 tasks | 2 files |
 | Phase 05 P04 | 15min | 3 tasks | 9 files |
+| Phase 06 P01 | 2min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -121,6 +138,8 @@ Recent decisions affecting current work:
 - [05-04]: OECD status colors centralized in BRAND_COLORS['oecd_status'] for consistency between latest and trend views
 - [05-04]: SPARQL endpoint links set to href="#" with "coming soon" until multi-graph URL is provided
 - [05-04]: Legacy routes /old-dashboard and /dashboard redirect to /snapshot
+- [06-01]: Wildcard CORS (Access-Control-Allow-Origin: *) appropriate for public read-only dashboard
+- [06-01]: _startup_complete flag set synchronously around compute_plots_parallel() for container probe safety
 
 ### Pending Todos
 
@@ -140,6 +159,6 @@ User verification of Phase 2 delivery found 4 issues requiring follow-up:
 
 ## Session Continuity
 
-Last session: 2026-02-23
-Stopped at: Completed 05-04-PLAN.md (Phase 5 complete)
-Resume file: .planning/phases/05-polish-consistency/05-04-SUMMARY.md
+Last session: 2026-03-17T14:59:14Z
+Stopped at: Completed 06-01-PLAN.md
+Resume file: .planning/phases/06-vhp-platform-deployment/06-01-SUMMARY.md
