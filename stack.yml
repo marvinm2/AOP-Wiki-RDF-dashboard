@@ -22,7 +22,7 @@ services:
         condition: on-failure
       labels:
         - traefik.enable=true
-        - traefik.http.routers.aopwiki-dashboard.rule=Host(`aopwiki-dashboard.cloud.vhp4safety.nl`)
+        - traefik.http.routers.aopwiki-dashboard.rule=Host(`aopwiki-dashboard.vhp4safety.nl`)
         - traefik.http.routers.aopwiki-dashboard.entrypoints=websecure
         - traefik.http.routers.aopwiki-dashboard.tls=true
         - traefik.http.routers.aopwiki-dashboard.tls.certresolver=letsencrypt
