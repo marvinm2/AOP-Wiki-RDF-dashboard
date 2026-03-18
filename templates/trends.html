@@ -778,8 +778,50 @@
         {{ data_table_toggle('kes_by_kec_count_absolute') }}
     </div>
 
+    <div class="plot-box" id="ontology-term-growth">
+        <div class="plot-header">
+            <h3>Ontology Term Growth</h3>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download Absolute ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/ontology_term_growth_absolute?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/ontology_term_growth_absolute?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/ontology_term_growth_absolute?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download Delta ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/ontology_term_growth_delta?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/ontology_term_growth_delta?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/ontology_term_growth_delta?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+                <label><input type="checkbox" class="plot-toggle"> Show Deltas</label>
+            </div>
+        </div>
+        <p class="plot-description">
+            Tracks the number of unique ontology terms (GO, CHEBI, UBERON, etc.) used in
+            Key Event annotations across versions. Growth indicates expanding annotation vocabulary.
+        </p>
+        {{ methodology_note(methodology_notes, 'ontology_term_growth') }}
+        <div class="abs">
+            <div class="lazy-plot" data-plot-name="ontology_term_growth_absolute">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+        <div class="delta" style="display:none;">
+            <div class="lazy-plot" data-plot-name="ontology_term_growth_delta">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+        {{ data_table_toggle('ontology_term_growth_absolute') }}
+    </div>
+
     </div>
 </section>
+
 
 
 <script>
