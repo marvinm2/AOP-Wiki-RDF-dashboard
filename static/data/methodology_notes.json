@@ -230,26 +230,12 @@
         "limitations": "Bins KEs into discrete groups for readability. The '6-10' and '11+' bins aggregate multiple values. Only KEs that are linked to at least one AOP via aopo:has_key_event are included. Orphan KEs (not linked to any AOP) are excluded.",
         "sparql": "SELECT ?ke (COUNT(DISTINCT ?aop) AS ?aop_count)\nWHERE {\n  GRAPH <{graph}> {\n    ?aop a aopo:AdverseOutcomePathway ;\n         aopo:has_key_event ?ke .\n  }\n}\nGROUP BY ?ke"
     },
-    "latest_annotation_heatmap": {
-        "title": "Annotation Completeness Heatmap",
-        "description": "Shows the percentage of entities (AOPs, KEs, KERs, Stressors) that have each key metadata property filled in. Reveals which annotations are well-covered and which have gaps across entity types.",
-        "data_source": "Separate SPARQL COUNT queries per (entity type, property) pair check how many entities have each property present vs the total entity count. Key properties include Title, Description, Biological Level, Taxonomic Applicability, OECD Status, and others from property_labels.csv.",
-        "limitations": "Measures property presence only, not quality or accuracy. A property is counted as present if any value exists, regardless of whether the value is meaningful. The selected properties are a curated subset of all available properties.",
-        "sparql": "SELECT (COUNT(DISTINCT ?e) AS ?total)\nWHERE {\n  GRAPH <{graph}> { ?e a {entity_class} }\n}\n---\nSELECT (COUNT(DISTINCT ?e) AS ?has_prop)\nWHERE {\n  GRAPH <{graph}> { ?e a {entity_class} . ?e <{property_uri}> ?val }\n}"
-    },
     "latest_ontology_diversity": {
         "title": "Ontology Term Diversity",
         "description": "Counts the number of unique ontology terms used per source ontology (GO, CHEBI, UBERON, NCBITAXON, etc.) in KE annotations. Shows the breadth of ontology vocabulary in use.",
         "data_source": "SPARQL query retrieves all distinct ontology-linked IRIs from biological process and biological object annotations. Python post-processing classifies each IRI by ontology namespace prefix and counts unique terms per source.",
         "limitations": "Shows aggregate counts of unique terms per ontology, not coverage vs reference ontologies (Phase 5 scope). Classification is based on URI prefix patterns. Terms from unrecognized ontologies appear as 'Other'.",
         "sparql": "SELECT DISTINCT ?term\nWHERE {\n  GRAPH <{graph}> {\n    { ?s aopo:has_biological_process ?term }\n    UNION\n    { ?s aopo:has_biological_object ?term }\n  }\n  FILTER(isIRI(?term))\n}"
-    },
-    "curation_progress": {
-        "title": "Curation Progress Over Time",
-        "description": "Tracks entity count alongside annotation coverage across database versions. Shows whether new versions are primarily adding entities, improving existing annotations, or both. If 'With Title' grows faster than 'Total Entities', curation is catching up.",
-        "data_source": "Per-version parallel SPARQL queries count total entities, entities with dc:title, and entities with dc:description. Results are plotted as line chart (absolute) and bar chart (delta per version).",
-        "limitations": "Uses Title and Description as proxy annotations for curation completeness. More detailed property coverage is shown in the Annotation Heatmap. Trend data covers only the published RDF release versions available in the SPARQL endpoint.",
-        "sparql": "SELECT (COUNT(DISTINCT ?e) AS ?total)\n  (COUNT(DISTINCT ?e_title) AS ?with_title)\n  (COUNT(DISTINCT ?e_desc) AS ?with_desc)\nWHERE {\n  GRAPH <{graph}> {\n    ?e a ?type . FILTER(?type IN (aopo:AdverseOutcomePathway, aopo:KeyEvent, aopo:KeyEventRelationship, nci:C54571))\n    OPTIONAL { ?e dc:title ?t . BIND(?e AS ?e_title) }\n    OPTIONAL { ?e dc:description ?d . BIND(?e AS ?e_desc) }\n  }\n}"
     },
     "ontology_term_growth": {
         "title": "Ontology Term Growth Over Time",

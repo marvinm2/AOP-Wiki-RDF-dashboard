@@ -29,7 +29,8 @@
         'latest_taxonomic_groups',
         'latest_entity_by_oecd_status',
         'latest_ke_reuse',
-        'latest_ke_reuse_distribution'
+        'latest_ke_reuse_distribution',
+        'latest_ontology_diversity'
     ];
 
     /**
