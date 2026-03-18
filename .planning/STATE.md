@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: milestone
 status: completed
 stopped_at: Completed 06-02-PLAN.md — All plans complete
-last_updated: "2026-03-18T10:17:42.451Z"
+last_updated: "2026-03-18T13:26:24.006Z"
 last_activity: 2026-03-17 — Completed 06-02 (Docker Swarm Stack & Deployment Guide)
 progress:
   total_phases: 6
@@ -18,16 +18,15 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-20)
+See: .planning/PROJECT.md (updated 2026-03-18)
 
 **Core value:** Researchers, curators, and regulators can explore AOP-Wiki data across any version to understand how the knowledge base evolves over time — reliably and without timeouts.
-**Current focus:** v1.0 Milestone Complete -- All 6 phases delivered
+**Current focus:** v1.0 shipped and deployed — planning next milestone
 
 ## Current Position
 
-Phase: 6 of 6 (VHP Platform Deployment)
-Plan: 2 of 2 in current phase
-Status: All plans complete
+Milestone v1.0 shipped 2026-03-18
+Status: Milestone archived, ready for next milestone
 Last activity: 2026-03-17 — Completed 06-02 (Docker Swarm Stack & Deployment Guide)
 
 Progress: [██████████] 100%
