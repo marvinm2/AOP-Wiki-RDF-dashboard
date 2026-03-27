@@ -107,6 +107,27 @@
             </div>
             {{ data_table_toggle('latest_entity_counts') }}
         </div>
+        <div class="plot-box">
+            <div class="plot-header">
+                <h3>Database Summary</h3>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download &#x25BC;</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/latest_database_summary?format=csv" class="dropdown-item">CSV</a>
+                        <a href="/download/latest_database_summary?format=png" class="dropdown-item">PNG</a>
+                        <a href="/download/latest_database_summary?format=svg" class="dropdown-item">SVG</a>
+                    </div>
+                </div>
+            </div>
+            <p class="plot-description">
+                Summary overview of the AOP-Wiki database including key statistics and metadata.
+            </p>
+            {{ methodology_note(methodology_notes, 'latest_database_summary') }}
+            <div class="lazy-plot" data-plot-name="latest_database_summary">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+            {{ data_table_toggle('latest_database_summary') }}
+        </div>
     </div>
 </section>
 
@@ -348,6 +369,27 @@
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
             {{ data_table_toggle('latest_ontology_diversity') }}
+        </div>
+        <div class="plot-box">
+            <div class="plot-header">
+                <h3>Ontology Usage</h3>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download &#x25BC;</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/latest_ontology_usage?format=csv" class="dropdown-item">CSV</a>
+                        <a href="/download/latest_ontology_usage?format=png" class="dropdown-item">PNG</a>
+                        <a href="/download/latest_ontology_usage?format=svg" class="dropdown-item">SVG</a>
+                    </div>
+                </div>
+            </div>
+            <p class="plot-description">
+                Overview of ontology term usage across Key Event annotations in the AOP-Wiki database.
+            </p>
+            {{ methodology_note(methodology_notes, 'latest_ontology_usage') }}
+            <div class="lazy-plot" data-plot-name="latest_ontology_usage">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+            {{ data_table_toggle('latest_ontology_usage') }}
         </div>
         <div class="plot-box full-width">
             <div class="plot-header">

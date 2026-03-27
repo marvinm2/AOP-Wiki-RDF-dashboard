@@ -214,6 +214,9 @@ from .latest_plots import (
 
     # Data quality & diversity (Phase 04-03)
     plot_latest_ontology_diversity,
+
+    # Enhanced completeness visualization
+    plot_latest_aop_completeness_unique_colors,
 )
 
 # Define module version and metadata
