@@ -61,8 +61,8 @@ Plans:
 
 Plans:
 - [x] 08-01-PLAN.md — Color Decision Framework doc + fix 15 latest_plots.py color assignments
-- [ ] 08-02-PLAN.md — Fix 7 trends_plots.py color assignments + 3 wiring defects
-- [ ] 08-03-PLAN.md — Automated verification suite + visual spot-check
+- [x] 08-02-PLAN.md — Fix 7 trends_plots.py color assignments + 3 wiring defects
+- [x] 08-03-PLAN.md — Automated verification suite + visual spot-check
 
 ### Phase 9: Network Graph Overhaul
 **Goal**: Users can explore the AOP network graph with biologically meaningful coloring and instant rendering instead of slow community-based visualization
