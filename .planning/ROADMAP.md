@@ -56,12 +56,13 @@ Plans:
   1. User sees all non-categorical bar plots rendered in #307BBF instead of per-category rainbow colors
   2. User can reference a documented color decision framework that defines when single-color vs multi-color is appropriate
   3. User sees every audit-flagged plot corrected to follow the color framework (zero plots violating the framework remain)
-**Plans**: TBD
+**Plans**: 3 plans
 **UI hint**: yes
 
 Plans:
-- [ ] 08-01: TBD
-- [ ] 08-02: TBD
+- [ ] 08-01-PLAN.md — Color Decision Framework doc + fix 15 latest_plots.py color assignments
+- [ ] 08-02-PLAN.md — Fix 7 trends_plots.py color assignments + 3 wiring defects
+- [ ] 08-03-PLAN.md — Automated verification suite + visual spot-check
 
 ### Phase 9: Network Graph Overhaul
 **Goal**: Users can explore the AOP network graph with biologically meaningful coloring and instant rendering instead of slow community-based visualization
@@ -107,6 +108,6 @@ Phases 8 and 9 can execute in parallel after Phase 7. Phase 10 follows after bot
 | 5. Polish & Consistency | v1.0 | 4/4 | Complete | 2026-02-23 |
 | 6. VHP Platform Deployment | v1.0 | 2/2 | Complete | 2026-03-17 |
 | 7. Plot Audit | v1.1 | 3/3 | Complete   | 2026-03-27 |
-| 8. Color Consistency | v1.1 | 0/0 | Not started | - |
+| 8. Color Consistency | v1.1 | 0/3 | Planned | - |
 | 9. Network Graph Overhaul | v1.1 | 0/0 | Not started | - |
 | 10. SPARQL Transparency | v1.1 | 0/0 | Not started | - |
