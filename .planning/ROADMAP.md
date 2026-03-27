@@ -25,7 +25,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 
 **Milestone Goal:** Make the existing dashboard production-quality -- consistent colors, audited plots, SPARQL transparency, and a faster network graph.
 
-- [ ] **Phase 7: Plot Audit** - Systematic review of all 37+ plots with binary rubric and per-plot color/chart-type decisions
+- [x] **Phase 7: Plot Audit** - Systematic review of all 37+ plots with binary rubric and per-plot color/chart-type decisions (completed 2026-03-27)
 - [ ] **Phase 8: Color Consistency** - Enforce single brand color for non-categorical plots and verify palette accessibility
 - [ ] **Phase 9: Network Graph Overhaul** - Pre-computed layout with MIE/KE/AO type coloring for instant, meaningful rendering
 - [ ] **Phase 10: SPARQL Transparency** - Show the exact query behind each plot with a link to run it on the endpoint
@@ -46,7 +46,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 Plans:
 - [x] 07-01-PLAN.md — Colorblind accessibility analysis (deuteranopia simulation + delta E)
 - [x] 07-02-PLAN.md — Audit all 20 latest_plots.py functions
-- [ ] 07-03-PLAN.md — Audit all 19 trends_plots.py functions + assemble AUDIT-REPORT.md
+- [x] 07-03-PLAN.md — Audit all 19 trends_plots.py functions + assemble AUDIT-REPORT.md
 
 ### Phase 8: Color Consistency
 **Goal**: Users see a visually coherent dashboard where bar color encodes meaning (single color = one series, multiple colors = categorical distinction) instead of arbitrary rainbow assignment
@@ -106,7 +106,7 @@ Phases 8 and 9 can execute in parallel after Phase 7. Phase 10 follows after bot
 | 4. Dashboard Enrichment & Raw Data | v1.0 | 3/3 | Complete | 2026-02-23 |
 | 5. Polish & Consistency | v1.0 | 4/4 | Complete | 2026-02-23 |
 | 6. VHP Platform Deployment | v1.0 | 2/2 | Complete | 2026-03-17 |
-| 7. Plot Audit | v1.1 | 2/3 | In Progress|  |
+| 7. Plot Audit | v1.1 | 3/3 | Complete   | 2026-03-27 |
 | 8. Color Consistency | v1.1 | 0/0 | Not started | - |
 | 9. Network Graph Overhaul | v1.1 | 0/0 | Not started | - |
 | 10. SPARQL Transparency | v1.1 | 0/0 | Not started | - |
