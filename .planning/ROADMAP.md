@@ -44,8 +44,8 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 **Plans**: 3 plans
 
 Plans:
-- [ ] 07-01-PLAN.md — Colorblind accessibility analysis (deuteranopia simulation + delta E)
-- [ ] 07-02-PLAN.md — Audit all 20 latest_plots.py functions
+- [x] 07-01-PLAN.md — Colorblind accessibility analysis (deuteranopia simulation + delta E)
+- [x] 07-02-PLAN.md — Audit all 20 latest_plots.py functions
 - [ ] 07-03-PLAN.md — Audit all 19 trends_plots.py functions + assemble AUDIT-REPORT.md
 
 ### Phase 8: Color Consistency
@@ -106,7 +106,7 @@ Phases 8 and 9 can execute in parallel after Phase 7. Phase 10 follows after bot
 | 4. Dashboard Enrichment & Raw Data | v1.0 | 3/3 | Complete | 2026-02-23 |
 | 5. Polish & Consistency | v1.0 | 4/4 | Complete | 2026-02-23 |
 | 6. VHP Platform Deployment | v1.0 | 2/2 | Complete | 2026-03-17 |
-| 7. Plot Audit | v1.1 | 0/3 | Planning | - |
+| 7. Plot Audit | v1.1 | 2/3 | In Progress|  |
 | 8. Color Consistency | v1.1 | 0/0 | Not started | - |
 | 9. Network Graph Overhaul | v1.1 | 0/0 | Not started | - |
 | 10. SPARQL Transparency | v1.1 | 0/0 | Not started | - |
