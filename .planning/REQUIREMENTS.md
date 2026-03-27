@@ -15,9 +15,9 @@ Requirements for the Dashboard Maturation milestone. Each maps to roadmap phases
 
 ### Color Consistency
 
-- [ ] **COLOR-01**: User sees non-categorical bar plots rendered in single brand color (#307BBF) instead of per-category rainbow colors
-- [ ] **COLOR-02**: User can reference a codified color decision framework defining when single vs multi-color is appropriate
-- [ ] **COLOR-03**: User sees all audit-flagged plots corrected to follow the color framework
+- [x] **COLOR-01**: User sees non-categorical bar plots rendered in single brand color (#307BBF) instead of per-category rainbow colors
+- [x] **COLOR-02**: User can reference a codified color decision framework defining when single vs multi-color is appropriate
+- [x] **COLOR-03**: User sees all audit-flagged plots corrected to follow the color framework
 
 ### Network Graph
 
@@ -75,9 +75,9 @@ Deferred to future release. Tracked but not in current roadmap.
 | AUDIT-01 | Phase 7 | Complete |
 | AUDIT-02 | Phase 7 | Complete |
 | AUDIT-03 | Phase 7 | Complete |
-| COLOR-01 | Phase 8 | Pending |
-| COLOR-02 | Phase 8 | Pending |
-| COLOR-03 | Phase 8 | Pending |
+| COLOR-01 | Phase 8 | Complete |
+| COLOR-02 | Phase 8 | Complete |
+| COLOR-03 | Phase 8 | Complete |
 | NET-01 | Phase 9 | Pending |
 | NET-02 | Phase 9 | Pending |
 | NET-03 | Phase 9 | Pending |
