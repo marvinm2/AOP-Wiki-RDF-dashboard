@@ -363,7 +363,7 @@ def plot_avg_per_aop() -> tuple[str, str]:
         })
 
         fig_abs = px.line(df_melted, x="version", y="Average", color="Metric", markers=True,
-                          color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary']])
+                          color_discrete_sequence=BRAND_COLORS['palette'])
         fig_abs.update_layout(
             margin=dict(l=50, r=20, t=50, b=50)
         )
@@ -389,7 +389,7 @@ def plot_avg_per_aop() -> tuple[str, str]:
             "avg_KERs_per_AOP_Δ": "Δ KERs per AOP"
         })
         fig_delta = px.line(df_delta_melted, x="version", y="Δ Average", color="Metric", markers=True,
-                            color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary']])
+                            color_discrete_sequence=BRAND_COLORS['palette'])
         fig_delta.update_layout(
             margin=dict(l=50, r=20, t=50, b=50)
         )
@@ -540,7 +540,7 @@ def plot_author_counts() -> tuple[str, str]:
 
         # Absolute
         fig_abs = px.line(df_authors, x="version", y="author_count", markers=True,
-                          color_discrete_sequence=[BRAND_COLORS['secondary']])
+                          color_discrete_sequence=[BRAND_COLORS['blue']])
         fig_abs.update_layout(
             margin=dict(l=50, r=20, t=50, b=50)
         )
@@ -554,7 +554,7 @@ def plot_author_counts() -> tuple[str, str]:
         # Delta
         df_authors["author_count_Δ"] = df_authors["author_count"].diff().fillna(0)
         fig_delta = px.line(df_authors, x="version", y="author_count_Δ", markers=True,
-                            color_discrete_sequence=[BRAND_COLORS['light']])
+                            color_discrete_sequence=[BRAND_COLORS['blue']])
         fig_delta.update_layout(
             margin=dict(l=50, r=20, t=50, b=50)
         )
@@ -647,7 +647,7 @@ def plot_aop_lifetime() -> tuple[str, str, str]:
         try:
             fig1 = px.histogram(df_created, x="year_created",
                                 labels={"year_created": "Year", "count": "AOP Count"},
-                                color_discrete_sequence=[BRAND_COLORS['primary']])
+                                color_discrete_sequence=[BRAND_COLORS['blue']])
             fig1.update_layout(height=400)
             html1 = render_plot_html(fig1)
             _plot_figure_cache['aops_created_over_time'] = fig1
@@ -659,7 +659,7 @@ def plot_aop_lifetime() -> tuple[str, str, str]:
         try:
             fig2 = px.histogram(df_modified, x="year_modified",
                                 labels={"year_modified": "Year", "count": "AOP Count"},
-                                color_discrete_sequence=[BRAND_COLORS['secondary']])
+                                color_discrete_sequence=[BRAND_COLORS['blue']])
             fig2.update_layout(height=400)
             html2 = render_plot_html(fig2)
             _plot_figure_cache['aops_modified_over_time'] = fig2
@@ -671,7 +671,7 @@ def plot_aop_lifetime() -> tuple[str, str, str]:
         try:
             fig3 = px.scatter(df_lifetime, x="created", y="modified", hover_name="aop",
                               labels={"created": "Created", "modified": "Modified"},
-                              color_discrete_sequence=[BRAND_COLORS['accent']],
+                              color_discrete_sequence=[BRAND_COLORS['blue']],
                               render_mode='svg')
             fig3.update_layout(height=500)
             html3 = render_plot_html(fig3)
@@ -794,7 +794,7 @@ def plot_ke_components() -> tuple[str, str]:
             y="Count",
             color="Component",
             markers=True,
-            color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary'], BRAND_COLORS['accent']]
+            color_discrete_sequence=BRAND_COLORS['palette']
         )
         fig_abs.update_layout(
             margin=dict(l=50, r=20, t=50, b=50)
@@ -823,7 +823,7 @@ def plot_ke_components() -> tuple[str, str]:
             y="Change",
             color="Component",
             markers=True,
-            color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary'], BRAND_COLORS['accent']]
+            color_discrete_sequence=BRAND_COLORS['palette']
         )
         fig_delta.update_layout(
             margin=dict(l=50, r=20, t=50, b=50)
@@ -980,7 +980,7 @@ def plot_ke_components_percentage() -> tuple[str, str]:
             y="Percentage",
             color="Component",
             markers=True,
-            color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary'], BRAND_COLORS['accent']]
+            color_discrete_sequence=BRAND_COLORS['palette']
         )
         fig_abs.update_layout(
             yaxis=dict(title="Percentage (%)"),
@@ -1009,7 +1009,7 @@ def plot_ke_components_percentage() -> tuple[str, str]:
             y="Percentage Change",
             color="Component",
             markers=True,
-            color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary'], BRAND_COLORS['accent']]
+            color_discrete_sequence=BRAND_COLORS['palette']
         )
         fig_delta.update_layout(
             yaxis=dict(title="Percentage Change (%)"),
@@ -1107,7 +1107,7 @@ def plot_unique_ke_components() -> tuple[str, str]:
             y="Unique Count",
             color="Component",
             markers=True,
-            color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary'], BRAND_COLORS['accent']]
+            color_discrete_sequence=BRAND_COLORS['palette']
         )
         fig_abs.update_layout(
             margin=dict(l=50, r=20, t=50, b=50)
@@ -1136,7 +1136,7 @@ def plot_unique_ke_components() -> tuple[str, str]:
             y="Change",
             color="Component",
             markers=True,
-            color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary'], BRAND_COLORS['accent']]
+            color_discrete_sequence=BRAND_COLORS['palette']
         )
         fig_delta.update_layout(
             margin=dict(l=50, r=20, t=50, b=50)
@@ -3376,7 +3376,7 @@ def plot_ontology_term_growth() -> tuple[str, str, pd.DataFrame]:
             markers=True,
             labels={"Unique Terms": "Unique Ontology Terms", "version": "Version"},
         )
-        fig_abs.update_traces(line_color=BRAND_COLORS['primary'], marker_color=BRAND_COLORS['primary'])
+        fig_abs.update_traces(line_color=BRAND_COLORS['blue'], marker_color=BRAND_COLORS['blue'])
         fig_abs.update_layout(
             margin=dict(l=50, r=20, t=50, b=80)
         )
@@ -3392,7 +3392,7 @@ def plot_ontology_term_growth() -> tuple[str, str, pd.DataFrame]:
             y="New Terms",
             labels={"New Terms": "New Terms Added", "version": "Version"},
         )
-        fig_delta.update_traces(marker_color=BRAND_COLORS['secondary'])
+        fig_delta.update_traces(marker_color=BRAND_COLORS['blue'])
         fig_delta.update_layout(
             margin=dict(l=50, r=20, t=50, b=80)
         )
