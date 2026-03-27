@@ -108,6 +108,7 @@ from plots import (
     plot_latest_ke_reuse,
     plot_latest_ke_reuse_distribution,
     plot_latest_ontology_diversity,
+    plot_latest_aop_completeness_unique_colors,
     plot_ontology_term_growth,
     check_sparql_endpoint_health,
     safe_plot_execution,
@@ -1631,6 +1632,7 @@ def get_plot(plot_name):
         'latest_ke_reuse': plot_latest_ke_reuse,
         'latest_ke_reuse_distribution': plot_latest_ke_reuse_distribution,
         'latest_ontology_diversity': plot_latest_ontology_diversity,
+        'latest_aop_completeness_unique': plot_latest_aop_completeness_unique_colors,
     }
 
     # Handle latest_* plots without version support yet (use pre-computed)
