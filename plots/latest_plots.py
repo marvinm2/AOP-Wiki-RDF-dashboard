@@ -274,12 +274,10 @@ def plot_latest_entity_counts(version: str = None) -> str:
         df,
         x="Entity",
         y="Count",
-        color="Entity",
         text="Count",
-        color_discrete_sequence=BRAND_COLORS['palette']
     )
 
-    fig.update_traces(textposition='outside')
+    fig.update_traces(marker_color=BRAND_COLORS['blue'], textposition='outside')
     fig.update_layout(
 
         showlegend=False,
@@ -363,7 +361,7 @@ def plot_latest_ke_components(version: str = None) -> str:
         df,
         values="Count",
         names="Component",
-        color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary'], BRAND_COLORS['accent']]
+        color_discrete_sequence=BRAND_COLORS['palette']
     )
 
     fig.update_traces(textposition='inside', textinfo='percent+label')
@@ -446,7 +444,7 @@ def plot_latest_network_density(version: str = None) -> str:
 
     fig = px.pie(
         df, values="Count", names="Type",
-        color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary']]
+        color_discrete_sequence=BRAND_COLORS['palette']
     )
 
     fig.update_traces(textposition='inside', textinfo='percent+label')
@@ -540,12 +538,10 @@ def plot_latest_avg_per_aop(version: str = None) -> str:
 
     fig = px.bar(
         df, x="Metric", y="Value",
-        color="Metric",
         text="Value",
-        color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary']]
     )
 
-    fig.update_traces(texttemplate='%{text:.1f}', textposition='outside')
+    fig.update_traces(marker_color=BRAND_COLORS['blue'], texttemplate='%{text:.1f}', textposition='outside')
     fig.update_layout(
 
         showlegend=False,
@@ -632,6 +628,7 @@ def plot_latest_ontology_usage(version: str = None) -> str:
 
     fig = px.pie(
         df, values="Terms", names="Ontology",
+        color_discrete_sequence=BRAND_COLORS['palette']
     )
 
     fig.update_traces(textposition='inside', textinfo='percent+label')
@@ -1036,20 +1033,11 @@ def plot_latest_aop_completeness_unique_colors(version: str = None) -> str:
     # Store in global cache for CSV download with unique key
     _plot_data_cache['latest_aop_completeness_unique'] = df
 
-    # Create unique color mapping using the full brand palette
-    unique_properties = df["Property"].unique()
-    # Use the brand palette, cycling through if more properties than colors
-    palette = BRAND_COLORS['palette']
-    color_map = {}
-    for i, prop in enumerate(unique_properties):
-        color_map[prop] = palette[i % len(palette)]
-
     fig = px.bar(
-        df, x="Property", y="Completeness", color="Property",
+        df, x="Property", y="Completeness",
         text="Completeness",
-        color_discrete_map=color_map
     )
-    fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
+    fig.update_traces(marker_color=BRAND_COLORS['blue'], texttemplate='%{text:.1f}%', textposition='outside')
     fig.update_layout(
 
 
@@ -1126,11 +1114,9 @@ def plot_latest_database_summary(version: str = None) -> str:
     fig = px.bar(
         df, x="Entity", y="Count",
         text="Count",
-        color="Entity",
-        color_discrete_sequence=[BRAND_COLORS['primary'], BRAND_COLORS['secondary'], BRAND_COLORS['accent']]
     )
 
-    fig.update_traces(textposition='outside')
+    fig.update_traces(marker_color=BRAND_COLORS['blue'], textposition='outside')
     fig.update_layout(
 
         showlegend=False,
@@ -1509,11 +1495,9 @@ def plot_latest_ke_by_bio_level(version: str = None) -> str:
         y="Biological Level",
         orientation='h',
         text="KE Count",
-        color="KE Count",
-        color_continuous_scale=[BRAND_COLORS['light'], BRAND_COLORS['primary']],
     )
 
-    fig.update_traces(textposition='outside')
+    fig.update_traces(marker_color=BRAND_COLORS['blue'], textposition='outside')
     fig.update_layout(
 
 
@@ -1525,7 +1509,6 @@ def plot_latest_ke_by_bio_level(version: str = None) -> str:
         margin=dict(l=150, r=30, t=80, b=60),
         yaxis=dict(title=""),
         xaxis=dict(title="Number of Key Events"),
-        coloraxis_showscale=False,
     )
 
     _plot_figure_cache[f'latest_ke_by_bio_level_{version_key}'] = fig
@@ -1602,20 +1585,15 @@ def plot_latest_taxonomic_groups(version: str = None) -> str:
     df["Version"] = latest_version
     _plot_data_cache[f'latest_taxonomic_groups_{version_key}'] = df
 
-    # Use discrete brand colors
-    palette = BRAND_COLORS['palette']
-
     fig = px.bar(
         df,
         x="AOP Count",
         y="Taxonomic Group",
         orientation='h',
         text="AOP Count",
-        color="Taxonomic Group",
-        color_discrete_sequence=palette,
     )
 
-    fig.update_traces(textposition='outside')
+    fig.update_traces(marker_color=BRAND_COLORS['blue'], textposition='outside')
     fig.update_layout(
 
 
@@ -1861,11 +1839,9 @@ def plot_latest_ke_reuse(version: str = None) -> str:
         orientation='h',
         text="AOP Count",
         custom_data=['wiki_url'],
-        color="AOP Count",
-        color_continuous_scale=[BRAND_COLORS['light'], BRAND_COLORS['primary']],
     )
 
-    fig.update_traces(textposition='outside')
+    fig.update_traces(marker_color=BRAND_COLORS['blue'], textposition='outside')
     fig.update_layout(
 
 
@@ -1878,7 +1854,6 @@ def plot_latest_ke_reuse(version: str = None) -> str:
         margin=dict(l=300, r=30, t=60, b=60),
         yaxis=dict(title=""),
         xaxis=dict(title="Number of AOPs"),
-        coloraxis_showscale=False,
     )
 
     _plot_figure_cache[f'latest_ke_reuse_{version_key}'] = fig
@@ -1965,11 +1940,9 @@ def plot_latest_ke_reuse_distribution(version: str = None) -> str:
         x="AOPs per KE",
         y="Number of KEs",
         text="Number of KEs",
-        color="Number of KEs",
-        color_continuous_scale=[BRAND_COLORS['light'], BRAND_COLORS['primary']],
     )
 
-    fig.update_traces(textposition='outside')
+    fig.update_traces(marker_color=BRAND_COLORS['blue'], textposition='outside')
     fig.update_layout(
 
 
@@ -1981,7 +1954,6 @@ def plot_latest_ke_reuse_distribution(version: str = None) -> str:
         margin=dict(l=60, r=30, t=60, b=60),
         yaxis=dict(title="Number of Key Events"),
         xaxis=dict(title="Number of AOPs a KE Belongs To", type='category'),
-        coloraxis_showscale=False,
     )
 
     _plot_figure_cache[f'latest_ke_reuse_distribution_{version_key}'] = fig
@@ -2473,20 +2445,14 @@ def plot_latest_ontology_diversity(version: str = None) -> str:
 
     _plot_data_cache[cache_key] = df
 
-    # Create bar chart with brand colors
-    palette = BRAND_COLORS['palette']
-    color_map = {row["Ontology"]: palette[i % len(palette)] for i, row in enumerate(df.to_dict("records"))}
-
     fig = px.bar(
         df,
         x="Ontology",
         y="Unique Terms",
         text="Unique Terms",
-        color="Ontology",
-        color_discrete_map=color_map
     )
 
-    fig.update_traces(textposition='outside')
+    fig.update_traces(marker_color=BRAND_COLORS['blue'], textposition='outside')
     fig.update_layout(
 
         showlegend=False,
