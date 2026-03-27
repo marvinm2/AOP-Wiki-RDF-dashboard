@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Dashboard Maturation
-status: verifying
-stopped_at: Phase 8 context gathered
-last_updated: "2026-03-27T09:59:25.373Z"
+status: executing
+stopped_at: Completed 08-01-PLAN.md
+last_updated: "2026-03-27T11:24:04.439Z"
 last_activity: 2026-03-27
 progress:
   total_phases: 4
   completed_phases: 1
-  total_plans: 3
-  completed_plans: 3
+  total_plans: 6
+  completed_plans: 4
   percent: 0
 ---
 
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-26)
 
 **Core value:** Researchers, curators, and regulators can explore AOP-Wiki data across any version to understand how the knowledge base evolves over time -- reliably and without timeouts.
-**Current focus:** Phase 07 — plot-audit
+**Current focus:** Phase 08 — color-consistency
 
 ## Current Position
 
-Phase: 08
-Plan: Not started
-Status: Phase complete — ready for verification
+Phase: 08 (color-consistency) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
 Last activity: 2026-03-27
 
 Progress: [░░░░░░░░░░] 0%
@@ -64,6 +64,8 @@ v1.1-specific decisions:
 - [Phase 07-02]: 3 wiring defects: database_summary and ontology_usage registered but not in templates; aop_completeness_unique_colors in template but not in app.py
 - [Phase 07]: All 19 trends_plots.py functions wired to trends.html; ke_components family (3 fns) share legacy alias anti-pattern; single-metric plots should use #307BBF not magenta
 - [Phase 07]: Combined audit: 19 FIX NOW, 4 FIX LATER, 16 SKIP across 39 plot functions; AUDIT-REPORT.md is the single deliverable for Phase 8/9 consumption
+- [Phase 08]: SKIP functions not modified even though they contain legacy aliases -- plan constraint takes precedence over zero-alias goal
+- [Phase 08]: Pie chart ke_annotation_depth kept with palette (not single blue) because single-color pie is visually meaningless
 
 ### Pending Todos
 
@@ -76,6 +78,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-27T09:59:25.367Z
-Stopped at: Phase 8 context gathered
-Resume file: .planning/phases/08-color-consistency/08-CONTEXT.md
+Last session: 2026-03-27T11:24:04.434Z
+Stopped at: Completed 08-01-PLAN.md
+Resume file: None
