@@ -1707,7 +1707,7 @@ def database_snapshot():
     Displays key metrics and visualizations from any version of the AOP-Wiki
     database, allowing users to explore current and historical snapshots.
     """
-    return render_template("latest.html", methodology_notes=methodology_notes, active_page='snapshot')
+    return render_template("latest.html", methodology_notes=methodology_notes, sparql_endpoint=Config.SPARQL_ENDPOINT, active_page='snapshot')
 
 
 @app.route("/latest")
@@ -1723,7 +1723,7 @@ def historical_trends():
     Displays evolution and growth patterns of the AOP-Wiki database
     over time using quarterly releases.
     """
-    return render_template("trends_page.html", methodology_notes=methodology_notes, active_page='trends')
+    return render_template("trends_page.html", methodology_notes=methodology_notes, sparql_endpoint=Config.SPARQL_ENDPOINT, active_page='trends')
 
 
 @app.route("/dashboard")
