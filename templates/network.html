@@ -34,9 +34,12 @@
         <!-- Filter Panel -->
         <div class="filter-panel">
             <div class="filter-group">
-                <label class="filter-label">Community:</label>
-                <select id="filter-community" class="filter-select">
-                    <option value="all">All Communities</option>
+                <label class="filter-label">Role:</label>
+                <select id="filter-role" class="filter-select">
+                    <option value="all">All Roles</option>
+                    <option value="MIE">MIE</option>
+                    <option value="KE">KE</option>
+                    <option value="AO">AO</option>
                 </select>
             </div>
 
@@ -51,6 +54,21 @@
             </div>
 
             <button id="reset-filters" class="reset-btn">Reset Filters</button>
+
+            <div class="filter-group type-legend">
+                <span class="legend-item">
+                    <span class="legend-dot" style="background:#EB5B25;"></span>
+                    MIE
+                </span>
+                <span class="legend-item">
+                    <span class="legend-dot" style="background:#307BBF;"></span>
+                    KE
+                </span>
+                <span class="legend-item">
+                    <span class="legend-dot" style="background:#E6007E;"></span>
+                    AO
+                </span>
+            </div>
         </div>
 
         <!-- Search Bar -->
