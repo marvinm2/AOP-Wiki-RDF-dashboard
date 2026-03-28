@@ -13,6 +13,13 @@
         "limitations": "Connectivity is determined solely by shared Key Events declared via aopo:has_key_event. Implicit relationships or shared stressors are not considered. Network density depends on explicitly declared KE-KER relationships in the RDF data.",
         "sparql": "SELECT ?graph (COUNT(DISTINCT ?aop1) AS ?connected_aops)\nWHERE {\n  GRAPH ?graph {\n    ?aop1 aopo:has_key_event ?ke .\n    ?aop2 aopo:has_key_event ?ke .\n    FILTER(?aop1 != ?aop2)\n  }\n}\nGROUP BY ?graph\nORDER BY DESC(?graph) LIMIT 1"
     },
+    "latest_database_summary": {
+        "title": "Core Entity Summary",
+        "description": "Counts the three core entity types in the AOP-Wiki RDF database: Adverse Outcome Pathways (AOPs), Key Events (KEs), and Key Event Relationships (KERs). Provides a quick overview of the database's structural composition in the selected version.",
+        "data_source": "Three separate SPARQL queries each count instances of one entity class (aopo:AdverseOutcomePathway, aopo:KeyEvent, aopo:KeyEventRelationship) within a single named graph version.",
+        "limitations": "Counts reflect the RDF transformation of AOP-Wiki, not the raw database. Does not include stressors or authors (see Entity Counts plot for those). Each entity type is queried independently.",
+        "sparql": "SELECT ?graph (COUNT(?aop) AS ?count)\nWHERE {\n  GRAPH ?graph {\n    ?aop a aopo:AdverseOutcomePathway .\n  }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph\nORDER BY DESC(?graph) LIMIT 1"
+    },
     "latest_avg_per_aop": {
         "title": "Average Components per AOP",
         "description": "Calculates the average number of Key Events and Key Event Relationships per AOP in the selected database version. This metric indicates the typical structural complexity of AOPs.",
@@ -68,6 +75,13 @@
         "data_source": "SPARQL queries retrieve all biological process URIs from KE component annotations (via aopo:has_biological_process), then group them by their ontology source namespace.",
         "limitations": "Only covers processes explicitly annotated in the RDF data. Ontology classification is based on URI prefix patterns. Some processes may be classified differently across ontologies.",
         "sparql": "SELECT ?graph ?process (COUNT(?process) AS ?count)\nWHERE {\n  GRAPH ?graph {\n    ?ke aopo:has_biological_process ?process .\n  }\n}\nGROUP BY ?graph ?process\nORDER BY DESC(?graph)"
+    },
+    "latest_ontology_usage": {
+        "title": "Ontology Usage",
+        "description": "Shows the distribution of ontology terms used to annotate Key Event biological components (processes, objects, actions). Groups terms by their source ontology (GO, MP, NBO, MI, VT, MESH, HP, OTHER) to reveal which ontologies are most commonly used in the AOP-Wiki knowledge base.",
+        "data_source": "SPARQL query retrieves all biological event terms linked to Key Events via aopo:hasProcess, aopo:hasObject, and aopo:hasAction predicates, then classifies each term by its URI prefix to determine the source ontology.",
+        "limitations": "Ontology classification is based on URI prefix matching (e.g., GO_, MP_, HP_). Terms with unrecognized prefixes are grouped as OTHER. Only counts distinct terms, not total usage frequency. Limited to Key Event annotations in the selected version.",
+        "sparql": "SELECT ?ontology (COUNT(DISTINCT ?term) AS ?count)\nWHERE {\n  GRAPH ?graph {\n    ?ke a aopo:KeyEvent ;\n        aopo:hasBiologicalEvent ?bioevent .\n    {\n      ?bioevent aopo:hasProcess ?term .\n    } UNION {\n      ?bioevent aopo:hasObject ?term .\n    } UNION {\n      ?bioevent aopo:hasAction ?term .\n    }\n    BIND(\n      IF(STRSTARTS(STR(?term), \"http://purl.obolibrary.org/obo/GO_\"), \"GO\",\n      IF(STRSTARTS(STR(?term), \"http://purl.obolibrary.org/obo/MP_\"), \"MP\",\n      IF(STRSTARTS(STR(?term), \"http://purl.obolibrary.org/obo/NBO_\"), \"NBO\",\n      IF(STRSTARTS(STR(?term), \"http://purl.obolibrary.org/obo/MI_\"), \"MI\",\n      IF(STRSTARTS(STR(?term), \"http://purl.obolibrary.org/obo/VT_\"), \"VT\",\n      IF(STRSTARTS(STR(?term), \"http://purl.org/commons/record/mesh/\"), \"MESH\",\n      IF(STRSTARTS(STR(?term), \"http://purl.obolibrary.org/obo/HP_\"), \"HP\", \"OTHER\"))))))) AS ?ontology)\n  }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?ontology\nORDER BY DESC(?graph) LIMIT 1"
     },
     "latest_object_usage": {
         "title": "Biological Object Usage",
