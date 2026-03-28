@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Dashboard Maturation
 status: executing
-stopped_at: Completed 08-03-PLAN.md
-last_updated: "2026-03-28T10:29:53.133Z"
+stopped_at: Completed 09-01-PLAN.md
+last_updated: "2026-03-28T20:22:36.591Z"
 last_activity: 2026-03-28
 progress:
   total_phases: 4
   completed_phases: 2
-  total_plans: 6
-  completed_plans: 6
+  total_plans: 8
+  completed_plans: 7
   percent: 0
 ---
 
@@ -21,12 +21,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-26)
 
 **Core value:** Researchers, curators, and regulators can explore AOP-Wiki data across any version to understand how the knowledge base evolves over time -- reliably and without timeouts.
-**Current focus:** Phase 08 — color-consistency
+**Current focus:** Phase 09 — network-overhaul
 
 ## Current Position
 
-Phase: 09
-Plan: Not started
+Phase: 09 (network-overhaul) — EXECUTING
+Plan: 2 of 2
 Status: Ready to execute
 Last activity: 2026-03-28
 
@@ -68,6 +68,7 @@ v1.1-specific decisions:
 - [Phase 08]: Pie chart ke_annotation_depth kept with palette (not single blue) because single-color pie is visually meaningless
 - [Phase 08]: Legacy color aliases replaced with explicit BRAND_COLORS keys in trends_plots.py; palette array frozen per D-09
 - [Phase 08]: All 10 automated verification checks passed; human visual spot-check approved dashboard color rendering
+- [Phase 09-01]: Role colors in BRAND_COLORS['network_roles'] separate from type_colors; spring_layout(seed=42, scale=1000) for deterministic positions; positions at element level for Cytoscape preset layout
 
 ### Pending Todos
 
@@ -80,6 +81,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-27T11:47:21.211Z
-Stopped at: Completed 08-03-PLAN.md
+Last session: 2026-03-28T20:22:36.577Z
+Stopped at: Completed 09-01-PLAN.md
 Resume file: None
