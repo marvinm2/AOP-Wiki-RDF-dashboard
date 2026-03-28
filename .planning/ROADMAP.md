@@ -72,12 +72,12 @@ Plans:
   1. User sees the network graph render instantly with pre-computed node positions that are consistent across page visits
   2. User sees nodes colored by biological role (MIE = one color, KE = another, AO = another) instead of community assignment
   3. User sees a type legend on the network graph showing MIE/KE/AO color meanings
-**Plans**: TBD
+**Plans**: 2 plans
 **UI hint**: yes
 
 Plans:
-- [ ] 09-01: TBD
-- [ ] 09-02: TBD
+- [ ] 09-01-PLAN.md — Backend role detection + spring_layout pre-computation + role-based Cytoscape JSON
+- [ ] 09-02-PLAN.md — Frontend preset layout + role filter + inline legend + visual verification
 
 ### Phase 10: SPARQL Transparency
 **Goal**: Users can verify and reproduce any plot's data by viewing and running the exact SPARQL query that produced it
@@ -109,5 +109,5 @@ Phases 8 and 9 can execute in parallel after Phase 7. Phase 10 follows after bot
 | 6. VHP Platform Deployment | v1.0 | 2/2 | Complete | 2026-03-17 |
 | 7. Plot Audit | v1.1 | 3/3 | Complete   | 2026-03-27 |
 | 8. Color Consistency | v1.1 | 0/3 | Planned | - |
-| 9. Network Graph Overhaul | v1.1 | 0/0 | Not started | - |
+| 9. Network Graph Overhaul | v1.1 | 0/2 | Planned | - |
 | 10. SPARQL Transparency | v1.1 | 0/0 | Not started | - |
