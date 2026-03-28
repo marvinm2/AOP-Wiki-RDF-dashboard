@@ -86,12 +86,12 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. User can expand a collapsible panel on any plot to see the exact SPARQL query that generated it
   2. User can click "Run on Endpoint" to open the Virtuoso SPARQL editor with the query pre-filled in a new tab
-**Plans**: TBD
+**Plans**: 2 plans
 **UI hint**: yes
 
 Plans:
-- [ ] 10-01: TBD
-- [ ] 10-02: TBD
+- [ ] 10-01-PLAN.md — Add Run on Endpoint + Copy Query buttons to methodology macro, CSS styling, endpoint URL passing, and 2 missing JSON entries
+- [ ] 10-02-PLAN.md — Visual verification checkpoint for SPARQL transparency on both pages
 
 ## Progress
 
@@ -110,4 +110,4 @@ Phases 8 and 9 can execute in parallel after Phase 7. Phase 10 follows after bot
 | 7. Plot Audit | v1.1 | 3/3 | Complete   | 2026-03-27 |
 | 8. Color Consistency | v1.1 | 0/3 | Planned | - |
 | 9. Network Graph Overhaul | v1.1 | 0/2 | Planned | - |
-| 10. SPARQL Transparency | v1.1 | 0/0 | Not started | - |
+| 10. SPARQL Transparency | v1.1 | 0/2 | Planned | - |
