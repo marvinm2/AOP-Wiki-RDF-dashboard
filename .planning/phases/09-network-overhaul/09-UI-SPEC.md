@@ -32,14 +32,14 @@ Declared values (must be multiples of 4):
 | Token | Value | Usage |
 |-------|-------|-------|
 | xs | 4px | Legend dot-to-label gap, icon gaps |
-| sm | 8px | Filter group internal gap, search input padding |
+| sm | 8px | Filter group internal gap, search input padding, legend inter-item gap |
 | md | 16px | Filter panel padding, info panel content padding, section gaps |
 | lg | 24px | Not used in this phase |
 | xl | 32px | Not used in this phase |
 | 2xl | 48px | Not used in this phase |
 | 3xl | 64px | Not used in this phase |
 
-Exceptions: Legend inter-item gap uses 12px (midpoint between sm and md) to match existing `filter-panel` gap rhythm. This is inherited from existing network.css patterns.
+No exceptions.
 
 ---
 
@@ -50,7 +50,9 @@ Exceptions: Legend inter-item gap uses 12px (midpoint between sm and md) to matc
 | Body | 16px | 400 | 1.6 |
 | Label | 13px | 600 | 1.0 |
 | Legend label | 12px | 600 | 1.0 |
-| Section heading | 1.4rem (22px) | 700 | 1.2 |
+| Section heading | 1.4rem (22px) | 600 | 1.2 |
+
+Two weights only: 400 (body) and 600 (label, legend label, section heading).
 
 Source: Existing `main.css` CSS custom properties and `network.css` established patterns. No new font sizes introduced.
 
@@ -82,6 +84,12 @@ Accent reserved for: Active tab border-bottom, loading spinner border-top, expor
 
 ---
 
+## Focal Point
+
+The graph canvas is the primary visual anchor. All surrounding UI (filter panel, info panel, stats bar) serves as supporting context for the central network visualization.
+
+---
+
 ## Component Inventory
 
 ### Modified Components
@@ -100,7 +108,7 @@ Accent reserved for: Active tab border-bottom, loading spinner border-top, expor
 
 | Class | Purpose | Spec |
 |-------|---------|------|
-| `.type-legend` | Container for inline legend in filter bar | `display: inline-flex; align-items: center; gap: 12px; margin-left: auto; padding: 4px 0;` |
+| `.type-legend` | Container for inline legend in filter bar | `display: inline-flex; align-items: center; gap: 8px; margin-left: auto; padding: 4px 0;` |
 | `.legend-item` | Single legend entry (dot + label) | `display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: #29235C; white-space: nowrap;` |
 | `.legend-dot` | Colored circle in legend | `display: inline-block; width: 10px; height: 10px; border-radius: 50%;` |
 | `.type-badge.mie` | MIE type badge in info panel | `background: #EB5B25; color: white;` |
@@ -189,7 +197,7 @@ No destructive actions in this phase.
 
 - Role dropdown replaces Community dropdown at the same position (first filter group).
 - Type legend sits right-aligned via `margin-left: auto` on the `.type-legend` container.
-- Legend dots are 10x10px circles with 4px gap to label text, 12px gap between legend items.
+- Legend dots are 10x10px circles with 4px gap to label text, 8px gap between legend items.
 - Reset Filters button position unchanged.
 
 ### Info Panel Type Badge (modified)
