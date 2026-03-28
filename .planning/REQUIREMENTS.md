@@ -23,7 +23,7 @@ Requirements for the Dashboard Maturation milestone. Each maps to roadmap phases
 
 - [x] **NET-01**: User sees the network graph render instantly with pre-computed server-side layout (deterministic positions across visits)
 - [x] **NET-02**: User sees network nodes colored by biological role (MIE, KE, AO) instead of community assignment by default
-- [ ] **NET-03**: User sees a type legend in the graph showing MIE/KE/AO color meanings
+- [x] **NET-03**: User sees a type legend in the graph showing MIE/KE/AO color meanings
 
 ### SPARQL Transparency
 
@@ -80,7 +80,7 @@ Deferred to future release. Tracked but not in current roadmap.
 | COLOR-03 | Phase 8 | Complete |
 | NET-01 | Phase 9 | Complete |
 | NET-02 | Phase 9 | Complete |
-| NET-03 | Phase 9 | Pending |
+| NET-03 | Phase 9 | Complete |
 | SPARQL-01 | Phase 10 | Pending |
 | SPARQL-02 | Phase 10 | Pending |
 
