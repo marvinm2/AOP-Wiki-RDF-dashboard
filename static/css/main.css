@@ -963,6 +963,54 @@ footer img {
     overflow-y: auto;
 }
 
+/* SPARQL action buttons (Run on Endpoint, Copy Query) */
+.sparql-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    align-items: center;
+}
+
+.sparql-run-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background-color: var(--color-blue);
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.sparql-run-btn:hover {
+    background-color: var(--color-primary);
+}
+
+.sparql-copy-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background-color: transparent;
+    color: var(--color-blue);
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 400;
+    border: 1px solid var(--color-blue);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.sparql-copy-btn:hover {
+    background-color: rgba(48, 123, 191, 0.1);
+    color: var(--color-blue);
+}
+
 /* ============================================
    Raw Data Table Styles
    ============================================ */

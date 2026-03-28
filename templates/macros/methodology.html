@@ -11,6 +11,21 @@
         <details class="sparql-query">
             <summary>View SPARQL Query</summary>
             <pre><code>{{ note.sparql }}</code></pre>
+            <div class="sparql-actions">
+                {% if sparql_endpoint is defined and sparql_endpoint %}
+                <a href="{{ sparql_endpoint }}?query={{ note.sparql | urlencode }}"
+                   target="_blank" rel="noopener"
+                   class="sparql-run-btn"
+                   title="Opens the Virtuoso SPARQL editor with this query pre-filled">
+                    Run on Endpoint
+                </a>
+                {% endif %}
+                <button class="sparql-copy-btn" onclick="
+                    navigator.clipboard.writeText(this.closest('.sparql-query').querySelector('code').textContent);
+                    var btn=this; btn.textContent='Copied!';
+                    setTimeout(function(){btn.textContent='Copy Query';}, 2000);
+                ">Copy Query</button>
+            </div>
         </details>
         {% endif %}
     </div>
