@@ -262,6 +262,42 @@
     color: white;
 }
 
+.type-badge.mie {
+    background: #EB5B25;
+    color: white;
+}
+
+.type-badge.ao {
+    background: #E6007E;
+    color: white;
+}
+
+/* Type Legend (inline in filter panel) */
+.type-legend {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+    padding: 4px 0;
+}
+
+.legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #29235C;
+    white-space: nowrap;
+}
+
+.legend-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
 /* Info Panel (right sidebar) */
 .info-panel {
     position: fixed;
