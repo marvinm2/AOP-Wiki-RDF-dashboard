@@ -300,13 +300,6 @@ function showInfoPanel(nodeData, nodeId) {
 
     // Open panel with animation
     panel.classList.add('open');
-
-    // Resize graph container to make room for panel (desktop only)
-    const container = document.getElementById('cy-container');
-    if (container && window.innerWidth > 768) {
-        container.style.width = 'calc(100% - 350px)';
-        if (cy) cy.resize();
-    }
 }
 
 /**
@@ -315,13 +308,6 @@ function showInfoPanel(nodeData, nodeId) {
 function hideInfoPanel() {
     const panel = document.getElementById('info-panel');
     if (panel) panel.classList.remove('open');
-
-    // Restore graph container width
-    const container = document.getElementById('cy-container');
-    if (container) {
-        container.style.width = '100%';
-        if (cy) cy.resize();
-    }
 
     // Deselect all nodes
     if (cy) cy.elements().unselect();
