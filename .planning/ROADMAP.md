@@ -76,7 +76,7 @@ Plans:
 **UI hint**: yes
 
 Plans:
-- [ ] 09-01-PLAN.md — Backend role detection + spring_layout pre-computation + role-based Cytoscape JSON
+- [x] 09-01-PLAN.md — Backend role detection + spring_layout pre-computation + role-based Cytoscape JSON
 - [ ] 09-02-PLAN.md — Frontend preset layout + role filter + inline legend + visual verification
 
 ### Phase 10: SPARQL Transparency
