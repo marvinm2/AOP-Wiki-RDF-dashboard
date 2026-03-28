@@ -225,7 +225,13 @@ BRAND_COLORS = {
         'Context': '#93D5F6',      # Sky Blue
         'Assessment': '#307BBF',   # Primary Blue
         'Structure': '#45A6B2'     # Teal
-    }
+    },
+    # Network graph role colors — MIE/KE/AO node differentiation
+    'network_roles': {
+        'MIE': '#EB5B25',   # orange - molecular initiating event
+        'KE': '#307BBF',    # blue - key event (intermediate)
+        'AO': '#E6007E',    # magenta - adverse outcome
+    },
 }
 
 # VHP4Safety Plotly custom template — registered as default so all figures get brand styling
