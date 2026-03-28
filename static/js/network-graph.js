@@ -4,7 +4,7 @@
  * AOP-Wiki RDF Dashboard - Network Graph Interactivity
  *
  * Client-side logic for the /network page. Initializes Cytoscape.js with
- * fcose layout, handles node interaction (click, search, filter), metric-based
+ * preset layout (pre-computed positions), handles node interaction (click, search, filter), metric-based
  * sizing, sortable metrics table, community summary, tab switching, and exports.
  *
  * Dependencies (loaded via CDN in network.html):
@@ -125,16 +125,7 @@ async function initNetworkGraph() {
                 }
             ],
             layout: {
-                name: 'fcose',
-                animate: false,
-                quality: 'default',
-                randomize: true,
-                nodeSeparation: 75,
-                idealEdgeLength: 100,
-                nodeRepulsion: 4500,
-                gravity: 0.25,
-                gravityRange: 3.8,
-                numIter: 2500
+                name: 'preset'
             }
         });
 
@@ -152,9 +143,6 @@ async function initNetworkGraph() {
 
         // Apply initial metric-based sizing with actual data range
         updateNodeSizing(cy, currentMetric);
-
-        // Populate community dropdown from graph data
-        populateCommunityDropdown(cy);
 
         // Fetch metrics and communities for the Metrics tab
         fetchMetricsAndCommunities();
@@ -247,8 +235,10 @@ function showInfoPanel(nodeData, nodeId) {
     // Type badge
     const typeBadge = document.getElementById('info-type-badge');
     if (typeBadge) {
-        typeBadge.textContent = 'Key Event';
-        typeBadge.className = 'type-badge ke';
+        var roleLabels = {MIE: 'Molecular Initiating Event', KE: 'Key Event', AO: 'Adverse Outcome'};
+        var nodeType = nodeData.type || 'KE';
+        typeBadge.textContent = roleLabels[nodeType] || nodeType;
+        typeBadge.className = 'type-badge ' + nodeType.toLowerCase();
     }
 
     // Centrality metrics
@@ -258,12 +248,9 @@ function showInfoPanel(nodeData, nodeId) {
     setMetricValue('info-pagerank', nodeData.pagerank, 6);
 
     // Community
-    const communityEl = document.getElementById('info-community');
+    var communityEl = document.getElementById('info-community');
     if (communityEl) {
-        const communityIdx = nodeData.community;
-        const colorSwatch = '<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:' +
-            escapeHtml(nodeData.color || '#ccc') + ';margin-right:6px;vertical-align:middle;"></span>';
-        communityEl.innerHTML = colorSwatch + 'Community ' + communityIdx;
+        communityEl.textContent = 'Community ' + nodeData.community;
     }
 
     // Neighbors
@@ -399,7 +386,7 @@ function setupSearch(cyInstance) {
 
             let html = '';
             limited.forEach(function (n) {
-                const typeClass = n.data('type') === 'AOP' ? 'aop' : 'ke';
+                const typeClass = (n.data('type') || 'KE').toLowerCase();
                 html += '<div class="search-result" data-node-id="' + escapeHtml(n.id()) + '">' +
                     '<span class="type-badge ' + typeClass + '">' + escapeHtml(n.data('type')) + '</span> ' +
                     escapeHtml(n.data('label') || n.id()) +
@@ -451,19 +438,19 @@ function setupSearch(cyInstance) {
  * @param {cytoscape.Core} cyInstance
  */
 function setupFilters(cyInstance) {
-    const communitySelect = document.getElementById('filter-community');
+    const roleSelect = document.getElementById('filter-role');
     const resetBtn = document.getElementById('reset-filters');
 
     const applyCurrentFilters = function () {
         applyFilters(cyInstance);
     };
 
-    if (communitySelect) communitySelect.addEventListener('change', applyCurrentFilters);
+    if (roleSelect) roleSelect.addEventListener('change', applyCurrentFilters);
 
     // Reset filters
     if (resetBtn) {
         resetBtn.addEventListener('click', function () {
-            if (communitySelect) communitySelect.value = 'all';
+            if (roleSelect) roleSelect.value = 'all';
             applyFilters(cyInstance);
         });
     }
@@ -474,17 +461,16 @@ function setupFilters(cyInstance) {
  * @param {cytoscape.Core} cyInstance
  */
 function applyFilters(cyInstance) {
-    const communitySelect = document.getElementById('filter-community');
-    const communityValue = communitySelect ? communitySelect.value : 'all';
+    const roleSelect = document.getElementById('filter-role');
+    const roleValue = roleSelect ? roleSelect.value : 'all';
 
     // Start by showing all elements
     cyInstance.elements().show();
 
-    // Community filter
-    if (communityValue !== 'all') {
-        const communityId = parseInt(communityValue, 10);
+    // Role filter
+    if (roleValue !== 'all') {
         cyInstance.nodes().forEach(function (n) {
-            if (n.data('community') !== communityId) {
+            if (n.data('type') !== roleValue) {
                 n.hide();
             }
         });
@@ -499,36 +485,6 @@ function applyFilters(cyInstance) {
 
     // Update stats with filtered counts
     updateFilteredStats(cyInstance);
-}
-
-/**
- * Populate the community dropdown with options from the graph data.
- * @param {cytoscape.Core} cyInstance
- */
-function populateCommunityDropdown(cyInstance) {
-    const select = document.getElementById('filter-community');
-    if (!select) return;
-
-    // Collect unique community IDs
-    const communities = new Set();
-    cyInstance.nodes().forEach(function (n) {
-        const cid = n.data('community');
-        if (cid !== undefined && cid !== null) {
-            communities.add(cid);
-        }
-    });
-
-    // Sort community IDs
-    const sorted = Array.from(communities).sort(function (a, b) { return a - b; });
-
-    // Clear existing options beyond "All"
-    select.innerHTML = '<option value="all">All Communities</option>';
-    sorted.forEach(function (cid) {
-        const option = document.createElement('option');
-        option.value = cid;
-        option.textContent = 'Community ' + cid;
-        select.appendChild(option);
-    });
 }
 
 /**
@@ -593,12 +549,7 @@ function updateNodeSizing(cyInstance, metric) {
     }
 
     cyInstance.style()
-        .selector('node[type="AOP"]')
-        .style({
-            'width': 'mapData(' + metric + ', ' + minVal + ', ' + maxVal + ', 25, 90)',
-            'height': 'mapData(' + metric + ', ' + minVal + ', ' + maxVal + ', 25, 90)'
-        })
-        .selector('node[type="KE"]')
+        .selector('node')
         .style({
             'width': 'mapData(' + metric + ', ' + minVal + ', ' + maxVal + ', 15, 70)',
             'height': 'mapData(' + metric + ', ' + minVal + ', ' + maxVal + ', 15, 70)'
@@ -672,7 +623,7 @@ function renderMetricsTable() {
     sorted.forEach(function (row) {
         html += '<tr data-node-id="' + escapeHtml(row.id) + '" style="cursor:pointer;">' +
             '<td>' + escapeHtml(row.label || row.id) + '</td>' +
-            '<td><span class="type-badge ' + (row.type === 'AOP' ? 'aop' : 'ke') + '">' + escapeHtml(row.type) + '</span></td>' +
+            '<td><span class="type-badge ' + (row.type || 'KE').toLowerCase() + '">' + escapeHtml(row.type || 'KE') + '</span></td>' +
             '<td>' + Number(row.degree).toFixed(4) + '</td>' +
             '<td>' + Number(row.betweenness).toFixed(4) + '</td>' +
             '<td>' + Number(row.closeness).toFixed(4) + '</td>' +
