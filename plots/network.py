@@ -121,6 +121,64 @@ def build_aop_network() -> nx.Graph:
     return G
 
 
+def detect_ke_roles(target_graph: str) -> Dict[str, str]:
+    """Detect MIE/KE/AO roles for all KEs across all AOPs.
+
+    Uses a single SPARQL query with UNION+GROUP_CONCAT to find which KEs are
+    designated as MIE or AO in any AOP. Priority per D-02: MIE > AO > KE.
+    Falls back to empty dict (all KE) if query returns no results (D-03).
+
+    Args:
+        target_graph: The RDF graph URI, e.g. "http://aopwiki.org/graph/2025-03"
+
+    Returns:
+        Dict mapping KE ID (string) -> role ('MIE' or 'AO').
+        KEs not in the dict default to 'KE'.
+    """
+    role_query = f"""
+    SELECT ?ke
+           (GROUP_CONCAT(DISTINCT ?roleType; SEPARATOR=",") AS ?roles)
+    WHERE {{
+        GRAPH <{target_graph}> {{
+            ?aop a aopo:AdverseOutcomePathway .
+            {{
+                ?aop aopo:has_molecular_initiating_event ?ke .
+                BIND("MIE" AS ?roleType)
+            }}
+            UNION
+            {{
+                ?aop aopo:has_adverse_outcome ?ke .
+                BIND("AO" AS ?roleType)
+            }}
+        }}
+    }}
+    GROUP BY ?ke
+    """
+    results = run_sparql_query_with_retry(role_query)
+
+    if not results:
+        logger.warning("Role detection query returned no results; "
+                       "falling back to all KE")
+        return {}
+
+    roles = {}
+    for r in results:
+        ke_uri = r['ke']['value']
+        ke_id = ke_uri.split('/')[-1]
+        role_str = r.get('roles', {}).get('value', '')
+
+        # Priority: MIE > AO > KE (D-02)
+        if 'MIE' in role_str:
+            roles[ke_id] = 'MIE'
+        elif 'AO' in role_str:
+            roles[ke_id] = 'AO'
+        # else: not in results = default KE (handled by caller)
+
+    logger.info(f"Roles detected: {sum(1 for v in roles.values() if v == 'MIE')} MIE, "
+                f"{sum(1 for v in roles.values() if v == 'AO')} AO")
+    return roles
+
+
 def compute_network_metrics(G: nx.Graph) -> Tuple[pd.DataFrame, List[Dict]]:
     """Compute centrality metrics and community detection on the network.
 
@@ -215,32 +273,37 @@ def compute_network_metrics(G: nx.Graph) -> Tuple[pd.DataFrame, List[Dict]]:
 
 
 def graph_to_cytoscape_json(
-    G: nx.Graph, metrics_df: pd.DataFrame
+    G: nx.Graph, metrics_df: pd.DataFrame,
+    roles: Optional[Dict[str, str]] = None,
+    positions: Optional[Dict] = None,
 ) -> List[Dict]:
     """Convert NetworkX graph and metrics to Cytoscape.js elements array.
 
     Builds a flat array of node and edge elements in Cytoscape.js JSON format.
-    Nodes include all metric values and community color assignments from the
-    VHP4Safety brand palette. AOP nodes use 'round-rectangle' shape and KE
-    nodes use 'ellipse' shape.
+    Nodes include all metric values and role-based color assignments using
+    MIE/KE/AO network_roles from BRAND_COLORS. Positions are embedded at the
+    element level (sibling to 'data') for Cytoscape preset layout.
 
     Args:
         G: NetworkX graph with node/edge attributes.
         metrics_df: DataFrame from compute_network_metrics() with centrality
             scores and community assignments.
+        roles: Optional dict mapping KE ID -> role ('MIE' or 'AO').
+            KEs not in dict default to 'KE'.
+        positions: Optional dict mapping node ID -> (x, y) coordinates
+            from NetworkX layout computation.
 
     Returns:
         List of Cytoscape.js element dicts. Node elements have 'data' with
         keys: id, label, type, degree, betweenness, closeness, pagerank,
-        community, color, uri, wiki_url, oecd_status, shape. Edge elements
-        have 'data' with keys: source, target, type.
+        community, color, uri, wiki_url. Edge elements have 'data' with
+        keys: source, target, type.
 
     Example:
         >>> elements = graph_to_cytoscape_json(G, metrics_df)
         >>> nodes = [e for e in elements if 'source' not in e['data']]
         >>> edges = [e for e in elements if 'source' in e['data']]
     """
-    palette = BRAND_COLORS['palette']
     elements: List[Dict] = []
 
     # Build a lookup from metrics DataFrame for fast access
@@ -255,23 +318,29 @@ def graph_to_cytoscape_json(
 
         if row is not None:
             community_idx = int(row['community'])
-            community_color = palette[community_idx % len(palette)]
+            node_role = (roles or {}).get(str(node_id), 'KE')
+            role_colors = BRAND_COLORS['network_roles']
+            node_color = role_colors.get(node_role, role_colors['KE'])
 
-            elements.append({
+            element = {
                 'data': {
                     'id': str(node_id),
                     'label': str(row['label']),
-                    'type': 'KE',
+                    'type': node_role,
                     'degree': float(row['degree']),
                     'betweenness': float(row['betweenness']),
                     'closeness': float(row['closeness']),
                     'pagerank': float(row['pagerank']),
                     'community': community_idx,
-                    'color': community_color,
+                    'color': node_color,
                     'uri': str(row.get('uri', '')),
                     'wiki_url': str(row.get('wiki_url', '')),
                 }
-            })
+            }
+            if positions and node_id in positions:
+                pos = positions[node_id]
+                element['position'] = {'x': float(pos[0]), 'y': float(pos[1])}
+            elements.append(element)
 
     # Add edges
     for u, v, edge_data in G.edges(data=True):
@@ -341,11 +410,23 @@ def get_or_compute_network() -> Dict:
         # Build graph
         G = build_aop_network()
 
+        # Detect MIE/KE/AO roles
+        target_graph = f"http://aopwiki.org/graph/{version}"
+        roles = detect_ke_roles(target_graph)
+
         # Compute metrics and communities
         metrics_df, communities_list = compute_network_metrics(G)
 
+        # Update metrics with role types for CSV export
+        for idx, row in metrics_df.iterrows():
+            node_id = row['id']
+            metrics_df.at[idx, 'type'] = roles.get(str(node_id), 'KE')
+
+        # Compute deterministic layout (D-06)
+        positions = nx.spring_layout(G, seed=42, scale=1000)
+
         # Convert to Cytoscape.js JSON
-        elements = graph_to_cytoscape_json(G, metrics_df)
+        elements = graph_to_cytoscape_json(G, metrics_df, roles=roles, positions=positions)
 
         # Assemble result
         result = {
@@ -359,6 +440,8 @@ def get_or_compute_network() -> Dict:
                 'ke_count': G.number_of_nodes(),
                 'ker_count': G.number_of_edges(),
                 'communities': len(communities_list),
+                'mie_count': sum(1 for v in roles.values() if v == 'MIE'),
+                'ao_count': sum(1 for v in roles.values() if v == 'AO'),
             },
         }
 
