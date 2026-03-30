@@ -1,19 +1,20 @@
 {% macro methodology_note(notes, plot_key) %}
 {% if plot_key in notes %}
 {% set note = notes[plot_key] %}
+{% set sparql_text = note.sparql | replace('__GRAPH_URI__', latest_graph_uri | default('http://aopwiki.org/graph/LATEST', true)) if note.sparql else '' %}
 <details class="methodology-note">
     <summary>Methodology</summary>
     <div class="methodology-content">
         <p><strong>What this measures:</strong> {{ note.description }}</p>
         <p><strong>Data source:</strong> {{ note.data_source }}</p>
         <p><strong>Known limitations:</strong> {{ note.limitations }}</p>
-        {% if note.sparql %}
+        {% if sparql_text %}
         <details class="sparql-query">
             <summary>View SPARQL Query</summary>
-            <pre><code>{{ note.sparql }}</code></pre>
+            <pre><code>{{ sparql_text }}</code></pre>
             <div class="sparql-actions">
                 {% if sparql_endpoint is defined and sparql_endpoint %}
-                <a href="{{ sparql_endpoint }}?query={{ note.sparql | urlencode }}"
+                <a href="{{ sparql_endpoint }}?query={{ sparql_text | urlencode }}"
                    target="_blank" rel="noopener"
                    class="sparql-run-btn"
                    title="Opens the Virtuoso SPARQL editor with this query pre-filled">
