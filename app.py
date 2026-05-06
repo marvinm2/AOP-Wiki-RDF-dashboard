@@ -35,7 +35,7 @@ The application integrates with a SPARQL endpoint to query RDF data and generate
 interactive Plotly visualizations with consistent VHP4Safety branding.
 
 Author:
-    Generated with Claude Code (https://claude.ai/code)
+    Marvin Martens
 
 """
 from config import Config, configure_logging

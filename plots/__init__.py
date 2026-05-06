@@ -101,7 +101,7 @@ Usage Examples:
     ...     df = _plot_data_cache['latest_entity_counts']
 
 Author:
-    Generated with Claude Code (https://claude.ai/code)
+    Marvin Martens
 """
 
 # Import shared utilities and constants
@@ -221,7 +221,7 @@ from .latest_plots import (
 
 # Define module version and metadata
 __version__ = "2.0.0"
-__author__ = "Claude Code (https://claude.ai/code)"
+__author__ = "Marvin Martens"
 
 # Define public API - all functions that should be importable
 __all__ = [

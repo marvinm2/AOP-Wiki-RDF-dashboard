@@ -48,7 +48,7 @@ Error Handling:
     - Fallback plot generation for graceful degradation
 
 Author:
-    Generated with Claude Code (https://claude.ai/code)
+    Marvin Martens
 """
 
 import os

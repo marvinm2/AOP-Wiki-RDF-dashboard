@@ -53,7 +53,7 @@ Performance Features:
     - Fast dashboard loading and rendering
 
 Author:
-    Generated with Claude Code (https://claude.ai/code)
+    Marvin Martens
 """
 
 import pandas as pd

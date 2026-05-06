@@ -12,8 +12,8 @@ sys.path.insert(0, os.path.abspath('../../'))
 # -- Project information -----------------------------------------------------
 
 project = 'AOP-Wiki RDF Dashboard'
-copyright = '2024, Generated with Claude Code'
-author = 'Generated with Claude Code'
+copyright = '2024, Marvin Martens'
+author = 'Marvin Martens'
 
 # The full version, including alpha/beta/rc tags
 release = '1.0.0'

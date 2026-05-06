@@ -48,7 +48,7 @@ Data Processing:
     - Global caching for CSV export functionality
 
 Author:
-    Generated with Claude Code (https://claude.ai/code)
+    Marvin Martens
 """
 
 import pandas as pd

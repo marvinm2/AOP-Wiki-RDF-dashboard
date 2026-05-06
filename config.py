@@ -35,7 +35,7 @@ Example:
     >>> is_valid = Config.validate_config()
 
 Author:
-    Generated with Claude Code (https://claude.ai/code)
+    Marvin Martens
 
 """
 import os
