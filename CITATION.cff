@@ -1,0 +1,48 @@
+cff-version: 1.2.0
+message: "If you use this dashboard or its plots, please cite the underlying AOP-Wiki RDF paper and the dataset DOI."
+title: AOP-Wiki RDF Dashboard
+type: software
+authors:
+  - family-names: Martens
+    given-names: Marvin
+    orcid: "https://orcid.org/0000-0003-2230-0840"
+    affiliation: "Department of Translational Genomics, Maastricht University"
+  - family-names: Willighagen
+    given-names: Egon L.
+    orcid: "https://orcid.org/0000-0001-7542-0286"
+    affiliation: "Department of Translational Genomics, Maastricht University"
+url: "https://aopwiki-dashboard.vhp4safety.nl"
+repository-code: "https://github.com/marvinm2/AOP-Wiki-RDF-dashboard"
+license: MIT
+keywords:
+  - adverse outcome pathway
+  - AOP-Wiki
+  - RDF
+  - SPARQL
+  - dashboard
+  - toxicology
+  - FAIR
+preferred-citation:
+  type: article
+  authors:
+    - family-names: Martens
+      given-names: M.
+    - family-names: Evelo
+      given-names: Chris T.
+    - family-names: Willighagen
+      given-names: Egon L.
+  title: "Providing Adverse Outcome Pathways from the AOP-Wiki in a Semantic Web Format to Increase Usability and Accessibility of the Content"
+  year: 2022
+  month: 2
+  day: 25
+  journal: Applied In Vitro Toxicology
+  volume: 8
+  issue: 1
+  start: 2
+  end: 13
+  doi: 10.1089/aivt.2021.0010
+  url: https://doi.org/10.1089/aivt.2021.0010
+identifiers:
+  - type: doi
+    value: "10.5281/zenodo.13353286"
+    description: "Concept DOI for the AOP-Wiki RDF dataset visualised by this dashboard."

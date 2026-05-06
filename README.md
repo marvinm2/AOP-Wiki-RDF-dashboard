@@ -216,9 +216,24 @@ open docs/build/html/index.html
 - **Configuration Guides**: Detailed environment variable and deployment documentation
 - **Quick Start Guides**: Step-by-step setup and usage instructions
 
+## Maintainers
+
+- **Lead maintainer:** Marvin Martens — Department of Translational Genomics, Maastricht University — [ORCID 0000-0003-2230-0840](https://orcid.org/0000-0003-2230-0840)
+- **Backup maintainer:** Egon Willighagen — Department of Translational Genomics, Maastricht University — [ORCID 0000-0001-7542-0286](https://orcid.org/0000-0001-7542-0286)
+
+For questions, bug reports, and feature requests please open a [GitHub Issue](https://github.com/marvinm2/AOP-Wiki-RDF-dashboard/issues).
+
 ## License
 
-Todo
+- **This dashboard's code** (Flask application, plot modules, templates, deployment files): MIT — see [`LICENSE`](LICENSE).
+- **Visualised AOP-Wiki RDF dataset**: Creative Commons Attribution-ShareAlike 4.0 International (CC-BY-SA 4.0) — see the [AOPWikiRDF data licence](https://github.com/marvinm2/AOPWikiRDF/blob/master/data/LICENSE-DATA). Matches the upstream [AOP-Wiki](https://aopwiki.org/) content licence.
+
+## Citation
+
+If you use this dashboard, please cite the underlying AOP-Wiki RDF paper and the dataset DOI. See [`CITATION.cff`](CITATION.cff).
+
+- Paper: Martens M., Evelo C.T., Willighagen E.L. (2022). *Providing Adverse Outcome Pathways from the AOP-Wiki in a Semantic Web Format to Increase Usability and Accessibility of the Content.* Applied In Vitro Toxicology 8(1):2–13. [doi:10.1089/aivt.2021.0010](https://doi.org/10.1089/aivt.2021.0010)
+- Dataset releases (concept DOI): [10.5281/zenodo.13353286](https://doi.org/10.5281/zenodo.13353286)
 
 ## Support
 
