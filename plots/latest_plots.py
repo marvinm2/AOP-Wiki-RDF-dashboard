@@ -2553,26 +2553,23 @@ def _compute_coverage_rows(rows: list[dict]) -> pd.DataFrame:
         if ao and aop not in aop_ao:
             aop_ao[aop] = ao
 
-        # Signal A — OrganContext / CellTypeContext
+        # Signal A — OrganContext / CellTypeContext (a term may map to many buckets)
         for predicate_var in ("organ", "cell"):
             iri = r.get(predicate_var, {}).get("value")
             if iri:
-                bucket = classify_anatomy(iri)
-                if bucket:
+                for bucket in classify_anatomy(iri):
                     per_pair.setdefault((aop, bucket), set()).add("A")
 
         # Signal A' — hasObject UBERON/CL
         obj_iri = r.get("obj", {}).get("value")
         if obj_iri:
-            bucket = classify_anatomy(obj_iri)
-            if bucket:
+            for bucket in classify_anatomy(obj_iri):
                 per_pair.setdefault((aop, bucket), set()).add("A'")
 
-        # Signal B — hasProcess GO BP
+        # Signal B — hasProcess GO BP via RO:0002296 (results_in_development_of)
         proc_iri = r.get("proc", {}).get("value")
         if proc_iri:
-            bucket = classify_go_bp(proc_iri)
-            if bucket:
+            for bucket in classify_go_bp(proc_iri):
                 per_pair.setdefault((aop, bucket), set()).add("B")
 
     # Signal C — keywords on AOP title (one pass per AOP, not per row)

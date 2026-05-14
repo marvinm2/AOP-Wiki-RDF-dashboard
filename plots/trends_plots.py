@@ -3462,13 +3462,11 @@ def _coverage_for_graph(graph_uri: str) -> set[tuple[str, str]]:
         for var in ("organ", "cell", "obj"):
             iri = r.get(var, {}).get("value")
             if iri:
-                bucket = classify_anatomy(iri)
-                if bucket:
+                for bucket in classify_anatomy(iri):
                     pairs.add((aop, bucket))
         proc = r.get("proc", {}).get("value")
         if proc:
-            bucket = classify_go_bp(proc)
-            if bucket:
+            for bucket in classify_go_bp(proc):
                 pairs.add((aop, bucket))
     return pairs
 

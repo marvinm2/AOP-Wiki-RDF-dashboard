@@ -1,0 +1,663 @@
+{
+  "generated_at": "2026-05-14T16:44:21.074855+00:00",
+  "source": {
+    "aopwiki_sparql": "https://aopwiki-multirdf.vhp4safety.nl/sparql",
+    "ubergraph_sparql": "https://ubergraph.apps.renci.org/sparql",
+    "uberon_cl_relation": "(part_of | subClassOf)*",
+    "go_relation": "RO:0002296 (results_in_development_of)"
+  },
+  "anchors": {
+    "Nervous": [
+      {
+        "iri": "UBERON_0001016",
+        "label": "nervous system"
+      }
+    ],
+    "Cardiovascular": [
+      {
+        "iri": "UBERON_0004535",
+        "label": "cardiovascular system"
+      },
+      {
+        "iri": "UBERON_0001009",
+        "label": "circulatory system"
+      }
+    ],
+    "Respiratory": [
+      {
+        "iri": "UBERON_0001004",
+        "label": "respiratory system"
+      }
+    ],
+    "Digestive": [
+      {
+        "iri": "UBERON_0001007",
+        "label": "digestive system"
+      },
+      {
+        "iri": "UBERON_0001555",
+        "label": "digestive tract"
+      },
+      {
+        "iri": "UBERON_0001264",
+        "label": "pancreas"
+      }
+    ],
+    "Hepatobiliary": [
+      {
+        "iri": "UBERON_0002107",
+        "label": "liver"
+      },
+      {
+        "iri": "UBERON_0001173",
+        "label": "gallbladder"
+      },
+      {
+        "iri": "UBERON_0001174",
+        "label": "common bile duct"
+      }
+    ],
+    "Renal/Urinary": [
+      {
+        "iri": "UBERON_0001008",
+        "label": "renal system"
+      }
+    ],
+    "Reproductive": [
+      {
+        "iri": "UBERON_0000990",
+        "label": "reproductive system"
+      }
+    ],
+    "Endocrine": [
+      {
+        "iri": "UBERON_0000949",
+        "label": "endocrine system"
+      },
+      {
+        "iri": "UBERON_0001264",
+        "label": "pancreas"
+      }
+    ],
+    "Immune/Haematopoietic": [
+      {
+        "iri": "UBERON_0002405",
+        "label": "immune system"
+      },
+      {
+        "iri": "UBERON_0002390",
+        "label": "haematopoietic system"
+      }
+    ],
+    "Integumentary": [
+      {
+        "iri": "UBERON_0002416",
+        "label": "integumental system"
+      }
+    ],
+    "Musculoskeletal": [
+      {
+        "iri": "UBERON_0002204",
+        "label": "musculoskeletal system"
+      },
+      {
+        "iri": "UBERON_0002385",
+        "label": "muscle tissue"
+      }
+    ],
+    "Sensory": [
+      {
+        "iri": "UBERON_0001032",
+        "label": "sensory system"
+      },
+      {
+        "iri": "UBERON_0001846",
+        "label": "inner ear"
+      },
+      {
+        "iri": "UBERON_0001690",
+        "label": "ear"
+      },
+      {
+        "iri": "UBERON_0000970",
+        "label": "eye"
+      }
+    ]
+  },
+  "overrides": {
+    "uberon": {
+      "UBERON_0000178": {
+        "ontology": [
+          "Immune/Haematopoietic"
+        ],
+        "override": [
+          "Cardiovascular",
+          "Immune/Haematopoietic"
+        ],
+        "final": [
+          "Cardiovascular",
+          "Immune/Haematopoietic"
+        ]
+      }
+    },
+    "cl": {},
+    "go": {}
+  },
+  "uberon": {
+    "UBERON_0000004": [
+      "Sensory"
+    ],
+    "UBERON_0000007": [
+      "Endocrine",
+      "Nervous",
+      "Reproductive"
+    ],
+    "UBERON_0000029": [
+      "Immune/Haematopoietic"
+    ],
+    "UBERON_0000057": [
+      "Renal/Urinary"
+    ],
+    "UBERON_0000065": [
+      "Respiratory"
+    ],
+    "UBERON_0000079": [
+      "Reproductive"
+    ],
+    "UBERON_0000115": [
+      "Respiratory"
+    ],
+    "UBERON_0000160": [
+      "Digestive"
+    ],
+    "UBERON_0000171": [
+      "Respiratory"
+    ],
+    "UBERON_0000178": [
+      "Cardiovascular",
+      "Immune/Haematopoietic"
+    ],
+    "UBERON_0000365": [
+      "Renal/Urinary"
+    ],
+    "UBERON_0000369": [
+      "Nervous"
+    ],
+    "UBERON_0000451": [
+      "Nervous"
+    ],
+    "UBERON_0000473": [
+      "Reproductive"
+    ],
+    "UBERON_0000948": [
+      "Cardiovascular"
+    ],
+    "UBERON_0000955": [
+      "Nervous"
+    ],
+    "UBERON_0000966": [
+      "Nervous",
+      "Sensory"
+    ],
+    "UBERON_0000970": [
+      "Sensory"
+    ],
+    "UBERON_0000977": [
+      "Respiratory"
+    ],
+    "UBERON_0000989": [
+      "Reproductive"
+    ],
+    "UBERON_0000991": [
+      "Reproductive"
+    ],
+    "UBERON_0000992": [
+      "Reproductive"
+    ],
+    "UBERON_0000995": [
+      "Reproductive"
+    ],
+    "UBERON_0001004": [
+      "Respiratory"
+    ],
+    "UBERON_0001009": [
+      "Cardiovascular"
+    ],
+    "UBERON_0001016": [
+      "Nervous"
+    ],
+    "UBERON_0001017": [
+      "Nervous"
+    ],
+    "UBERON_0001134": [
+      "Musculoskeletal"
+    ],
+    "UBERON_0001135": [
+      "Musculoskeletal"
+    ],
+    "UBERON_0001264": [
+      "Digestive",
+      "Endocrine"
+    ],
+    "UBERON_0001280": [
+      "Digestive",
+      "Endocrine",
+      "Hepatobiliary"
+    ],
+    "UBERON_0001295": [
+      "Reproductive"
+    ],
+    "UBERON_0001301": [
+      "Reproductive"
+    ],
+    "UBERON_0001305": [
+      "Reproductive"
+    ],
+    "UBERON_0001332": [
+      "Reproductive"
+    ],
+    "UBERON_0001344": [
+      "Reproductive"
+    ],
+    "UBERON_0001645": [
+      "Nervous"
+    ],
+    "UBERON_0001690": [
+      "Sensory"
+    ],
+    "UBERON_0001716": [
+      "Digestive"
+    ],
+    "UBERON_0001759": [
+      "Nervous"
+    ],
+    "UBERON_0001765": [
+      "Integumentary"
+    ],
+    "UBERON_0001898": [
+      "Nervous"
+    ],
+    "UBERON_0001911": [
+      "Integumentary"
+    ],
+    "UBERON_0001958": [
+      "Respiratory"
+    ],
+    "UBERON_0001969": [
+      "Immune/Haematopoietic"
+    ],
+    "UBERON_0001977": [
+      "Immune/Haematopoietic"
+    ],
+    "UBERON_0001981": [
+      "Cardiovascular"
+    ],
+    "UBERON_0001997": [
+      "Nervous",
+      "Respiratory",
+      "Sensory"
+    ],
+    "UBERON_0002046": [
+      "Endocrine"
+    ],
+    "UBERON_0002048": [
+      "Respiratory"
+    ],
+    "UBERON_0002049": [
+      "Cardiovascular"
+    ],
+    "UBERON_0002107": [
+      "Digestive",
+      "Endocrine",
+      "Hepatobiliary"
+    ],
+    "UBERON_0002108": [
+      "Digestive"
+    ],
+    "UBERON_0002113": [
+      "Renal/Urinary"
+    ],
+    "UBERON_0002114": [
+      "Digestive"
+    ],
+    "UBERON_0002204": [
+      "Musculoskeletal"
+    ],
+    "UBERON_0002268": [
+      "Sensory"
+    ],
+    "UBERON_0002294": [
+      "Digestive"
+    ],
+    "UBERON_0002370": [
+      "Endocrine",
+      "Immune/Haematopoietic"
+    ],
+    "UBERON_0002371": [
+      "Immune/Haematopoietic",
+      "Musculoskeletal"
+    ],
+    "UBERON_0002385": [
+      "Musculoskeletal"
+    ],
+    "UBERON_0002394": [
+      "Digestive",
+      "Hepatobiliary"
+    ],
+    "UBERON_0002405": [
+      "Immune/Haematopoietic"
+    ],
+    "UBERON_0002421": [
+      "Nervous"
+    ],
+    "UBERON_0002423": [
+      "Digestive"
+    ],
+    "UBERON_0002451": [
+      "Reproductive"
+    ],
+    "UBERON_0002512": [
+      "Endocrine",
+      "Reproductive"
+    ],
+    "UBERON_0002535": [
+      "Respiratory"
+    ],
+    "UBERON_0003133": [
+      "Reproductive"
+    ],
+    "UBERON_0003134": [
+      "Reproductive"
+    ],
+    "UBERON_0003135": [
+      "Reproductive"
+    ],
+    "UBERON_0004134": [
+      "Renal/Urinary"
+    ],
+    "UBERON_0004535": [
+      "Cardiovascular"
+    ],
+    "UBERON_0004638": [
+      "Cardiovascular"
+    ],
+    "UBERON_0004802": [
+      "Respiratory"
+    ],
+    "UBERON_0004811": [
+      "Reproductive"
+    ],
+    "UBERON_0004911": [
+      "Reproductive"
+    ],
+    "UBERON_0005296": [
+      "Reproductive"
+    ],
+    "UBERON_0005305": [
+      "Endocrine"
+    ],
+    "UBERON_0005385": [
+      "Respiratory",
+      "Sensory"
+    ],
+    "UBERON_0005386": [
+      "Respiratory",
+      "Sensory"
+    ],
+    "UBERON_0005620": [
+      "Digestive",
+      "Musculoskeletal"
+    ],
+    "UBERON_0005777": [
+      "Renal/Urinary"
+    ],
+    "UBERON_0005876": [
+      "Reproductive"
+    ],
+    "UBERON_0007798": [
+      "Cardiovascular"
+    ],
+    "UBERON_0008404": [
+      "Renal/Urinary"
+    ],
+    "UBERON_0008827": [
+      "Digestive"
+    ],
+    "UBERON_0008975": [
+      "Reproductive"
+    ],
+    "UBERON_0009773": [
+      "Renal/Urinary"
+    ],
+    "UBERON_0010364": [
+      "Musculoskeletal"
+    ],
+    "UBERON_0010394": [
+      "Immune/Haematopoietic"
+    ],
+    "UBERON_0010418": [
+      "Renal/Urinary"
+    ],
+    "UBERON_0011374": [
+      "Reproductive"
+    ],
+    "UBERON_0012186": [
+      "Reproductive"
+    ],
+    "UBERON_0013191": [
+      "Reproductive"
+    ],
+    "UBERON_0015834": [
+      "Digestive"
+    ],
+    "UBERON_0019306": [
+      "Sensory"
+    ],
+    "UBERON_0026546": [
+      "Nervous"
+    ],
+    "UBERON_0035753": [
+      "Cardiovascular"
+    ],
+    "UBERON_0035963": [
+      "Respiratory"
+    ],
+    "UBERON_2005272": [
+      "Reproductive"
+    ]
+  },
+  "cl": {
+    "CL_0000071": [
+      "Cardiovascular"
+    ],
+    "CL_0000082": [
+      "Respiratory"
+    ],
+    "CL_0000084": [
+      "Immune/Haematopoietic"
+    ],
+    "CL_0000091": [
+      "Immune/Haematopoietic"
+    ],
+    "CL_0000100": [
+      "Nervous"
+    ],
+    "CL_0000117": [
+      "Nervous"
+    ],
+    "CL_0000127": [
+      "Nervous"
+    ],
+    "CL_0000128": [
+      "Nervous"
+    ],
+    "CL_0000129": [
+      "Immune/Haematopoietic",
+      "Nervous"
+    ],
+    "CL_0000145": [
+      "Immune/Haematopoietic"
+    ],
+    "CL_0000158": [
+      "Respiratory"
+    ],
+    "CL_0000178": [
+      "Reproductive"
+    ],
+    "CL_0000182": [
+      "Digestive",
+      "Endocrine",
+      "Hepatobiliary"
+    ],
+    "CL_0000192": [
+      "Musculoskeletal"
+    ],
+    "CL_0000235": [
+      "Immune/Haematopoietic"
+    ],
+    "CL_0000236": [
+      "Immune/Haematopoietic"
+    ],
+    "CL_0000437": [
+      "Endocrine",
+      "Nervous",
+      "Reproductive"
+    ],
+    "CL_0000451": [
+      "Immune/Haematopoietic"
+    ],
+    "CL_0000501": [
+      "Reproductive"
+    ],
+    "CL_0000503": [
+      "Reproductive"
+    ],
+    "CL_0000540": [
+      "Nervous"
+    ],
+    "CL_0000542": [
+      "Immune/Haematopoietic"
+    ],
+    "CL_0000546": [
+      "Immune/Haematopoietic"
+    ],
+    "CL_0000575": [
+      "Sensory"
+    ],
+    "CL_0000632": [
+      "Digestive",
+      "Endocrine",
+      "Hepatobiliary"
+    ],
+    "CL_0000700": [
+      "Nervous"
+    ],
+    "CL_0000731": [
+      "Renal/Urinary"
+    ],
+    "CL_0000738": [
+      "Immune/Haematopoietic"
+    ],
+    "CL_0000746": [
+      "Cardiovascular"
+    ],
+    "CL_0000775": [
+      "Immune/Haematopoietic"
+    ],
+    "CL_0000813": [
+      "Immune/Haematopoietic"
+    ],
+    "CL_0000847": [
+      "Nervous",
+      "Sensory"
+    ],
+    "CL_0001035": [
+      "Musculoskeletal"
+    ],
+    "CL_0002132": [
+      "Reproductive"
+    ],
+    "CL_0002167": [
+      "Nervous",
+      "Respiratory",
+      "Sensory"
+    ],
+    "CL_0002196": [
+      "Digestive",
+      "Endocrine",
+      "Hepatobiliary"
+    ],
+    "CL_0002258": [
+      "Endocrine"
+    ],
+    "CL_0002319": [
+      "Nervous"
+    ],
+    "CL_0002328": [
+      "Respiratory"
+    ],
+    "CL_0002368": [
+      "Respiratory"
+    ],
+    "CL_0002538": [
+      "Digestive",
+      "Endocrine",
+      "Hepatobiliary"
+    ],
+    "CL_0002563": [
+      "Digestive"
+    ],
+    "CL_0002656": [
+      "Reproductive"
+    ],
+    "CL_0011005": [
+      "Nervous"
+    ],
+    "CL_0011110": [
+      "Nervous"
+    ],
+    "CL_0011111": [
+      "Endocrine",
+      "Nervous"
+    ],
+    "CL_1000143": [
+      "Respiratory"
+    ],
+    "CL_1000488": [
+      "Digestive",
+      "Hepatobiliary"
+    ],
+    "CL_1000494": [
+      "Renal/Urinary"
+    ],
+    "CL_1000497": [
+      "Renal/Urinary"
+    ],
+    "CL_1000507": [
+      "Renal/Urinary"
+    ],
+    "CL_2000030": [
+      "Nervous"
+    ]
+  },
+  "go": {
+    "GO_0001541": [
+      "Reproductive"
+    ],
+    "GO_0007420": [
+      "Nervous"
+    ],
+    "GO_0008584": [
+      "Reproductive"
+    ]
+  },
+  "stats": {
+    "uberon_terms_in_snapshots": 127,
+    "uberon_terms_classified": 101,
+    "cl_terms_in_snapshots": 96,
+    "cl_terms_classified": 52,
+    "go_terms_in_snapshots": 452,
+    "go_terms_classified": 3,
+    "elapsed_s": 34.7
+  }
+}
