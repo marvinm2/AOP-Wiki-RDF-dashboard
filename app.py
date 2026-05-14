@@ -109,7 +109,10 @@ from plots import (
     plot_latest_ke_reuse_distribution,
     plot_latest_ontology_diversity,
     plot_latest_aop_completeness_unique_colors,
+    plot_latest_organ_coverage,
+    plot_latest_life_stage,
     plot_ontology_term_growth,
+    plot_organ_coverage_trends,
     check_sparql_endpoint_health,
     safe_plot_execution,
     get_latest_version,
@@ -207,6 +210,7 @@ def compute_plots_parallel() -> dict:
         ('latest_database_summary', lambda: safe_plot_execution(plot_latest_database_summary)),
         ('latest_ke_annotation_depth', lambda: safe_plot_execution(plot_latest_ke_annotation_depth)),
         ('ontology_term_growth', lambda: safe_plot_execution(plot_ontology_term_growth)),
+        ('organ_coverage', lambda: safe_plot_execution(plot_organ_coverage_trends)),
     ]
     
     results = {}
@@ -290,6 +294,14 @@ try:
         graph_ontology_growth_abs = graph_ontology_growth_delta = ""
 except (TypeError, ValueError):
     graph_ontology_growth_abs = graph_ontology_growth_delta = ""
+
+# Organ-system coverage trends (Signals A/A'/B)
+try:
+    graph_organ_cov_abs, graph_organ_cov_delta, _ = plot_results.get('organ_coverage', ("", "", None))
+    if graph_organ_cov_abs is None:
+        graph_organ_cov_abs = graph_organ_cov_delta = ""
+except (TypeError, ValueError):
+    graph_organ_cov_abs = graph_organ_cov_delta = ""
 
 # Latest data plots
 latest_entity_counts = plot_results.get('latest_entity_counts') or ""
@@ -1413,6 +1425,19 @@ def api_get_latest_version():
         logger.error(f"Error getting latest version: {e}")
         return jsonify({"version": "Data available on dashboard", "error": str(e)}), 500
 
+
+@app.route("/api/organ-system-buckets")
+def api_organ_system_buckets():
+    """Serve the curated organ-system bucket dictionary that backs the
+    AOP organ-coverage plots.
+
+    Returns the full Signal A/A'/B/C mapping so reviewers can audit which
+    UBERON / CL / GO BP terms and which keyword regexes feed each bucket.
+    Linked from the methodology note for those plots.
+    """
+    from plots.organ_systems import serialise_for_methodology
+    return jsonify(serialise_for_methodology())
+
 @app.route("/api/versions")
 def api_get_all_versions():
     """API endpoint to get all available AOP-Wiki database versions with metadata.
@@ -1609,6 +1634,8 @@ def get_plot(plot_name):
         'kes_by_kec_count_delta': graph_kec_count_delta,
         'ontology_term_growth_absolute': graph_ontology_growth_abs,
         'ontology_term_growth_delta': graph_ontology_growth_delta,
+        'organ_coverage_absolute': graph_organ_cov_abs,
+        'organ_coverage_delta': graph_organ_cov_delta,
     }
 
     # Handle latest_* plots dynamically with version support
@@ -1633,6 +1660,8 @@ def get_plot(plot_name):
         'latest_ke_reuse_distribution': plot_latest_ke_reuse_distribution,
         'latest_ontology_diversity': plot_latest_ontology_diversity,
         'latest_aop_completeness_unique': plot_latest_aop_completeness_unique_colors,
+        'latest_organ_coverage': plot_latest_organ_coverage,
+        'latest_life_stage': plot_latest_life_stage,
     }
 
     # Handle latest_* plots without version support yet (use pre-computed)

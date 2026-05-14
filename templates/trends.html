@@ -819,6 +819,49 @@
         {{ data_table_toggle('ontology_term_growth_absolute') }}
     </div>
 
+    <div class="plot-box" id="organ-coverage">
+        <div class="plot-header">
+            <h3>Organ-System Coverage of AOPs over Time</h3>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download Absolute ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/organ_coverage_absolute?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/organ_coverage_absolute?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/organ_coverage_absolute?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download Delta ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/organ_coverage_delta?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/organ_coverage_delta?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/organ_coverage_delta?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+                <label><input type="checkbox" class="plot-toggle"> Show Deltas</label>
+            </div>
+        </div>
+        <p class="plot-description">
+            Number of AOPs classified into each of 13 organ-system buckets at every quarterly snapshot.
+            Combines Signals A (curated <code>aopo:OrganContext</code> / <code>aopo:CellTypeContext</code>),
+            A&prime; (<code>aopo:hasObject</code> UBERON/CL) and B (GO biological-process bridge).
+            Signal C (keywords) is intentionally excluded from the trend view.
+        </p>
+        {{ methodology_note(methodology_notes, 'organ_coverage') }}
+        <div class="abs">
+            <div class="lazy-plot" data-plot-name="organ_coverage_absolute">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+        <div class="delta" style="display:none;">
+            <div class="lazy-plot" data-plot-name="organ_coverage_delta">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+        {{ data_table_toggle('organ_coverage_absolute') }}
+    </div>
+
     </div>
 </section>
 

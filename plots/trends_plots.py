@@ -53,6 +53,7 @@ Author:
 
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import logging
 from functools import reduce
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -61,6 +62,13 @@ from .shared import (
     run_sparql_query, run_sparql_query_with_retry, extract_counts,
     safe_read_csv, create_fallback_plot, get_properties_for_entity,
     get_all_versions, render_plot_html
+)
+from .organ_systems import (
+    ORGAN_SYSTEM_BUCKETS,
+    best_signal,
+    classify_anatomy,
+    classify_go_bp,
+    classify_text,
 )
 
 logger = logging.getLogger(__name__)
@@ -3413,4 +3421,171 @@ def plot_ontology_term_growth() -> tuple[str, str, pd.DataFrame]:
     except Exception as e:
         logger.error(f"Failed to generate ontology term growth plots: {str(e)}")
         fallback = create_fallback_plot("Ontology Term Growth", f"Error: {str(e)}")
+        return (fallback, fallback, pd.DataFrame())
+
+
+# ===========================================================================
+# Organ-system coverage over time
+# ===========================================================================
+
+
+def _coverage_for_graph(graph_uri: str) -> set[tuple[str, str]]:
+    """Return the set of (AOP IRI, organ-system bucket) pairs classified by
+    any of Signals A, A' or B in a single snapshot graph.
+
+    Signal C (keywords) is intentionally excluded from the trend version —
+    keywords have no temporal signal beyond title rewrites and would
+    distort the longitudinal picture.
+    """
+    query = f"""
+    SELECT ?aop ?organ ?cell ?obj ?proc
+    WHERE {{
+      GRAPH <{graph_uri}> {{
+        ?aop a aopo:AdverseOutcomePathway ;
+             aopo:has_key_event ?ke .
+        OPTIONAL {{ ?ke aopo:OrganContext ?organ . }}
+        OPTIONAL {{ ?ke aopo:CellTypeContext ?cell . }}
+        OPTIONAL {{
+          ?ke aopo:hasBiologicalEvent ?be .
+          OPTIONAL {{ ?be aopo:hasObject ?obj . }}
+          OPTIONAL {{ ?be aopo:hasProcess ?proc . }}
+        }}
+      }}
+    }}
+    """
+    results = run_sparql_query(query) or []
+    pairs: set[tuple[str, str]] = set()
+    for r in results:
+        aop = r.get("aop", {}).get("value")
+        if not aop:
+            continue
+        for var in ("organ", "cell", "obj"):
+            iri = r.get(var, {}).get("value")
+            if iri:
+                bucket = classify_anatomy(iri)
+                if bucket:
+                    pairs.add((aop, bucket))
+        proc = r.get("proc", {}).get("value")
+        if proc:
+            bucket = classify_go_bp(proc)
+            if bucket:
+                pairs.add((aop, bucket))
+    return pairs
+
+
+def plot_organ_coverage_trends() -> tuple[str, str, pd.DataFrame]:
+    """Organ-system coverage of AOPs across every quarterly snapshot.
+
+    For each snapshot date, count the number of AOPs that classify into each
+    organ-system bucket via Signals A/A'/B (the structured-anatomy signals).
+    Produces a multi-line trend plot plus a per-snapshot delta bar.
+
+    Returns:
+        tuple: (absolute_html, delta_html, long_dataframe)
+    """
+    global _plot_data_cache, _plot_figure_cache
+
+    try:
+        versions = get_all_versions()
+        if not versions:
+            fallback = create_fallback_plot("Organ-System Coverage Trends", "No versions available")
+            return (fallback, fallback, pd.DataFrame())
+
+        def _query_version(ver_info):
+            graph_uri = ver_info["graph_uri"]
+            version = ver_info["version"]
+            try:
+                pairs = _coverage_for_graph(graph_uri)
+            except Exception as exc:
+                logger.warning(f"Organ-coverage query failed for {version}: {exc}")
+                return None
+
+            counts: dict[str, int] = {b: 0 for b in ORGAN_SYSTEM_BUCKETS}
+            seen_per_bucket: dict[str, set] = {b: set() for b in ORGAN_SYSTEM_BUCKETS}
+            for aop, bucket in pairs:
+                seen_per_bucket.setdefault(bucket, set()).add(aop)
+            counts = {b: len(s) for b, s in seen_per_bucket.items()}
+            counts["version"] = version
+            return counts
+
+        rows = []
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            futures = {executor.submit(_query_version, v): v for v in versions}
+            for future in as_completed(futures):
+                row = future.result(timeout=120)
+                if row is not None:
+                    rows.append(row)
+
+        if not rows:
+            fallback = create_fallback_plot("Organ-System Coverage Trends", "No data collected")
+            return (fallback, fallback, pd.DataFrame())
+
+        df = pd.DataFrame(rows)
+        df["version_dt"] = pd.to_datetime(df["version"], errors="coerce")
+        df = df.sort_values("version_dt").reset_index(drop=True)
+
+        bucket_cols = [b for b in ORGAN_SYSTEM_BUCKETS if b in df.columns]
+
+        # Long form for the line chart
+        long_df = df.melt(
+            id_vars=["version", "version_dt"],
+            value_vars=bucket_cols,
+            var_name="Organ System",
+            value_name="AOP count",
+        )
+
+        fig_abs = px.line(
+            long_df,
+            x="version",
+            y="AOP count",
+            color="Organ System",
+            markers=True,
+            color_discrete_sequence=BRAND_COLORS["palette"],
+        )
+        fig_abs.update_layout(
+            title="Organ-System Coverage of AOPs over Time",
+            xaxis_title="Snapshot",
+            yaxis_title="Number of AOPs (Signals A, A', B)",
+            margin=dict(l=50, r=30, t=60, b=80),
+        )
+        fig_abs.update_xaxes(tickangle=-45)
+
+        # Delta: per-snapshot change relative to previous snapshot, per bucket.
+        delta = df[bucket_cols].diff().fillna(0).astype(int)
+        delta["version"] = df["version"].values
+        delta_long = delta.melt(
+            id_vars=["version"],
+            value_vars=bucket_cols,
+            var_name="Organ System",
+            value_name="Delta",
+        )
+        fig_delta = px.bar(
+            delta_long,
+            x="version",
+            y="Delta",
+            color="Organ System",
+            barmode="group",
+            color_discrete_sequence=BRAND_COLORS["palette"],
+        )
+        fig_delta.update_layout(
+            title="New AOP Classifications per Snapshot, by Organ System",
+            xaxis_title="Snapshot",
+            yaxis_title="Δ AOPs vs previous snapshot",
+            margin=dict(l=50, r=30, t=60, b=80),
+        )
+        fig_delta.update_xaxes(tickangle=-45)
+
+        export_df = df.drop(columns=["version_dt"])
+        delta_export = delta.copy()
+        delta_export = delta_export[["version"] + bucket_cols]
+        _plot_data_cache["organ_coverage_absolute"] = export_df
+        _plot_data_cache["organ_coverage_delta"] = delta_export
+        _plot_figure_cache["organ_coverage_absolute"] = fig_abs
+        _plot_figure_cache["organ_coverage_delta"] = fig_delta
+
+        return (render_plot_html(fig_abs), render_plot_html(fig_delta), export_df)
+
+    except Exception as e:
+        logger.error(f"Failed to generate organ-coverage trends: {str(e)}")
+        fallback = create_fallback_plot("Organ-System Coverage Trends", f"Error: {str(e)}")
         return (fallback, fallback, pd.DataFrame())

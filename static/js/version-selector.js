@@ -30,7 +30,9 @@
         'latest_entity_by_oecd_status',
         'latest_ke_reuse',
         'latest_ke_reuse_distribution',
-        'latest_ontology_diversity'
+        'latest_ontology_diversity',
+        'latest_organ_coverage',
+        'latest_life_stage'
     ];
 
     /**

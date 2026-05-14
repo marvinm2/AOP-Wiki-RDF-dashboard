@@ -58,11 +58,22 @@ Author:
 
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from .shared import (
     BRAND_COLORS, config, _plot_data_cache, _plot_figure_cache, run_sparql_query, safe_read_csv, create_fallback_plot,
     render_plot_html
+)
+from .organ_systems import (
+    ORGAN_SYSTEM_BUCKETS,
+    NO_ANNOTATION_BUCKET,
+    SIGNAL_COLOURS,
+    SIGNAL_ORDER,
+    best_signal,
+    classify_anatomy,
+    classify_go_bp,
+    classify_text,
 )
 
 logger = logging.getLogger(__name__)
@@ -2463,5 +2474,315 @@ def plot_latest_ontology_diversity(version: str = None) -> str:
     )
 
     _plot_figure_cache[cache_key] = fig
+
+
+# ===========================================================================
+# Organ-system coverage (AOP-level hybrid A + A' + B + C signal stack)
+# ===========================================================================
+
+
+def _resolve_target_graph(version: str = None) -> tuple[str, str] | None:
+    """Return ``(graph_iri, version_label)`` for the given version, or None on failure."""
+    if version:
+        graph_iri = f"http://aopwiki.org/graph/{version}"
+        return graph_iri, version
+
+    version_query = """
+    SELECT ?graph
+    WHERE {
+        GRAPH ?graph { ?s a aopo:KeyEvent . }
+        FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+    }
+    GROUP BY ?graph
+    ORDER BY DESC(?graph)
+    LIMIT 1
+    """
+    results = run_sparql_query(version_query)
+    if not results:
+        return None
+    graph_iri = results[0]["graph"]["value"]
+    return graph_iri, graph_iri.rsplit("/", 1)[-1]
+
+
+def _query_aop_signal_rows(target_graph: str) -> list[dict]:
+    """Pull the AOP/AO/KE/anatomy/process/title rows used by all four signals.
+
+    One SPARQL pull, four signal classifiers applied in Python afterwards. The
+    OPTIONALs are intentional — most AOPs have only partial annotation, and
+    the per-AOP rule is satisfied if *any* of A/A'/B/C produces a hit.
+    """
+    query = f"""
+    SELECT ?aop ?aop_title ?ao ?ke ?organ ?cell ?obj ?proc
+    WHERE {{
+      GRAPH <{target_graph}> {{
+        ?aop a aopo:AdverseOutcomePathway ;
+             <http://purl.org/dc/elements/1.1/title> ?aop_title ;
+             aopo:has_key_event ?ke .
+        OPTIONAL {{ ?aop aopo:has_adverse_outcome ?ao . }}
+        OPTIONAL {{ ?ke aopo:OrganContext ?organ . }}
+        OPTIONAL {{ ?ke aopo:CellTypeContext ?cell . }}
+        OPTIONAL {{
+          ?ke aopo:hasBiologicalEvent ?be .
+          OPTIONAL {{ ?be aopo:hasObject ?obj . }}
+          OPTIONAL {{ ?be aopo:hasProcess ?proc . }}
+        }}
+      }}
+    }}
+    """
+    return run_sparql_query(query) or []
+
+
+def _compute_coverage_rows(rows: list[dict]) -> pd.DataFrame:
+    """Reduce raw SPARQL rows to one record per (aop, bucket, signal).
+
+    Same AOP can land in multiple buckets, and a given (aop, bucket) pair can
+    be reached by several signals — we keep them all and pick the best signal
+    per pair downstream when reporting AOP counts.
+    """
+    per_pair: dict[tuple[str, str], set[str]] = {}
+    aop_titles: dict[str, str] = {}
+    aop_ao: dict[str, str] = {}
+
+    for r in rows:
+        aop = r.get("aop", {}).get("value")
+        if not aop:
+            continue
+        title = r.get("aop_title", {}).get("value", "")
+        aop_titles.setdefault(aop, title)
+        ao = r.get("ao", {}).get("value")
+        if ao and aop not in aop_ao:
+            aop_ao[aop] = ao
+
+        # Signal A — OrganContext / CellTypeContext
+        for predicate_var in ("organ", "cell"):
+            iri = r.get(predicate_var, {}).get("value")
+            if iri:
+                bucket = classify_anatomy(iri)
+                if bucket:
+                    per_pair.setdefault((aop, bucket), set()).add("A")
+
+        # Signal A' — hasObject UBERON/CL
+        obj_iri = r.get("obj", {}).get("value")
+        if obj_iri:
+            bucket = classify_anatomy(obj_iri)
+            if bucket:
+                per_pair.setdefault((aop, bucket), set()).add("A'")
+
+        # Signal B — hasProcess GO BP
+        proc_iri = r.get("proc", {}).get("value")
+        if proc_iri:
+            bucket = classify_go_bp(proc_iri)
+            if bucket:
+                per_pair.setdefault((aop, bucket), set()).add("B")
+
+    # Signal C — keywords on AOP title (one pass per AOP, not per row)
+    for aop, title in aop_titles.items():
+        for bucket in classify_text(title):
+            per_pair.setdefault((aop, bucket), set()).add("C")
+
+    records = []
+    for (aop, bucket), signals in per_pair.items():
+        records.append({
+            "AOP": aop,
+            "AOP Title": aop_titles.get(aop, ""),
+            "AO": aop_ao.get(aop, ""),
+            "Organ System": bucket,
+            "Signals": ",".join(sorted(signals)),
+            "Best Signal": best_signal(signals),
+        })
+
+    aop_count = len(aop_titles)
+    classified_aops = {aop for (aop, _b) in per_pair.keys()}
+    no_anno = aop_count - len(classified_aops)
+    if no_anno > 0:
+        # Encoded as a sentinel row per unclassified AOP so the CSV is honest
+        # about which AOPs slipped through every signal.
+        unclassified = set(aop_titles) - classified_aops
+        for aop in unclassified:
+            records.append({
+                "AOP": aop,
+                "AOP Title": aop_titles.get(aop, ""),
+                "AO": aop_ao.get(aop, ""),
+                "Organ System": NO_ANNOTATION_BUCKET,
+                "Signals": "",
+                "Best Signal": None,
+            })
+
+    return pd.DataFrame(records)
+
+
+def plot_latest_organ_coverage(version: str = None) -> str:
+    """AOP coverage of organ systems via a hybrid A+A'+B+C signal stack.
+
+    The unit of analysis is the AOP: an AOP is counted in an organ-system
+    bucket if *any* member KE (or the AOP title) carries an annotation that
+    classifies into that bucket. Stacks show which signal source attributed
+    the AOP, with A (curated anatomy) the highest-confidence and C (keywords)
+    flagged grey as exploratory.
+
+    Args:
+        version: Optional version string. If None, uses the latest snapshot.
+
+    Returns:
+        str: Plotly HTML.
+    """
+    global _plot_data_cache, _plot_figure_cache
+
+    target = _resolve_target_graph(version)
+    if target is None:
+        return create_fallback_plot("AOP Organ-System Coverage", "No graphs available")
+    target_graph, version_label = target
+
+    rows = _query_aop_signal_rows(target_graph)
+    if not rows:
+        return create_fallback_plot("AOP Organ-System Coverage", "No AOP data in this snapshot")
+
+    df = _compute_coverage_rows(rows)
+    if df.empty:
+        return create_fallback_plot("AOP Organ-System Coverage", "No AOPs found")
+
+    df["Version"] = version_label
+    cache_key = f"latest_organ_coverage_{version or 'latest'}"
+    _plot_data_cache[cache_key] = df
+
+    # Count AOPs per (bucket, best_signal) — each AOP counted once per bucket.
+    classified = df[df["Best Signal"].notna()]
+    grouped = (
+        classified.groupby(["Organ System", "Best Signal"])["AOP"]
+        .nunique()
+        .reset_index(name="AOP count")
+    )
+
+    bucket_order = [b for b in ORGAN_SYSTEM_BUCKETS if b in set(grouped["Organ System"])]
+    bucket_totals = grouped.groupby("Organ System")["AOP count"].sum()
+    bucket_order = sorted(bucket_order, key=lambda b: bucket_totals.get(b, 0))
+
+    fig = go.Figure()
+    for signal in SIGNAL_ORDER:
+        seg = grouped[grouped["Best Signal"] == signal]
+        if seg.empty:
+            continue
+        seg = seg.set_index("Organ System").reindex(bucket_order).fillna(0).reset_index()
+        fig.add_trace(go.Bar(
+            x=seg["AOP count"],
+            y=seg["Organ System"],
+            name=f"Signal {signal}",
+            orientation="h",
+            marker_color=SIGNAL_COLOURS.get(signal),
+            hovertemplate=(
+                "<b>%{y}</b><br>"
+                f"Signal {signal}: " + "%{x} AOPs<extra></extra>"
+            ),
+        ))
+
+    no_anno = int((df["Organ System"] == NO_ANNOTATION_BUCKET).sum())
+    total_aops = int(df["AOP"].nunique())
+    annotated = total_aops - no_anno
+    subtitle = (
+        f"{annotated}/{total_aops} AOPs classified at least once · "
+        f"{no_anno} AOP(s) had no anatomy / process / keyword signal"
+    )
+
+    fig.update_layout(
+        barmode="stack",
+        title={"text": f"AOP Coverage of Organ Systems<br><sub>{subtitle}</sub>"},
+        xaxis_title="Number of AOPs",
+        yaxis_title="",
+        legend_title="Signal source",
+        margin=dict(l=80, r=30, t=80, b=50),
+    )
+
+    _plot_figure_cache[cache_key] = fig
+    return render_plot_html(fig)
+
+
+def plot_latest_life_stage(version: str = None) -> str:
+    """Distribution of AOPs by life-stage applicability (issue #22, narrowed).
+
+    AOP-Wiki RDF exposes ``aopo:LifeStageContext`` as one or more free-text
+    literals per AOP (e.g. "Adult", "Juvenile", "All life stages"). No
+    structured sex-applicability predicate exists in the RDF — sex
+    applicability is described inside free-text ``aopo:AopContext`` literals
+    and is not machine-readable. This plot therefore reports life stage only;
+    the methodology note records the gap.
+
+    Args:
+        version: Optional version string. If None, uses the latest snapshot.
+
+    Returns:
+        str: Plotly HTML horizontal bar chart.
+    """
+    global _plot_data_cache, _plot_figure_cache
+
+    target = _resolve_target_graph(version)
+    if target is None:
+        return create_fallback_plot("AOP Life-Stage Applicability", "No graphs available")
+    target_graph, version_label = target
+
+    # COUNT(*) on AdverseOutcomePathway gives the denominator so "Not specified"
+    # can be derived from the difference rather than guessed.
+    query = f"""
+    SELECT ?aop ?life_stage
+    WHERE {{
+      GRAPH <{target_graph}> {{
+        ?aop a aopo:AdverseOutcomePathway .
+        OPTIONAL {{ ?aop aopo:LifeStageContext ?life_stage . }}
+      }}
+    }}
+    """
+    results = run_sparql_query(query) or []
+    if not results:
+        return create_fallback_plot("AOP Life-Stage Applicability", "No AOP rows")
+
+    per_aop: dict[str, set] = {}
+    for r in results:
+        aop = r.get("aop", {}).get("value")
+        if not aop:
+            continue
+        bucket = per_aop.setdefault(aop, set())
+        ls = r.get("life_stage", {}).get("value")
+        if ls:
+            bucket.add(ls.strip())
+
+    total_aops = len(per_aop)
+    UNSPECIFIED = "Not specified"
+
+    label_counts: dict[str, int] = {}
+    for aop, labels in per_aop.items():
+        if not labels:
+            label_counts[UNSPECIFIED] = label_counts.get(UNSPECIFIED, 0) + 1
+        else:
+            for lbl in labels:
+                label_counts[lbl] = label_counts.get(lbl, 0) + 1
+
+    df = pd.DataFrame(
+        [{"Life stage": k, "AOP count": v} for k, v in label_counts.items()]
+    )
+    if df.empty:
+        return create_fallback_plot("AOP Life-Stage Applicability", "No life-stage data")
+
+    df = df.sort_values("AOP count", ascending=True)
+    df["Version"] = version_label
+    cache_key = f"latest_life_stage_{version or 'latest'}"
+    _plot_data_cache[cache_key] = df
+
+    fig = px.bar(
+        df, x="AOP count", y="Life stage", orientation="h", text="AOP count"
+    )
+    fig.update_traces(marker_color=BRAND_COLORS["blue"], textposition="outside")
+    subtitle = (
+        f"AOPs annotated with at least one life-stage: "
+        f"{total_aops - label_counts.get(UNSPECIFIED, 0)}/{total_aops}. "
+        f"Sex applicability is not structured in the RDF — see methodology note."
+    )
+    fig.update_layout(
+        title={"text": f"AOP Life-Stage Applicability<br><sub>{subtitle}</sub>"},
+        margin=dict(l=200, r=30, t=80, b=50),
+        xaxis_title="Number of AOPs",
+        yaxis_title="",
+    )
+
+    _plot_figure_cache[cache_key] = fig
+    return render_plot_html(fig)
 
     return render_plot_html(fig)

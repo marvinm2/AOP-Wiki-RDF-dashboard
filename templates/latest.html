@@ -296,6 +296,59 @@
     </div>
 </section>
 
+<section class="section-block" id="coverage-analysis">
+    <h2 class="section-header">Coverage Analysis</h2>
+    <div class="plot-grid">
+        <div class="plot-box full-width">
+            <div class="plot-header">
+                <h3>AOP Coverage of Organ Systems</h3>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download &#x25BC;</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/latest/organ_coverage?format=csv" class="dropdown-item">CSV</a>
+                        <a href="/download/latest/organ_coverage?format=png" class="dropdown-item">PNG</a>
+                        <a href="/download/latest/organ_coverage?format=svg" class="dropdown-item">SVG</a>
+                    </div>
+                </div>
+            </div>
+            <p class="plot-description">
+                AOP coverage of 13 high-level organ systems, classified per AOP via a hybrid of four signals:
+                <strong>A</strong> (curated UBERON/CL anatomy on Key Events),
+                <strong>A&prime;</strong> (UBERON/CL appearing as biological-event objects),
+                <strong>B</strong> (GO biological-process bridge, curated map), and
+                <strong>C</strong> (regex on AOP title — exploratory, grey).
+                An AOP can belong to multiple organ systems; the stack colour reflects the highest-confidence signal that classified it.
+            </p>
+            {{ methodology_note(methodology_notes, 'latest_organ_coverage') }}
+            <div class="lazy-plot" data-plot-name="latest_organ_coverage">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+            {{ data_table_toggle('latest_organ_coverage') }}
+        </div>
+        <div class="plot-box full-width">
+            <div class="plot-header">
+                <h3>AOP Life-Stage Applicability</h3>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download &#x25BC;</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/latest/life_stage?format=csv" class="dropdown-item">CSV</a>
+                        <a href="/download/latest/life_stage?format=png" class="dropdown-item">PNG</a>
+                        <a href="/download/latest/life_stage?format=svg" class="dropdown-item">SVG</a>
+                    </div>
+                </div>
+            </div>
+            <p class="plot-description">
+                Distribution of AOPs across declared life-stage applicability labels (e.g. Adult, Juvenile, Embryonic). Surfaces gaps in coverage of vulnerable populations. Sex applicability is not exposed as a structured RDF predicate; see methodology note.
+            </p>
+            {{ methodology_note(methodology_notes, 'latest_life_stage') }}
+            <div class="lazy-plot" data-plot-name="latest_life_stage">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+            {{ data_table_toggle('latest_life_stage') }}
+        </div>
+    </div>
+</section>
+
 <section class="section-block" id="ke-reuse">
     <h2 class="section-header">Key Event Reuse Analysis</h2>
     <div class="plot-grid">

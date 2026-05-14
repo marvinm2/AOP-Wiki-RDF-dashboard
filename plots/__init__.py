@@ -170,6 +170,9 @@ from .trends_plots import (
 
     # Ontology trends (Phase 04-03)
     plot_ontology_term_growth,
+
+    # Organ-system coverage (Signal A/A'/B/C hybrid)
+    plot_organ_coverage_trends,
 )
 
 # Import network analysis functions
@@ -217,6 +220,10 @@ from .latest_plots import (
 
     # Enhanced completeness visualization
     plot_latest_aop_completeness_unique_colors,
+
+    # Organ-system coverage + life-stage applicability
+    plot_latest_organ_coverage,
+    plot_latest_life_stage,
 )
 
 # Define module version and metadata
@@ -267,6 +274,7 @@ __all__ = [
     'plot_aop_completeness_boxplot',
     'plot_oecd_completeness_trend',
     'plot_ontology_term_growth',
+    'plot_organ_coverage_trends',
 
     # Current snapshot functions
     'plot_latest_entity_counts',
@@ -288,6 +296,8 @@ __all__ = [
     'plot_latest_ke_reuse',
     'plot_latest_ke_reuse_distribution',
     'plot_latest_ontology_diversity',
+    'plot_latest_organ_coverage',
+    'plot_latest_life_stage',
 
     # Network analysis functions
     'build_aop_network',
@@ -324,6 +334,7 @@ def get_available_functions():
             'plot_aop_completeness_boxplot',
             'plot_oecd_completeness_trend',
             'plot_ontology_term_growth',
+            'plot_organ_coverage_trends',
         ],
         'current_snapshots': [
             'plot_latest_entity_counts',
@@ -345,6 +356,8 @@ def get_available_functions():
             'plot_latest_ke_reuse',
             'plot_latest_ke_reuse_distribution',
             'plot_latest_ontology_diversity',
+            'plot_latest_organ_coverage',
+            'plot_latest_life_stage',
         ],
         'network_analysis': [
             'build_aop_network',
