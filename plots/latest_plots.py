@@ -2611,6 +2611,39 @@ def _compute_coverage_rows(rows: list[dict]) -> pd.DataFrame:
     return pd.DataFrame(records)
 
 
+def _get_coverage_dataframe(version: str = None) -> tuple[pd.DataFrame, str] | None:
+    """Return (long-form coverage dataframe, version_label) for the snapshot.
+
+    Cached under ``latest_organ_coverage_{version_key}`` and also under the bare
+    ``latest_organ_coverage`` key for the raw-data toggle. The three coverage
+    plots (absolute, percentage, multi-organ) share this single dataframe so
+    they only trigger one SPARQL pull per snapshot.
+    """
+    cache_key = f"latest_organ_coverage_{version or 'latest'}"
+    cached = _plot_data_cache.get(cache_key)
+    if cached is not None and hasattr(cached, "empty") and not cached.empty:
+        version_label = str(cached["Version"].iloc[0]) if "Version" in cached.columns else (version or "")
+        return cached, version_label
+
+    target = _resolve_target_graph(version)
+    if target is None:
+        return None
+    target_graph, version_label = target
+
+    rows = _query_aop_signal_rows(target_graph)
+    if not rows:
+        return None
+
+    df = _compute_coverage_rows(rows)
+    if df.empty:
+        return None
+
+    df["Version"] = version_label
+    _plot_data_cache[cache_key] = df
+    _plot_data_cache["latest_organ_coverage"] = df
+    return df, version_label
+
+
 def plot_latest_organ_coverage(version: str = None) -> str:
     """AOP coverage of organ systems via a hybrid A+A'+B+C signal stack.
 
@@ -2628,25 +2661,11 @@ def plot_latest_organ_coverage(version: str = None) -> str:
     """
     global _plot_data_cache, _plot_figure_cache
 
-    target = _resolve_target_graph(version)
-    if target is None:
-        return create_fallback_plot("AOP Organ-System Coverage", "No graphs available")
-    target_graph, version_label = target
-
-    rows = _query_aop_signal_rows(target_graph)
-    if not rows:
+    result = _get_coverage_dataframe(version)
+    if result is None:
         return create_fallback_plot("AOP Organ-System Coverage", "No AOP data in this snapshot")
-
-    df = _compute_coverage_rows(rows)
-    if df.empty:
-        return create_fallback_plot("AOP Organ-System Coverage", "No AOPs found")
-
-    df["Version"] = version_label
+    df, version_label = result
     cache_key = f"latest_organ_coverage_{version or 'latest'}"
-    _plot_data_cache[cache_key] = df
-    # Also store under bare key so /api/plot-data/latest_organ_coverage works
-    # without a ?version= parameter (the raw-data toggle hits the bare key).
-    _plot_data_cache["latest_organ_coverage"] = df
 
     # Count AOPs per (bucket, best_signal) — each AOP counted once per bucket.
     classified = df[df["Best Signal"].notna()]
@@ -2816,6 +2835,188 @@ def plot_latest_life_stage(version: str = None) -> str:
         margin=dict(l=200, r=30, t=80, b=50),
         xaxis_title="Number of AOPs",
         yaxis_title="",
+    )
+
+    _plot_figure_cache[cache_key] = fig
+    return render_plot_html(fig)
+
+
+def plot_latest_organ_coverage_percentage(version: str = None) -> str:
+    """Percentage view of AOP coverage of organ systems.
+
+    Same hybrid A+A'+B+C classification as the absolute plot, normalised by
+    the total number of AOPs in the snapshot.
+
+    Args:
+        version: Optional version string. If None, uses the latest snapshot.
+
+    Returns:
+        str: Plotly HTML.
+    """
+    global _plot_data_cache, _plot_figure_cache
+
+    result = _get_coverage_dataframe(version)
+    if result is None:
+        return create_fallback_plot("AOP Organ-System Coverage (%)", "No AOP data in this snapshot")
+    df, version_label = result
+
+    classified = df[df["Best Signal"].notna()]
+    grouped = (
+        classified.groupby(["Organ System", "Best Signal"])["AOP"]
+        .nunique()
+        .reset_index(name="AOP count")
+    )
+
+    total_aops = int(df["AOP"].nunique())
+    if total_aops == 0:
+        return create_fallback_plot("AOP Organ-System Coverage (%)", "No AOPs found")
+
+    grouped["Percentage"] = grouped["AOP count"] * 100.0 / total_aops
+
+    bucket_order = [b for b in ORGAN_SYSTEM_BUCKETS if b in set(grouped["Organ System"])]
+    bucket_totals = grouped.groupby("Organ System")["Percentage"].sum()
+    bucket_order = sorted(bucket_order, key=lambda b: bucket_totals.get(b, 0))
+
+    cache_key = f"latest_organ_coverage_percentage_{version or 'latest'}"
+    pct_export = grouped.copy()
+    pct_export["Total AOPs in snapshot"] = total_aops
+    pct_export["Version"] = version_label
+    _plot_data_cache[cache_key] = pct_export
+    _plot_data_cache["latest_organ_coverage_percentage"] = pct_export
+
+    fig = go.Figure()
+    for signal in SIGNAL_ORDER:
+        seg = grouped[grouped["Best Signal"] == signal]
+        if seg.empty:
+            continue
+        seg = seg.set_index("Organ System").reindex(bucket_order).fillna(0).reset_index()
+        fig.add_trace(go.Bar(
+            x=seg["Percentage"],
+            y=seg["Organ System"],
+            name=f"Signal {signal}",
+            orientation="h",
+            marker_color=SIGNAL_COLOURS.get(signal),
+            customdata=seg["AOP count"],
+            hovertemplate=(
+                "<b>%{y}</b><br>"
+                f"Signal {signal}: " + "%{x:.1f}% of AOPs "
+                "(%{customdata} AOPs)<extra></extra>"
+            ),
+        ))
+
+    subtitle = (
+        f"Each segment is the share of the {total_aops} AOPs in this snapshot "
+        f"that the signal classified into the bucket"
+    )
+    fig.update_layout(
+        barmode="stack",
+        title={"text": f"AOP Coverage of Organ Systems — % view<br><sub>{subtitle}</sub>"},
+        xaxis_title="% of AOPs in snapshot",
+        yaxis_title="",
+        legend_title="Signal source",
+        margin=dict(l=80, r=30, t=80, b=50),
+    )
+
+    _plot_figure_cache[cache_key] = fig
+    return render_plot_html(fig)
+
+
+def plot_latest_multi_organ_aops(version: str = None) -> str:
+    """Histogram of the number of distinct organ systems each AOP classifies into.
+
+    Counts ``(aop, bucket)`` membership across Signals A/A'/B/C, excluding the
+    No-annotation sentinel. Answers "are there multi-organ AOPs?" directly.
+
+    Args:
+        version: Optional version string. If None, uses the latest snapshot.
+
+    Returns:
+        str: Plotly HTML.
+    """
+    global _plot_data_cache, _plot_figure_cache
+
+    result = _get_coverage_dataframe(version)
+    if result is None:
+        return create_fallback_plot("Multi-organ AOPs", "No AOP data in this snapshot")
+    df, version_label = result
+
+    real = df[(df["Organ System"] != NO_ANNOTATION_BUCKET) & df["Best Signal"].notna()]
+    counts = real.groupby("AOP")["Organ System"].nunique()
+    total_aops = int(df["AOP"].nunique())
+    unclassified = total_aops - counts.shape[0]
+
+    # Distribution: AOPs by number of buckets touched. Cap at 5+ for readability.
+    capped: dict[str, int] = {}
+    for n, count in counts.value_counts().sort_index().items():
+        key = "5+" if int(n) >= 5 else str(int(n))
+        capped[key] = capped.get(key, 0) + int(count)
+    if unclassified > 0:
+        capped = {"0 (no signal)": unclassified, **capped}
+
+    hist_df = pd.DataFrame(
+        [{"Organ systems touched": k, "AOPs": v} for k, v in capped.items()]
+    )
+
+    def _order(key: str) -> int:
+        if key == "0 (no signal)":
+            return -1
+        if key == "5+":
+            return 99
+        try:
+            return int(key)
+        except ValueError:
+            return 0
+
+    hist_df["__sort__"] = hist_df["Organ systems touched"].map(_order)
+    hist_df = hist_df.sort_values("__sort__").drop(columns="__sort__").reset_index(drop=True)
+
+    # Top multi-organ AOPs detail — drives the raw-data toggle
+    multi = counts[counts >= 2].sort_values(ascending=False)
+    title_lookup = (
+        df.drop_duplicates(subset=["AOP"]).set_index("AOP")["AOP Title"].to_dict()
+    )
+    buckets_lookup = (
+        real.groupby("AOP")["Organ System"]
+        .apply(lambda s: ", ".join(sorted(set(s))))
+        .to_dict()
+    )
+    detail_rows = [
+        {
+            "AOP": aop,
+            "AOP Title": title_lookup.get(aop, ""),
+            "Organ systems touched": int(n),
+            "Buckets": buckets_lookup.get(aop, ""),
+            "Version": version_label,
+        }
+        for aop, n in multi.items()
+    ]
+    detail_df = pd.DataFrame(detail_rows)
+
+    cache_key = f"latest_multi_organ_aops_{version or 'latest'}"
+    _plot_data_cache[cache_key] = detail_df if not detail_df.empty else hist_df.copy()
+    _plot_data_cache["latest_multi_organ_aops"] = detail_df if not detail_df.empty else hist_df.copy()
+
+    multi_count = int(multi.shape[0])
+    multi_pct = 100.0 * multi_count / total_aops if total_aops else 0.0
+    subtitle = (
+        f"{multi_count}/{total_aops} AOPs ({multi_pct:.0f}%) classify into 2 or more organ systems"
+    )
+
+    fig = px.bar(
+        hist_df,
+        x="Organ systems touched",
+        y="AOPs",
+        text="AOPs",
+        color="Organ systems touched",
+        color_discrete_sequence=BRAND_COLORS["palette"],
+    )
+    fig.update_traces(textposition="outside")
+    fig.update_layout(
+        title={"text": f"Multi-organ AOPs<br><sub>{subtitle}</sub>"},
+        xaxis_title="Number of distinct organ systems an AOP classifies into",
+        yaxis_title="Number of AOPs",
+        showlegend=False,
+        margin=dict(l=60, r=30, t=80, b=60),
     )
 
     _plot_figure_cache[cache_key] = fig

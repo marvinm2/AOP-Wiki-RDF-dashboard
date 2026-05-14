@@ -110,6 +110,8 @@ from plots import (
     plot_latest_ontology_diversity,
     plot_latest_aop_completeness_unique_colors,
     plot_latest_organ_coverage,
+    plot_latest_organ_coverage_percentage,
+    plot_latest_multi_organ_aops,
     plot_latest_life_stage,
     plot_ontology_term_growth,
     plot_organ_coverage_trends,
@@ -295,13 +297,13 @@ try:
 except (TypeError, ValueError):
     graph_ontology_growth_abs = graph_ontology_growth_delta = ""
 
-# Organ-system coverage trends (Signals A/A'/B)
+# Organ-system coverage trends (Signals A/A'/B) — returns (abs_html, percentage_html, df)
 try:
-    graph_organ_cov_abs, graph_organ_cov_delta, _ = plot_results.get('organ_coverage', ("", "", None))
+    graph_organ_cov_abs, graph_organ_cov_pct, _ = plot_results.get('organ_coverage', ("", "", None))
     if graph_organ_cov_abs is None:
-        graph_organ_cov_abs = graph_organ_cov_delta = ""
+        graph_organ_cov_abs = graph_organ_cov_pct = ""
 except (TypeError, ValueError):
-    graph_organ_cov_abs = graph_organ_cov_delta = ""
+    graph_organ_cov_abs = graph_organ_cov_pct = ""
 
 # Latest data plots
 latest_entity_counts = plot_results.get('latest_entity_counts') or ""
@@ -1635,7 +1637,7 @@ def get_plot(plot_name):
         'ontology_term_growth_absolute': graph_ontology_growth_abs,
         'ontology_term_growth_delta': graph_ontology_growth_delta,
         'organ_coverage_absolute': graph_organ_cov_abs,
-        'organ_coverage_delta': graph_organ_cov_delta,
+        'organ_coverage_percentage': graph_organ_cov_pct,
     }
 
     # Handle latest_* plots dynamically with version support
@@ -1661,6 +1663,8 @@ def get_plot(plot_name):
         'latest_ontology_diversity': plot_latest_ontology_diversity,
         'latest_aop_completeness_unique': plot_latest_aop_completeness_unique_colors,
         'latest_organ_coverage': plot_latest_organ_coverage,
+        'latest_organ_coverage_percentage': plot_latest_organ_coverage_percentage,
+        'latest_multi_organ_aops': plot_latest_multi_organ_aops,
         'latest_life_stage': plot_latest_life_stage,
     }
 

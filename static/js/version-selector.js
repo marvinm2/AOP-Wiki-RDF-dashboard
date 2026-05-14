@@ -32,6 +32,8 @@
         'latest_ke_reuse_distribution',
         'latest_ontology_diversity',
         'latest_organ_coverage',
+        'latest_organ_coverage_percentage',
+        'latest_multi_organ_aops',
         'latest_life_stage'
     ];
 

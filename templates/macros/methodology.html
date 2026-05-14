@@ -31,7 +31,24 @@
     <div class="methodology-content">
         <p><strong>What this measures:</strong> {{ note.description }}</p>
         <p><strong>Data source:</strong> {{ note.data_source }}</p>
+        {% if note.method_steps %}
+        <p><strong>How the mapping works:</strong></p>
+        <ol class="method-steps">
+            {% for step in note.method_steps %}
+            <li>{{ step | safe }}</li>
+            {% endfor %}
+        </ol>
+        {% endif %}
         <p><strong>Known limitations:</strong> {{ note.limitations }}</p>
+        {% if note.curated_mapping_url %}
+        <p>
+            <a href="{{ note.curated_mapping_url }}" target="_blank" rel="noopener"
+               class="sparql-run-btn"
+               title="Inspect the full curated mapping (UBERON/CL/GO/keywords → buckets) as JSON">
+                Browse full curated mapping (JSON)
+            </a>
+        </p>
+        {% endif %}
         {% if sparql_text %}
             {% set main_label = note.sparql_label | default('View SPARQL Query') %}
             {{ _sparql_panel(main_label, sparql_text) }}

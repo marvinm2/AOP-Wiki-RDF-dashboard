@@ -223,6 +223,8 @@ from .latest_plots import (
 
     # Organ-system coverage + life-stage applicability
     plot_latest_organ_coverage,
+    plot_latest_organ_coverage_percentage,
+    plot_latest_multi_organ_aops,
     plot_latest_life_stage,
 )
 
@@ -297,6 +299,8 @@ __all__ = [
     'plot_latest_ke_reuse_distribution',
     'plot_latest_ontology_diversity',
     'plot_latest_organ_coverage',
+    'plot_latest_organ_coverage_percentage',
+    'plot_latest_multi_organ_aops',
     'plot_latest_life_stage',
 
     # Network analysis functions
@@ -357,6 +361,8 @@ def get_available_functions():
             'plot_latest_ke_reuse_distribution',
             'plot_latest_ontology_diversity',
             'plot_latest_organ_coverage',
+            'plot_latest_organ_coverage_percentage',
+            'plot_latest_multi_organ_aops',
             'plot_latest_life_stage',
         ],
         'network_analysis': [

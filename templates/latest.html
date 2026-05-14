@@ -327,6 +327,52 @@
         </div>
         <div class="plot-box full-width">
             <div class="plot-header">
+                <h3>AOP Coverage of Organ Systems (% of snapshot)</h3>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download &#x25BC;</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/latest/organ_coverage_percentage?format=csv" class="dropdown-item">CSV</a>
+                        <a href="/download/latest/organ_coverage_percentage?format=png" class="dropdown-item">PNG</a>
+                        <a href="/download/latest/organ_coverage_percentage?format=svg" class="dropdown-item">SVG</a>
+                    </div>
+                </div>
+            </div>
+            <p class="plot-description">
+                Same hybrid classification as the absolute view, normalised by the total AOP count in this snapshot.
+                Each bar segment is the share of all AOPs in the snapshot (not just the annotated ones) classified
+                into the bucket by the given signal.
+            </p>
+            {{ methodology_note(methodology_notes, 'latest_organ_coverage_percentage') }}
+            <div class="lazy-plot" data-plot-name="latest_organ_coverage_percentage">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+            {{ data_table_toggle('latest_organ_coverage_percentage') }}
+        </div>
+        <div class="plot-box full-width">
+            <div class="plot-header">
+                <h3>Multi-organ AOPs</h3>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download &#x25BC;</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/latest/multi_organ_aops?format=csv" class="dropdown-item">CSV</a>
+                        <a href="/download/latest/multi_organ_aops?format=png" class="dropdown-item">PNG</a>
+                        <a href="/download/latest/multi_organ_aops?format=svg" class="dropdown-item">SVG</a>
+                    </div>
+                </div>
+            </div>
+            <p class="plot-description">
+                How many distinct organ systems each AOP classifies into across Signals A, A&prime;, B and C.
+                Single-organ AOPs sit in the &ldquo;1&rdquo; column; multi-organ pathways pile into 2, 3, &hellip;.
+                The raw-data toggle lists every multi-organ AOP with its full bucket set.
+            </p>
+            {{ methodology_note(methodology_notes, 'latest_multi_organ_aops') }}
+            <div class="lazy-plot" data-plot-name="latest_multi_organ_aops">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+            {{ data_table_toggle('latest_multi_organ_aops') }}
+        </div>
+        <div class="plot-box full-width">
+            <div class="plot-header">
                 <h3>AOP Life-Stage Applicability</h3>
                 <div class="download-dropdown">
                     <button class="download-button dropdown-toggle">Download &#x25BC;</button>
