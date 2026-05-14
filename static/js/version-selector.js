@@ -33,6 +33,8 @@
         'latest_ontology_diversity',
         'latest_organ_coverage',
         'latest_organ_coverage_percentage',
+        'latest_organ_coverage_apical',
+        'latest_organ_coverage_ao_only',
         'latest_multi_organ_aops',
         'latest_life_stage'
     ];

@@ -350,6 +350,55 @@
         </div>
         <div class="plot-box full-width">
             <div class="plot-header">
+                <h3>AOP Coverage of Organ Systems — Apical KEs only</h3>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download &#x25BC;</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/latest/organ_coverage_apical?format=csv" class="dropdown-item">CSV</a>
+                        <a href="/download/latest/organ_coverage_apical?format=png" class="dropdown-item">PNG</a>
+                        <a href="/download/latest/organ_coverage_apical?format=svg" class="dropdown-item">SVG</a>
+                    </div>
+                </div>
+            </div>
+            <p class="plot-description">
+                Same hybrid classification, but Signals A, A&prime; and B only count when the
+                source KE sits at <strong>Tissue / Organ / Individual / Population</strong> level
+                — i.e. apical and above. Molecular and cellular KEs are filtered out so the bars
+                reflect what the AOP is <em>about</em> at the organ-and-up level. Signal C (AOP
+                title) is kept regardless of KE level.
+            </p>
+            {{ methodology_note(methodology_notes, 'latest_organ_coverage_apical') }}
+            <div class="lazy-plot" data-plot-name="latest_organ_coverage_apical">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+            {{ data_table_toggle('latest_organ_coverage_apical') }}
+        </div>
+        <div class="plot-box full-width">
+            <div class="plot-header">
+                <h3>AOP Coverage of Organ Systems — Adverse Outcome only</h3>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download &#x25BC;</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/latest/organ_coverage_ao_only?format=csv" class="dropdown-item">CSV</a>
+                        <a href="/download/latest/organ_coverage_ao_only?format=png" class="dropdown-item">PNG</a>
+                        <a href="/download/latest/organ_coverage_ao_only?format=svg" class="dropdown-item">SVG</a>
+                    </div>
+                </div>
+            </div>
+            <p class="plot-description">
+                Strictest scope: Signals A, A&prime; and B only count annotations on the
+                <strong>Adverse Outcome KE</strong> itself (the regulatory endpoint), not
+                upstream KEs. Signal C (AOP title) is kept because titles routinely describe
+                the AO. Shows the bucket distribution of the apical endpoint per AOP.
+            </p>
+            {{ methodology_note(methodology_notes, 'latest_organ_coverage_ao_only') }}
+            <div class="lazy-plot" data-plot-name="latest_organ_coverage_ao_only">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+            {{ data_table_toggle('latest_organ_coverage_ao_only') }}
+        </div>
+        <div class="plot-box full-width">
+            <div class="plot-header">
                 <h3>Multi-organ AOPs</h3>
                 <div class="download-dropdown">
                     <button class="download-button dropdown-toggle">Download &#x25BC;</button>

@@ -401,5 +401,75 @@
                 "query": "# Signal C precursor — fetch AOP and AO titles (Signal C runs as regex in\n# Python against these literals; the curated patterns are listed at\n# /api/organ-system-buckets under \"keyword_patterns\").\nSELECT ?aop ?aop_title ?ao ?ao_title\nWHERE {\n  GRAPH <__GRAPH_URI__> {\n    ?aop a aopo:AdverseOutcomePathway ;\n         <http://purl.org/dc/elements/1.1/title> ?aop_title .\n    OPTIONAL {\n      ?aop aopo:has_adverse_outcome ?ao .\n      OPTIONAL { ?ao <http://purl.org/dc/elements/1.1/title> ?ao_title . }\n    }\n  }\n}"
             }
         ]
+    },
+    "latest_organ_coverage_apical": {
+        "title": "AOP Coverage of Organ Systems — Apical KEs only",
+        "description": "Per-AOP organ-system classification, but Signals A, A' and B are restricted to KEs whose biological-organisation level is Tissue, Organ, Individual or Population. Molecular and Cellular KEs (typically the MIE and early-cascade KEs) are filtered out, so each bar reflects what the AOP touches at the organ-and-up level rather than its molecular footprint. Signal C is computed on the AOP title and is therefore retained regardless of KE level.",
+        "data_source": "Reuses the same SPARQL pull as the headline coverage plot — one query per snapshot fetches AOPs, their member KEs, the KE biological-organisation level (<code>NCI Thesaurus C25664</code>), and the four annotation predicates. The level filter is applied in Python before aggregating per AOP.",
+        "method_steps": [
+            "<strong>Step 1 — SPARQL pull.</strong> One query per snapshot collects every AOP, its member Key Events, and any IRIs in the four annotation predicates: <code>aopo:OrganContext</code>, <code>aopo:CellTypeContext</code>, <code>aopo:hasObject</code> (inside <code>aopo:hasBiologicalEvent</code>), and <code>aopo:hasProcess</code>. AOP titles are pulled too — Signal C runs on them.",
+            "<strong>Step 2 — UBERON / CL → bucket via Ubergraph (Signals A and A').</strong> Anatomical IRIs are resolved by transitive <code>(part_of | subClassOf)*</code> closure to a small set of <strong>anchor IRIs</strong> per bucket — e.g. Nervous = <code>UBERON_0001016</code> (nervous system); Hepatobiliary = liver + gallbladder + bile duct. The lookup runs offline against <code>https://ubergraph.apps.renci.org/sparql</code> and is cached at <code>static/data/organ_system_cache.json</code>. A term can map to multiple buckets — e.g. pancreas (<code>UBERON_0001264</code>) is an anchor for both Digestive and Endocrine because it is both an exocrine digestive organ and an endocrine gland.",
+            "<strong>Step 3 — GO BP → bucket via RO:0002296 only (Signal B).</strong> A GO biological-process term is classified <em>only</em> if Ubergraph carries an explicit <code>results_in_development_of</code> axiom to a UBERON term that itself resolves to a bucket. There is no hand-curated GO bridge — terms without the formal axiom are not classified. In the current AOP-Wiki snapshot 3/452 GO BP terms qualify (most BPs are molecular / cellular processes that don't belong to one organ).",
+            "<strong>Step 4 — Keyword regex on AOP titles (Signal C, exploratory).</strong> Each AOP title is scanned with a bucket-specific regex set, e.g. Nervous = <code>\\bneuro</code>, <code>\\bsynap</code>, <code>\\bmyelin</code>, …; Hepatobiliary = <code>\\bhepat</code>, <code>\\bliver\\b</code>, <code>\\bsteatosis\\b</code>, …; Cardiovascular = <code>\\bcardio</code>, <code>\\bheart\\b</code>, …. Lowest-confidence signal, shown in grey throughout.",
+            "<strong>Step 5 — Editorial override layer.</strong> A small project-owned override layer is applied after the ontology resolution to handle terms where the project's framing diverges from UBERON. Currently a single entry: blood (<code>UBERON_0000178</code>) is reported under both Cardiovascular and Immune/Haematopoietic — UBERON places it structurally under haematopoietic only, but toxicology practice frames blood-borne effects as cardiovascular too.",
+            "<strong>Step 6 — Aggregate per AOP.</strong> An AOP is counted in a bucket if any of its member KEs (Signals A/A'/B) or its own title (Signal C) classifies into it. The bar segment colour shows the highest-confidence signal that classified the AOP–bucket pair (A &gt; A' &gt; B &gt; C). AOPs can belong to multiple buckets — see the Multi-organ AOPs plot."
+        ],
+        "limitations": "AOPs whose only anatomy annotations live on molecular or cellular KEs disappear from this view — that is the intent, not a bug. The biological-organisation level itself is curated per KE in AOP-Wiki; KEs without a level annotation are excluded from Signals A/A'/B in this view (they show in the raw data as level = '').",
+        "curated_mapping_url": "/api/organ-system-buckets",
+        "sparql": "SELECT ?aop ?aop_title ?ao ?ke ?organ ?cell ?obj ?proc\nWHERE {\n  GRAPH <__GRAPH_URI__> {\n    ?aop a aopo:AdverseOutcomePathway ;\n         <http://purl.org/dc/elements/1.1/title> ?aop_title ;\n         aopo:has_key_event ?ke .\n    OPTIONAL { ?aop aopo:has_adverse_outcome ?ao . }\n    OPTIONAL { ?ke aopo:OrganContext ?organ . }\n    OPTIONAL { ?ke aopo:CellTypeContext ?cell . }\n    OPTIONAL {\n      ?ke aopo:hasBiologicalEvent ?be .\n      OPTIONAL { ?be aopo:hasObject ?obj . }\n      OPTIONAL { ?be aopo:hasProcess ?proc . }\n    }\n  }\n}",
+        "sparql_label": "Consolidated query (all signals + KE level)",
+        "additional_queries": [
+            {
+                "label": "Signal A — curated anatomy on KEs",
+                "query": "# Signal A only — curated anatomy directly on Key Events\nSELECT ?aop ?ke ?organ_or_cell\nWHERE {\n  GRAPH <__GRAPH_URI__> {\n    ?aop a aopo:AdverseOutcomePathway ;\n         aopo:has_key_event ?ke .\n    { ?ke aopo:OrganContext   ?organ_or_cell . }\n    UNION\n    { ?ke aopo:CellTypeContext ?organ_or_cell . }\n  }\n}"
+            },
+            {
+                "label": "Signal A' — UBERON/CL via hasObject",
+                "query": "# Signal A' only — UBERON / CL appearing as hasObject inside a biological event\nSELECT ?aop ?ke ?obj\nWHERE {\n  GRAPH <__GRAPH_URI__> {\n    ?aop a aopo:AdverseOutcomePathway ;\n         aopo:has_key_event ?ke .\n    ?ke  aopo:hasBiologicalEvent ?be .\n    ?be  aopo:hasObject ?obj .\n    FILTER( STRSTARTS(STR(?obj), \"http://purl.obolibrary.org/obo/UBERON_\")\n         || STRSTARTS(STR(?obj), \"http://purl.obolibrary.org/obo/CL_\") )\n  }\n}"
+            },
+            {
+                "label": "Signal B — GO biological-process terms",
+                "query": "# Signal B only — GO biological-process terms (bridged to buckets in Python)\nSELECT ?aop ?ke ?proc\nWHERE {\n  GRAPH <__GRAPH_URI__> {\n    ?aop a aopo:AdverseOutcomePathway ;\n         aopo:has_key_event ?ke .\n    ?ke  aopo:hasBiologicalEvent ?be .\n    ?be  aopo:hasProcess ?proc .\n    FILTER( STRSTARTS(STR(?proc), \"http://purl.obolibrary.org/obo/GO_\") )\n  }\n}"
+            },
+            {
+                "label": "Signal C — fetch titles for Python regex",
+                "query": "# Signal C precursor — fetch AOP and AO titles (Signal C runs as regex in\n# Python against these literals; the curated patterns are listed at\n# /api/organ-system-buckets under \"keyword_patterns\").\nSELECT ?aop ?aop_title ?ao ?ao_title\nWHERE {\n  GRAPH <__GRAPH_URI__> {\n    ?aop a aopo:AdverseOutcomePathway ;\n         <http://purl.org/dc/elements/1.1/title> ?aop_title .\n    OPTIONAL {\n      ?aop aopo:has_adverse_outcome ?ao .\n      OPTIONAL { ?ao <http://purl.org/dc/elements/1.1/title> ?ao_title . }\n    }\n  }\n}"
+            }
+        ]
+    },
+    "latest_organ_coverage_ao_only": {
+        "title": "AOP Coverage of Organ Systems — Adverse Outcome only",
+        "description": "Strictest scope: Signals A, A' and B only count annotations on the AO KE per AOP. Upstream KEs (MIE through penultimate) are filtered out. Signal C runs on the AOP title and is kept — titles routinely describe the AO endpoint. Answers the question 'what organ system is each AOP's regulatory endpoint in?'.",
+        "data_source": "Reuses the same SPARQL pull. <code>aopo:has_adverse_outcome</code> identifies the AO KE per AOP. Rows where the source KE is the AO (or rows from Signal C) are kept; the rest are filtered. Aggregation per AOP otherwise identical to the headline plot.",
+        "method_steps": [
+            "<strong>Step 1 — SPARQL pull.</strong> One query per snapshot collects every AOP, its member Key Events, and any IRIs in the four annotation predicates: <code>aopo:OrganContext</code>, <code>aopo:CellTypeContext</code>, <code>aopo:hasObject</code> (inside <code>aopo:hasBiologicalEvent</code>), and <code>aopo:hasProcess</code>. AOP titles are pulled too — Signal C runs on them.",
+            "<strong>Step 2 — UBERON / CL → bucket via Ubergraph (Signals A and A').</strong> Anatomical IRIs are resolved by transitive <code>(part_of | subClassOf)*</code> closure to a small set of <strong>anchor IRIs</strong> per bucket — e.g. Nervous = <code>UBERON_0001016</code> (nervous system); Hepatobiliary = liver + gallbladder + bile duct. The lookup runs offline against <code>https://ubergraph.apps.renci.org/sparql</code> and is cached at <code>static/data/organ_system_cache.json</code>. A term can map to multiple buckets — e.g. pancreas (<code>UBERON_0001264</code>) is an anchor for both Digestive and Endocrine because it is both an exocrine digestive organ and an endocrine gland.",
+            "<strong>Step 3 — GO BP → bucket via RO:0002296 only (Signal B).</strong> A GO biological-process term is classified <em>only</em> if Ubergraph carries an explicit <code>results_in_development_of</code> axiom to a UBERON term that itself resolves to a bucket. There is no hand-curated GO bridge — terms without the formal axiom are not classified. In the current AOP-Wiki snapshot 3/452 GO BP terms qualify (most BPs are molecular / cellular processes that don't belong to one organ).",
+            "<strong>Step 4 — Keyword regex on AOP titles (Signal C, exploratory).</strong> Each AOP title is scanned with a bucket-specific regex set, e.g. Nervous = <code>\\bneuro</code>, <code>\\bsynap</code>, <code>\\bmyelin</code>, …; Hepatobiliary = <code>\\bhepat</code>, <code>\\bliver\\b</code>, <code>\\bsteatosis\\b</code>, …; Cardiovascular = <code>\\bcardio</code>, <code>\\bheart\\b</code>, …. Lowest-confidence signal, shown in grey throughout.",
+            "<strong>Step 5 — Editorial override layer.</strong> A small project-owned override layer is applied after the ontology resolution to handle terms where the project's framing diverges from UBERON. Currently a single entry: blood (<code>UBERON_0000178</code>) is reported under both Cardiovascular and Immune/Haematopoietic — UBERON places it structurally under haematopoietic only, but toxicology practice frames blood-borne effects as cardiovascular too.",
+            "<strong>Step 6 — Aggregate per AOP.</strong> An AOP is counted in a bucket if any of its member KEs (Signals A/A'/B) or its own title (Signal C) classifies into it. The bar segment colour shows the highest-confidence signal that classified the AOP–bucket pair (A &gt; A' &gt; B &gt; C). AOPs can belong to multiple buckets — see the Multi-organ AOPs plot."
+        ],
+        "limitations": "Some AOPs in AOP-Wiki have no <code>aopo:has_adverse_outcome</code> assertion (the AO is implicit). Those AOPs appear in this view only via Signal C (regex on title). When the AO KE itself has no anatomy annotation, the AOP is unclassified at this scope even if it has strong organ context on upstream KEs — by design.",
+        "curated_mapping_url": "/api/organ-system-buckets",
+        "sparql": "SELECT ?aop ?aop_title ?ao ?ke ?organ ?cell ?obj ?proc\nWHERE {\n  GRAPH <__GRAPH_URI__> {\n    ?aop a aopo:AdverseOutcomePathway ;\n         <http://purl.org/dc/elements/1.1/title> ?aop_title ;\n         aopo:has_key_event ?ke .\n    OPTIONAL { ?aop aopo:has_adverse_outcome ?ao . }\n    OPTIONAL { ?ke aopo:OrganContext ?organ . }\n    OPTIONAL { ?ke aopo:CellTypeContext ?cell . }\n    OPTIONAL {\n      ?ke aopo:hasBiologicalEvent ?be .\n      OPTIONAL { ?be aopo:hasObject ?obj . }\n      OPTIONAL { ?be aopo:hasProcess ?proc . }\n    }\n  }\n}",
+        "sparql_label": "Consolidated query (all signals + KE level + AO flag)",
+        "additional_queries": [
+            {
+                "label": "Signal A — curated anatomy on KEs",
+                "query": "# Signal A only — curated anatomy directly on Key Events\nSELECT ?aop ?ke ?organ_or_cell\nWHERE {\n  GRAPH <__GRAPH_URI__> {\n    ?aop a aopo:AdverseOutcomePathway ;\n         aopo:has_key_event ?ke .\n    { ?ke aopo:OrganContext   ?organ_or_cell . }\n    UNION\n    { ?ke aopo:CellTypeContext ?organ_or_cell . }\n  }\n}"
+            },
+            {
+                "label": "Signal A' — UBERON/CL via hasObject",
+                "query": "# Signal A' only — UBERON / CL appearing as hasObject inside a biological event\nSELECT ?aop ?ke ?obj\nWHERE {\n  GRAPH <__GRAPH_URI__> {\n    ?aop a aopo:AdverseOutcomePathway ;\n         aopo:has_key_event ?ke .\n    ?ke  aopo:hasBiologicalEvent ?be .\n    ?be  aopo:hasObject ?obj .\n    FILTER( STRSTARTS(STR(?obj), \"http://purl.obolibrary.org/obo/UBERON_\")\n         || STRSTARTS(STR(?obj), \"http://purl.obolibrary.org/obo/CL_\") )\n  }\n}"
+            },
+            {
+                "label": "Signal B — GO biological-process terms",
+                "query": "# Signal B only — GO biological-process terms (bridged to buckets in Python)\nSELECT ?aop ?ke ?proc\nWHERE {\n  GRAPH <__GRAPH_URI__> {\n    ?aop a aopo:AdverseOutcomePathway ;\n         aopo:has_key_event ?ke .\n    ?ke  aopo:hasBiologicalEvent ?be .\n    ?be  aopo:hasProcess ?proc .\n    FILTER( STRSTARTS(STR(?proc), \"http://purl.obolibrary.org/obo/GO_\") )\n  }\n}"
+            },
+            {
+                "label": "Signal C — fetch titles for Python regex",
+                "query": "# Signal C precursor — fetch AOP and AO titles (Signal C runs as regex in\n# Python against these literals; the curated patterns are listed at\n# /api/organ-system-buckets under \"keyword_patterns\").\nSELECT ?aop ?aop_title ?ao ?ao_title\nWHERE {\n  GRAPH <__GRAPH_URI__> {\n    ?aop a aopo:AdverseOutcomePathway ;\n         <http://purl.org/dc/elements/1.1/title> ?aop_title .\n    OPTIONAL {\n      ?aop aopo:has_adverse_outcome ?ao .\n      OPTIONAL { ?ao <http://purl.org/dc/elements/1.1/title> ?ao_title . }\n    }\n  }\n}"
+            }
+        ]
     }
 }

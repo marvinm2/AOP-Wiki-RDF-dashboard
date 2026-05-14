@@ -111,6 +111,8 @@ from plots import (
     plot_latest_aop_completeness_unique_colors,
     plot_latest_organ_coverage,
     plot_latest_organ_coverage_percentage,
+    plot_latest_organ_coverage_apical,
+    plot_latest_organ_coverage_ao_only,
     plot_latest_multi_organ_aops,
     plot_latest_life_stage,
     plot_ontology_term_growth,
@@ -1664,6 +1666,8 @@ def get_plot(plot_name):
         'latest_aop_completeness_unique': plot_latest_aop_completeness_unique_colors,
         'latest_organ_coverage': plot_latest_organ_coverage,
         'latest_organ_coverage_percentage': plot_latest_organ_coverage_percentage,
+        'latest_organ_coverage_apical': plot_latest_organ_coverage_apical,
+        'latest_organ_coverage_ao_only': plot_latest_organ_coverage_ao_only,
         'latest_multi_organ_aops': plot_latest_multi_organ_aops,
         'latest_life_stage': plot_latest_life_stage,
     }

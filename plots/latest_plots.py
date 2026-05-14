@@ -2507,18 +2507,18 @@ def _resolve_target_graph(version: str = None) -> tuple[str, str] | None:
 def _query_aop_signal_rows(target_graph: str) -> list[dict]:
     """Pull the AOP/AO/KE/anatomy/process/title rows used by all four signals.
 
-    One SPARQL pull, four signal classifiers applied in Python afterwards. The
-    OPTIONALs are intentional — most AOPs have only partial annotation, and
-    the per-AOP rule is satisfied if *any* of A/A'/B/C produces a hit.
+    Also fetches the biological-organisation level of each KE (NCI Thesaurus
+    C25664) so the apical / AO-only views can filter by KE level.
     """
     query = f"""
-    SELECT ?aop ?aop_title ?ao ?ke ?organ ?cell ?obj ?proc
+    SELECT ?aop ?aop_title ?ao ?ke ?level ?organ ?cell ?obj ?proc
     WHERE {{
       GRAPH <{target_graph}> {{
         ?aop a aopo:AdverseOutcomePathway ;
              <http://purl.org/dc/elements/1.1/title> ?aop_title ;
              aopo:has_key_event ?ke .
         OPTIONAL {{ ?aop aopo:has_adverse_outcome ?ao . }}
+        OPTIONAL {{ ?ke <http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25664> ?level . }}
         OPTIONAL {{ ?ke aopo:OrganContext ?organ . }}
         OPTIONAL {{ ?ke aopo:CellTypeContext ?cell . }}
         OPTIONAL {{
@@ -2532,20 +2532,35 @@ def _query_aop_signal_rows(target_graph: str) -> list[dict]:
     return run_sparql_query(query) or []
 
 
-def _compute_coverage_rows(rows: list[dict]) -> pd.DataFrame:
-    """Reduce raw SPARQL rows to one record per (aop, bucket, signal).
+# KE biological-organisation levels considered "apical" — Tissue and above.
+APICAL_LEVELS: frozenset = frozenset({"Tissue", "Organ", "Individual", "Population"})
 
-    Same AOP can land in multiple buckets, and a given (aop, bucket) pair can
-    be reached by several signals — we keep them all and pick the best signal
-    per pair downstream when reporting AOP counts.
+# Sentinel level for Signal C rows (the source is the AOP title, not a KE).
+_AOP_TITLE_LEVEL = "<aop-title>"
+
+
+def _compute_coverage_rows(rows: list[dict]) -> pd.DataFrame:
+    """Build a granular per-(AOP, KE, Signal, Bucket) coverage dataframe.
+
+    Each row records one classification attribution: which signal fired on
+    which KE (or the AOP title, for Signal C) and what bucket it produced.
+    Downstream :func:`_aggregate_per_aop` reduces this to the per-AOP view
+    each plot needs, with optional KE-level scope filtering for the apical
+    and AO-only variants.
+
+    Columns:
+        AOP, AOP Title, AO URI, KE, KE Level, Is AO, Organ System, Signal, Source
     """
-    per_pair: dict[tuple[str, str], set[str]] = {}
     aop_titles: dict[str, str] = {}
     aop_ao: dict[str, str] = {}
+    ke_level: dict[tuple[str, str], str] = {}  # (aop, ke) -> level
+
+    granular_records: list[dict] = []
 
     for r in rows:
         aop = r.get("aop", {}).get("value")
-        if not aop:
+        ke = r.get("ke", {}).get("value")
+        if not aop or not ke:
             continue
         title = r.get("aop_title", {}).get("value", "")
         aop_titles.setdefault(aop, title)
@@ -2553,131 +2568,204 @@ def _compute_coverage_rows(rows: list[dict]) -> pd.DataFrame:
         if ao and aop not in aop_ao:
             aop_ao[aop] = ao
 
-        # Signal A — OrganContext / CellTypeContext (a term may map to many buckets)
-        for predicate_var in ("organ", "cell"):
+        level_raw = r.get("level", {}).get("value", "")
+        if level_raw:
+            level_clean = level_raw.split("/")[-1].replace("_", " ") if level_raw.startswith("http") else level_raw
+        else:
+            level_clean = ""
+        if level_clean:
+            ke_level[(aop, ke)] = level_clean
+
+        is_ao = bool(ao) and ao == ke
+        ke_level_now = ke_level.get((aop, ke), level_clean)
+
+        def add(bucket: str, signal: str, source: str) -> None:
+            granular_records.append({
+                "AOP": aop,
+                "AOP Title": title,
+                "AO URI": ao or "",
+                "KE": ke,
+                "KE Level": ke_level_now,
+                "Is AO": is_ao,
+                "Organ System": bucket,
+                "Signal": signal,
+                "Source": source,
+            })
+
+        for predicate_var, source_label in (("organ", "OrganContext"), ("cell", "CellTypeContext")):
             iri = r.get(predicate_var, {}).get("value")
             if iri:
                 for bucket in classify_anatomy(iri):
-                    per_pair.setdefault((aop, bucket), set()).add("A")
+                    add(bucket, "A", source_label)
 
-        # Signal A' — hasObject UBERON/CL
         obj_iri = r.get("obj", {}).get("value")
         if obj_iri:
             for bucket in classify_anatomy(obj_iri):
-                per_pair.setdefault((aop, bucket), set()).add("A'")
+                add(bucket, "A'", "hasObject")
 
-        # Signal B — hasProcess GO BP via RO:0002296 (results_in_development_of)
         proc_iri = r.get("proc", {}).get("value")
         if proc_iri:
             for bucket in classify_go_bp(proc_iri):
-                per_pair.setdefault((aop, bucket), set()).add("B")
+                add(bucket, "B", "hasProcess (RO:0002296)")
 
-    # Signal C — keywords on AOP title (one pass per AOP, not per row)
+    # Signal C — keywords on the AOP title (one row per matched bucket, no KE
+    # attachment). The sentinel level marks these rows so the scope filters
+    # can include or exclude them.
     for aop, title in aop_titles.items():
         for bucket in classify_text(title):
-            per_pair.setdefault((aop, bucket), set()).add("C")
-
-    records = []
-    for (aop, bucket), signals in per_pair.items():
-        records.append({
-            "AOP": aop,
-            "AOP Title": aop_titles.get(aop, ""),
-            "AO": aop_ao.get(aop, ""),
-            "Organ System": bucket,
-            "Signals": ",".join(sorted(signals)),
-            "Best Signal": best_signal(signals),
-        })
-
-    aop_count = len(aop_titles)
-    classified_aops = {aop for (aop, _b) in per_pair.keys()}
-    no_anno = aop_count - len(classified_aops)
-    if no_anno > 0:
-        # Encoded as a sentinel row per unclassified AOP so the CSV is honest
-        # about which AOPs slipped through every signal.
-        unclassified = set(aop_titles) - classified_aops
-        for aop in unclassified:
-            records.append({
+            granular_records.append({
                 "AOP": aop,
-                "AOP Title": aop_titles.get(aop, ""),
-                "AO": aop_ao.get(aop, ""),
-                "Organ System": NO_ANNOTATION_BUCKET,
-                "Signals": "",
-                "Best Signal": None,
+                "AOP Title": title,
+                "AO URI": aop_ao.get(aop, ""),
+                "KE": "",
+                "KE Level": _AOP_TITLE_LEVEL,
+                "Is AO": False,
+                "Organ System": bucket,
+                "Signal": "C",
+                "Source": "AOP title regex",
             })
 
-    return pd.DataFrame(records)
+    return pd.DataFrame(granular_records)
 
 
-def _get_coverage_dataframe(version: str = None) -> tuple[pd.DataFrame, str] | None:
-    """Return (long-form coverage dataframe, version_label) for the snapshot.
+def _aggregate_per_aop(
+    granular: pd.DataFrame,
+    aop_universe: dict[str, str],
+    scope: str,
+) -> pd.DataFrame:
+    """Reduce the granular df to one row per (AOP, bucket, best-signal) under a scope.
 
-    Cached under ``latest_organ_coverage_{version_key}`` and also under the bare
-    ``latest_organ_coverage`` key for the raw-data toggle. The three coverage
-    plots (absolute, percentage, multi-organ) share this single dataframe so
-    they only trigger one SPARQL pull per snapshot.
+    Scope determines which granular rows count toward classification:
+
+    - ``"all"``: every signal row.
+    - ``"apical"``: rows where the KE is at Tissue level or higher, PLUS all
+      Signal C rows (Signal C is on the AOP title, not a KE — kept regardless).
+    - ``"ao"``: rows where the KE is the Adverse Outcome, PLUS all Signal C rows.
+
+    AOPs not classified under the scope get a "No annotation" sentinel row,
+    using ``aop_universe`` so AOPs with zero signal rows anywhere are still
+    accounted for. ``aop_universe`` is ``{aop_iri: title}`` for every AOP in
+    the snapshot.
     """
-    cache_key = f"latest_organ_coverage_{version or 'latest'}"
-    cached = _plot_data_cache.get(cache_key)
-    if cached is not None and hasattr(cached, "empty") and not cached.empty:
-        version_label = str(cached["Version"].iloc[0]) if "Version" in cached.columns else (version or "")
-        return cached, version_label
+    if granular.empty:
+        filtered = granular
+    elif scope == "apical":
+        filtered = granular[
+            (granular["Signal"] == "C")
+            | granular["KE Level"].isin(APICAL_LEVELS)
+        ]
+    elif scope == "ao":
+        filtered = granular[(granular["Signal"] == "C") | granular["Is AO"]]
+    elif scope == "all":
+        filtered = granular
+    else:
+        raise ValueError(f"unknown scope: {scope!r}")
+
+    if filtered.empty:
+        per_pair = pd.DataFrame(
+            columns=["AOP", "Organ System", "Signals", "Best Signal", "AOP Title", "AO URI"]
+        )
+    else:
+        per_pair = (
+            filtered.groupby(["AOP", "Organ System"], dropna=False)
+            .agg(
+                Signals=("Signal", lambda s: ",".join(sorted(set(s)))),
+                **{"AOP Title": ("AOP Title", "first"), "AO URI": ("AO URI", "first")},
+            )
+            .reset_index()
+        )
+        per_pair["Best Signal"] = per_pair["Signals"].apply(
+            lambda s: best_signal(s.split(",")) if s else None
+        )
+
+    classified_aops = set(per_pair["AOP"]) if not per_pair.empty else set()
+    unclassified = set(aop_universe) - classified_aops
+    sentinel_rows = [
+        {
+            "AOP": aop,
+            "AOP Title": aop_universe.get(aop, ""),
+            "AO URI": "",
+            "Organ System": NO_ANNOTATION_BUCKET,
+            "Signals": "",
+            "Best Signal": None,
+        }
+        for aop in unclassified
+    ]
+    if sentinel_rows:
+        per_pair = pd.concat([per_pair, pd.DataFrame(sentinel_rows)], ignore_index=True)
+
+    return per_pair
+
+
+def _query_aop_universe(target_graph: str) -> dict[str, str]:
+    """Return {aop_iri: title} for every AOP in the snapshot, irrespective of
+    whether any classifier fires on it. Used to seed the No-annotation sentinel
+    rows so the per-AOP scope counts stay honest."""
+    query = f"""
+    SELECT ?aop ?aop_title WHERE {{
+      GRAPH <{target_graph}> {{
+        ?aop a aopo:AdverseOutcomePathway ;
+             <http://purl.org/dc/elements/1.1/title> ?aop_title .
+      }}
+    }}
+    """
+    rows = run_sparql_query(query) or []
+    return {
+        r["aop"]["value"]: r.get("aop_title", {}).get("value", "")
+        for r in rows
+        if "aop" in r
+    }
+
+
+# Module-level cache for the granular per-(AOP, KE, signal) coverage dataframe.
+# Keyed by version label so historical snapshot views don't collide. Separate
+# from ``_plot_data_cache`` because the granular df is internal — the
+# /api/plot-data toggles surface the aggregated per-bucket views instead.
+_GRANULAR_COVERAGE_CACHE: dict[str, tuple[pd.DataFrame, dict[str, str]]] = {}
+
+
+def _get_coverage_dataframe(
+    version: str = None,
+) -> tuple[pd.DataFrame, dict[str, str], str] | None:
+    """Return ``(granular_df, aop_universe, version_label)`` for the snapshot.
+
+    ``granular_df`` carries one row per (AOP, KE, signal, bucket) classification
+    attribution — see :func:`_compute_coverage_rows`. ``aop_universe`` is
+    ``{aop_iri: title}`` for every AOP in the snapshot (used by aggregators to
+    seed No-annotation sentinels).
+    """
+    cache_key = version or "latest"
+    cached = _GRANULAR_COVERAGE_CACHE.get(cache_key)
+    if cached is not None:
+        granular, aop_universe = cached
+        version_label = (
+            str(granular["Version"].iloc[0])
+            if not granular.empty and "Version" in granular.columns
+            else (version or "")
+        )
+        return granular, aop_universe, version_label
 
     target = _resolve_target_graph(version)
     if target is None:
         return None
     target_graph, version_label = target
 
+    aop_universe = _query_aop_universe(target_graph)
     rows = _query_aop_signal_rows(target_graph)
-    if not rows:
-        return None
+    granular = _compute_coverage_rows(rows)
+    if not granular.empty:
+        granular["Version"] = version_label
 
-    df = _compute_coverage_rows(rows)
-    if df.empty:
-        return None
-
-    df["Version"] = version_label
-    _plot_data_cache[cache_key] = df
-    _plot_data_cache["latest_organ_coverage"] = df
-    return df, version_label
+    _GRANULAR_COVERAGE_CACHE[cache_key] = (granular, aop_universe)
+    return granular, aop_universe, version_label
 
 
-def plot_latest_organ_coverage(version: str = None) -> str:
-    """AOP coverage of organ systems via a hybrid A+A'+B+C signal stack.
-
-    The unit of analysis is the AOP: an AOP is counted in an organ-system
-    bucket if *any* member KE (or the AOP title) carries an annotation that
-    classifies into that bucket. Stacks show which signal source attributed
-    the AOP, with A (curated anatomy) the highest-confidence and C (keywords)
-    flagged grey as exploratory.
-
-    Args:
-        version: Optional version string. If None, uses the latest snapshot.
-
-    Returns:
-        str: Plotly HTML.
-    """
-    global _plot_data_cache, _plot_figure_cache
-
-    result = _get_coverage_dataframe(version)
-    if result is None:
-        return create_fallback_plot("AOP Organ-System Coverage", "No AOP data in this snapshot")
-    df, version_label = result
-    cache_key = f"latest_organ_coverage_{version or 'latest'}"
-
-    # Count AOPs per (bucket, best_signal) — each AOP counted once per bucket.
-    classified = df[df["Best Signal"].notna()]
-    grouped = (
-        classified.groupby(["Organ System", "Best Signal"])["AOP"]
-        .nunique()
-        .reset_index(name="AOP count")
-    )
-
-    bucket_order = [b for b in ORGAN_SYSTEM_BUCKETS if b in set(grouped["Organ System"])]
-    bucket_totals = grouped.groupby("Organ System")["AOP count"].sum()
-    bucket_order = sorted(bucket_order, key=lambda b: bucket_totals.get(b, 0))
-
-    # Build (bucket, signal) -> sorted unique AOP titles for hover examples
-    examples_per_pair: dict[tuple[str, str], list[str]] = {}
+def _build_examples_per_pair(
+    per_pair: pd.DataFrame, granular: pd.DataFrame
+) -> dict[tuple[str, str], list[str]]:
+    """Per (bucket, best_signal): the AOP titles that classified there."""
+    examples: dict[tuple[str, str], list[str]] = {}
+    classified = per_pair[per_pair["Best Signal"].notna()]
     for (bucket, signal), sub in classified.groupby(["Organ System", "Best Signal"]):
         titles = (
             sub.drop_duplicates(subset=["AOP"])["AOP Title"]
@@ -2685,18 +2773,54 @@ def plot_latest_organ_coverage(version: str = None) -> str:
             .astype(str)
             .tolist()
         )
-        titles = [t for t in titles if t]
-        titles.sort(key=str.lower)
-        examples_per_pair[(bucket, signal)] = titles
+        titles = sorted([t for t in titles if t], key=str.lower)
+        examples[(bucket, signal)] = titles
+    return examples
+
+
+def _render_coverage_bar(
+    per_pair: pd.DataFrame,
+    *,
+    granular: pd.DataFrame,
+    aop_universe: dict[str, str],
+    version_label: str,
+    scope_label: str,
+    percentage: bool,
+    title: str,
+):
+    """Build the horizontal stacked Plotly bar shared by the four coverage views."""
+    classified = per_pair[per_pair["Best Signal"].notna()]
+    total_aops = len(aop_universe)
+    no_anno = int((per_pair["Organ System"] == NO_ANNOTATION_BUCKET).sum())
+    annotated = total_aops - no_anno
+
+    grouped = (
+        classified.groupby(["Organ System", "Best Signal"])["AOP"]
+        .nunique()
+        .reset_index(name="AOP count")
+    )
+    if percentage and total_aops > 0:
+        grouped["Percentage"] = grouped["AOP count"] * 100.0 / total_aops
+        x_col = "Percentage"
+    else:
+        x_col = "AOP count"
+
+    bucket_order = [b for b in ORGAN_SYSTEM_BUCKETS if b in set(grouped["Organ System"])]
+    bucket_totals = grouped.groupby("Organ System")[x_col].sum()
+    bucket_order = sorted(bucket_order, key=lambda b: bucket_totals.get(b, 0))
+
+    examples_per_pair = _build_examples_per_pair(per_pair, granular)
 
     fig = go.Figure()
     for signal in SIGNAL_ORDER:
         seg = grouped[grouped["Best Signal"] == signal]
         if seg.empty:
             continue
-        seg = seg.set_index("Organ System").reindex(bucket_order).fillna(0).reset_index()
+        seg = (
+            seg.set_index("Organ System").reindex(bucket_order).fillna(0).reset_index()
+        )
 
-        customdata = []
+        customdata_examples = []
         for bucket in seg["Organ System"]:
             titles = examples_per_pair.get((bucket, signal), [])
             if not titles:
@@ -2710,41 +2834,137 @@ def plot_latest_organ_coverage(version: str = None) -> str:
                     + "<br>&nbsp;&nbsp;• ".join(head)
                     + f"<br>&nbsp;&nbsp;<i>… and {len(titles) - 3} more</i>"
                 )
-            customdata.append(preview)
+            customdata_examples.append(preview)
 
-        fig.add_trace(go.Bar(
-            x=seg["AOP count"],
-            y=seg["Organ System"],
-            name=f"Signal {signal}",
-            orientation="h",
-            marker_color=SIGNAL_COLOURS.get(signal),
-            customdata=customdata,
-            hovertemplate=(
+        if percentage:
+            counts = seg["AOP count"].astype(int).tolist() if "AOP count" in seg.columns else [0] * len(seg)
+            customdata = list(zip(customdata_examples, counts))
+            hover = (
+                "<b>%{y}</b><br>"
+                f"Signal {signal}: " + "%{x:.1f}% of AOPs (%{customdata[1]} AOPs)"
+                "<br><i>Example AOPs:</i>%{customdata[0]}<extra></extra>"
+            )
+        else:
+            customdata = customdata_examples
+            hover = (
                 "<b>%{y}</b><br>"
                 f"Signal {signal}: " + "%{x} AOPs"
                 "<br><i>Example AOPs:</i>%{customdata}<extra></extra>"
-            ),
-        ))
+            )
 
-    no_anno = int((df["Organ System"] == NO_ANNOTATION_BUCKET).sum())
-    total_aops = int(df["AOP"].nunique())
-    annotated = total_aops - no_anno
-    subtitle = (
-        f"{annotated}/{total_aops} AOPs classified at least once · "
-        f"{no_anno} AOP(s) had no anatomy / process / keyword signal"
-    )
+        fig.add_trace(
+            go.Bar(
+                x=seg[x_col],
+                y=seg["Organ System"],
+                name=f"Signal {signal}",
+                orientation="h",
+                marker_color=SIGNAL_COLOURS.get(signal),
+                customdata=customdata,
+                hovertemplate=hover,
+            )
+        )
+
+    if percentage:
+        subtitle = (
+            f"{scope_label} · share of the {total_aops} AOPs in the snapshot"
+        )
+        x_axis_title = "% of AOPs in snapshot"
+    else:
+        subtitle = (
+            f"{scope_label} · {annotated}/{total_aops} AOPs classified at least once · "
+            f"{no_anno} unclassified at this scope"
+        )
+        x_axis_title = "Number of AOPs"
 
     fig.update_layout(
         barmode="stack",
-        title={"text": f"AOP Coverage of Organ Systems<br><sub>{subtitle}</sub>"},
-        xaxis_title="Number of AOPs",
+        title={"text": f"{title}<br><sub>{subtitle}</sub>"},
+        xaxis_title=x_axis_title,
         yaxis_title="",
         legend_title="Signal source",
         margin=dict(l=80, r=30, t=80, b=50),
     )
+    return fig
 
+
+_SCOPE_LABELS: dict[str, str] = {
+    "all": "All KEs",
+    "apical": "Apical KEs (Tissue / Organ / Individual / Population)",
+    "ao": "Adverse Outcome KE only",
+}
+
+
+def _coverage_plot_for_scope(
+    version: str | None,
+    *,
+    scope: str,
+    cache_stub: str,
+    title: str,
+    percentage: bool = False,
+) -> str:
+    """Shared implementation for every snapshot organ-coverage plot variant."""
+    global _plot_data_cache, _plot_figure_cache
+
+    result = _get_coverage_dataframe(version)
+    if result is None:
+        return create_fallback_plot(title, "No AOP data in this snapshot")
+    granular, aop_universe, version_label = result
+
+    per_pair = _aggregate_per_aop(granular, aop_universe, scope=scope)
+    per_pair = per_pair.copy()
+    per_pair["Version"] = version_label
+    per_pair["Scope"] = scope
+
+    cache_key = f"{cache_stub}_{version or 'latest'}"
+    _plot_data_cache[cache_key] = per_pair
+    _plot_data_cache[cache_stub] = per_pair
+
+    fig = _render_coverage_bar(
+        per_pair,
+        granular=granular,
+        aop_universe=aop_universe,
+        version_label=version_label,
+        scope_label=_SCOPE_LABELS.get(scope, scope),
+        percentage=percentage,
+        title=title,
+    )
     _plot_figure_cache[cache_key] = fig
     return render_plot_html(fig)
+
+
+def plot_latest_organ_coverage(version: str = None) -> str:
+    """AOP coverage of organ systems — all member KEs contribute (Signals A/A'/B/C)."""
+    return _coverage_plot_for_scope(
+        version,
+        scope="all",
+        cache_stub="latest_organ_coverage",
+        title="AOP Coverage of Organ Systems",
+    )
+
+
+def plot_latest_organ_coverage_apical(version: str = None) -> str:
+    """Apical-only view: only Tissue/Organ/Individual/Population KEs contribute
+    to Signals A/A'/B. Signal C (AOP title) is kept. Surfaces what the AOP is
+    *about* at the organ-and-up level rather than its molecular footprint.
+    """
+    return _coverage_plot_for_scope(
+        version,
+        scope="apical",
+        cache_stub="latest_organ_coverage_apical",
+        title="AOP Coverage of Organ Systems — Apical KEs only",
+    )
+
+
+def plot_latest_organ_coverage_ao_only(version: str = None) -> str:
+    """AO-only view: only the Adverse Outcome KE contributes to Signals A/A'/B.
+    Signal C (AOP title) is kept since titles routinely describe the AO.
+    """
+    return _coverage_plot_for_scope(
+        version,
+        scope="ao",
+        cache_stub="latest_organ_coverage_ao_only",
+        title="AOP Coverage of Organ Systems — Adverse Outcome only",
+    )
 
 
 def plot_latest_life_stage(version: str = None) -> str:
@@ -2839,110 +3059,34 @@ def plot_latest_life_stage(version: str = None) -> str:
 
 
 def plot_latest_organ_coverage_percentage(version: str = None) -> str:
-    """Percentage view of AOP coverage of organ systems.
-
-    Same hybrid A+A'+B+C classification as the absolute plot, normalised by
-    the total number of AOPs in the snapshot.
-
-    Args:
-        version: Optional version string. If None, uses the latest snapshot.
-
-    Returns:
-        str: Plotly HTML.
-    """
-    global _plot_data_cache, _plot_figure_cache
-
-    result = _get_coverage_dataframe(version)
-    if result is None:
-        return create_fallback_plot("AOP Organ-System Coverage (%)", "No AOP data in this snapshot")
-    df, version_label = result
-
-    classified = df[df["Best Signal"].notna()]
-    grouped = (
-        classified.groupby(["Organ System", "Best Signal"])["AOP"]
-        .nunique()
-        .reset_index(name="AOP count")
+    """Percentage view of the all-KEs coverage plot."""
+    return _coverage_plot_for_scope(
+        version,
+        scope="all",
+        cache_stub="latest_organ_coverage_percentage",
+        title="AOP Coverage of Organ Systems — % view",
+        percentage=True,
     )
-
-    total_aops = int(df["AOP"].nunique())
-    if total_aops == 0:
-        return create_fallback_plot("AOP Organ-System Coverage (%)", "No AOPs found")
-
-    grouped["Percentage"] = grouped["AOP count"] * 100.0 / total_aops
-
-    bucket_order = [b for b in ORGAN_SYSTEM_BUCKETS if b in set(grouped["Organ System"])]
-    bucket_totals = grouped.groupby("Organ System")["Percentage"].sum()
-    bucket_order = sorted(bucket_order, key=lambda b: bucket_totals.get(b, 0))
-
-    cache_key = f"latest_organ_coverage_percentage_{version or 'latest'}"
-    pct_export = grouped.copy()
-    pct_export["Total AOPs in snapshot"] = total_aops
-    pct_export["Version"] = version_label
-    _plot_data_cache[cache_key] = pct_export
-    _plot_data_cache["latest_organ_coverage_percentage"] = pct_export
-
-    fig = go.Figure()
-    for signal in SIGNAL_ORDER:
-        seg = grouped[grouped["Best Signal"] == signal]
-        if seg.empty:
-            continue
-        seg = seg.set_index("Organ System").reindex(bucket_order).fillna(0).reset_index()
-        fig.add_trace(go.Bar(
-            x=seg["Percentage"],
-            y=seg["Organ System"],
-            name=f"Signal {signal}",
-            orientation="h",
-            marker_color=SIGNAL_COLOURS.get(signal),
-            customdata=seg["AOP count"],
-            hovertemplate=(
-                "<b>%{y}</b><br>"
-                f"Signal {signal}: " + "%{x:.1f}% of AOPs "
-                "(%{customdata} AOPs)<extra></extra>"
-            ),
-        ))
-
-    subtitle = (
-        f"Each segment is the share of the {total_aops} AOPs in this snapshot "
-        f"that the signal classified into the bucket"
-    )
-    fig.update_layout(
-        barmode="stack",
-        title={"text": f"AOP Coverage of Organ Systems — % view<br><sub>{subtitle}</sub>"},
-        xaxis_title="% of AOPs in snapshot",
-        yaxis_title="",
-        legend_title="Signal source",
-        margin=dict(l=80, r=30, t=80, b=50),
-    )
-
-    _plot_figure_cache[cache_key] = fig
-    return render_plot_html(fig)
 
 
 def plot_latest_multi_organ_aops(version: str = None) -> str:
-    """Histogram of the number of distinct organ systems each AOP classifies into.
-
-    Counts ``(aop, bucket)`` membership across Signals A/A'/B/C, excluding the
-    No-annotation sentinel. Answers "are there multi-organ AOPs?" directly.
-
-    Args:
-        version: Optional version string. If None, uses the latest snapshot.
-
-    Returns:
-        str: Plotly HTML.
-    """
+    """Histogram of the number of distinct organ systems each AOP classifies into."""
     global _plot_data_cache, _plot_figure_cache
 
     result = _get_coverage_dataframe(version)
     if result is None:
         return create_fallback_plot("Multi-organ AOPs", "No AOP data in this snapshot")
-    df, version_label = result
+    granular, aop_universe, version_label = result
 
-    real = df[(df["Organ System"] != NO_ANNOTATION_BUCKET) & df["Best Signal"].notna()]
+    per_pair = _aggregate_per_aop(granular, aop_universe, scope="all")
+    real = per_pair[
+        (per_pair["Organ System"] != NO_ANNOTATION_BUCKET)
+        & per_pair["Best Signal"].notna()
+    ]
     counts = real.groupby("AOP")["Organ System"].nunique()
-    total_aops = int(df["AOP"].nunique())
+    total_aops = len(aop_universe)
     unclassified = total_aops - counts.shape[0]
 
-    # Distribution: AOPs by number of buckets touched. Cap at 5+ for readability.
     capped: dict[str, int] = {}
     for n, count in counts.value_counts().sort_index().items():
         key = "5+" if int(n) >= 5 else str(int(n))
@@ -2967,11 +3111,8 @@ def plot_latest_multi_organ_aops(version: str = None) -> str:
     hist_df["__sort__"] = hist_df["Organ systems touched"].map(_order)
     hist_df = hist_df.sort_values("__sort__").drop(columns="__sort__").reset_index(drop=True)
 
-    # Top multi-organ AOPs detail — drives the raw-data toggle
     multi = counts[counts >= 2].sort_values(ascending=False)
-    title_lookup = (
-        df.drop_duplicates(subset=["AOP"]).set_index("AOP")["AOP Title"].to_dict()
-    )
+    title_lookup = aop_universe
     buckets_lookup = (
         real.groupby("AOP")["Organ System"]
         .apply(lambda s: ", ".join(sorted(set(s))))
@@ -3017,6 +3158,4 @@ def plot_latest_multi_organ_aops(version: str = None) -> str:
     )
 
     _plot_figure_cache[cache_key] = fig
-    return render_plot_html(fig)
-
     return render_plot_html(fig)
