@@ -117,6 +117,7 @@ OVERRIDES: Dict[str, Dict[str, List[str]]] = {
     "go": {},
     "hp": {},
     "mp": {},
+    "fma": {},
 }
 
 ANCHOR_TO_BUCKETS: Dict[str, Set[str]] = defaultdict(set)
@@ -176,7 +177,7 @@ def _short(iri: str) -> str:
 
 
 def collect_all_terms() -> Dict[str, Set[str]]:
-    """Return every UBERON / CL / GO / HP / MP IRI used in any AOP-Wiki RDF snapshot."""
+    """Return every UBERON / CL / GO / HP / MP / FMA IRI used in any AOP-Wiki RDF snapshot."""
     query = """
     PREFIX aopo: <http://aopkb.org/aop_ontology#>
     SELECT DISTINCT ?term WHERE {
@@ -194,7 +195,7 @@ def collect_all_terms() -> Dict[str, Set[str]]:
     """
     rows = sparql_select(AOPWIKI_SPARQL, query)
     by_onto: Dict[str, Set[str]] = {
-        "uberon": set(), "cl": set(), "go": set(), "hp": set(), "mp": set(),
+        "uberon": set(), "cl": set(), "go": set(), "hp": set(), "mp": set(), "fma": set(),
     }
     for r in rows:
         iri = r["term"]["value"]
@@ -209,6 +210,8 @@ def collect_all_terms() -> Dict[str, Set[str]]:
             by_onto["hp"].add(iri)
         elif short.startswith("MP_"):
             by_onto["mp"].add(iri)
+        elif short.startswith("FMA_"):
+            by_onto["fma"].add(iri)
     return by_onto
 
 
@@ -266,6 +269,43 @@ def resolve_go_via_results_in_development(go_terms: List[str]) -> Dict[str, Set[
         rows = sparql_select(UBERGRAPH_SPARQL, query)
         for r in rows:
             out.setdefault(r["go"]["value"], set()).add(r["uberon"]["value"])
+        time.sleep(0.5)
+    return out
+
+
+def resolve_fma_via_uberon_xref(fma_terms: List[str]) -> Dict[str, Set[str]]:
+    """Map each FMA IRI to the UBERON IRIs that cross-reference it.
+
+    Ubergraph stores cross-references on UBERON side via ``oboInOwl:hasDbXref``
+    (e.g. ``UBERON:0002107 hasDbXref "FMA:7197"``). We reverse the lookup —
+    for each FMA term used in AOP-Wiki, find the UBERON term that points at
+    it, then resolve via the standard anchor closure.
+    """
+    if not fma_terms:
+        return {}
+    out: Dict[str, Set[str]] = {t: set() for t in fma_terms}
+    # Build the xref literal corresponding to each FMA IRI: "FMA:84050"
+    xref_strings: Dict[str, str] = {
+        iri: "FMA:" + _short(iri).split("_", 1)[-1] for iri in fma_terms
+    }
+    inverse: Dict[str, str] = {v: k for k, v in xref_strings.items()}
+
+    for chunk in _chunks(list(xref_strings.values()), 40):
+        xref_values = " ".join(f'"{x}"' for x in chunk)
+        query = f"""
+        PREFIX oboInOwl: <http://www.geneontology.org/formats/oboInOwl#>
+        SELECT DISTINCT ?xref ?uberon WHERE {{
+          VALUES ?xref {{ {xref_values} }}
+          ?uberon oboInOwl:hasDbXref ?xref .
+          FILTER(STRSTARTS(STR(?uberon), "{OBO}UBERON_"))
+        }}
+        """
+        rows = sparql_select(UBERGRAPH_SPARQL, query)
+        for r in rows:
+            xref = r["xref"]["value"]
+            fma_iri = inverse.get(xref)
+            if fma_iri:
+                out[fma_iri].add(r["uberon"]["value"])
         time.sleep(0.5)
     return out
 
@@ -349,16 +389,18 @@ def build_cache() -> Dict:
     uberon_anchors = resolve_anatomy_buckets(sorted(terms["uberon"]))
     cl_anchors = resolve_anatomy_buckets(sorted(terms["cl"]))
 
-    print("[3/4] resolving GO BP via RO:0002296, HP/MP via UPHENO:0000001 …", file=sys.stderr)
+    print("[3/4] resolving GO via RO:0002296, HP/MP via UPHENO:0000001, FMA via UBERON xrefs …", file=sys.stderr)
     go_to_uberon = resolve_go_via_results_in_development(sorted(terms["go"]))
     hp_to_uberon = resolve_phenotype_via_upheno(sorted(terms["hp"]))
     mp_to_uberon = resolve_phenotype_via_upheno(sorted(terms["mp"]))
+    fma_to_uberon = resolve_fma_via_uberon_xref(sorted(terms["fma"]))
 
-    # All UBERON targets pulled across the three relations; resolve to anchors once.
+    # All UBERON targets pulled across the four relations; resolve to anchors once.
     unique_uberon_targets = sorted(
         {u for s in go_to_uberon.values() for u in s}
         | {u for s in hp_to_uberon.values() for u in s}
         | {u for s in mp_to_uberon.values() for u in s}
+        | {u for s in fma_to_uberon.values() for u in s}
     )
     process_target_anchors = resolve_anatomy_buckets(unique_uberon_targets) if unique_uberon_targets else {}
 
@@ -375,6 +417,7 @@ def build_cache() -> Dict:
     go_buckets = _project(go_to_uberon)
     hp_buckets = _project(hp_to_uberon)
     mp_buckets = _project(mp_to_uberon)
+    fma_buckets = _project(fma_to_uberon)
 
     print("[4/4] applying overrides + assembling JSON …", file=sys.stderr)
     uberon_short = _to_short_buckets(uberon_anchors)
@@ -382,12 +425,14 @@ def build_cache() -> Dict:
     go_short = {_short(iri): sorted(bs) for iri, bs in go_buckets.items()}
     hp_short = {_short(iri): sorted(bs) for iri, bs in hp_buckets.items()}
     mp_short = {_short(iri): sorted(bs) for iri, bs in mp_buckets.items()}
+    fma_short = {_short(iri): sorted(bs) for iri, bs in fma_buckets.items()}
 
     uberon_short, ub_log = apply_overrides(uberon_short, OVERRIDES["uberon"])
     cl_short, cl_log = apply_overrides(cl_short, OVERRIDES["cl"])
     go_short, go_log = apply_overrides(go_short, OVERRIDES["go"])
     hp_short, hp_log = apply_overrides(hp_short, OVERRIDES["hp"])
     mp_short, mp_log = apply_overrides(mp_short, OVERRIDES["mp"])
+    fma_short, fma_log = apply_overrides(fma_short, OVERRIDES["fma"])
 
     cache = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -397,6 +442,7 @@ def build_cache() -> Dict:
             "uberon_cl_relation": "(part_of | subClassOf)*",
             "go_relation": "RO:0002296 (results_in_development_of)",
             "hp_mp_relation": "UPHENO:0000001 (has phenotype affecting)",
+            "fma_relation": "UBERON oboInOwl:hasDbXref \"FMA:nnnn\"",
         },
         "anchors": {
             bucket: [{"iri": a, "label": ANCHOR_LABELS.get(a, "")} for a in anchors]
@@ -408,12 +454,14 @@ def build_cache() -> Dict:
             "go": go_log,
             "hp": hp_log,
             "mp": mp_log,
+            "fma": fma_log,
         },
         "uberon": dict(sorted(uberon_short.items())),
         "cl":     dict(sorted(cl_short.items())),
         "go":     dict(sorted(go_short.items())),
         "hp":     dict(sorted(hp_short.items())),
         "mp":     dict(sorted(mp_short.items())),
+        "fma":    dict(sorted(fma_short.items())),
         "stats": {
             "uberon_terms_in_snapshots": len(terms["uberon"]),
             "uberon_terms_classified":   len(uberon_short),
@@ -425,6 +473,8 @@ def build_cache() -> Dict:
             "hp_terms_classified":       len(hp_short),
             "mp_terms_in_snapshots":     len(terms["mp"]),
             "mp_terms_classified":       len(mp_short),
+            "fma_terms_in_snapshots":    len(terms["fma"]),
+            "fma_terms_classified":      len(fma_short),
             "elapsed_s":                 round(time.time() - started, 1),
         },
     }
@@ -453,6 +503,7 @@ def main() -> int:
         f"GO {s['go_terms_classified']}/{s['go_terms_in_snapshots']}  "
         f"HP {s['hp_terms_classified']}/{s['hp_terms_in_snapshots']}  "
         f"MP {s['mp_terms_classified']}/{s['mp_terms_in_snapshots']}  "
+        f"FMA {s['fma_terms_classified']}/{s['fma_terms_in_snapshots']}  "
         f"({s['elapsed_s']}s)",
         file=sys.stderr,
     )

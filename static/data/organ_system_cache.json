@@ -1,11 +1,12 @@
 {
-  "generated_at": "2026-05-14T17:32:14.806971+00:00",
+  "generated_at": "2026-05-14T17:46:58.079666+00:00",
   "source": {
     "aopwiki_sparql": "https://aopwiki-multirdf.vhp4safety.nl/sparql",
     "ubergraph_sparql": "https://ubergraph.apps.renci.org/sparql",
     "uberon_cl_relation": "(part_of | subClassOf)*",
     "go_relation": "RO:0002296 (results_in_development_of)",
-    "hp_mp_relation": "UPHENO:0000001 (has phenotype affecting)"
+    "hp_mp_relation": "UPHENO:0000001 (has phenotype affecting)",
+    "fma_relation": "UBERON oboInOwl:hasDbXref \"FMA:nnnn\""
   },
   "anchors": {
     "Nervous": [
@@ -144,7 +145,8 @@
     "cl": {},
     "go": {},
     "hp": {},
-    "mp": {}
+    "mp": {},
+    "fma": {}
   },
   "uberon": {
     "UBERON_0000004": [
@@ -952,6 +954,7 @@
       "Hepatobiliary"
     ]
   },
+  "fma": {},
   "stats": {
     "uberon_terms_in_snapshots": 127,
     "uberon_terms_classified": 101,
@@ -963,6 +966,8 @@
     "hp_terms_classified": 27,
     "mp_terms_in_snapshots": 91,
     "mp_terms_classified": 61,
-    "elapsed_s": 48.3
+    "fma_terms_in_snapshots": 21,
+    "fma_terms_classified": 0,
+    "elapsed_s": 40.3
   }
 }

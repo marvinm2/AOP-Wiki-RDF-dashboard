@@ -98,6 +98,9 @@ _HP_BUCKETS: Dict[str, Set[str]] = {
 _MP_BUCKETS: Dict[str, Set[str]] = {
     k: set(v) for k, v in _CACHE.get("mp", {}).items()
 }
+_FMA_BUCKETS: Dict[str, Set[str]] = {
+    k: set(v) for k, v in _CACHE.get("fma", {}).items()
+}
 
 
 def cache_metadata() -> Dict:
@@ -184,17 +187,20 @@ def _iri_suffix(iri: str) -> str:
 
 
 def classify_anatomy(iri: str) -> Set[str]:
-    """Return the set of buckets a UBERON or CL IRI maps to.
+    """Return the set of buckets a UBERON / CL / FMA IRI maps to.
 
-    Empty set means "not classified" — either the term is not in UBERON/CL or
-    its closure does not reach any anchor. A single term may map to several
-    buckets (e.g. pancreas → Digestive + Endocrine).
+    Empty set means "not classified". UBERON / CL come from the standard
+    ``(part_of | subClassOf)*`` closure to anchors; FMA is resolved by
+    finding a UBERON term that cross-references the FMA ID via
+    ``oboInOwl:hasDbXref`` and then taking that UBERON term's bucket(s).
     """
     suffix = _iri_suffix(iri)
     if suffix.startswith("UBERON_"):
         return _UBERON_BUCKETS.get(suffix, set())
     if suffix.startswith("CL_"):
         return _CL_BUCKETS.get(suffix, set())
+    if suffix.startswith("FMA_"):
+        return _FMA_BUCKETS.get(suffix, set())
     return set()
 
 
@@ -277,8 +283,10 @@ def serialise_for_methodology() -> Dict:
             "A":  "aopo:OrganContext (UBERON) and aopo:CellTypeContext (CL) "
                   "directly on Key Events — resolved via Ubergraph "
                   "(part_of | subClassOf)* closure to curated bucket anchors.",
-            "A'": "aopo:hasObject UBERON/CL inside aopo:hasBiologicalEvent — "
-                  "same Ubergraph resolution as Signal A.",
+                  "A'": "aopo:hasObject UBERON / CL / FMA inside aopo:hasBiologicalEvent. "
+                  "UBERON/CL resolve via the same anchor closure as Signal A; FMA terms "
+                  "resolve via UBERON's oboInOwl:hasDbXref reverse-lookup (UBERON_X "
+                  "hasDbXref \"FMA:nnnn\") and then the same anchor closure.",
             "B":  "Process / phenotype signal. aopo:hasProcess (and hasObject) "
                   "terms from GO BP (via RO:0002296 results_in_development_of), "
                   "HP (via UPHENO:0000001 has phenotype affecting), and MP "
@@ -295,5 +303,6 @@ def serialise_for_methodology() -> Dict:
         "go_bp":  {k: sorted(v) for k, v in _GO_BUCKETS.items()},
         "hp":     {k: sorted(v) for k, v in _HP_BUCKETS.items()},
         "mp":     {k: sorted(v) for k, v in _MP_BUCKETS.items()},
+        "fma":    {k: sorted(v) for k, v in _FMA_BUCKETS.items()},
         "keyword_patterns": {b: list(p) for b, p in KEYWORD_PATTERNS.items()},
     }
