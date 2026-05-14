@@ -2644,6 +2644,9 @@ def plot_latest_organ_coverage(version: str = None) -> str:
     df["Version"] = version_label
     cache_key = f"latest_organ_coverage_{version or 'latest'}"
     _plot_data_cache[cache_key] = df
+    # Also store under bare key so /api/plot-data/latest_organ_coverage works
+    # without a ?version= parameter (the raw-data toggle hits the bare key).
+    _plot_data_cache["latest_organ_coverage"] = df
 
     # Count AOPs per (bucket, best_signal) — each AOP counted once per bucket.
     classified = df[df["Best Signal"].notna()]
@@ -2657,21 +2660,53 @@ def plot_latest_organ_coverage(version: str = None) -> str:
     bucket_totals = grouped.groupby("Organ System")["AOP count"].sum()
     bucket_order = sorted(bucket_order, key=lambda b: bucket_totals.get(b, 0))
 
+    # Build (bucket, signal) -> sorted unique AOP titles for hover examples
+    examples_per_pair: dict[tuple[str, str], list[str]] = {}
+    for (bucket, signal), sub in classified.groupby(["Organ System", "Best Signal"]):
+        titles = (
+            sub.drop_duplicates(subset=["AOP"])["AOP Title"]
+            .fillna("")
+            .astype(str)
+            .tolist()
+        )
+        titles = [t for t in titles if t]
+        titles.sort(key=str.lower)
+        examples_per_pair[(bucket, signal)] = titles
+
     fig = go.Figure()
     for signal in SIGNAL_ORDER:
         seg = grouped[grouped["Best Signal"] == signal]
         if seg.empty:
             continue
         seg = seg.set_index("Organ System").reindex(bucket_order).fillna(0).reset_index()
+
+        customdata = []
+        for bucket in seg["Organ System"]:
+            titles = examples_per_pair.get((bucket, signal), [])
+            if not titles:
+                preview = "—"
+            elif len(titles) <= 3:
+                preview = "<br>&nbsp;&nbsp;• " + "<br>&nbsp;&nbsp;• ".join(titles)
+            else:
+                head = titles[:3]
+                preview = (
+                    "<br>&nbsp;&nbsp;• "
+                    + "<br>&nbsp;&nbsp;• ".join(head)
+                    + f"<br>&nbsp;&nbsp;<i>… and {len(titles) - 3} more</i>"
+                )
+            customdata.append(preview)
+
         fig.add_trace(go.Bar(
             x=seg["AOP count"],
             y=seg["Organ System"],
             name=f"Signal {signal}",
             orientation="h",
             marker_color=SIGNAL_COLOURS.get(signal),
+            customdata=customdata,
             hovertemplate=(
                 "<b>%{y}</b><br>"
-                f"Signal {signal}: " + "%{x} AOPs<extra></extra>"
+                f"Signal {signal}: " + "%{x} AOPs"
+                "<br><i>Example AOPs:</i>%{customdata}<extra></extra>"
             ),
         ))
 
@@ -2765,6 +2800,7 @@ def plot_latest_life_stage(version: str = None) -> str:
     df["Version"] = version_label
     cache_key = f"latest_life_stage_{version or 'latest'}"
     _plot_data_cache[cache_key] = df
+    _plot_data_cache["latest_life_stage"] = df
 
     fig = px.bar(
         df, x="AOP count", y="Life stage", orientation="h", text="AOP count"
