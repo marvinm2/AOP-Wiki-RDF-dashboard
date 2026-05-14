@@ -92,6 +92,12 @@ _CL_BUCKETS: Dict[str, Set[str]] = {
 _GO_BUCKETS: Dict[str, Set[str]] = {
     k: set(v) for k, v in _CACHE.get("go", {}).items()
 }
+_HP_BUCKETS: Dict[str, Set[str]] = {
+    k: set(v) for k, v in _CACHE.get("hp", {}).items()
+}
+_MP_BUCKETS: Dict[str, Set[str]] = {
+    k: set(v) for k, v in _CACHE.get("mp", {}).items()
+}
 
 
 def cache_metadata() -> Dict:
@@ -192,16 +198,31 @@ def classify_anatomy(iri: str) -> Set[str]:
     return set()
 
 
-def classify_go_bp(iri: str) -> Set[str]:
-    """Return the bucket set a GO BP IRI maps to via RO:0002296 to anatomy.
+def classify_process(iri: str) -> Set[str]:
+    """Return the bucket set a process/phenotype IRI maps to.
 
-    Empty set means the GO term has no formal anatomy axiom — by policy we
-    do NOT fall back to a hand-curated bridge.
+    Covers three ontology relations, all anchored in UBERON anatomy:
+
+    - GO biological-process via ``RO:0002296`` (results_in_development_of)
+    - HP (Human Phenotype) via ``UPHENO:0000001`` (has phenotype affecting)
+    - MP (Mammalian Phenotype) via ``UPHENO:0000001``
+
+    Empty set means the term has no formal anatomy axiom — by policy we do not
+    fall back to hand-curated bridges.
     """
     suffix = _iri_suffix(iri)
-    if not suffix.startswith("GO_"):
-        return set()
-    return _GO_BUCKETS.get(suffix, set())
+    if suffix.startswith("GO_"):
+        return _GO_BUCKETS.get(suffix, set())
+    if suffix.startswith("HP_"):
+        return _HP_BUCKETS.get(suffix, set())
+    if suffix.startswith("MP_"):
+        return _MP_BUCKETS.get(suffix, set())
+    return set()
+
+
+# Backwards-compatible alias — older code paths import classify_go_bp.
+def classify_go_bp(iri: str) -> Set[str]:
+    return classify_process(iri)
 
 
 def classify_text(text: str) -> Set[str]:
@@ -258,10 +279,13 @@ def serialise_for_methodology() -> Dict:
                   "(part_of | subClassOf)* closure to curated bucket anchors.",
             "A'": "aopo:hasObject UBERON/CL inside aopo:hasBiologicalEvent — "
                   "same Ubergraph resolution as Signal A.",
-            "B":  "aopo:hasProcess GO biological-process IRIs that carry an "
-                  "RO:0002296 (results_in_development_of) axiom to a UBERON "
-                  "term that resolves to a bucket. Terms without such an "
-                  "axiom are NOT classified.",
+            "B":  "Process / phenotype signal. aopo:hasProcess (and hasObject) "
+                  "terms from GO BP (via RO:0002296 results_in_development_of), "
+                  "HP (via UPHENO:0000001 has phenotype affecting), and MP "
+                  "(via UPHENO:0000001). HP/MP carry the bulk of apical-endpoint "
+                  "anatomy because abnormal phenotypes are explicitly anchored "
+                  "in UBERON. Terms without a formal anatomy axiom are NOT "
+                  "classified.",
             "C":  "Regex on AOP/AO title text (EXPLORATORY — not for "
                   "regulatory use). Patterns listed below.",
         },
@@ -269,5 +293,7 @@ def serialise_for_methodology() -> Dict:
         "uberon": {k: sorted(v) for k, v in _UBERON_BUCKETS.items()},
         "cl":     {k: sorted(v) for k, v in _CL_BUCKETS.items()},
         "go_bp":  {k: sorted(v) for k, v in _GO_BUCKETS.items()},
+        "hp":     {k: sorted(v) for k, v in _HP_BUCKETS.items()},
+        "mp":     {k: sorted(v) for k, v in _MP_BUCKETS.items()},
         "keyword_patterns": {b: list(p) for b, p in KEYWORD_PATTERNS.items()},
     }

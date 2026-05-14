@@ -67,7 +67,7 @@ from .organ_systems import (
     ORGAN_SYSTEM_BUCKETS,
     best_signal,
     classify_anatomy,
-    classify_go_bp,
+    classify_process,
     classify_text,
 )
 
@@ -3464,9 +3464,12 @@ def _coverage_for_graph(graph_uri: str) -> set[tuple[str, str]]:
             if iri:
                 for bucket in classify_anatomy(iri):
                     pairs.add((aop, bucket))
+                # Phenotype-as-object — HP/MP via UPHENO:0000001
+                for bucket in classify_process(iri):
+                    pairs.add((aop, bucket))
         proc = r.get("proc", {}).get("value")
         if proc:
-            for bucket in classify_go_bp(proc):
+            for bucket in classify_process(proc):
                 pairs.add((aop, bucket))
     return pairs
 

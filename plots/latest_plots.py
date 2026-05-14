@@ -72,7 +72,7 @@ from .organ_systems import (
     SIGNAL_ORDER,
     best_signal,
     classify_anatomy,
-    classify_go_bp,
+    classify_process,
     classify_text,
 )
 
@@ -2600,13 +2600,17 @@ def _compute_coverage_rows(rows: list[dict]) -> pd.DataFrame:
 
         obj_iri = r.get("obj", {}).get("value")
         if obj_iri:
+            # Anatomy → Signal A'
             for bucket in classify_anatomy(obj_iri):
-                add(bucket, "A'", "hasObject")
+                add(bucket, "A'", "hasObject (UBERON/CL)")
+            # Phenotype-as-object → Signal B (rare but present)
+            for bucket in classify_process(obj_iri):
+                add(bucket, "B", "hasObject (HP/MP via UPHENO)")
 
         proc_iri = r.get("proc", {}).get("value")
         if proc_iri:
-            for bucket in classify_go_bp(proc_iri):
-                add(bucket, "B", "hasProcess (RO:0002296)")
+            for bucket in classify_process(proc_iri):
+                add(bucket, "B", "hasProcess (GO RO:0002296 / HP/MP UPHENO)")
 
     # Signal C — keywords on the AOP title (one row per matched bucket, no KE
     # attachment). The sentinel level marks these rows so the scope filters

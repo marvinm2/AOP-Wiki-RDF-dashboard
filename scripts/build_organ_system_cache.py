@@ -46,6 +46,10 @@ OBO = "http://purl.obolibrary.org/obo/"
 BFO_PART_OF = OBO + "BFO_0000050"
 RDFS_SUBCLASS = "http://www.w3.org/2000/01/rdf-schema#subClassOf"
 RO_RESULTS_IN_DEV_OF = OBO + "RO_0002296"
+# UPHENO:0000001 is the Unified Phenotype Ontology's "has phenotype affecting"
+# predicate — links HP / MP terms (abnormal phenotypes) to the UBERON anatomy
+# they affect, with Ubergraph's closure giving multiple parent contexts.
+UPHENO_PHENOTYPE_OF = OBO + "UPHENO_0000001"
 
 HTTP_TIMEOUT = 90
 
@@ -111,6 +115,8 @@ OVERRIDES: Dict[str, Dict[str, List[str]]] = {
     },
     "cl": {},
     "go": {},
+    "hp": {},
+    "mp": {},
 }
 
 ANCHOR_TO_BUCKETS: Dict[str, Set[str]] = defaultdict(set)
@@ -170,7 +176,7 @@ def _short(iri: str) -> str:
 
 
 def collect_all_terms() -> Dict[str, Set[str]]:
-    """Return every UBERON / CL / GO IRI used in any AOP-Wiki RDF snapshot."""
+    """Return every UBERON / CL / GO / HP / MP IRI used in any AOP-Wiki RDF snapshot."""
     query = """
     PREFIX aopo: <http://aopkb.org/aop_ontology#>
     SELECT DISTINCT ?term WHERE {
@@ -187,7 +193,9 @@ def collect_all_terms() -> Dict[str, Set[str]]:
     }
     """
     rows = sparql_select(AOPWIKI_SPARQL, query)
-    by_onto: Dict[str, Set[str]] = {"uberon": set(), "cl": set(), "go": set()}
+    by_onto: Dict[str, Set[str]] = {
+        "uberon": set(), "cl": set(), "go": set(), "hp": set(), "mp": set(),
+    }
     for r in rows:
         iri = r["term"]["value"]
         short = _short(iri)
@@ -197,6 +205,10 @@ def collect_all_terms() -> Dict[str, Set[str]]:
             by_onto["cl"].add(iri)
         elif short.startswith("GO_"):
             by_onto["go"].add(iri)
+        elif short.startswith("HP_"):
+            by_onto["hp"].add(iri)
+        elif short.startswith("MP_"):
+            by_onto["mp"].add(iri)
     return by_onto
 
 
@@ -258,6 +270,36 @@ def resolve_go_via_results_in_development(go_terms: List[str]) -> Dict[str, Set[
     return out
 
 
+def resolve_phenotype_via_upheno(phen_terms: List[str]) -> Dict[str, Set[str]]:
+    """Map each HP / MP IRI to UBERON IRIs via UPHENO:0000001.
+
+    UPHENO's "has phenotype affecting" relation connects a phenotype class
+    (HP_xxxx / MP_xxxx) to the anatomical entities the phenotype manifests in,
+    together with the closure of those entities' part_of / is_a ancestors.
+
+    Empty mapping for a phenotype = no anatomy axiom (e.g. behavioural
+    phenotypes like MP:0001262 "abnormal feeding behavior").
+    """
+    if not phen_terms:
+        return {}
+    out: Dict[str, Set[str]] = {t: set() for t in phen_terms}
+    for chunk in _chunks(phen_terms, 40):
+        term_values = " ".join(f"<{t}>" for t in chunk)
+        query = f"""
+        PREFIX UPHENO: <{OBO}UPHENO_>
+        SELECT DISTINCT ?phen ?uberon WHERE {{
+          VALUES ?phen {{ {term_values} }}
+          ?phen UPHENO:0000001 ?uberon .
+          FILTER(STRSTARTS(STR(?uberon), "{OBO}UBERON_"))
+        }}
+        """
+        rows = sparql_select(UBERGRAPH_SPARQL, query)
+        for r in rows:
+            out.setdefault(r["phen"]["value"], set()).add(r["uberon"]["value"])
+        time.sleep(0.5)
+    return out
+
+
 def anchors_to_buckets(anchor_iris: Set[str]) -> Set[str]:
     buckets: Set[str] = set()
     for iri in anchor_iris:
@@ -307,26 +349,45 @@ def build_cache() -> Dict:
     uberon_anchors = resolve_anatomy_buckets(sorted(terms["uberon"]))
     cl_anchors = resolve_anatomy_buckets(sorted(terms["cl"]))
 
-    print("[3/4] resolving GO BP via RO:0002296 results_in_development_of …", file=sys.stderr)
+    print("[3/4] resolving GO BP via RO:0002296, HP/MP via UPHENO:0000001 …", file=sys.stderr)
     go_to_uberon = resolve_go_via_results_in_development(sorted(terms["go"]))
-    unique_uberon_targets = sorted({u for s in go_to_uberon.values() for u in s})
-    go_target_anchors = resolve_anatomy_buckets(unique_uberon_targets) if unique_uberon_targets else {}
-    go_buckets: Dict[str, Set[str]] = {}
-    for go, uberons in go_to_uberon.items():
-        bs: Set[str] = set()
-        for u in uberons:
-            bs |= anchors_to_buckets(go_target_anchors.get(u, set()))
-        if bs:
-            go_buckets[go] = bs
+    hp_to_uberon = resolve_phenotype_via_upheno(sorted(terms["hp"]))
+    mp_to_uberon = resolve_phenotype_via_upheno(sorted(terms["mp"]))
+
+    # All UBERON targets pulled across the three relations; resolve to anchors once.
+    unique_uberon_targets = sorted(
+        {u for s in go_to_uberon.values() for u in s}
+        | {u for s in hp_to_uberon.values() for u in s}
+        | {u for s in mp_to_uberon.values() for u in s}
+    )
+    process_target_anchors = resolve_anatomy_buckets(unique_uberon_targets) if unique_uberon_targets else {}
+
+    def _project(term_to_uberon: Dict[str, Set[str]]) -> Dict[str, Set[str]]:
+        out: Dict[str, Set[str]] = {}
+        for term, uberons in term_to_uberon.items():
+            bs: Set[str] = set()
+            for u in uberons:
+                bs |= anchors_to_buckets(process_target_anchors.get(u, set()))
+            if bs:
+                out[term] = bs
+        return out
+
+    go_buckets = _project(go_to_uberon)
+    hp_buckets = _project(hp_to_uberon)
+    mp_buckets = _project(mp_to_uberon)
 
     print("[4/4] applying overrides + assembling JSON …", file=sys.stderr)
     uberon_short = _to_short_buckets(uberon_anchors)
     cl_short = _to_short_buckets(cl_anchors)
     go_short = {_short(iri): sorted(bs) for iri, bs in go_buckets.items()}
+    hp_short = {_short(iri): sorted(bs) for iri, bs in hp_buckets.items()}
+    mp_short = {_short(iri): sorted(bs) for iri, bs in mp_buckets.items()}
 
     uberon_short, ub_log = apply_overrides(uberon_short, OVERRIDES["uberon"])
     cl_short, cl_log = apply_overrides(cl_short, OVERRIDES["cl"])
     go_short, go_log = apply_overrides(go_short, OVERRIDES["go"])
+    hp_short, hp_log = apply_overrides(hp_short, OVERRIDES["hp"])
+    mp_short, mp_log = apply_overrides(mp_short, OVERRIDES["mp"])
 
     cache = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -335,6 +396,7 @@ def build_cache() -> Dict:
             "ubergraph_sparql": UBERGRAPH_SPARQL,
             "uberon_cl_relation": "(part_of | subClassOf)*",
             "go_relation": "RO:0002296 (results_in_development_of)",
+            "hp_mp_relation": "UPHENO:0000001 (has phenotype affecting)",
         },
         "anchors": {
             bucket: [{"iri": a, "label": ANCHOR_LABELS.get(a, "")} for a in anchors]
@@ -344,10 +406,14 @@ def build_cache() -> Dict:
             "uberon": ub_log,
             "cl": cl_log,
             "go": go_log,
+            "hp": hp_log,
+            "mp": mp_log,
         },
         "uberon": dict(sorted(uberon_short.items())),
         "cl":     dict(sorted(cl_short.items())),
         "go":     dict(sorted(go_short.items())),
+        "hp":     dict(sorted(hp_short.items())),
+        "mp":     dict(sorted(mp_short.items())),
         "stats": {
             "uberon_terms_in_snapshots": len(terms["uberon"]),
             "uberon_terms_classified":   len(uberon_short),
@@ -355,6 +421,10 @@ def build_cache() -> Dict:
             "cl_terms_classified":       len(cl_short),
             "go_terms_in_snapshots":     len(terms["go"]),
             "go_terms_classified":       len(go_short),
+            "hp_terms_in_snapshots":     len(terms["hp"]),
+            "hp_terms_classified":       len(hp_short),
+            "mp_terms_in_snapshots":     len(terms["mp"]),
+            "mp_terms_classified":       len(mp_short),
             "elapsed_s":                 round(time.time() - started, 1),
         },
     }
@@ -381,6 +451,8 @@ def main() -> int:
         f"UBERON {s['uberon_terms_classified']}/{s['uberon_terms_in_snapshots']}  "
         f"CL {s['cl_terms_classified']}/{s['cl_terms_in_snapshots']}  "
         f"GO {s['go_terms_classified']}/{s['go_terms_in_snapshots']}  "
+        f"HP {s['hp_terms_classified']}/{s['hp_terms_in_snapshots']}  "
+        f"MP {s['mp_terms_classified']}/{s['mp_terms_in_snapshots']}  "
         f"({s['elapsed_s']}s)",
         file=sys.stderr,
     )

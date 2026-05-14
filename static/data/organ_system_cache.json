@@ -1,10 +1,11 @@
 {
-  "generated_at": "2026-05-14T16:44:21.074855+00:00",
+  "generated_at": "2026-05-14T17:32:14.806971+00:00",
   "source": {
     "aopwiki_sparql": "https://aopwiki-multirdf.vhp4safety.nl/sparql",
     "ubergraph_sparql": "https://ubergraph.apps.renci.org/sparql",
     "uberon_cl_relation": "(part_of | subClassOf)*",
-    "go_relation": "RO:0002296 (results_in_development_of)"
+    "go_relation": "RO:0002296 (results_in_development_of)",
+    "hp_mp_relation": "UPHENO:0000001 (has phenotype affecting)"
   },
   "anchors": {
     "Nervous": [
@@ -141,7 +142,9 @@
       }
     },
     "cl": {},
-    "go": {}
+    "go": {},
+    "hp": {},
+    "mp": {}
   },
   "uberon": {
     "UBERON_0000004": [
@@ -651,6 +654,304 @@
       "Reproductive"
     ]
   },
+  "hp": {
+    "HP_0000029": [
+      "Reproductive"
+    ],
+    "HP_0000035": [
+      "Reproductive"
+    ],
+    "HP_0000112": [
+      "Renal/Urinary"
+    ],
+    "HP_0000175": [
+      "Digestive"
+    ],
+    "HP_0000726": [
+      "Nervous"
+    ],
+    "HP_0001397": [
+      "Digestive",
+      "Endocrine",
+      "Hepatobiliary"
+    ],
+    "HP_0001410": [
+      "Digestive",
+      "Endocrine",
+      "Hepatobiliary"
+    ],
+    "HP_0001414": [
+      "Digestive",
+      "Endocrine",
+      "Hepatobiliary"
+    ],
+    "HP_0001695": [
+      "Cardiovascular"
+    ],
+    "HP_0001888": [
+      "Immune/Haematopoietic"
+    ],
+    "HP_0002608": [
+      "Digestive",
+      "Immune/Haematopoietic"
+    ],
+    "HP_0002621": [
+      "Cardiovascular"
+    ],
+    "HP_0002893": [
+      "Endocrine",
+      "Nervous",
+      "Reproductive"
+    ],
+    "HP_0003002": [
+      "Musculoskeletal"
+    ],
+    "HP_0003281": [
+      "Immune/Haematopoietic"
+    ],
+    "HP_0004936": [
+      "Cardiovascular",
+      "Immune/Haematopoietic"
+    ],
+    "HP_0007305": [
+      "Nervous"
+    ],
+    "HP_0008209": [
+      "Reproductive"
+    ],
+    "HP_0008669": [
+      "Reproductive"
+    ],
+    "HP_0011185": [
+      "Nervous"
+    ],
+    "HP_0011227": [
+      "Immune/Haematopoietic"
+    ],
+    "HP_0012114": [
+      "Reproductive"
+    ],
+    "HP_0012262": [
+      "Respiratory"
+    ],
+    "HP_0012649": [
+      "Immune/Haematopoietic"
+    ],
+    "HP_0030339": [
+      "Endocrine",
+      "Immune/Haematopoietic"
+    ],
+    "HP_0100526": [
+      "Respiratory"
+    ],
+    "HP_0100598": [
+      "Respiratory"
+    ]
+  },
+  "mp": {
+    "MP_0000032": [
+      "Musculoskeletal",
+      "Sensory"
+    ],
+    "MP_0000063": [
+      "Musculoskeletal"
+    ],
+    "MP_0000066": [
+      "Musculoskeletal"
+    ],
+    "MP_0000182": [
+      "Immune/Haematopoietic"
+    ],
+    "MP_0000231": [
+      "Cardiovascular",
+      "Immune/Haematopoietic"
+    ],
+    "MP_0000630": [
+      "Integumentary"
+    ],
+    "MP_0000921": [
+      "Nervous"
+    ],
+    "MP_0001152": [
+      "Reproductive"
+    ],
+    "MP_0001297": [
+      "Sensory"
+    ],
+    "MP_0001399": [
+      "Nervous"
+    ],
+    "MP_0001544": [
+      "Cardiovascular"
+    ],
+    "MP_0001577": [
+      "Immune/Haematopoietic"
+    ],
+    "MP_0001847": [
+      "Immune/Haematopoietic",
+      "Nervous"
+    ],
+    "MP_0001860": [
+      "Digestive",
+      "Endocrine",
+      "Hepatobiliary",
+      "Immune/Haematopoietic"
+    ],
+    "MP_0001863": [
+      "Cardiovascular",
+      "Immune/Haematopoietic"
+    ],
+    "MP_0001914": [
+      "Cardiovascular",
+      "Immune/Haematopoietic"
+    ],
+    "MP_0001921": [
+      "Reproductive"
+    ],
+    "MP_0001928": [
+      "Reproductive"
+    ],
+    "MP_0001954": [
+      "Respiratory"
+    ],
+    "MP_0002207": [
+      "Nervous"
+    ],
+    "MP_0002229": [
+      "Nervous"
+    ],
+    "MP_0002418": [
+      "Immune/Haematopoietic"
+    ],
+    "MP_0002498": [
+      "Immune/Haematopoietic"
+    ],
+    "MP_0002551": [
+      "Immune/Haematopoietic"
+    ],
+    "MP_0002882": [
+      "Nervous"
+    ],
+    "MP_0002916": [
+      "Nervous"
+    ],
+    "MP_0002998": [
+      "Musculoskeletal"
+    ],
+    "MP_0003070": [
+      "Cardiovascular"
+    ],
+    "MP_0003205": [
+      "Reproductive"
+    ],
+    "MP_0003244": [
+      "Nervous"
+    ],
+    "MP_0003333": [
+      "Digestive",
+      "Endocrine",
+      "Hepatobiliary"
+    ],
+    "MP_0003606": [
+      "Renal/Urinary"
+    ],
+    "MP_0003633": [
+      "Nervous"
+    ],
+    "MP_0003990": [
+      "Nervous"
+    ],
+    "MP_0004154": [
+      "Renal/Urinary"
+    ],
+    "MP_0004878": [
+      "Cardiovascular"
+    ],
+    "MP_0004968": [
+      "Renal/Urinary"
+    ],
+    "MP_0005170": [
+      "Digestive"
+    ],
+    "MP_0005418": [
+      "Endocrine",
+      "Immune/Haematopoietic"
+    ],
+    "MP_0005475": [
+      "Endocrine",
+      "Immune/Haematopoietic"
+    ],
+    "MP_0005493": [
+      "Digestive"
+    ],
+    "MP_0005567": [
+      "Immune/Haematopoietic"
+    ],
+    "MP_0005568": [
+      "Immune/Haematopoietic"
+    ],
+    "MP_0005634": [
+      "Immune/Haematopoietic"
+    ],
+    "MP_0008014": [
+      "Respiratory"
+    ],
+    "MP_0008940": [
+      "Endocrine",
+      "Reproductive"
+    ],
+    "MP_0009006": [
+      "Reproductive"
+    ],
+    "MP_0009017": [
+      "Reproductive"
+    ],
+    "MP_0009092": [
+      "Reproductive"
+    ],
+    "MP_0009859": [
+      "Sensory"
+    ],
+    "MP_0009887": [
+      "Digestive"
+    ],
+    "MP_0009888": [
+      "Digestive"
+    ],
+    "MP_0010019": [
+      "Cardiovascular",
+      "Digestive",
+      "Endocrine",
+      "Hepatobiliary"
+    ],
+    "MP_0010128": [
+      "Cardiovascular",
+      "Immune/Haematopoietic"
+    ],
+    "MP_0010879": [
+      "Musculoskeletal"
+    ],
+    "MP_0011267": [
+      "Nervous"
+    ],
+    "MP_0011625": [
+      "Renal/Urinary"
+    ],
+    "MP_0011899": [
+      "Renal/Urinary"
+    ],
+    "MP_0013603": [
+      "Reproductive"
+    ],
+    "MP_0013604": [
+      "Reproductive"
+    ],
+    "MP_0014045": [
+      "Digestive",
+      "Endocrine",
+      "Hepatobiliary"
+    ]
+  },
   "stats": {
     "uberon_terms_in_snapshots": 127,
     "uberon_terms_classified": 101,
@@ -658,6 +959,10 @@
     "cl_terms_classified": 52,
     "go_terms_in_snapshots": 452,
     "go_terms_classified": 3,
-    "elapsed_s": 34.7
+    "hp_terms_in_snapshots": 31,
+    "hp_terms_classified": 27,
+    "mp_terms_in_snapshots": 91,
+    "mp_terms_classified": 61,
+    "elapsed_s": 48.3
   }
 }
