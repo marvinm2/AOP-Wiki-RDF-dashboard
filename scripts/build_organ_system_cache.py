@@ -26,14 +26,20 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 import time
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Iterable, List, Set, Tuple
+from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 import requests
+
+# Import the Signal-C regex from the runtime classifier so the label-regex
+# bridge stays in sync. KEYWORD_PATTERNS lives next to the dashboard code.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from plots.organ_systems import KEYWORD_PATTERNS  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Endpoints
@@ -251,6 +257,61 @@ def resolve_anatomy_buckets(terms: List[str]) -> Dict[str, Set[str]]:
     return out
 
 
+def build_anchor_ancestor_graph() -> Dict[str, Set[str]]:
+    """For each anchor, return the set of OTHER anchors that are its ancestors.
+
+    "Ancestor" = reachable via ``(BFO:0000050 | rdfs:subClassOf)+`` (strict —
+    excludes self-match). Result feeds :func:`prune_to_specific_anchors`.
+
+    Example for the UBERON snapshot the dashboard ships against:
+      liver (UBERON_0002107) → {digestive system, endocrine system}
+      pancreas (UBERON_0001264) → {digestive system, endocrine system}
+      gallbladder (UBERON_0001173) → {digestive system, common bile duct}
+
+    The query is one SPARQL round-trip with all anchors on both sides.
+    """
+    anchor_iris = [f"<{OBO}{a}>" for a in ALL_ANCHORS]
+    values_block = " ".join(anchor_iris)
+    query = f"""
+    PREFIX BFO: <{OBO}BFO_>
+    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    SELECT DISTINCT ?desc ?anc WHERE {{
+      VALUES ?desc {{ {values_block} }}
+      VALUES ?anc  {{ {values_block} }}
+      ?desc (BFO:0000050|rdfs:subClassOf)+ ?anc .
+      FILTER(?desc != ?anc)
+    }}
+    """
+    rows = sparql_select(UBERGRAPH_SPARQL, query)
+    graph: Dict[str, Set[str]] = defaultdict(set)
+    for r in rows:
+        graph[_short(r["desc"]["value"])].add(_short(r["anc"]["value"]))
+    return dict(graph)
+
+
+def prune_to_specific_anchors(
+    reached: Set[str],
+    anchor_ancestors: Dict[str, Set[str]],
+) -> Set[str]:
+    """Drop any anchor in ``reached`` that is an ancestor of another reached anchor.
+
+    ``reached`` and the dict keys/values are **short** IRIs (``UBERON_xxx``).
+    The intent: a term reaching {liver, digestive_system, endocrine_system}
+    keeps only ``liver`` — the other two are ancestors of liver in UBERON and
+    therefore over-general for this term's classification.
+
+    Pancreas is an anchor for both Digestive and Endocrine. Pancreas reaches
+    {pancreas, digestive_system, endocrine_system}; pruning keeps {pancreas},
+    which projects to {Digestive, Endocrine} via the dual-anchor mapping. The
+    intentional dual-org is preserved.
+    """
+    reached = set(reached)
+    to_remove: Set[str] = set()
+    for d in reached:
+        to_remove |= anchor_ancestors.get(d, set()) & reached
+    return reached - to_remove
+
+
 def resolve_go_via_results_in_development(go_terms: List[str]) -> Dict[str, Set[str]]:
     """Map each GO BP IRI to UBERON IRIs it 'results in development of'."""
     if not go_terms:
@@ -276,15 +337,21 @@ def resolve_go_via_results_in_development(go_terms: List[str]) -> Dict[str, Set[
 def resolve_fma_via_uberon_xref(fma_terms: List[str]) -> Dict[str, Set[str]]:
     """Map each FMA IRI to the UBERON IRIs that cross-reference it.
 
-    Ubergraph stores cross-references on UBERON side via ``oboInOwl:hasDbXref``
-    (e.g. ``UBERON:0002107 hasDbXref "FMA:7197"``). We reverse the lookup —
-    for each FMA term used in AOP-Wiki, find the UBERON term that points at
-    it, then resolve via the standard anchor closure.
+    Two stages:
+
+    1. **Ubergraph reverse direction** — ``?uberon oboInOwl:hasDbXref "FMA:nnnn"``.
+       Misses most FMA IDs because Ubergraph's UBERON snapshot does not include
+       FMA xrefs for the specific IDs AOP-Wiki uses.
+
+    2. **OLS REST fallback** — for any FMA IRI still unresolved, query OLS for
+       the term's xrefs and pull any UBERON-prefixed cross-reference. Cached
+       under ``static/data/fma-ols-xrefs.json`` to avoid re-fetching on rebuilds.
     """
     if not fma_terms:
         return {}
     out: Dict[str, Set[str]] = {t: set() for t in fma_terms}
-    # Build the xref literal corresponding to each FMA IRI: "FMA:84050"
+
+    # ---- Stage 1: Ubergraph reverse xref (UBERON → FMA literal) ------------
     xref_strings: Dict[str, str] = {
         iri: "FMA:" + _short(iri).split("_", 1)[-1] for iri in fma_terms
     }
@@ -307,36 +374,154 @@ def resolve_fma_via_uberon_xref(fma_terms: List[str]) -> Dict[str, Set[str]]:
             if fma_iri:
                 out[fma_iri].add(r["uberon"]["value"])
         time.sleep(0.5)
+
     return out
 
 
-def resolve_phenotype_via_upheno(phen_terms: List[str]) -> Dict[str, Set[str]]:
-    """Map each HP / MP IRI to UBERON IRIs via UPHENO:0000001.
+def _ols_fma_label(fma_iri: str) -> str:
+    """OLS REST: fetch the ``rdfs:label`` for an FMA term.
 
-    UPHENO's "has phenotype affecting" relation connects a phenotype class
-    (HP_xxxx / MP_xxxx) to the anatomical entities the phenotype manifests in,
-    together with the closure of those entities' part_of / is_a ancestors.
+    AOP-Wiki uses ``http://purl.obolibrary.org/obo/FMA_7210`` IRIs but FMA's
+    canonical scheme in OLS is ``http://purl.org/sig/ont/fma/fma7210``. The
+    obo/FMA_ form does not resolve in OLS; the sig/ont form does. We convert
+    on the fly.
 
-    Empty mapping for a phenotype = no anatomy axiom (e.g. behavioural
-    phenotypes like MP:0001262 "abnormal feeding behavior").
+    OLS v2 ``/api/v2/ontologies/fma/classes?iri=...`` returns ``label`` as a
+    JSON array (rarely scalar). Returns empty string if not found.
+    """
+    from urllib.parse import quote
+
+    short = _short(fma_iri)  # e.g. "FMA_7210"
+    fma_id = short.split("_", 1)[-1] if "_" in short else short
+    canonical = f"http://purl.org/sig/ont/fma/fma{fma_id}"
+    url = (
+        "https://www.ebi.ac.uk/ols4/api/v2/ontologies/fma/classes"
+        f"?iri={quote(canonical, safe='')}"
+    )
+    try:
+        r = requests.get(url, timeout=30, headers={"Accept": "application/json"})
+        if r.status_code == 404:
+            return ""
+        r.raise_for_status()
+        data = r.json()
+    except (requests.RequestException, ValueError) as exc:
+        print(f"  ! OLS lookup failed for {short}: {exc}", file=sys.stderr)
+        return ""
+
+    elements = data.get("elements") or []
+    if not elements:
+        return ""
+    label = elements[0].get("label")
+    if isinstance(label, list):
+        return label[0] if label else ""
+    return label or ""
+
+
+def resolve_fma_via_label(fma_iris: List[str]) -> Dict[str, Tuple[str, Set[str], List[str]]]:
+    """Fallback FMA resolver: fetch label from OLS, apply Signal-C regex.
+
+    Mirrors :func:`resolve_phenotype_via_label` for FMA terms. Useful because
+    the canonical Ubergraph reverse-xref returns 0/21 matches and OLS has no
+    UBERON cross-references on FMA terms (xref direction is one-way:
+    UBERON → FMA, never the inverse). Label-matching converts "testis" to
+    the Reproductive bucket regardless of the cross-reference gap.
+
+    Cached under ``static/data/fma-ols-labels.json``.
+    """
+    if not fma_iris:
+        return {}
+    cache_path = Path("static/data/fma-ols-labels.json")
+    cache: Dict[str, str] = {}
+    if cache_path.exists():
+        try:
+            cache = json.loads(cache_path.read_text())
+        except json.JSONDecodeError:
+            cache = {}
+
+    out: Dict[str, Tuple[str, Set[str], List[str]]] = {}
+    for iri in fma_iris:
+        short = _short(iri)
+        if short in cache:
+            label = cache[short]
+        else:
+            label = _ols_fma_label(iri)
+            cache[short] = label
+            time.sleep(0.3)  # polite to OLS
+        if not label:
+            continue
+        matched_buckets: Set[str] = set()
+        matched_patterns: List[str] = []
+        for bucket, patterns in _COMPILED_KEYWORDS.items():
+            for pattern in patterns:
+                if pattern.search(label):
+                    matched_buckets.add(bucket)
+                    matched_patterns.append(f"{bucket}:{pattern.pattern}")
+                    break
+        if matched_buckets:
+            out[iri] = (label, matched_buckets, matched_patterns)
+
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    cache_path.write_text(json.dumps(cache, indent=2, ensure_ascii=False))
+    return out
+
+
+# Compile the Signal-C bucket regex once for reuse.
+_COMPILED_KEYWORDS: Dict[str, List[re.Pattern]] = {
+    bucket: [re.compile(p, re.IGNORECASE) for p in patterns]
+    for bucket, patterns in KEYWORD_PATTERNS.items()
+}
+
+
+def resolve_phenotype_via_label(phen_terms: List[str]) -> Dict[str, Tuple[str, Set[str], List[str]]]:
+    """Map each HP / MP IRI to bucket(s) via its ``rdfs:label`` + Signal-C regex.
+
+    This replaces the previous ``UPHENO:0000001`` approach, which Ubergraph
+    materialises as a generic ancestor closure that returns the *same* anatomy
+    set for ``HP_0001397`` (hepatic cirrhosis) and ``HP_0001414`` (renal
+    hypoplasia). The label-regex bridge gives mono-organ classification for
+    phenotypes whose name names an organ system.
+
+    Returns ``{phen_iri: (label, {bucket, ...}, [pattern, ...])}``. Phenotypes
+    whose label matches no pattern are absent from the result (≡ unclassified).
     """
     if not phen_terms:
         return {}
-    out: Dict[str, Set[str]] = {t: set() for t in phen_terms}
-    for chunk in _chunks(phen_terms, 40):
+
+    labels: Dict[str, str] = {}
+    rdfs_label = "http://www.w3.org/2000/01/rdf-schema#label"
+    for chunk in _chunks(phen_terms, 80):
         term_values = " ".join(f"<{t}>" for t in chunk)
         query = f"""
-        PREFIX UPHENO: <{OBO}UPHENO_>
-        SELECT DISTINCT ?phen ?uberon WHERE {{
-          VALUES ?phen {{ {term_values} }}
-          ?phen UPHENO:0000001 ?uberon .
-          FILTER(STRSTARTS(STR(?uberon), "{OBO}UBERON_"))
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        SELECT ?term ?label WHERE {{
+          VALUES ?term {{ {term_values} }}
+          ?term rdfs:label ?label .
+          FILTER(LANG(?label) = "" || LANG(?label) = "en")
         }}
         """
         rows = sparql_select(UBERGRAPH_SPARQL, query)
         for r in rows:
-            out.setdefault(r["phen"]["value"], set()).add(r["uberon"]["value"])
+            iri = r["term"]["value"]
+            lbl = r["label"]["value"]
+            # Prefer the first non-empty English label.
+            labels.setdefault(iri, lbl)
         time.sleep(0.5)
+
+    out: Dict[str, Tuple[str, Set[str], List[str]]] = {}
+    for iri in phen_terms:
+        label = labels.get(iri, "")
+        if not label:
+            continue
+        matched_buckets: Set[str] = set()
+        matched_patterns: List[str] = []
+        for bucket, patterns in _COMPILED_KEYWORDS.items():
+            for pattern in patterns:
+                if pattern.search(label):
+                    matched_buckets.add(bucket)
+                    matched_patterns.append(f"{bucket}:{pattern.pattern}")
+                    break  # one pattern per bucket is enough
+        if matched_buckets:
+            out[iri] = (label, matched_buckets, matched_patterns)
     return out
 
 
@@ -352,11 +537,35 @@ def anchors_to_buckets(anchor_iris: Set[str]) -> Set[str]:
 # ---------------------------------------------------------------------------
 
 
-def _to_short_buckets(term_to_anchors: Dict[str, Set[str]]) -> Dict[str, List[str]]:
-    """Project resolved-anchor sets onto bucket-name lists, keyed by short IRI."""
+def _to_short_buckets(
+    term_to_anchors: Dict[str, Set[str]],
+    anchor_ancestors: Optional[Dict[str, Set[str]]] = None,
+    pruning_log: Optional[Dict[str, Dict]] = None,
+) -> Dict[str, List[str]]:
+    """Project resolved-anchor sets onto bucket-name lists, keyed by short IRI.
+
+    If ``anchor_ancestors`` is provided, apply :func:`prune_to_specific_anchors`
+    before projection — drop anchors that are ancestors of more specific
+    anchors reached for the same term. This collapses e.g. liver-derived terms
+    from {Digestive, Endocrine, Hepatobiliary} to {Hepatobiliary} only.
+
+    If ``pruning_log`` dict is supplied, populate it with per-term records of
+    the before/after anchor sets for transparency in the methodology API.
+    """
     out: Dict[str, List[str]] = {}
     for iri, anchors in term_to_anchors.items():
-        buckets = anchors_to_buckets(anchors)
+        short_anchors = {_short(a) for a in anchors}
+        if anchor_ancestors is not None and len(short_anchors) > 1:
+            pruned = prune_to_specific_anchors(short_anchors, anchor_ancestors)
+            if pruning_log is not None and pruned != short_anchors:
+                pruning_log[_short(iri)] = {
+                    "before": sorted(short_anchors),
+                    "after": sorted(pruned),
+                    "dropped": sorted(short_anchors - pruned),
+                }
+            short_anchors = pruned
+        # Re-prefix to OBO IRIs for the existing anchors_to_buckets() helper.
+        buckets = anchors_to_buckets({OBO + a for a in short_anchors})
         if buckets:
             out[_short(iri)] = sorted(buckets)
     return out
@@ -378,53 +587,104 @@ def apply_overrides(cache_section: Dict[str, List[str]], overrides: Dict[str, Li
 
 def build_cache() -> Dict:
     started = time.time()
-    print("[1/4] collecting terms across all AOP-Wiki snapshots …", file=sys.stderr)
+    print("[1/5] collecting terms across all AOP-Wiki snapshots …", file=sys.stderr)
     terms = collect_all_terms()
     print(
-        f"  UBERON={len(terms['uberon'])}  CL={len(terms['cl'])}  GO={len(terms['go'])}",
+        f"  UBERON={len(terms['uberon'])}  CL={len(terms['cl'])}  GO={len(terms['go'])}  "
+        f"HP={len(terms['hp'])}  MP={len(terms['mp'])}  FMA={len(terms['fma'])}",
         file=sys.stderr,
     )
 
-    print("[2/4] resolving UBERON + CL via Ubergraph …", file=sys.stderr)
+    print("[2/5] building anchor-ancestor graph from Ubergraph …", file=sys.stderr)
+    anchor_ancestors = build_anchor_ancestor_graph()
+    print(
+        f"  {sum(len(v) for v in anchor_ancestors.values())} ancestor pairs across "
+        f"{len(ALL_ANCHORS)} anchors",
+        file=sys.stderr,
+    )
+
+    print("[3/5] resolving UBERON + CL via Ubergraph (with specificity pruning) …", file=sys.stderr)
     uberon_anchors = resolve_anatomy_buckets(sorted(terms["uberon"]))
     cl_anchors = resolve_anatomy_buckets(sorted(terms["cl"]))
 
-    print("[3/4] resolving GO via RO:0002296, HP/MP via UPHENO:0000001, FMA via UBERON xrefs …", file=sys.stderr)
+    print(
+        "[4/5] resolving GO via RO:0002296, HP/MP via label-regex, FMA via "
+        "Ubergraph xref + OLS fallback …",
+        file=sys.stderr,
+    )
     go_to_uberon = resolve_go_via_results_in_development(sorted(terms["go"]))
-    hp_to_uberon = resolve_phenotype_via_upheno(sorted(terms["hp"]))
-    mp_to_uberon = resolve_phenotype_via_upheno(sorted(terms["mp"]))
     fma_to_uberon = resolve_fma_via_uberon_xref(sorted(terms["fma"]))
+    phenotype_labels = resolve_phenotype_via_label(
+        sorted(terms["hp"]) + sorted(terms["mp"])
+    )
+    # FMA terms unresolved via UBERON xref → label-regex fallback (OLS).
+    fma_unresolved = [iri for iri, uberons in fma_to_uberon.items() if not uberons]
+    fma_labels = resolve_fma_via_label(fma_unresolved)
+    print(
+        f"  FMA via xref: {sum(1 for v in fma_to_uberon.values() if v)}, "
+        f"FMA via label: {len(fma_labels)}, "
+        f"FMA unresolved: {len(fma_to_uberon) - sum(1 for v in fma_to_uberon.values() if v) - len(fma_labels)}",
+        file=sys.stderr,
+    )
 
-    # All UBERON targets pulled across the four relations; resolve to anchors once.
+    # GO / FMA-via-xref still anchor through UBERON; resolve UBERON targets
+    # via the same closure + specificity pruning as direct UBERON terms.
     unique_uberon_targets = sorted(
         {u for s in go_to_uberon.values() for u in s}
-        | {u for s in hp_to_uberon.values() for u in s}
-        | {u for s in mp_to_uberon.values() for u in s}
         | {u for s in fma_to_uberon.values() for u in s}
     )
-    process_target_anchors = resolve_anatomy_buckets(unique_uberon_targets) if unique_uberon_targets else {}
+    process_target_anchors = (
+        resolve_anatomy_buckets(unique_uberon_targets) if unique_uberon_targets else {}
+    )
 
-    def _project(term_to_uberon: Dict[str, Set[str]]) -> Dict[str, Set[str]]:
+    def _project_through_uberon(term_to_uberon: Dict[str, Set[str]]) -> Dict[str, Set[str]]:
+        """For each term, union the pruned bucket sets of its UBERON targets."""
         out: Dict[str, Set[str]] = {}
         for term, uberons in term_to_uberon.items():
             bs: Set[str] = set()
             for u in uberons:
-                bs |= anchors_to_buckets(process_target_anchors.get(u, set()))
+                anchors = {_short(a) for a in process_target_anchors.get(u, set())}
+                if len(anchors) > 1:
+                    anchors = prune_to_specific_anchors(anchors, anchor_ancestors)
+                bs |= anchors_to_buckets({OBO + a for a in anchors})
             if bs:
                 out[term] = bs
         return out
 
-    go_buckets = _project(go_to_uberon)
-    hp_buckets = _project(hp_to_uberon)
-    mp_buckets = _project(mp_to_uberon)
-    fma_buckets = _project(fma_to_uberon)
+    go_buckets = _project_through_uberon(go_to_uberon)
+    fma_buckets = _project_through_uberon(fma_to_uberon)
+    # Add FMA terms resolved via label regex.
+    fma_label_log: Dict[str, Dict] = {}
+    for iri, (label, buckets, patterns) in fma_labels.items():
+        fma_buckets[iri] = buckets
+        fma_label_log[_short(iri)] = {
+            "label": label,
+            "buckets": sorted(buckets),
+            "matched_patterns": patterns,
+        }
 
-    print("[4/4] applying overrides + assembling JSON …", file=sys.stderr)
-    uberon_short = _to_short_buckets(uberon_anchors)
-    cl_short = _to_short_buckets(cl_anchors)
+    # Phenotypes get their buckets directly from label regex — no anchor walk.
+    hp_short: Dict[str, List[str]] = {}
+    mp_short: Dict[str, List[str]] = {}
+    phenotype_pattern_log: Dict[str, Dict] = {}
+    for iri, (label, buckets, patterns) in phenotype_labels.items():
+        short = _short(iri)
+        phenotype_pattern_log[short] = {
+            "label": label,
+            "buckets": sorted(buckets),
+            "matched_patterns": patterns,
+        }
+        if short.startswith("HP_"):
+            hp_short[short] = sorted(buckets)
+        elif short.startswith("MP_"):
+            mp_short[short] = sorted(buckets)
+
+    print("[5/5] applying pruning + overrides + assembling JSON …", file=sys.stderr)
+    uberon_pruning: Dict[str, Dict] = {}
+    cl_pruning: Dict[str, Dict] = {}
+    uberon_short = _to_short_buckets(uberon_anchors, anchor_ancestors, uberon_pruning)
+    cl_short = _to_short_buckets(cl_anchors, anchor_ancestors, cl_pruning)
     go_short = {_short(iri): sorted(bs) for iri, bs in go_buckets.items()}
-    hp_short = {_short(iri): sorted(bs) for iri, bs in hp_buckets.items()}
-    mp_short = {_short(iri): sorted(bs) for iri, bs in mp_buckets.items()}
     fma_short = {_short(iri): sorted(bs) for iri, bs in fma_buckets.items()}
 
     uberon_short, ub_log = apply_overrides(uberon_short, OVERRIDES["uberon"])
@@ -439,15 +699,24 @@ def build_cache() -> Dict:
         "source": {
             "aopwiki_sparql": AOPWIKI_SPARQL,
             "ubergraph_sparql": UBERGRAPH_SPARQL,
-            "uberon_cl_relation": "(part_of | subClassOf)*",
-            "go_relation": "RO:0002296 (results_in_development_of)",
-            "hp_mp_relation": "UPHENO:0000001 (has phenotype affecting)",
-            "fma_relation": "UBERON oboInOwl:hasDbXref \"FMA:nnnn\"",
+            "uberon_cl_relation": "(part_of | subClassOf)*  (then anchor-specificity pruning)",
+            "go_relation": "RO:0002296 (results_in_development_of) → UBERON → anchor (with specificity pruning)",
+            "hp_mp_relation": "rdfs:label → Signal-C bucket regex match",
+            "fma_relation": "Ubergraph UBERON oboInOwl:hasDbXref \"FMA:nnnn\" reverse + OLS REST forward fallback",
         },
         "anchors": {
             bucket: [{"iri": a, "label": ANCHOR_LABELS.get(a, "")} for a in anchors]
             for bucket, anchors in ANCHORS.items()
         },
+        "anchor_ancestors": {
+            anchor: sorted(ancestors) for anchor, ancestors in sorted(anchor_ancestors.items())
+        },
+        "specificity_pruning": {
+            "uberon": uberon_pruning,
+            "cl": cl_pruning,
+        },
+        "phenotype_label_matches": phenotype_pattern_log,
+        "fma_label_matches": fma_label_log,
         "overrides": {
             "uberon": ub_log,
             "cl": cl_log,
@@ -465,8 +734,10 @@ def build_cache() -> Dict:
         "stats": {
             "uberon_terms_in_snapshots": len(terms["uberon"]),
             "uberon_terms_classified":   len(uberon_short),
+            "uberon_terms_pruned":       len(uberon_pruning),
             "cl_terms_in_snapshots":     len(terms["cl"]),
             "cl_terms_classified":       len(cl_short),
+            "cl_terms_pruned":           len(cl_pruning),
             "go_terms_in_snapshots":     len(terms["go"]),
             "go_terms_classified":       len(go_short),
             "hp_terms_in_snapshots":     len(terms["hp"]),

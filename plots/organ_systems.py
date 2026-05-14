@@ -131,7 +131,8 @@ KEYWORD_PATTERNS: Dict[str, Tuple[str, ...]] = {
     ),
     "Respiratory": (
         r"\bpulmon", r"\blung\b", r"\brespirator", r"\basthma\b",
-        r"\bfibrosis of\s+the\s+lung\b",
+        r"\bfibrosis of\s+the\s+lung\b", r"\bnasal\b", r"\bnose\b",
+        r"\bbronch", r"\btrache", r"\balveol",
     ),
     "Digestive": (
         r"\bintestin", r"\bgastro", r"\bcolitis\b", r"\bgut\b",
@@ -145,8 +146,9 @@ KEYWORD_PATTERNS: Dict[str, Tuple[str, ...]] = {
     ),
     "Reproductive": (
         r"\breproduct", r"\bovari", r"\btestis\b", r"\btesticular\b",
-        r"\bspermat", r"\boocyte\b", r"\bfertilit", r"\bfetal\b",
-        r"\bpregnan", r"\bestrogen", r"\bandrogen",
+        r"\bspermat", r"\bsperm\b", r"\boocyte\b", r"\bovum\b",
+        r"\bfertilit", r"\bfetal\b", r"\bpregnan",
+        r"\bestrogen", r"\bandrogen", r"\bendometri", r"\buter",
     ),
     "Endocrine": (
         r"\bthyroid\b", r"\badrenal\b", r"\bpituitar", r"\bhormone\b",
@@ -166,6 +168,7 @@ KEYWORD_PATTERNS: Dict[str, Tuple[str, ...]] = {
     "Sensory": (
         r"\bocular\b", r"\beye\b", r"\bretin", r"\bcornea", r"\bvisual\b",
         r"\bauditory\b", r"\botic\b", r"\bhearing loss\b",
+        r"\blens\b", r"\bcochlea", r"\bolfact",
     ),
 }
 

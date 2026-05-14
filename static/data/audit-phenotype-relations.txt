@@ -1,0 +1,51 @@
+# Phenotype-relation probe
+
+For each watchlist phenotype, list every direct predicate that points to a UBERON term.
+Compare across phenotypes to find a relation that actually distinguishes them.
+
+---
+
+## HP_0001397 — hepatic cirrhosis — should hit liver only
+
+- **UPHENO_0000001** (35 UBERON terms)
+  - UBERON_0000061, UBERON_0000062, UBERON_0000465, UBERON_0000467, UBERON_0000468, UBERON_0000475, UBERON_0000479, UBERON_0000483, … (+27 more)
+- **ubergraph-axioms.ofn#is_increase_of** (1 UBERON terms)
+  - UBERON_0001062
+
+## HP_0001414 — renal hypoplasia — should hit kidney only
+
+- **UPHENO_0000001** (35 UBERON terms)
+  - UBERON_0000061, UBERON_0000062, UBERON_0000465, UBERON_0000467, UBERON_0000468, UBERON_0000475, UBERON_0000479, UBERON_0000483, … (+27 more)
+- **ubergraph-axioms.ofn#is_increase_of** (1 UBERON terms)
+  - UBERON_0001062
+
+## MP_0010019 — abnormal cardiac morphology — should hit heart only
+
+- **UPHENO_0000001** (50 UBERON terms)
+  - UBERON_0000055, UBERON_0000061, UBERON_0000062, UBERON_0000077, UBERON_0000465, UBERON_0000467, UBERON_0000468, UBERON_0000475, … (+42 more)
+
+## MP_0001860 — abnormal liver carbohydrate metabolism — liver only
+
+- **UPHENO_0000001** (34 UBERON terms)
+  - UBERON_0000061, UBERON_0000062, UBERON_0000465, UBERON_0000467, UBERON_0000468, UBERON_0000475, UBERON_0000916, UBERON_0000949, … (+26 more)
+
+---
+
+## Predicate cross-comparison (intersection across all watchlist phenotypes)
+
+If a predicate returns DIFFERENT UBERON sets for different phenotypes, it's useful.
+If it returns the same set, it's a generic ancestor closure relation.
+
+### UPHENO_0000001
+
+- HP_0001397: 35 UBERON terms — ['UBERON_0000061', 'UBERON_0000062', 'UBERON_0000465', 'UBERON_0000467', 'UBERON_0000468', 'UBERON_0000475']…
+- HP_0001414: 35 UBERON terms — ['UBERON_0000061', 'UBERON_0000062', 'UBERON_0000465', 'UBERON_0000467', 'UBERON_0000468', 'UBERON_0000475']…
+- MP_0010019: 50 UBERON terms — ['UBERON_0000055', 'UBERON_0000061', 'UBERON_0000062', 'UBERON_0000077', 'UBERON_0000465', 'UBERON_0000467']…
+- MP_0001860: 34 UBERON terms — ['UBERON_0000061', 'UBERON_0000062', 'UBERON_0000465', 'UBERON_0000467', 'UBERON_0000468', 'UBERON_0000475']…
+
+### ubergraph-axioms.ofn#is_increase_of
+
+- HP_0001397: 1 UBERON terms — ['UBERON_0001062']…
+- HP_0001414: 1 UBERON terms — ['UBERON_0001062']…
+- MP_0010019: 0 UBERON terms — []…
+- MP_0001860: 0 UBERON terms — []…

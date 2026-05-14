@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-05-14T17:46:58.079666+00:00",
+  "generated_at": "2026-05-14T21:57:52.542702+00:00",
   "source": {
     "aopwiki_sparql": "https://aopwiki-multirdf.vhp4safety.nl/sparql",
     "ubergraph_sparql": "https://ubergraph.apps.renci.org/sparql",
-    "uberon_cl_relation": "(part_of | subClassOf)*",
-    "go_relation": "RO:0002296 (results_in_development_of)",
-    "hp_mp_relation": "UPHENO:0000001 (has phenotype affecting)",
-    "fma_relation": "UBERON oboInOwl:hasDbXref \"FMA:nnnn\""
+    "uberon_cl_relation": "(part_of | subClassOf)*  (then anchor-specificity pruning)",
+    "go_relation": "RO:0002296 (results_in_development_of) → UBERON → anchor (with specificity pruning)",
+    "hp_mp_relation": "rdfs:label → Signal-C bucket regex match",
+    "fma_relation": "Ubergraph UBERON oboInOwl:hasDbXref \"FMA:nnnn\" reverse + OLS REST forward fallback"
   },
   "anchors": {
     "Nervous": [
@@ -125,6 +125,945 @@
         "label": "eye"
       }
     ]
+  },
+  "anchor_ancestors": {
+    "UBERON_0000970": [
+      "UBERON_0001032"
+    ],
+    "UBERON_0001173": [
+      "UBERON_0001007"
+    ],
+    "UBERON_0001174": [
+      "UBERON_0001007",
+      "UBERON_0001173"
+    ],
+    "UBERON_0001555": [
+      "UBERON_0001007"
+    ],
+    "UBERON_0001690": [
+      "UBERON_0001032"
+    ],
+    "UBERON_0001846": [
+      "UBERON_0001032",
+      "UBERON_0001690"
+    ],
+    "UBERON_0002107": [
+      "UBERON_0000949",
+      "UBERON_0001007"
+    ],
+    "UBERON_0004535": [
+      "UBERON_0001009"
+    ]
+  },
+  "specificity_pruning": {
+    "uberon": {
+      "UBERON_0000160": {
+        "before": [
+          "UBERON_0001007",
+          "UBERON_0001555"
+        ],
+        "after": [
+          "UBERON_0001555"
+        ],
+        "dropped": [
+          "UBERON_0001007"
+        ]
+      },
+      "UBERON_0000948": {
+        "before": [
+          "UBERON_0001009",
+          "UBERON_0004535"
+        ],
+        "after": [
+          "UBERON_0004535"
+        ],
+        "dropped": [
+          "UBERON_0001009"
+        ]
+      },
+      "UBERON_0000966": {
+        "before": [
+          "UBERON_0000970",
+          "UBERON_0001016",
+          "UBERON_0001032"
+        ],
+        "after": [
+          "UBERON_0000970",
+          "UBERON_0001016"
+        ],
+        "dropped": [
+          "UBERON_0001032"
+        ]
+      },
+      "UBERON_0000970": {
+        "before": [
+          "UBERON_0000970",
+          "UBERON_0001032"
+        ],
+        "after": [
+          "UBERON_0000970"
+        ],
+        "dropped": [
+          "UBERON_0001032"
+        ]
+      },
+      "UBERON_0001280": {
+        "before": [
+          "UBERON_0000949",
+          "UBERON_0001007",
+          "UBERON_0002107"
+        ],
+        "after": [
+          "UBERON_0002107"
+        ],
+        "dropped": [
+          "UBERON_0000949",
+          "UBERON_0001007"
+        ]
+      },
+      "UBERON_0001690": {
+        "before": [
+          "UBERON_0001032",
+          "UBERON_0001690"
+        ],
+        "after": [
+          "UBERON_0001690"
+        ],
+        "dropped": [
+          "UBERON_0001032"
+        ]
+      },
+      "UBERON_0001716": {
+        "before": [
+          "UBERON_0001007",
+          "UBERON_0001555"
+        ],
+        "after": [
+          "UBERON_0001555"
+        ],
+        "dropped": [
+          "UBERON_0001007"
+        ]
+      },
+      "UBERON_0001981": {
+        "before": [
+          "UBERON_0001009",
+          "UBERON_0004535"
+        ],
+        "after": [
+          "UBERON_0004535"
+        ],
+        "dropped": [
+          "UBERON_0001009"
+        ]
+      },
+      "UBERON_0002049": {
+        "before": [
+          "UBERON_0001009",
+          "UBERON_0004535"
+        ],
+        "after": [
+          "UBERON_0004535"
+        ],
+        "dropped": [
+          "UBERON_0001009"
+        ]
+      },
+      "UBERON_0002107": {
+        "before": [
+          "UBERON_0000949",
+          "UBERON_0001007",
+          "UBERON_0002107"
+        ],
+        "after": [
+          "UBERON_0002107"
+        ],
+        "dropped": [
+          "UBERON_0000949",
+          "UBERON_0001007"
+        ]
+      },
+      "UBERON_0002108": {
+        "before": [
+          "UBERON_0001007",
+          "UBERON_0001555"
+        ],
+        "after": [
+          "UBERON_0001555"
+        ],
+        "dropped": [
+          "UBERON_0001007"
+        ]
+      },
+      "UBERON_0002114": {
+        "before": [
+          "UBERON_0001007",
+          "UBERON_0001555"
+        ],
+        "after": [
+          "UBERON_0001555"
+        ],
+        "dropped": [
+          "UBERON_0001007"
+        ]
+      },
+      "UBERON_0002394": {
+        "before": [
+          "UBERON_0001007",
+          "UBERON_0001173"
+        ],
+        "after": [
+          "UBERON_0001173"
+        ],
+        "dropped": [
+          "UBERON_0001007"
+        ]
+      },
+      "UBERON_0004535": {
+        "before": [
+          "UBERON_0001009",
+          "UBERON_0004535"
+        ],
+        "after": [
+          "UBERON_0004535"
+        ],
+        "dropped": [
+          "UBERON_0001009"
+        ]
+      },
+      "UBERON_0004638": {
+        "before": [
+          "UBERON_0001009",
+          "UBERON_0004535"
+        ],
+        "after": [
+          "UBERON_0004535"
+        ],
+        "dropped": [
+          "UBERON_0001009"
+        ]
+      },
+      "UBERON_0005620": {
+        "before": [
+          "UBERON_0001007",
+          "UBERON_0001555",
+          "UBERON_0002204"
+        ],
+        "after": [
+          "UBERON_0001555",
+          "UBERON_0002204"
+        ],
+        "dropped": [
+          "UBERON_0001007"
+        ]
+      },
+      "UBERON_0007798": {
+        "before": [
+          "UBERON_0001009",
+          "UBERON_0004535"
+        ],
+        "after": [
+          "UBERON_0004535"
+        ],
+        "dropped": [
+          "UBERON_0001009"
+        ]
+      },
+      "UBERON_0008827": {
+        "before": [
+          "UBERON_0001007",
+          "UBERON_0001555"
+        ],
+        "after": [
+          "UBERON_0001555"
+        ],
+        "dropped": [
+          "UBERON_0001007"
+        ]
+      },
+      "UBERON_0015834": {
+        "before": [
+          "UBERON_0001007",
+          "UBERON_0001555"
+        ],
+        "after": [
+          "UBERON_0001555"
+        ],
+        "dropped": [
+          "UBERON_0001007"
+        ]
+      },
+      "UBERON_0035753": {
+        "before": [
+          "UBERON_0001009",
+          "UBERON_0004535"
+        ],
+        "after": [
+          "UBERON_0004535"
+        ],
+        "dropped": [
+          "UBERON_0001009"
+        ]
+      }
+    },
+    "cl": {
+      "CL_0000071": {
+        "before": [
+          "UBERON_0001009",
+          "UBERON_0004535"
+        ],
+        "after": [
+          "UBERON_0004535"
+        ],
+        "dropped": [
+          "UBERON_0001009"
+        ]
+      },
+      "CL_0000182": {
+        "before": [
+          "UBERON_0000949",
+          "UBERON_0001007",
+          "UBERON_0002107"
+        ],
+        "after": [
+          "UBERON_0002107"
+        ],
+        "dropped": [
+          "UBERON_0000949",
+          "UBERON_0001007"
+        ]
+      },
+      "CL_0000575": {
+        "before": [
+          "UBERON_0000970",
+          "UBERON_0001032"
+        ],
+        "after": [
+          "UBERON_0000970"
+        ],
+        "dropped": [
+          "UBERON_0001032"
+        ]
+      },
+      "CL_0000632": {
+        "before": [
+          "UBERON_0000949",
+          "UBERON_0001007",
+          "UBERON_0002107"
+        ],
+        "after": [
+          "UBERON_0002107"
+        ],
+        "dropped": [
+          "UBERON_0000949",
+          "UBERON_0001007"
+        ]
+      },
+      "CL_0002196": {
+        "before": [
+          "UBERON_0000949",
+          "UBERON_0001007",
+          "UBERON_0002107"
+        ],
+        "after": [
+          "UBERON_0002107"
+        ],
+        "dropped": [
+          "UBERON_0000949",
+          "UBERON_0001007"
+        ]
+      },
+      "CL_0002538": {
+        "before": [
+          "UBERON_0000949",
+          "UBERON_0001007",
+          "UBERON_0001173",
+          "UBERON_0002107"
+        ],
+        "after": [
+          "UBERON_0001173",
+          "UBERON_0002107"
+        ],
+        "dropped": [
+          "UBERON_0000949",
+          "UBERON_0001007"
+        ]
+      },
+      "CL_0002563": {
+        "before": [
+          "UBERON_0001007",
+          "UBERON_0001555"
+        ],
+        "after": [
+          "UBERON_0001555"
+        ],
+        "dropped": [
+          "UBERON_0001007"
+        ]
+      },
+      "CL_1000488": {
+        "before": [
+          "UBERON_0001007",
+          "UBERON_0001173"
+        ],
+        "after": [
+          "UBERON_0001173"
+        ],
+        "dropped": [
+          "UBERON_0001007"
+        ]
+      }
+    }
+  },
+  "phenotype_label_matches": {
+    "HP_0000029": {
+      "label": "Testicular atrophy",
+      "buckets": [
+        "Reproductive"
+      ],
+      "matched_patterns": [
+        "Reproductive:\\btesticular\\b"
+      ]
+    },
+    "HP_0000035": {
+      "label": "Abnormal testis morphology",
+      "buckets": [
+        "Reproductive"
+      ],
+      "matched_patterns": [
+        "Reproductive:\\btestis\\b"
+      ]
+    },
+    "HP_0000112": {
+      "label": "Nephropathy",
+      "buckets": [
+        "Renal/Urinary"
+      ],
+      "matched_patterns": [
+        "Renal/Urinary:\\bnephro"
+      ]
+    },
+    "HP_0000855": {
+      "label": "Insulin resistance",
+      "buckets": [
+        "Endocrine"
+      ],
+      "matched_patterns": [
+        "Endocrine:\\binsulin\\b"
+      ]
+    },
+    "HP_0001397": {
+      "label": "Hepatic steatosis",
+      "buckets": [
+        "Hepatobiliary"
+      ],
+      "matched_patterns": [
+        "Hepatobiliary:\\bhepat"
+      ]
+    },
+    "HP_0001410": {
+      "label": "Decreased liver function",
+      "buckets": [
+        "Hepatobiliary"
+      ],
+      "matched_patterns": [
+        "Hepatobiliary:\\bliver\\b"
+      ]
+    },
+    "HP_0001414": {
+      "label": "Microvesicular hepatic steatosis",
+      "buckets": [
+        "Hepatobiliary"
+      ],
+      "matched_patterns": [
+        "Hepatobiliary:\\bhepat"
+      ]
+    },
+    "HP_0001695": {
+      "label": "Cardiac arrest",
+      "buckets": [
+        "Cardiovascular"
+      ],
+      "matched_patterns": [
+        "Cardiovascular:\\bcardiac\\b"
+      ]
+    },
+    "HP_0001888": {
+      "label": "Decreased total lymphocyte count",
+      "buckets": [
+        "Immune/Haematopoietic"
+      ],
+      "matched_patterns": [
+        "Immune/Haematopoietic:\\blymph"
+      ]
+    },
+    "HP_0002621": {
+      "label": "Atherosclerosis",
+      "buckets": [
+        "Cardiovascular"
+      ],
+      "matched_patterns": [
+        "Cardiovascular:\\bathero"
+      ]
+    },
+    "HP_0002893": {
+      "label": "Pituitary adenoma",
+      "buckets": [
+        "Endocrine"
+      ],
+      "matched_patterns": [
+        "Endocrine:\\bpituitar"
+      ]
+    },
+    "HP_0008209": {
+      "label": "Premature ovarian insufficiency",
+      "buckets": [
+        "Reproductive"
+      ],
+      "matched_patterns": [
+        "Reproductive:\\bovari"
+      ]
+    },
+    "HP_0008669": {
+      "label": "Abnormal spermatogenesis",
+      "buckets": [
+        "Reproductive"
+      ],
+      "matched_patterns": [
+        "Reproductive:\\bspermat"
+      ]
+    },
+    "HP_0008715": {
+      "label": "obsolete Testicular dysgenesis",
+      "buckets": [
+        "Reproductive"
+      ],
+      "matched_patterns": [
+        "Reproductive:\\btesticular\\b"
+      ]
+    },
+    "HP_0012114": {
+      "label": "Endometrial carcinoma",
+      "buckets": [
+        "Reproductive"
+      ],
+      "matched_patterns": [
+        "Reproductive:\\bendometri"
+      ]
+    },
+    "HP_0012649": {
+      "label": "Increased inflammatory response",
+      "buckets": [
+        "Immune/Haematopoietic"
+      ],
+      "matched_patterns": [
+        "Immune/Haematopoietic:\\binflammat"
+      ]
+    },
+    "HP_0100526": {
+      "label": "Neoplasm of the lung",
+      "buckets": [
+        "Respiratory"
+      ],
+      "matched_patterns": [
+        "Respiratory:\\blung\\b"
+      ]
+    },
+    "HP_0100598": {
+      "label": "Pulmonary edema",
+      "buckets": [
+        "Respiratory"
+      ],
+      "matched_patterns": [
+        "Respiratory:\\bpulmon"
+      ]
+    },
+    "MP_0000032": {
+      "label": "cochlear degeneration",
+      "buckets": [
+        "Sensory"
+      ],
+      "matched_patterns": [
+        "Sensory:\\bcochlea"
+      ]
+    },
+    "MP_0000063": {
+      "label": "decreased bone mineral density",
+      "buckets": [
+        "Musculoskeletal"
+      ],
+      "matched_patterns": [
+        "Musculoskeletal:\\bbone\\b"
+      ]
+    },
+    "MP_0000066": {
+      "label": "osteoporosis",
+      "buckets": [
+        "Musculoskeletal"
+      ],
+      "matched_patterns": [
+        "Musculoskeletal:\\bosteo"
+      ]
+    },
+    "MP_0000231": {
+      "label": "hypertension",
+      "buckets": [
+        "Cardiovascular"
+      ],
+      "matched_patterns": [
+        "Cardiovascular:\\bhypertens"
+      ]
+    },
+    "MP_0001544": {
+      "label": "abnormal cardiovascular system physiology",
+      "buckets": [
+        "Cardiovascular"
+      ],
+      "matched_patterns": [
+        "Cardiovascular:\\bcardio"
+      ]
+    },
+    "MP_0001847": {
+      "label": "brain inflammation",
+      "buckets": [
+        "Immune/Haematopoietic",
+        "Nervous"
+      ],
+      "matched_patterns": [
+        "Nervous:\\bbrain\\b",
+        "Immune/Haematopoietic:\\binflammat"
+      ]
+    },
+    "MP_0001860": {
+      "label": "liver inflammation",
+      "buckets": [
+        "Hepatobiliary",
+        "Immune/Haematopoietic"
+      ],
+      "matched_patterns": [
+        "Hepatobiliary:\\bliver\\b",
+        "Immune/Haematopoietic:\\binflammat"
+      ]
+    },
+    "MP_0001863": {
+      "label": "blood vessel inflammation",
+      "buckets": [
+        "Immune/Haematopoietic"
+      ],
+      "matched_patterns": [
+        "Immune/Haematopoietic:\\binflammat"
+      ]
+    },
+    "MP_0001921": {
+      "label": "reduced fertility",
+      "buckets": [
+        "Reproductive"
+      ],
+      "matched_patterns": [
+        "Reproductive:\\bfertilit"
+      ]
+    },
+    "MP_0001954": {
+      "label": "respiratory distress",
+      "buckets": [
+        "Respiratory"
+      ],
+      "matched_patterns": [
+        "Respiratory:\\brespirator"
+      ]
+    },
+    "MP_0002229": {
+      "label": "neurodegeneration",
+      "buckets": [
+        "Nervous"
+      ],
+      "matched_patterns": [
+        "Nervous:\\bneuro"
+      ]
+    },
+    "MP_0002498": {
+      "label": "abnormal acute inflammation",
+      "buckets": [
+        "Immune/Haematopoietic"
+      ],
+      "matched_patterns": [
+        "Immune/Haematopoietic:\\binflammat"
+      ]
+    },
+    "MP_0002882": {
+      "label": "abnormal neuron morphology",
+      "buckets": [
+        "Nervous"
+      ],
+      "matched_patterns": [
+        "Nervous:\\bneuro"
+      ]
+    },
+    "MP_0002916": {
+      "label": "increased synaptic depression",
+      "buckets": [
+        "Nervous"
+      ],
+      "matched_patterns": [
+        "Nervous:\\bsynap"
+      ]
+    },
+    "MP_0002998": {
+      "label": "abnormal bone remodeling",
+      "buckets": [
+        "Musculoskeletal"
+      ],
+      "matched_patterns": [
+        "Musculoskeletal:\\bbone\\b"
+      ]
+    },
+    "MP_0003070": {
+      "label": "increased vascular permeability",
+      "buckets": [
+        "Cardiovascular"
+      ],
+      "matched_patterns": [
+        "Cardiovascular:\\bvascular\\b"
+      ]
+    },
+    "MP_0003205": {
+      "label": "testicular atrophy",
+      "buckets": [
+        "Reproductive"
+      ],
+      "matched_patterns": [
+        "Reproductive:\\btesticular\\b"
+      ]
+    },
+    "MP_0003244": {
+      "label": "loss of dopaminergic neurons",
+      "buckets": [
+        "Nervous"
+      ],
+      "matched_patterns": [
+        "Nervous:\\bneuro"
+      ]
+    },
+    "MP_0003333": {
+      "label": "liver fibrosis",
+      "buckets": [
+        "Hepatobiliary"
+      ],
+      "matched_patterns": [
+        "Hepatobiliary:\\bliver\\b"
+      ]
+    },
+    "MP_0003606": {
+      "label": "kidney failure",
+      "buckets": [
+        "Renal/Urinary"
+      ],
+      "matched_patterns": [
+        "Renal/Urinary:\\bkidney\\b"
+      ]
+    },
+    "MP_0003990": {
+      "label": "decreased neurotransmitter release",
+      "buckets": [
+        "Nervous"
+      ],
+      "matched_patterns": [
+        "Nervous:\\bneuro"
+      ]
+    },
+    "MP_0004154": {
+      "label": "renal tubular necrosis",
+      "buckets": [
+        "Renal/Urinary"
+      ],
+      "matched_patterns": [
+        "Renal/Urinary:\\brenal\\b"
+      ]
+    },
+    "MP_0004878": {
+      "label": "increased systemic vascular resistance",
+      "buckets": [
+        "Cardiovascular"
+      ],
+      "matched_patterns": [
+        "Cardiovascular:\\bvascular\\b"
+      ]
+    },
+    "MP_0004968": {
+      "label": "kidney epithelium hyperplasia",
+      "buckets": [
+        "Renal/Urinary"
+      ],
+      "matched_patterns": [
+        "Renal/Urinary:\\bkidney\\b"
+      ]
+    },
+    "MP_0005133": {
+      "label": "increased luteinizing hormone level",
+      "buckets": [
+        "Endocrine"
+      ],
+      "matched_patterns": [
+        "Endocrine:\\bhormone\\b"
+      ]
+    },
+    "MP_0005135": {
+      "label": "increased thyroid-stimulating hormone level",
+      "buckets": [
+        "Endocrine"
+      ],
+      "matched_patterns": [
+        "Endocrine:\\bthyroid\\b"
+      ]
+    },
+    "MP_0005418": {
+      "label": "abnormal circulating hormone level",
+      "buckets": [
+        "Endocrine"
+      ],
+      "matched_patterns": [
+        "Endocrine:\\bhormone\\b"
+      ]
+    },
+    "MP_0008014": {
+      "label": "increased lung tumor incidence",
+      "buckets": [
+        "Respiratory"
+      ],
+      "matched_patterns": [
+        "Respiratory:\\blung\\b"
+      ]
+    },
+    "MP_0009092": {
+      "label": "endometrium hyperplasia",
+      "buckets": [
+        "Reproductive"
+      ],
+      "matched_patterns": [
+        "Reproductive:\\bendometri"
+      ]
+    },
+    "MP_0009859": {
+      "label": "eye opacity",
+      "buckets": [
+        "Sensory"
+      ],
+      "matched_patterns": [
+        "Sensory:\\beye\\b"
+      ]
+    },
+    "MP_0010019": {
+      "label": "liver vascular congestion",
+      "buckets": [
+        "Cardiovascular",
+        "Hepatobiliary"
+      ],
+      "matched_patterns": [
+        "Cardiovascular:\\bvascular\\b",
+        "Hepatobiliary:\\bliver\\b"
+      ]
+    },
+    "MP_0010879": {
+      "label": "decreased trabecular bone volume",
+      "buckets": [
+        "Musculoskeletal"
+      ],
+      "matched_patterns": [
+        "Musculoskeletal:\\bbone\\b"
+      ]
+    },
+    "MP_0013603": {
+      "label": "abnormal fetal Leydig cell differentiation",
+      "buckets": [
+        "Reproductive"
+      ],
+      "matched_patterns": [
+        "Reproductive:\\bfetal\\b"
+      ]
+    }
+  },
+  "fma_label_matches": {
+    "FMA_46472": {
+      "label": "Nose",
+      "buckets": [
+        "Respiratory"
+      ],
+      "matched_patterns": [
+        "Respiratory:\\bnose\\b"
+      ]
+    },
+    "FMA_58241": {
+      "label": "Lens",
+      "buckets": [
+        "Sensory"
+      ],
+      "matched_patterns": [
+        "Sensory:\\blens\\b"
+      ]
+    },
+    "FMA_63179": {
+      "label": "Liver cell",
+      "buckets": [
+        "Hepatobiliary"
+      ],
+      "matched_patterns": [
+        "Hepatobiliary:\\bliver\\b"
+      ]
+    },
+    "FMA_67338": {
+      "label": "Mature sperm cell",
+      "buckets": [
+        "Reproductive"
+      ],
+      "matched_patterns": [
+        "Reproductive:\\bsperm\\b"
+      ]
+    },
+    "FMA_67343": {
+      "label": "Ovum",
+      "buckets": [
+        "Reproductive"
+      ],
+      "matched_patterns": [
+        "Reproductive:\\bovum\\b"
+      ]
+    },
+    "FMA_7210": {
+      "label": "Testis",
+      "buckets": [
+        "Reproductive"
+      ],
+      "matched_patterns": [
+        "Reproductive:\\btestis\\b"
+      ]
+    },
+    "FMA_83376": {
+      "label": "Estrogen",
+      "buckets": [
+        "Reproductive"
+      ],
+      "matched_patterns": [
+        "Reproductive:\\bestrogen"
+      ]
+    },
+    "FMA_86488": {
+      "label": "Glandular part of endometrium",
+      "buckets": [
+        "Reproductive"
+      ],
+      "matched_patterns": [
+        "Reproductive:\\bendometri"
+      ]
+    },
+    "FMA_86594": {
+      "label": "Surface of brain",
+      "buckets": [
+        "Nervous"
+      ],
+      "matched_patterns": [
+        "Nervous:\\bbrain\\b"
+      ]
+    }
   },
   "overrides": {
     "uberon": {
@@ -245,8 +1184,6 @@
       "Endocrine"
     ],
     "UBERON_0001280": [
-      "Digestive",
-      "Endocrine",
       "Hepatobiliary"
     ],
     "UBERON_0001295": [
@@ -312,8 +1249,6 @@
       "Cardiovascular"
     ],
     "UBERON_0002107": [
-      "Digestive",
-      "Endocrine",
       "Hepatobiliary"
     ],
     "UBERON_0002108": [
@@ -346,7 +1281,6 @@
       "Musculoskeletal"
     ],
     "UBERON_0002394": [
-      "Digestive",
       "Hepatobiliary"
     ],
     "UBERON_0002405": [
@@ -510,8 +1444,6 @@
       "Reproductive"
     ],
     "CL_0000182": [
-      "Digestive",
-      "Endocrine",
       "Hepatobiliary"
     ],
     "CL_0000192": [
@@ -550,8 +1482,6 @@
       "Sensory"
     ],
     "CL_0000632": [
-      "Digestive",
-      "Endocrine",
       "Hepatobiliary"
     ],
     "CL_0000700": [
@@ -588,8 +1518,6 @@
       "Sensory"
     ],
     "CL_0002196": [
-      "Digestive",
-      "Endocrine",
       "Hepatobiliary"
     ],
     "CL_0002258": [
@@ -605,8 +1533,6 @@
       "Respiratory"
     ],
     "CL_0002538": [
-      "Digestive",
-      "Endocrine",
       "Hepatobiliary"
     ],
     "CL_0002563": [
@@ -629,7 +1555,6 @@
       "Respiratory"
     ],
     "CL_1000488": [
-      "Digestive",
       "Hepatobiliary"
     ],
     "CL_1000494": [
@@ -666,25 +1591,16 @@
     "HP_0000112": [
       "Renal/Urinary"
     ],
-    "HP_0000175": [
-      "Digestive"
-    ],
-    "HP_0000726": [
-      "Nervous"
+    "HP_0000855": [
+      "Endocrine"
     ],
     "HP_0001397": [
-      "Digestive",
-      "Endocrine",
       "Hepatobiliary"
     ],
     "HP_0001410": [
-      "Digestive",
-      "Endocrine",
       "Hepatobiliary"
     ],
     "HP_0001414": [
-      "Digestive",
-      "Endocrine",
       "Hepatobiliary"
     ],
     "HP_0001695": [
@@ -693,30 +1609,11 @@
     "HP_0001888": [
       "Immune/Haematopoietic"
     ],
-    "HP_0002608": [
-      "Digestive",
-      "Immune/Haematopoietic"
-    ],
     "HP_0002621": [
       "Cardiovascular"
     ],
     "HP_0002893": [
-      "Endocrine",
-      "Nervous",
-      "Reproductive"
-    ],
-    "HP_0003002": [
-      "Musculoskeletal"
-    ],
-    "HP_0003281": [
-      "Immune/Haematopoietic"
-    ],
-    "HP_0004936": [
-      "Cardiovascular",
-      "Immune/Haematopoietic"
-    ],
-    "HP_0007305": [
-      "Nervous"
+      "Endocrine"
     ],
     "HP_0008209": [
       "Reproductive"
@@ -724,23 +1621,13 @@
     "HP_0008669": [
       "Reproductive"
     ],
-    "HP_0011185": [
-      "Nervous"
-    ],
-    "HP_0011227": [
-      "Immune/Haematopoietic"
+    "HP_0008715": [
+      "Reproductive"
     ],
     "HP_0012114": [
       "Reproductive"
     ],
-    "HP_0012262": [
-      "Respiratory"
-    ],
     "HP_0012649": [
-      "Immune/Haematopoietic"
-    ],
-    "HP_0030339": [
-      "Endocrine",
       "Immune/Haematopoietic"
     ],
     "HP_0100526": [
@@ -752,7 +1639,6 @@
   },
   "mp": {
     "MP_0000032": [
-      "Musculoskeletal",
       "Sensory"
     ],
     "MP_0000063": [
@@ -761,74 +1647,33 @@
     "MP_0000066": [
       "Musculoskeletal"
     ],
-    "MP_0000182": [
-      "Immune/Haematopoietic"
-    ],
     "MP_0000231": [
-      "Cardiovascular",
-      "Immune/Haematopoietic"
-    ],
-    "MP_0000630": [
-      "Integumentary"
-    ],
-    "MP_0000921": [
-      "Nervous"
-    ],
-    "MP_0001152": [
-      "Reproductive"
-    ],
-    "MP_0001297": [
-      "Sensory"
-    ],
-    "MP_0001399": [
-      "Nervous"
+      "Cardiovascular"
     ],
     "MP_0001544": [
       "Cardiovascular"
-    ],
-    "MP_0001577": [
-      "Immune/Haematopoietic"
     ],
     "MP_0001847": [
       "Immune/Haematopoietic",
       "Nervous"
     ],
     "MP_0001860": [
-      "Digestive",
-      "Endocrine",
       "Hepatobiliary",
       "Immune/Haematopoietic"
     ],
     "MP_0001863": [
-      "Cardiovascular",
-      "Immune/Haematopoietic"
-    ],
-    "MP_0001914": [
-      "Cardiovascular",
       "Immune/Haematopoietic"
     ],
     "MP_0001921": [
       "Reproductive"
     ],
-    "MP_0001928": [
-      "Reproductive"
-    ],
     "MP_0001954": [
       "Respiratory"
-    ],
-    "MP_0002207": [
-      "Nervous"
     ],
     "MP_0002229": [
       "Nervous"
     ],
-    "MP_0002418": [
-      "Immune/Haematopoietic"
-    ],
     "MP_0002498": [
-      "Immune/Haematopoietic"
-    ],
-    "MP_0002551": [
       "Immune/Haematopoietic"
     ],
     "MP_0002882": [
@@ -850,15 +1695,10 @@
       "Nervous"
     ],
     "MP_0003333": [
-      "Digestive",
-      "Endocrine",
       "Hepatobiliary"
     ],
     "MP_0003606": [
       "Renal/Urinary"
-    ],
-    "MP_0003633": [
-      "Nervous"
     ],
     "MP_0003990": [
       "Nervous"
@@ -872,41 +1712,17 @@
     "MP_0004968": [
       "Renal/Urinary"
     ],
-    "MP_0005170": [
-      "Digestive"
+    "MP_0005133": [
+      "Endocrine"
+    ],
+    "MP_0005135": [
+      "Endocrine"
     ],
     "MP_0005418": [
-      "Endocrine",
-      "Immune/Haematopoietic"
-    ],
-    "MP_0005475": [
-      "Endocrine",
-      "Immune/Haematopoietic"
-    ],
-    "MP_0005493": [
-      "Digestive"
-    ],
-    "MP_0005567": [
-      "Immune/Haematopoietic"
-    ],
-    "MP_0005568": [
-      "Immune/Haematopoietic"
-    ],
-    "MP_0005634": [
-      "Immune/Haematopoietic"
+      "Endocrine"
     ],
     "MP_0008014": [
       "Respiratory"
-    ],
-    "MP_0008940": [
-      "Endocrine",
-      "Reproductive"
-    ],
-    "MP_0009006": [
-      "Reproductive"
-    ],
-    "MP_0009017": [
-      "Reproductive"
     ],
     "MP_0009092": [
       "Reproductive"
@@ -914,60 +1730,61 @@
     "MP_0009859": [
       "Sensory"
     ],
-    "MP_0009887": [
-      "Digestive"
-    ],
-    "MP_0009888": [
-      "Digestive"
-    ],
     "MP_0010019": [
       "Cardiovascular",
-      "Digestive",
-      "Endocrine",
       "Hepatobiliary"
-    ],
-    "MP_0010128": [
-      "Cardiovascular",
-      "Immune/Haematopoietic"
     ],
     "MP_0010879": [
       "Musculoskeletal"
     ],
-    "MP_0011267": [
-      "Nervous"
-    ],
-    "MP_0011625": [
-      "Renal/Urinary"
-    ],
-    "MP_0011899": [
-      "Renal/Urinary"
-    ],
     "MP_0013603": [
       "Reproductive"
-    ],
-    "MP_0013604": [
-      "Reproductive"
-    ],
-    "MP_0014045": [
-      "Digestive",
-      "Endocrine",
-      "Hepatobiliary"
     ]
   },
-  "fma": {},
+  "fma": {
+    "FMA_46472": [
+      "Respiratory"
+    ],
+    "FMA_58241": [
+      "Sensory"
+    ],
+    "FMA_63179": [
+      "Hepatobiliary"
+    ],
+    "FMA_67338": [
+      "Reproductive"
+    ],
+    "FMA_67343": [
+      "Reproductive"
+    ],
+    "FMA_7210": [
+      "Reproductive"
+    ],
+    "FMA_83376": [
+      "Reproductive"
+    ],
+    "FMA_86488": [
+      "Reproductive"
+    ],
+    "FMA_86594": [
+      "Nervous"
+    ]
+  },
   "stats": {
     "uberon_terms_in_snapshots": 127,
     "uberon_terms_classified": 101,
+    "uberon_terms_pruned": 20,
     "cl_terms_in_snapshots": 96,
     "cl_terms_classified": 52,
+    "cl_terms_pruned": 8,
     "go_terms_in_snapshots": 452,
     "go_terms_classified": 3,
     "hp_terms_in_snapshots": 31,
-    "hp_terms_classified": 27,
+    "hp_terms_classified": 18,
     "mp_terms_in_snapshots": 91,
-    "mp_terms_classified": 61,
+    "mp_terms_classified": 33,
     "fma_terms_in_snapshots": 21,
-    "fma_terms_classified": 0,
-    "elapsed_s": 40.3
+    "fma_terms_classified": 9,
+    "elapsed_s": 28.3
   }
 }
