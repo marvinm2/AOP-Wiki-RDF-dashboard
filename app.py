@@ -49,6 +49,7 @@ import pandas as pd
 import time
 import os
 import json
+import inspect
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -113,6 +114,8 @@ from plots import (
     plot_latest_organ_coverage_percentage,
     plot_latest_organ_coverage_apical,
     plot_latest_organ_coverage_ao_only,
+    plot_latest_organ_coverage_unified,
+    plot_latest_organ_coverage_pie,
     plot_latest_multi_organ_aops,
     plot_latest_life_stage,
     plot_ontology_term_growth,
@@ -1668,6 +1671,8 @@ def get_plot(plot_name):
         'latest_organ_coverage_percentage': plot_latest_organ_coverage_percentage,
         'latest_organ_coverage_apical': plot_latest_organ_coverage_apical,
         'latest_organ_coverage_ao_only': plot_latest_organ_coverage_ao_only,
+        'latest_organ_coverage_unified': plot_latest_organ_coverage_unified,
+        'latest_organ_coverage_pie': plot_latest_organ_coverage_pie,
         'latest_multi_organ_aops': plot_latest_multi_organ_aops,
         'latest_life_stage': plot_latest_life_stage,
     }
@@ -1679,7 +1684,23 @@ def get_plot(plot_name):
     if plot_name in latest_plots_with_version:
         try:
             plot_function = latest_plots_with_version[plot_name]
-            html = plot_function(version) if version else plot_function()
+            # Pass through any extra query-string args (e.g. scope, view) that
+            # the target plot function declares — keeps the unified coverage
+            # toggles working without overloading the route surface.
+            extra_kwargs = {}
+            try:
+                params = inspect.signature(plot_function).parameters
+                for key in ('scope', 'view'):
+                    if key in params:
+                        value = request.args.get(key)
+                        if value:
+                            extra_kwargs[key] = value
+            except (TypeError, ValueError):
+                pass
+            if version:
+                html = plot_function(version, **extra_kwargs)
+            else:
+                html = plot_function(**extra_kwargs)
             return jsonify({'html': html, 'success': True})
         except Exception as e:
             logger.error(f"Error generating plot {plot_name} with version {version}: {e}")

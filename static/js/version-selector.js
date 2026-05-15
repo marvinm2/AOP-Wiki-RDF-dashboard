@@ -31,10 +31,8 @@
         'latest_ke_reuse',
         'latest_ke_reuse_distribution',
         'latest_ontology_diversity',
-        'latest_organ_coverage',
-        'latest_organ_coverage_percentage',
-        'latest_organ_coverage_apical',
-        'latest_organ_coverage_ao_only',
+        'latest_organ_coverage_unified',
+        'latest_organ_coverage_pie',
         'latest_multi_organ_aops',
         'latest_life_stage'
     ];
@@ -256,10 +254,14 @@
         showLoadingSpinner(plotDiv);
 
         try {
-            // Build API URL with version parameter
-            const url = selectedVersion
-                ? `/api/plot/${plotName}?version=${encodeURIComponent(selectedVersion)}`
-                : `/api/plot/${plotName}`;
+            // Build API URL with version + any toggle parameters from the
+            // plot container (scope/view drive the unified coverage views).
+            const params = new URLSearchParams();
+            if (selectedVersion) params.set('version', selectedVersion);
+            if (plotDiv.dataset.scope) params.set('scope', plotDiv.dataset.scope);
+            if (plotDiv.dataset.view) params.set('view', plotDiv.dataset.view);
+            const qs = params.toString();
+            const url = qs ? `/api/plot/${plotName}?${qs}` : `/api/plot/${plotName}`;
 
             console.log(`Fetching plot from: ${url}`);
 

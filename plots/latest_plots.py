@@ -3073,6 +3073,163 @@ def plot_latest_organ_coverage_percentage(version: str = None) -> str:
     )
 
 
+_SCOPE_TITLE_SUFFIX: dict[str, str] = {
+    "all": "All KEs",
+    "apical": "Apical KEs only",
+    "ao": "Adverse Outcome only",
+}
+
+
+# Stable per-bucket colour palette for the pie chart. Plotly's Bold sequence
+# is colour-blind tolerant and has 11 hues; we pad with greys for the two
+# residual buckets so every snapshot keeps the same colour per bucket.
+_BUCKET_PALETTE: dict[str, str] = {
+    bucket: colour
+    for bucket, colour in zip(
+        ORGAN_SYSTEM_BUCKETS,
+        [
+            "#7F3C8D", "#11A579", "#3969AC", "#F2B701", "#E73F74", "#80BA5A",
+            "#E68310", "#008695", "#CF1C90", "#f97b72", "#4b4b8f", "#A5AA99",
+            "#888888",
+        ],
+    )
+}
+_BUCKET_PALETTE[NO_ANNOTATION_BUCKET] = "#cccccc"
+
+
+def plot_latest_organ_coverage_unified(
+    version: str = None,
+    scope: str = "all",
+    view: str = "absolute",
+) -> str:
+    """Unified coverage bar — accepts ``scope`` (all/apical/ao) and ``view``
+    (absolute/percentage) so the front-end can drive both toggles from one
+    plot name. The four legacy ``plot_latest_organ_coverage*`` functions
+    remain as compatibility shims for direct CSV/PNG downloads.
+    """
+    if scope not in _SCOPE_LABELS:
+        scope = "all"
+    percentage = (view == "percentage")
+    suffix = _SCOPE_TITLE_SUFFIX.get(scope, "All KEs")
+    title = f"AOP Coverage of Organ Systems — {suffix}"
+    # Cache under the bare stub so the generic /download/latest/<name> route
+    # can find the most recently rendered scope/view combination for CSV/PNG.
+    return _coverage_plot_for_scope(
+        version,
+        scope=scope,
+        cache_stub="latest_organ_coverage_unified",
+        title=title,
+        percentage=percentage,
+    )
+
+
+def plot_latest_organ_coverage_pie(
+    version: str = None,
+    scope: str = "all",
+) -> str:
+    """Pie of AOP membership per organ-system bucket under a given scope.
+
+    An AOP can be in multiple buckets; the pie counts each (AOP, bucket) pair
+    once, so slices sum to bucket-memberships, not to total AOPs. An
+    "Unclassified" slice surfaces AOPs that the scope leaves with no signal —
+    deliberately visible because false-negative diagnosis is part of the
+    coverage analysis.
+    """
+    global _plot_data_cache, _plot_figure_cache
+
+    if scope not in _SCOPE_LABELS:
+        scope = "all"
+
+    result = _get_coverage_dataframe(version)
+    if result is None:
+        return create_fallback_plot(
+            "Organ-system bucket distribution", "No AOP data in this snapshot"
+        )
+    granular, aop_universe, version_label = result
+
+    per_pair = _aggregate_per_aop(granular, aop_universe, scope=scope)
+    total_aops = len(aop_universe)
+
+    classified = per_pair[
+        (per_pair["Organ System"] != NO_ANNOTATION_BUCKET)
+        & per_pair["Best Signal"].notna()
+    ]
+    bucket_counts = (
+        classified.groupby("Organ System")["AOP"].nunique().to_dict()
+    )
+
+    unclassified = int(
+        (per_pair["Organ System"] == NO_ANNOTATION_BUCKET).sum()
+    )
+
+    rows = []
+    for bucket in ORGAN_SYSTEM_BUCKETS:
+        count = int(bucket_counts.get(bucket, 0))
+        if count > 0:
+            rows.append({"Organ System": bucket, "AOPs": count})
+    if unclassified > 0:
+        rows.append({"Organ System": "Unclassified", "AOPs": unclassified})
+
+    if not rows:
+        return create_fallback_plot(
+            "Organ-system bucket distribution",
+            "No classifications at this scope",
+        )
+
+    df = pd.DataFrame(rows)
+    df["Version"] = version_label
+    df["Scope"] = scope
+
+    cache_key = f"latest_organ_coverage_pie_{scope}_{version or 'latest'}"
+    _plot_data_cache[cache_key] = df
+    _plot_data_cache["latest_organ_coverage_pie"] = df
+
+    colour_map = dict(_BUCKET_PALETTE)
+    colour_map["Unclassified"] = "#cccccc"
+
+    classified_aops = total_aops - unclassified
+    memberships = int(df.loc[df["Organ System"] != "Unclassified", "AOPs"].sum())
+    avg_buckets = (memberships / classified_aops) if classified_aops else 0.0
+    subtitle = (
+        f"{_SCOPE_LABELS.get(scope, scope)} · "
+        f"{classified_aops}/{total_aops} AOPs classified · "
+        f"{memberships} bucket-memberships "
+        f"({avg_buckets:.2f} buckets/AOP on average)"
+    )
+
+    fig = px.pie(
+        df,
+        names="Organ System",
+        values="AOPs",
+        color="Organ System",
+        color_discrete_map=colour_map,
+        category_orders={
+            "Organ System": list(ORGAN_SYSTEM_BUCKETS) + ["Unclassified"]
+        },
+    )
+    fig.update_traces(
+        textposition="inside",
+        textinfo="percent+label",
+        hovertemplate=(
+            "<b>%{label}</b><br>"
+            "AOPs: %{value}<br>"
+            "Share of memberships: %{percent}<extra></extra>"
+        ),
+        sort=False,
+    )
+    fig.update_layout(
+        title={"text": f"Organ-system bucket distribution<br><sub>{subtitle}</sub>"},
+        margin=dict(l=30, r=30, t=80, b=30),
+        legend_title="Bucket",
+    )
+
+    _plot_figure_cache[cache_key] = fig
+    # Also cache under the bare stub so the generic /download/latest/<name>
+    # PNG/SVG export route resolves without needing the scope suffix.
+    _plot_figure_cache["latest_organ_coverage_pie"] = fig
+    return render_plot_html(fig)
+
+
 def plot_latest_multi_organ_aops(version: str = None) -> str:
     """Histogram of the number of distinct organ systems each AOP classifies into."""
     global _plot_data_cache, _plot_figure_cache

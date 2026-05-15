@@ -7,22 +7,36 @@
 {% endblock %}
 
 {% block page_header %}
-<div class="page-title-section">
-    <h1>Database Snapshot</h1>
-    <p>
-        Key metrics and visualizations from the selected version of the AOP-Wiki database.
-        Use the version selector to compare different database snapshots over time.
-    </p>
+<div class="snapshot-topbar">
+    <div class="snapshot-topbar-title">
+        <h1>Database Snapshot</h1>
+    </div>
+    <div class="snapshot-topbar-version">
+        <label for="version-selector" class="version-selector-label">View version:</label>
+        <select id="version-selector" class="version-selector">
+            <option value="">Loading versions...</option>
+        </select>
+    </div>
+    <div class="snapshot-topbar-download">
+        <div class="download-dropdown">
+            <button class="download-button dropdown-toggle" type="button">Download all &#x25BC;</button>
+            <div class="dropdown-menu">
+                <a href="/download/bulk?category=latest-all&formats=csv,png,svg" class="dropdown-item">CSV + PNG + SVG</a>
+                <a href="/download/bulk?category=latest-all&formats=csv" class="dropdown-item">CSV only</a>
+                <a href="/download/bulk?category=latest-all&formats=png" class="dropdown-item">PNG only</a>
+            </div>
+        </div>
+    </div>
 </div>
-<!-- Version Selector (below nav, inside page content) -->
-<div class="version-selector-container">
-    <label for="version-selector" class="version-selector-label">
-        <span class="label-icon">View Version:</span>
-    </label>
-    <select id="version-selector" class="version-selector">
-        <option value="">Loading versions...</option>
-    </select>
-</div>
+<nav class="snapshot-section-nav" aria-label="Jump to section">
+    <button class="nav-button nav-button--compact" onclick="document.getElementById('database-state').scrollIntoView({behavior:'smooth'});">Database State</button>
+    <button class="nav-button nav-button--compact" onclick="document.getElementById('network-analysis').scrollIntoView({behavior:'smooth'});">Network Analysis</button>
+    <button class="nav-button nav-button--compact" onclick="document.getElementById('ke-analysis').scrollIntoView({behavior:'smooth'});">Key Event Analysis</button>
+    <button class="nav-button nav-button--compact" onclick="document.getElementById('breakdown-analysis').scrollIntoView({behavior:'smooth'});">Breakdown Analysis</button>
+    <button class="nav-button nav-button--compact" onclick="document.getElementById('coverage-analysis').scrollIntoView({behavior:'smooth'});">Coverage Analysis</button>
+    <button class="nav-button nav-button--compact" onclick="document.getElementById('ke-reuse').scrollIntoView({behavior:'smooth'});">KE Reuse</button>
+    <button class="nav-button nav-button--compact" onclick="document.getElementById('data-quality').scrollIntoView({behavior:'smooth'});">Data Quality</button>
+</nav>
 {% endblock %}
 
 {% block content %}
@@ -42,46 +56,18 @@
     </div>
 </div>
 
-<section class="tab-intro">
-    <h2>Current Database State</h2>
+<details class="tab-intro-collapsible">
+    <summary>About this page</summary>
     <p>
-        This section displays key metrics and visualizations from the most recent version of the AOP-Wiki database.
-        These charts provide a snapshot of the current state of the knowledge base, showing entity counts,
-        component distributions, and data quality metrics.
+        Key metrics and visualizations from the selected version of the AOP-Wiki database.
+        Use the version selector above to compare different database snapshots over time.
     </p>
     <ul>
-        <li><b>Current State:</b> View entity counts and database composition</li>
-        <li><b>Network Analysis:</b> Understand AOP connectivity and structural relationships</li>
-        <li><b>Data Quality:</b> Assess annotation completeness and ontology usage patterns</li>
+        <li><b>Current State:</b> entity counts and database composition</li>
+        <li><b>Network Analysis:</b> AOP connectivity and structural relationships</li>
+        <li><b>Data Quality:</b> annotation completeness and ontology usage patterns</li>
     </ul>
-</section>
-
-<!-- Bulk Download Section -->
-<div style="text-align:center; margin:20px; padding:15px; background-color: #f9f9f9; border-radius: 8px;">
-    <h3 style="margin-top:0; color:#29235C;">Bulk Download</h3>
-    <p style="font-size:14px; color:#666; margin:10px 0;">Download all plots at once in multiple formats</p>
-    <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
-        <a href="/download/bulk?category=latest-all&formats=csv,png,svg" class="nav-button" style="text-decoration:none; display:inline-block;">
-            Download All (CSV + PNG + SVG)
-        </a>
-        <a href="/download/bulk?category=latest-all&formats=csv" class="nav-button" style="text-decoration:none; display:inline-block;">
-            CSV Only
-        </a>
-        <a href="/download/bulk?category=latest-all&formats=png" class="nav-button" style="text-decoration:none; display:inline-block;">
-            PNG Only
-        </a>
-    </div>
-</div>
-
-<!-- Navigation Buttons -->
-<div style="text-align:center; margin:20px;">
-    <button class="nav-button" onclick="document.getElementById('database-state').scrollIntoView({behavior:'smooth'});">Database State</button>
-    <button class="nav-button" onclick="document.getElementById('network-analysis').scrollIntoView({behavior:'smooth'});">Network Analysis</button>
-    <button class="nav-button" onclick="document.getElementById('ke-analysis').scrollIntoView({behavior:'smooth'});">Key Event Analysis</button>
-    <button class="nav-button" onclick="document.getElementById('breakdown-analysis').scrollIntoView({behavior:'smooth'});">Breakdown Analysis</button>
-    <button class="nav-button" onclick="document.getElementById('ke-reuse').scrollIntoView({behavior:'smooth'});">KE Reuse</button>
-    <button class="nav-button" onclick="document.getElementById('data-quality').scrollIntoView({behavior:'smooth'});">Data Quality</button>
-</div>
+</details>
 
 <section class="section-block" id="database-state">
     <h2 class="section-header">Current Database State</h2>
@@ -305,9 +291,9 @@
                 <div class="download-dropdown">
                     <button class="download-button dropdown-toggle">Download &#x25BC;</button>
                     <div class="dropdown-menu">
-                        <a href="/download/latest/organ_coverage?format=csv" class="dropdown-item">CSV</a>
-                        <a href="/download/latest/organ_coverage?format=png" class="dropdown-item">PNG</a>
-                        <a href="/download/latest/organ_coverage?format=svg" class="dropdown-item">SVG</a>
+                        <a href="/download/latest/organ_coverage_unified?format=csv" class="dropdown-item">CSV (current view)</a>
+                        <a href="/download/latest/organ_coverage_unified?format=png" class="dropdown-item">PNG (current view)</a>
+                        <a href="/download/latest/organ_coverage_unified?format=svg" class="dropdown-item">SVG (current view)</a>
                     </div>
                 </div>
             </div>
@@ -317,85 +303,54 @@
                 <strong>A&prime;</strong> (UBERON/CL appearing as biological-event objects),
                 <strong>B</strong> (GO biological-process bridge, curated map), and
                 <strong>C</strong> (regex on AOP title — exploratory, grey).
-                An AOP can belong to multiple organ systems; the stack colour reflects the highest-confidence signal that classified it.
+                Use the toggles to narrow which KEs contribute and to switch between absolute counts and share of the snapshot.
             </p>
-            {{ methodology_note(methodology_notes, 'latest_organ_coverage') }}
-            <div class="lazy-plot" data-plot-name="latest_organ_coverage">
+            <div class="coverage-toggle" data-scope="all" data-view="absolute">
+                <div class="coverage-toggle-row">
+                    <span class="coverage-toggle-label">Scope:</span>
+                    <div class="segmented-control" role="group" aria-label="Coverage scope">
+                        <button type="button" class="segmented-button" data-toggle-scope="all" aria-pressed="true">All KEs</button>
+                        <button type="button" class="segmented-button" data-toggle-scope="apical" aria-pressed="false">Apical KEs only</button>
+                        <button type="button" class="segmented-button" data-toggle-scope="ao" aria-pressed="false">Adverse Outcome only</button>
+                    </div>
+                </div>
+                <div class="coverage-toggle-row">
+                    <span class="coverage-toggle-label">View:</span>
+                    <div class="segmented-control" role="group" aria-label="Coverage view">
+                        <button type="button" class="segmented-button" data-toggle-view="absolute" aria-pressed="true">Absolute</button>
+                        <button type="button" class="segmented-button" data-toggle-view="percentage" aria-pressed="false">Percentage</button>
+                    </div>
+                </div>
+            </div>
+            {{ methodology_note(methodology_notes, 'latest_organ_coverage_unified') }}
+            <div class="lazy-plot" data-plot-name="latest_organ_coverage_unified" data-scope="all" data-view="absolute">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
-            {{ data_table_toggle('latest_organ_coverage') }}
+            {{ data_table_toggle('latest_organ_coverage_unified') }}
         </div>
         <div class="plot-box full-width">
             <div class="plot-header">
-                <h3>AOP Coverage of Organ Systems (% of snapshot)</h3>
+                <h3>Organ-system bucket distribution</h3>
                 <div class="download-dropdown">
                     <button class="download-button dropdown-toggle">Download &#x25BC;</button>
                     <div class="dropdown-menu">
-                        <a href="/download/latest/organ_coverage_percentage?format=csv" class="dropdown-item">CSV</a>
-                        <a href="/download/latest/organ_coverage_percentage?format=png" class="dropdown-item">PNG</a>
-                        <a href="/download/latest/organ_coverage_percentage?format=svg" class="dropdown-item">SVG</a>
+                        <a href="/download/latest/organ_coverage_pie?format=csv" class="dropdown-item">CSV (current scope)</a>
+                        <a href="/download/latest/organ_coverage_pie?format=png" class="dropdown-item">PNG (current scope)</a>
+                        <a href="/download/latest/organ_coverage_pie?format=svg" class="dropdown-item">SVG (current scope)</a>
                     </div>
                 </div>
             </div>
             <p class="plot-description">
-                Same hybrid classification as the absolute view, normalised by the total AOP count in this snapshot.
-                Each bar segment is the share of all AOPs in the snapshot (not just the annotated ones) classified
-                into the bucket by the given signal.
+                Pie view of the same data: how AOP classifications spread across the 13 buckets at the
+                <em>currently selected scope</em>. Each AOP is counted once per bucket it lands in, so the slices
+                sum to bucket-memberships rather than AOPs. The grey &ldquo;Unclassified&rdquo; slice surfaces
+                AOPs that the scope leaves without any signal — useful for spotting false negatives.
             </p>
-            {{ methodology_note(methodology_notes, 'latest_organ_coverage_percentage') }}
-            <div class="lazy-plot" data-plot-name="latest_organ_coverage_percentage">
+            {{ methodology_note(methodology_notes, 'latest_organ_coverage_pie') }}
+            <div class="lazy-plot" data-plot-name="latest_organ_coverage_pie" data-scope="all">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
-            {{ data_table_toggle('latest_organ_coverage_percentage') }}
-        </div>
-        <div class="plot-box full-width">
-            <div class="plot-header">
-                <h3>AOP Coverage of Organ Systems — Apical KEs only</h3>
-                <div class="download-dropdown">
-                    <button class="download-button dropdown-toggle">Download &#x25BC;</button>
-                    <div class="dropdown-menu">
-                        <a href="/download/latest/organ_coverage_apical?format=csv" class="dropdown-item">CSV</a>
-                        <a href="/download/latest/organ_coverage_apical?format=png" class="dropdown-item">PNG</a>
-                        <a href="/download/latest/organ_coverage_apical?format=svg" class="dropdown-item">SVG</a>
-                    </div>
-                </div>
-            </div>
-            <p class="plot-description">
-                Same hybrid classification, but Signals A, A&prime; and B only count when the
-                source KE sits at <strong>Tissue / Organ / Individual / Population</strong> level
-                — i.e. apical and above. Molecular and cellular KEs are filtered out so the bars
-                reflect what the AOP is <em>about</em> at the organ-and-up level. Signal C (AOP
-                title) is kept regardless of KE level.
-            </p>
-            {{ methodology_note(methodology_notes, 'latest_organ_coverage_apical') }}
-            <div class="lazy-plot" data-plot-name="latest_organ_coverage_apical">
-                <!-- Plot will be loaded here via JavaScript -->
-            </div>
-            {{ data_table_toggle('latest_organ_coverage_apical') }}
-        </div>
-        <div class="plot-box full-width">
-            <div class="plot-header">
-                <h3>AOP Coverage of Organ Systems — Adverse Outcome only</h3>
-                <div class="download-dropdown">
-                    <button class="download-button dropdown-toggle">Download &#x25BC;</button>
-                    <div class="dropdown-menu">
-                        <a href="/download/latest/organ_coverage_ao_only?format=csv" class="dropdown-item">CSV</a>
-                        <a href="/download/latest/organ_coverage_ao_only?format=png" class="dropdown-item">PNG</a>
-                        <a href="/download/latest/organ_coverage_ao_only?format=svg" class="dropdown-item">SVG</a>
-                    </div>
-                </div>
-            </div>
-            <p class="plot-description">
-                Strictest scope: Signals A, A&prime; and B only count annotations on the
-                <strong>Adverse Outcome KE</strong> itself (the regulatory endpoint), not
-                upstream KEs. Signal C (AOP title) is kept because titles routinely describe
-                the AO. Shows the bucket distribution of the apical endpoint per AOP.
-            </p>
-            {{ methodology_note(methodology_notes, 'latest_organ_coverage_ao_only') }}
-            <div class="lazy-plot" data-plot-name="latest_organ_coverage_ao_only">
-                <!-- Plot will be loaded here via JavaScript -->
-            </div>
-            {{ data_table_toggle('latest_organ_coverage_ao_only') }}
+            {{ data_table_toggle('latest_organ_coverage_pie') }}
         </div>
         <div class="plot-box full-width">
             <div class="plot-header">
@@ -703,6 +658,7 @@
 
 {% block scripts_extra %}
 <script src="{{ url_for('static', filename='js/version-selector.js') }}"></script>
+<script src="{{ url_for('static', filename='js/coverage-toggle.js') }}"></script>
 <script src="{{ url_for('static', filename='js/raw-data-tables.js') }}"></script>
 <script>
 // EXPL-04: Click-to-AOP-Wiki handler for KE reuse plot

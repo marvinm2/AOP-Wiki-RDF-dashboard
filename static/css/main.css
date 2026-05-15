@@ -1304,3 +1304,196 @@ footer img {
         gap: 16px;
     }
 }
+
+/* ==========================================================================
+   Database Snapshot — compact top bar
+   ========================================================================== */
+
+.snapshot-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    background: linear-gradient(135deg, var(--color-primary) 0%, #3d3570 100%);
+    padding: 10px 24px;
+    margin: 12px auto 12px;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.snapshot-topbar-title h1 {
+    color: white;
+    margin: 0;
+    font-size: 1.4rem;
+    line-height: 1.2;
+    letter-spacing: 0.2px;
+}
+
+.snapshot-topbar-version {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.snapshot-topbar-version .version-selector-label {
+    color: white;
+    font-weight: 500;
+    font-size: 14px;
+    margin: 0;
+}
+
+.snapshot-topbar-version .version-selector {
+    padding: 6px 12px;
+    font-size: 14px;
+    min-width: 180px;
+    border: 2px solid var(--color-cta);
+    border-radius: 6px;
+    background: white;
+    color: var(--color-primary);
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.snapshot-topbar-download .download-button {
+    background-color: var(--color-cta);
+    padding: 7px 14px;
+    font-size: 13px;
+    border-radius: 6px;
+}
+
+.snapshot-topbar-download .download-button:hover {
+    background-color: var(--color-warm-pink, #ff3399);
+}
+
+.snapshot-section-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+    margin: 0 auto 14px;
+}
+
+.nav-button--compact {
+    padding: 5px 12px;
+    margin: 0;
+    font-size: 13px;
+    border-radius: 4px;
+    background-color: var(--color-blue);
+}
+
+.nav-button--compact:hover {
+    background-color: #205c93;
+}
+
+.tab-intro-collapsible {
+    background-color: white;
+    margin: 0 0 18px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    border: 1px solid #ececec;
+}
+
+.tab-intro-collapsible > summary {
+    cursor: pointer;
+    color: var(--color-primary);
+    font-weight: 600;
+    font-size: 0.95rem;
+    list-style: revert;
+    padding: 4px 0;
+}
+
+.tab-intro-collapsible[open] > summary {
+    margin-bottom: 8px;
+}
+
+.tab-intro-collapsible p,
+.tab-intro-collapsible ul {
+    margin: 8px 0;
+    line-height: 1.5;
+    font-size: 0.92rem;
+}
+
+/* ==========================================================================
+   Coverage Analysis — scope/view segmented toggle
+   ========================================================================== */
+
+.coverage-toggle {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 8px 0 14px;
+    padding: 10px 14px;
+    background-color: #fafafa;
+    border: 1px solid #e6e6e6;
+    border-radius: 6px;
+}
+
+.coverage-toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.coverage-toggle-label {
+    font-weight: 600;
+    color: var(--color-primary);
+    font-size: 0.9rem;
+    min-width: 56px;
+}
+
+.segmented-control {
+    display: inline-flex;
+    border: 1px solid var(--color-blue);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.segmented-button {
+    background-color: white;
+    color: var(--color-blue);
+    border: none;
+    padding: 6px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    border-right: 1px solid var(--color-blue);
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.segmented-button:last-child {
+    border-right: none;
+}
+
+.segmented-button:hover:not(.is-active) {
+    background-color: rgba(48, 123, 191, 0.08);
+}
+
+.segmented-button.is-active {
+    background-color: var(--color-cta);
+    color: white;
+}
+
+.segmented-button.is-active:hover {
+    background-color: var(--color-warm-pink, #ff3399);
+}
+
+@media (max-width: 600px) {
+    .snapshot-topbar {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+    }
+
+    .snapshot-topbar-version,
+    .snapshot-topbar-download {
+        justify-content: center;
+        display: flex;
+    }
+
+    .segmented-control {
+        flex-wrap: wrap;
+    }
+}

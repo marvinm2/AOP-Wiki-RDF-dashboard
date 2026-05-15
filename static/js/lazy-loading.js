@@ -88,9 +88,17 @@ class PlotLazyLoader {
             // Show loading state
             this.showLoadingState(element);
 
+            // Forward any data-* attributes that map to plot kwargs (scope, view).
+            // Lets the coverage toggles drive the initial render via markup alone.
+            const params = new URLSearchParams();
+            if (element.dataset.scope) params.set('scope', element.dataset.scope);
+            if (element.dataset.view) params.set('view', element.dataset.view);
+            const qs = params.toString();
+            const url = qs ? `/api/plot/${plotName}?${qs}` : `/api/plot/${plotName}`;
+
             // Fetch plot data
-            console.log(`PlotLazyLoader: Fetching data for plot: ${plotName}`);
-            const response = await fetch(`/api/plot/${plotName}`);
+            console.log(`PlotLazyLoader: Fetching data for plot: ${plotName} (${url})`);
+            const response = await fetch(url);
             console.log(`PlotLazyLoader: Response status for ${plotName}: ${response.status}`);
 
             const data = await response.json();
