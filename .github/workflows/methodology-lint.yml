@@ -1,0 +1,102 @@
+name: methodology-lint
+
+# Phase 11 — Methodology query CI lint.
+#
+# Runs scripts/lint_methodology.py against `static/data/methodology_notes.json`
+# whenever a PR touches the methodology surface (the JSON itself, any plot
+# code that owns one of the entries, the lint script, this workflow, the lint
+# tests + fixtures, or the dependency manifests). Also runs on a weekday cron
+# so regressions on `main` are surfaced even when no PR is open, and supports
+# manual dispatch from the Actions tab (used during scratch-PR verification).
+#
+# Trigger choice rationale (per RESEARCH Pitfall P5): we use `pull_request`
+# (not `pull_request_target`). Fork PRs therefore receive a red check but no
+# bot comment because their auto-issued GITHUB_TOKEN is read-only. Acceptable
+# for v1 — this is a single-maintainer repo and fork PRs are rare. Switch to
+# `pull_request_target` only if fork-PR comments become a hard requirement,
+# and only after re-reviewing the secrets-exposure surface.
+
+on:
+  pull_request:
+    paths:
+      - 'static/data/methodology_notes.json'
+      - 'plots/**/*.py'
+      - 'scripts/lint_methodology.py'
+      - '.github/workflows/methodology-lint.yml'
+      - 'tests/test_methodology_lint.py'
+      - 'tests/fixtures/methodology_lint/**'
+      - 'requirements.txt'
+      - 'requirements-dev.txt'
+  schedule:
+    - cron: '0 14 * * MON-FRI'  # 14:00 UTC weekdays — RESEARCH Open Q3 daily regression catch
+  workflow_dispatch:
+
+concurrency:
+  group: methodology-lint-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Smoke-test the lint with unit tests
+        id: smoke-test
+        run: pytest tests/test_methodology_lint.py -x -q
+
+      - name: Run the lint against real methodology JSON
+        id: lint
+        continue-on-error: true
+        run: |
+          python scripts/lint_methodology.py \
+            --json static/data/methodology_notes.json \
+            --plots-dir plots \
+            --report lint-report.md \
+            --json-report lint-report.json
+
+      - name: Upload report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: methodology-lint-report
+          path: |
+            lint-report.md
+            lint-report.json
+
+      - name: Comment on PR with lint report
+        if: always() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr comment "${{ github.event.pull_request.number }}" \
+            --body-file lint-report.md
+
+      - name: Open issue on cron failure
+        if: failure() && github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create \
+            --title "Methodology lint regression detected on $(date -I)" \
+            --body-file lint-report.md \
+            --label methodology-lint
+
+      - name: Fail the job if the lint failed
+        if: steps.lint.outcome == 'failure'
+        run: exit 1
