@@ -84,6 +84,53 @@ curl http://localhost:5000/health
 open http://localhost:5000/status
 ```
 
+## Methodology Query CI Lint
+
+Every plot in the dashboard exposes its underlying SPARQL query via `static/data/methodology_notes.json`. The lint in `scripts/lint_methodology.py` guards that contract against drift. It runs six checks: **LINT-01** catches SPARQL syntax / SP031-class compiler errors by wrapping each entry's query and posting it to the live endpoint; **LINT-02** flags entries whose query returns zero rows (or a single all-zero aggregate row) against the latest graph, unless the entry opts out with `may_be_empty: true`; **LINT-03** statically rejects any `latest_*` entry that lacks a latest-snapshot constraint (it must contain either `__GRAPH_URI__` or the `ORDER BY DESC(?graph) LIMIT 1` + `STRSTARTS(STR(?graph), "http://aopwiki.org/graph/")` trio); **LINT-04** is a soft warning that fires when a plot function in `plots/*.py` issues more SPARQL calls than its methodology entry discloses (detected via AST scan only — the lint never imports `plots`); **LINT-05** is an endpoint-call-budget guard that refuses to start when the JSON has more than ~50 entries; **LINT-06** renders the deterministic markdown + JSON reports that the CI job posts back as a PR comment.
+
+### Full local run (LINT-01 + LINT-02 + LINT-03 + LINT-04, hits live endpoint)
+
+```bash
+python scripts/lint_methodology.py \
+  --json static/data/methodology_notes.json \
+  --plots-dir plots \
+  --report lint-report.md \
+  --json-report lint-report.json
+```
+
+Exit codes: `0` = pass (warns allowed), `1` = at least one fail-severity finding, `2` = infrastructure error (DNS, 5xx, timeout), `3` = pre-flight refusal because the entry count exceeds the budget.
+
+### Fast offline run (LINT-03 + LINT-04 only, no endpoint calls)
+
+```bash
+python scripts/lint_methodology.py \
+  --json static/data/methodology_notes.json \
+  --plots-dir plots \
+  --no-network \
+  --report lint-report.md \
+  --json-report lint-report.json
+```
+
+`--no-network` skips LINT-01 + LINT-02 (no live endpoint round-trip and no latest-graph resolution). LINT-03 (static-only) and LINT-04 (AST-only) still run. This is the right path for quickly iterating on a query you just edited.
+
+### Marking an entry as legitimately empty
+
+Some queries can return zero rows in the latest snapshot for a real reason — e.g. a brand-new predicate not yet populated, or an opt-out group with no current members. Add `"may_be_empty": true` to the methodology entry to suppress LINT-02 for it:
+
+```json
+"latest_some_empty_thing": {
+  "title": "…",
+  "sparql": "…",
+  "may_be_empty": true
+}
+```
+
+The opt-out is intentionally explicit so the next maintainer sees the marker when reviewing the JSON. Today no entries opt out; the lock-list grows only as legitimate empties are identified.
+
+### Why this exists
+
+Failures are tracked via GitHub issues (e.g. #35 SP031 in `latest_ontology_usage`, #36 bogus `aopo:has_biological_process` predicates, #37 completeness scanning all 33 graphs instead of the latest one). Running the lint locally before opening a PR avoids surprise CI failures and gives you a per-check fix hint directly in the markdown report.
+
 ## Usage Guide
 
 ### **Navigation**
