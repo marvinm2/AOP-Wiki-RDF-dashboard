@@ -1,0 +1,23 @@
+{
+  "latest_over_disclosed": {
+    "title": "Over-disclosed entity counts (synthetic LINT-04 anchor)",
+    "description": "Synthetic methodology entry: plot function makes 3 SPARQL calls, JSON discloses 1.",
+    "methodology": "Synthetic fixture for the LINT-04 soft-warn path.",
+    "interpretation": "If LINT-04 fires here, the AST scan is wired correctly.",
+    "sparql": "SELECT (COUNT(?aop) AS ?c)\nFROM __GRAPH_URI__\nWHERE { ?aop a <http://aopkb.org/aop_ontology#AdverseOutcomePathway> }\nLIMIT 1"
+  },
+  "latest_balanced": {
+    "title": "Balanced disclosure (synthetic LINT-04 anchor)",
+    "description": "Synthetic methodology entry: plot function makes 1 SPARQL call, JSON discloses 1.",
+    "methodology": "Synthetic fixture for the LINT-04 pass path.",
+    "interpretation": "LINT-04 should NOT fire — call count matches disclosure count.",
+    "sparql": "SELECT (COUNT(?aop) AS ?c)\nFROM __GRAPH_URI__\nWHERE { ?aop a <http://aopkb.org/aop_ontology#AdverseOutcomePathway> }\nLIMIT 1"
+  },
+  "latest_under_disclosed": {
+    "title": "Under-disclosed (synthetic LINT-04 anchor)",
+    "description": "Synthetic methodology entry: plot function makes 0 SPARQL calls (cached data), JSON discloses 1.",
+    "methodology": "Synthetic fixture for the legitimate-under-disclosure path.",
+    "interpretation": "LINT-04 must NOT fire — code_count (0) <= disclosed_count (1).",
+    "sparql": "SELECT (COUNT(?aop) AS ?c)\nFROM __GRAPH_URI__\nWHERE { ?aop a <http://aopkb.org/aop_ontology#AdverseOutcomePathway> }\nLIMIT 1"
+  }
+}

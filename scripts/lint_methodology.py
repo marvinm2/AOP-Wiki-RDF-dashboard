@@ -2,9 +2,7 @@
 """Methodology JSON lint for the AOP-Wiki RDF dashboard.
 
 Validates every entry in `static/data/methodology_notes.json` against the live
-SPARQL endpoint and against simple static rules. This file ships the first
-half of the lint contract (LINT-01/02/03); LINT-04 (AST scan), LINT-05 (call
-budget) and LINT-06 (PR comment formatting) land in a later plan.
+SPARQL endpoint and against simple static rules.
 
 LINT codes
 ----------
@@ -17,12 +15,20 @@ LINT-02  Empty-result drift against the latest snapshot (endpoint returns 200
 LINT-03  ``latest_*`` entry lacks a latest-snapshot constraint: it has neither
          the ``__GRAPH_URI__`` substitution marker nor the combination of
          ``ORDER BY DESC(?graph)``, ``LIMIT 1`` and ``STRSTARTS(STR(?graph)``.
+LINT-04  (soft warn this phase, see D2 in 11-CONTEXT.md) Plot function issues
+         more SPARQL calls than the methodology entry discloses. Detected
+         purely via AST scan of ``plots/*.py`` — the file is never imported.
+LINT-05  Endpoint-call budget guard: refuse to start when the methodology JSON
+         has more entries than the configured budget (default 50).
+LINT-06  Deterministic PR-comment / JSON-report formatting (no severity; this
+         is a presentation contract, not a check that emits findings).
 
 Exit codes
 ----------
-0  No findings.
-1  At least one lint finding.
+0  No findings (or only ``warn``-severity findings).
+1  At least one ``fail``-severity finding.
 2  Infrastructure error (DNS failure, connection refused, timeout, 5xx).
+3  Pre-flight refusal (LINT-05 budget guard tripped).
 
 Design constraints
 ------------------
@@ -35,6 +41,7 @@ Design constraints
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 import pathlib
 import sys
@@ -47,6 +54,22 @@ DEFAULT_TIMEOUT = 30
 INFRA_EXIT = 2
 LINT_FAIL_EXIT = 1
 PASS_EXIT = 0
+BUDGET_EXIT = 3
+
+# LINT-04: AST-scan helper-name set. The two canonical SPARQL helpers exported
+# by ``plots/shared.py``. Centralised so future renames are a one-line change.
+SPARQL_HELPER_NAMES = frozenset({"run_sparql_query", "run_sparql_query_with_retry"})
+
+# LINT-04 is a SOFT warn this phase (per D2 in 11-CONTEXT.md). When the
+# multi-query disclosure schema migration (issue #40) lands, flip this to
+# "fail" — that one-line change deliberately breaks the
+# ``test_lint04_severity_constant`` test so contributors notice.
+LINT_04_SEVERITY = "warn"
+
+# LINT-05: methodology JSON must not exceed this many entries per run.
+# Today the real file has 46 entries; the ceiling is "at most ~50 endpoint
+# requests per run" per the LINT-05 requirement.
+DEFAULT_CALL_BUDGET = 50
 
 
 class InfraError(RuntimeError):
@@ -54,6 +77,15 @@ class InfraError(RuntimeError):
 
     Distinguished from lint failures so the CI runner can exit 2 (infra) vs.
     1 (lint) and avoid masking transient network issues as code defects.
+    """
+
+
+class BudgetExceeded(RuntimeError):
+    """Raised by ``enforce_call_budget`` when entry count exceeds the budget.
+
+    Caught in ``main`` and surfaced as exit code 3 (distinct from 0/1/2) so
+    callers can distinguish ``lint cannot run`` from ``lint ran and infra
+    broke``. See LINT-05 in 11-CONTEXT.md.
     """
 
 
@@ -261,6 +293,274 @@ def resolve_latest_graph_uri(
 
 
 # ---------------------------------------------------------------------------
+# LINT-04: AST scan of plots/*.py (no execution, no import — Pitfall P2)
+# ---------------------------------------------------------------------------
+
+
+def count_sparql_calls_per_function(path: pathlib.Path) -> dict[str, int]:
+    """Count SPARQL helper calls per function in one ``.py`` file.
+
+    Parses the file with ``ast.parse`` (Pitfall P2: NEVER import it) and walks
+    each ``FunctionDef`` / ``AsyncFunctionDef``. Counts ``Call`` nodes whose
+    ``func.attr`` (for ``obj.helper()``) or ``func.id`` (for ``helper()``)
+    appears in ``SPARQL_HELPER_NAMES``.
+
+    Returns ``{function_name: count}`` only for functions with at least one
+    helper call. Functions with zero matches are omitted to keep the merged
+    map small.
+    """
+    try:
+        source = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return {}
+    try:
+        tree = ast.parse(source, filename=str(path))
+    except SyntaxError:
+        return {}
+
+    counts: dict[str, int] = {}
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        n = 0
+        for child in ast.walk(node):
+            if not isinstance(child, ast.Call):
+                continue
+            func = child.func
+            name: Optional[str] = None
+            if isinstance(func, ast.Attribute):
+                name = func.attr
+            elif isinstance(func, ast.Name):
+                name = func.id
+            if name and name in SPARQL_HELPER_NAMES:
+                n += 1
+        if n > 0:
+            counts[node.name] = n
+    return counts
+
+
+def scan_plots_dir(plots_dir: pathlib.Path) -> dict[str, int]:
+    """Walk ``plots_dir`` for ``*.py`` files and merge per-function call counts.
+
+    One level deep — the dashboard's ``plots/`` package is flat. Skips
+    ``__pycache__`` and any hidden directory. Defensive merge: if two files
+    define the same function name, sum the counts.
+    """
+    merged: dict[str, int] = {}
+    if not plots_dir.exists() or not plots_dir.is_dir():
+        return merged
+    for py in sorted(plots_dir.glob("*.py")):
+        if py.name.startswith("."):
+            continue
+        per_file = count_sparql_calls_per_function(py)
+        for fn, n in per_file.items():
+            merged[fn] = merged.get(fn, 0) + n
+    return merged
+
+
+def check_lint_04(
+    name: str,
+    entry: dict,
+    plot_call_counts: dict[str, int],
+) -> Optional[dict]:
+    """Soft-warn when a plot function issues more calls than the entry discloses.
+
+    Maps methodology key ``foo`` to expected function ``plot_foo`` (e.g.
+    ``latest_ke_components`` -> ``plot_latest_ke_components``). When the
+    function is found in ``plot_call_counts`` and:
+
+    - ``entry["sparql"]`` is a string (current schema): warn if ``count > 1``.
+    - ``entry["sparql"]`` is a list (future multi-query schema; not present in
+      Phase 11): warn if ``count > len(entry["sparql"])``.
+
+    Returns ``None`` when no warning applies. Per D2 in 11-CONTEXT.md the
+    severity is ``LINT_04_SEVERITY`` (``"warn"`` this phase). The future
+    schema-migration phase flips that constant to ``"fail"``.
+    """
+    func_name = f"plot_{name}"
+    count = plot_call_counts.get(func_name)
+    if not count:
+        return None
+    disclosed = entry.get("sparql")
+    if isinstance(disclosed, str):
+        disclosed_count = 1
+    elif isinstance(disclosed, list):
+        disclosed_count = len(disclosed)
+    else:
+        return None
+    if count <= disclosed_count:
+        return None
+    return {
+        "name": name,
+        "check": "LINT-04",
+        "severity": LINT_04_SEVERITY,
+        "message": (
+            f"Plot function {func_name} issues {count} SPARQL calls but "
+            f"methodology entry discloses only {disclosed_count} query "
+            "string(s). After the multi-query schema migration "
+            "(issue #40), this will become a hard failure."
+        ),
+    }
+
+
+# ---------------------------------------------------------------------------
+# LINT-05: endpoint-call-budget guard
+# ---------------------------------------------------------------------------
+
+
+def enforce_call_budget(
+    entries: dict,
+    *,
+    budget: int = DEFAULT_CALL_BUDGET,
+    no_network: bool = False,
+) -> None:
+    """Refuse to start when the entry count exceeds the endpoint-call budget.
+
+    Each entry costs one wrapped round-trip for LINT-01/02, plus one shared
+    latest-graph resolution call per run. With ``budget=50`` and 46 real
+    entries today, a 30s per-call timeout keeps total run-time well under
+    the LINT-05 "<2 minutes" target.
+
+    The guard is a no-op when ``no_network=True`` because the static-only
+    path issues zero endpoint calls. Raises ``BudgetExceeded`` otherwise.
+    """
+    if no_network:
+        return
+    count = len(entries)
+    if count > budget:
+        raise BudgetExceeded(
+            f"methodology JSON has {count} entries but the endpoint-call "
+            f"budget is {budget} (LINT-05). Either batch the per-entry "
+            "round-trip, raise the budget with --call-budget, or split the "
+            "methodology file."
+        )
+
+
+# ---------------------------------------------------------------------------
+# LINT-06: deterministic PR-comment + JSON-report formatters
+# ---------------------------------------------------------------------------
+
+
+# Per-check actionable fix hints surfaced in the markdown PR comment.
+FIX_HINTS = {
+    "LINT-01": (
+        "Test the wrapped query against the live endpoint; the SP031-class "
+        "error names a specific projection/aggregate mismatch - usually a "
+        "variable in the SELECT that is missing from GROUP BY."
+    ),
+    "LINT-02": (
+        "Verify the predicate URIs exist in the latest graph. The May 2026 "
+        "audit found 12 entries using the bogus `aopo:has_biological_process` "
+        "form instead of `aopo:hasBiologicalEvent -> hasProcess`. Run the "
+        "query directly at the SPARQL endpoint to inspect the result shape."
+    ),
+    "LINT-03": (
+        "Add `__GRAPH_URI__` to the query OR add both "
+        "`ORDER BY DESC(?graph) LIMIT 1` and "
+        "`FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))` so "
+        "the lint can confirm a latest-snapshot constraint."
+    ),
+}
+
+# Stable bot-comment marker so future idempotency work can edit-in-place.
+PR_COMMENT_MARKER = "<!-- methodology-lint -->"
+
+
+def _sorted_findings(findings: list[dict]) -> list[dict]:
+    """Deterministic sort by ``(name, check)`` so output is byte-stable."""
+    return sorted(
+        findings,
+        key=lambda f: (f.get("name", ""), f.get("check", "")),
+    )
+
+
+def format_pr_comment(
+    findings: list[dict],
+    *,
+    methodology_path: str,
+    total_entries: int,
+    budget: int = DEFAULT_CALL_BUDGET,
+    no_network: bool = False,
+) -> str:
+    """Render a deterministic markdown PR comment for the lint findings.
+
+    Determinism: findings are sorted by ``(name, check)`` before rendering,
+    so the same finding list always produces the same byte sequence. The
+    header carries a ``<!-- methodology-lint -->`` HTML-comment marker so
+    future idempotency work can locate and replace the prior bot comment.
+    """
+    findings = _sorted_findings(findings)
+    fails = [f for f in findings if f.get("severity") == "fail"]
+    warns = [f for f in findings if f.get("severity") == "warn"]
+
+    lines = [
+        PR_COMMENT_MARKER,
+        (
+            f"## Methodology lint: {total_entries} entries checked, "
+            f"{len(fails)} failures, {len(warns)} warnings"
+        ),
+        "",
+        f"Source: `{methodology_path}`",
+        "",
+    ]
+
+    if fails:
+        lines.append("### Failures")
+        lines.append("")
+        for f in fails:
+            msg = f.get("message", "").replace("\n", " ")
+            lines.append(
+                f"- **{f['name']}** - `{f['check']}` - {msg}"
+            )
+            hint = FIX_HINTS.get(f["check"])
+            if hint:
+                lines.append(f"  > Fix hint: {hint}")
+        lines.append("")
+
+    if warns:
+        lines.append("### Warnings (soft)")
+        lines.append("")
+        for f in warns:
+            msg = f.get("message", "").replace("\n", " ")
+            lines.append(
+                f"- **{f['name']}** - `{f['check']}` - {msg}"
+            )
+        lines.append("")
+
+    if not fails and not warns:
+        lines.append("All checks passed.")
+        lines.append("")
+
+    lines.append(
+        f"_Lint config: budget={budget}, no_network={str(bool(no_network))}_"
+    )
+    return "\n".join(lines) + "\n"
+
+
+def format_json_report(
+    findings: list[dict],
+    *,
+    methodology_path: str,
+    total_entries: int,
+) -> str:
+    """Render a deterministic, machine-readable JSON report.
+
+    Findings are sorted by ``(name, check)`` so byte-for-byte output is
+    stable. ``indent=2`` for human-readable artifact diffs.
+    """
+    findings = _sorted_findings(findings)
+    fails = sum(1 for f in findings if f.get("severity") == "fail")
+    warns = sum(1 for f in findings if f.get("severity") == "warn")
+    payload = {
+        "methodology_path": methodology_path,
+        "total_entries": total_entries,
+        "findings": findings,
+        "summary": {"fail": fails, "warn": warns},
+    }
+    return json.dumps(payload, indent=2, sort_keys=True) + "\n"
+
+
+# ---------------------------------------------------------------------------
 # Orchestrator
 # ---------------------------------------------------------------------------
 
@@ -269,17 +569,31 @@ def run_lint(
     json_path: pathlib.Path,
     *,
     endpoint: str = DEFAULT_ENDPOINT,
-    plots_dir: Optional[pathlib.Path] = None,  # accepted for CLI stability
+    plots_dir: Optional[pathlib.Path] = None,
     no_network: bool = False,
+    budget: int = DEFAULT_CALL_BUDGET,
 ) -> list[dict]:
-    """Load the methodology JSON and run LINT-03 (+ LINT-01/02 when on-net).
+    """Run all enabled checks and return the merged findings list.
 
-    LINT-04/05/06 belong to a follow-up plan. ``plots_dir`` is accepted but
-    unused at this stage so the CLI surface stays stable.
+    Per D2 in 11-CONTEXT.md, LINT-04 emits ``severity="warn"`` findings that
+    do NOT change the lint's overall exit code; the future-phase schema
+    migration (issue #40) flips that to ``"fail"`` via the
+    ``LINT_04_SEVERITY`` constant.
+
+    Order of work:
+      1. Load JSON.
+      2. LINT-05 budget guard - refuse early if oversize.
+      3. AST scan of ``plots_dir`` (amortised across all entries).
+      4. Per-entry checks (LINT-03 static, LINT-01/02 endpoint, LINT-04 AST).
     """
-    del plots_dir  # TODO(plan-02): AST scan for LINT-04
     with open(json_path) as fh:
         notes = json.load(fh)
+
+    enforce_call_budget(notes, budget=budget, no_network=no_network)
+
+    plot_call_counts: dict[str, int] = {}
+    if plots_dir is not None:
+        plot_call_counts = scan_plots_dir(plots_dir)
 
     findings: list[dict] = []
     session: Optional[requests.Session] = None
@@ -294,10 +608,13 @@ def run_lint(
         lint03 = check_lint_03(name, entry)
         if lint03 is not None:
             findings.append(lint03)
+        lint04 = check_lint_04(name, entry, plot_call_counts)
+        if lint04 is not None:
+            findings.append(lint04)
         if no_network:
             continue
         # Only skip the endpoint round-trip when LINT-03 fired AND the entry
-        # truly has no graph constraint at all — otherwise a partial-constraint
+        # truly has no graph constraint at all - otherwise a partial-constraint
         # latest_* entry (e.g. ORDER BY + LIMIT 1 but no STRSTARTS) would
         # silently bypass LINT-01/02 even though its query still binds.
         query = entry.get("sparql", "")
@@ -321,31 +638,13 @@ def run_lint(
     return findings
 
 
-def _format_markdown(findings: list[dict], json_path: pathlib.Path) -> str:
-    if not findings:
-        return f"# methodology-lint\n\nAll entries in `{json_path}` pass.\n"
-    lines = [
-        "# methodology-lint",
-        "",
-        f"`{json_path}` produced {len(findings)} finding(s).",
-        "",
-        "| Entry | Check | Message |",
-        "| --- | --- | --- |",
-    ]
-    for f in findings:
-        msg = f.get("message", "").replace("|", "\\|").replace("\n", " ")
-        lines.append(f"| `{f['name']}` | {f['check']} | {msg} |")
-    lines.append("")
-    return "\n".join(lines)
-
-
 def main(argv: Optional[list[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--json", required=True, type=pathlib.Path,
                         help="Path to methodology_notes.json to lint")
     parser.add_argument("--plots-dir", default=pathlib.Path("plots"),
                         type=pathlib.Path,
-                        help="(Accepted for CLI stability; unused in this plan)")
+                        help="Directory to AST-scan for LINT-04 (default: plots/)")
     parser.add_argument("--report", default=pathlib.Path("lint-report.md"),
                         type=pathlib.Path,
                         help="Markdown report destination")
@@ -355,7 +654,13 @@ def main(argv: Optional[list[str]] = None) -> int:
     parser.add_argument("--endpoint", default=DEFAULT_ENDPOINT,
                         help="SPARQL endpoint URL")
     parser.add_argument("--no-network", action="store_true",
-                        help="Skip endpoint calls; run LINT-03 static check only")
+                        help="Skip endpoint calls; run static + AST checks only")
+    parser.add_argument("--call-budget", type=int, default=DEFAULT_CALL_BUDGET,
+                        help=(
+                            "LINT-05 entry-count ceiling. The lint refuses to "
+                            "start when the methodology JSON has more than "
+                            "this many entries (default: 50)."
+                        ))
     args = parser.parse_args(argv)
 
     try:
@@ -364,23 +669,49 @@ def main(argv: Optional[list[str]] = None) -> int:
             endpoint=args.endpoint,
             plots_dir=args.plots_dir,
             no_network=args.no_network,
+            budget=args.call_budget,
         )
+    except BudgetExceeded as exc:
+        sys.stderr.write(f"call-budget refusal: {exc}\n")
+        return BUDGET_EXIT
     except InfraError as exc:
         sys.stderr.write(f"infrastructure error: {exc}\n")
         return INFRA_EXIT
 
+    # Total entry count for the report header - re-read for accuracy.
+    try:
+        with open(args.json) as fh:
+            total_entries = sum(1 for v in json.load(fh).values()
+                                if isinstance(v, dict))
+    except (OSError, ValueError):
+        total_entries = len(findings)
+
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.json_report.parent.mkdir(parents=True, exist_ok=True)
-    args.report.write_text(_format_markdown(findings, args.json))
-    args.json_report.write_text(json.dumps({"findings": findings}, indent=2) + "\n")
+    args.report.write_text(
+        format_pr_comment(
+            findings,
+            methodology_path=str(args.json),
+            total_entries=total_entries,
+            budget=args.call_budget,
+            no_network=args.no_network,
+        )
+    )
+    args.json_report.write_text(
+        format_json_report(
+            findings,
+            methodology_path=str(args.json),
+            total_entries=total_entries,
+        )
+    )
 
+    has_fail = any(f.get("severity") == "fail" for f in findings)
     if findings:
         sys.stderr.write(
             f"methodology-lint: {len(findings)} finding(s); see "
             f"{args.report} and {args.json_report}\n"
         )
-        return LINT_FAIL_EXIT
-    return PASS_EXIT
+    return LINT_FAIL_EXIT if has_fail else PASS_EXIT
 
 
 if __name__ == "__main__":  # pragma: no cover
