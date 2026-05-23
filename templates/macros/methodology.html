@@ -25,7 +25,8 @@
 {% if plot_key in notes %}
 {% set note = notes[plot_key] %}
 {% set graph_uri = latest_graph_uri | default('http://aopwiki.org/graph/LATEST', true) %}
-{% set sparql_text = note.sparql | replace('__GRAPH_URI__', graph_uri) if note.sparql else '' %}
+{% set graph_uri_sparql = '<' ~ graph_uri ~ '>' %}
+{% set sparql_text = note.sparql | replace('__GRAPH_URI__', graph_uri_sparql) if note.sparql else '' %}
 <details class="methodology-note">
     <summary>Methodology</summary>
     <div class="methodology-content">
@@ -55,7 +56,7 @@
         {% endif %}
         {% if note.additional_queries %}
             {% for extra in note.additional_queries %}
-                {% set extra_text = extra.query | replace('__GRAPH_URI__', graph_uri) %}
+                {% set extra_text = extra.query | replace('__GRAPH_URI__', graph_uri_sparql) %}
                 {{ _sparql_panel(extra.label, extra_text) }}
             {% endfor %}
         {% endif %}
