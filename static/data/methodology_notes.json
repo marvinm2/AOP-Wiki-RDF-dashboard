@@ -30,16 +30,16 @@
     "latest_ke_components": {
         "title": "KE Component Distribution",
         "description": "Shows the distribution of Key Event Component annotations (Biological Process, Biological Object, and Action) across all Key Events. Each KE can have up to three component annotations describing the biological context.",
-        "data_source": "SPARQL queries count Key Events that have annotations for each component type: biological processes (via aopo:has_biological_process), biological objects (via aopo:has_biological_object), and actions (via aopo:has_action).",
+        "data_source": "A SPARQL query counts distinct biological process, object, and action terms attached to Key Events via the aopo:hasBiologicalEvent hop. Each KE links to a biological-event node, which carries optional aopo:hasProcess, aopo:hasObject, and aopo:hasAction annotations.",
         "limitations": "Only counts presence/absence of each component type, not the quality or specificity of annotations. KEs without any component annotations are not shown. Some KEs may have multiple annotations of the same type.",
-        "sparql": "SELECT ?graph\n  (COUNT(DISTINCT ?process) AS ?processes)\n  (COUNT(DISTINCT ?object) AS ?objects)\n  (COUNT(DISTINCT ?action) AS ?actions)\nWHERE {\n  GRAPH ?graph {\n    ?ke a aopo:KeyEvent .\n    OPTIONAL { ?ke aopo:has_biological_process ?process . }\n    OPTIONAL { ?ke aopo:has_biological_object ?object . }\n    OPTIONAL { ?ke aopo:has_action ?action . }\n  }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph\nORDER BY DESC(?graph) LIMIT 1"
+        "sparql": "SELECT\n  (COUNT(DISTINCT ?process) AS ?processes)\n  (COUNT(DISTINCT ?object) AS ?objects)\n  (COUNT(DISTINCT ?action) AS ?actions)\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    ?ke a aopo:KeyEvent ;\n        aopo:hasBiologicalEvent ?bioevent .\n    OPTIONAL { ?bioevent aopo:hasProcess ?process . }\n    OPTIONAL { ?bioevent aopo:hasObject ?object . }\n    OPTIONAL { ?bioevent aopo:hasAction ?action . }\n  }\n}"
     },
     "latest_ke_annotation_depth": {
         "title": "KE Annotation Depth",
         "description": "Measures how thoroughly each Key Event is annotated by counting how many of the three possible KE Component types (Process, Object, Action) each KE has. Shows the distribution across 0, 1, 2, or 3 annotations per KE.",
-        "data_source": "SPARQL query counts distinct component types per KE using OPTIONAL patterns for each component type (biological process, biological object, action), then groups KEs by their annotation count.",
+        "data_source": "A SPARQL query counts the number of biological-event annotations on each Key Event (?ke aopo:hasBiologicalEvent ?bioevent). Each bioevent carries at most one of aopo:hasProcess, aopo:hasObject, or aopo:hasAction, so the bioevent count equals the KE's component-annotation depth. The plot bins KEs by this count (0, 1, 2, 3+ components).",
         "limitations": "Treats all component types equally regardless of scientific importance. A KE with 3 low-quality annotations ranks higher than one with 1 highly specific annotation. Only measures breadth, not depth of annotation.",
-        "sparql": "SELECT ?ke\n  (COUNT(DISTINCT ?process) AS ?p)\n  (COUNT(DISTINCT ?object) AS ?o)\n  (COUNT(DISTINCT ?action) AS ?a)\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    ?ke a aopo:KeyEvent .\n    OPTIONAL { ?ke aopo:has_biological_process ?process . }\n    OPTIONAL { ?ke aopo:has_biological_object ?object . }\n    OPTIONAL { ?ke aopo:has_action ?action . }\n  }\n}\nGROUP BY ?ke"
+        "sparql": "SELECT ?ke (COUNT(DISTINCT ?bioevent) AS ?annotation_depth)\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    ?ke a aopo:KeyEvent .\n    OPTIONAL { ?ke aopo:hasBiologicalEvent ?bioevent . }\n  }\n}\nGROUP BY ?ke\nORDER BY DESC(?annotation_depth)"
     },
     "latest_aop_completeness": {
         "title": "AOP Completeness",
@@ -72,9 +72,9 @@
     "latest_process_usage": {
         "title": "Biological Process Usage",
         "description": "Shows the distribution of biological process ontology terms used in Key Event annotations. Identifies which ontologies (e.g., GO, MESH, NCIT) are most commonly referenced for describing biological processes in KE component annotations.",
-        "data_source": "SPARQL queries retrieve all biological process URIs from KE component annotations (via aopo:has_biological_process), then group them by their ontology source namespace.",
+        "data_source": "A SPARQL query retrieves biological process URIs reached from Key Events via the aopo:hasBiologicalEvent → aopo:hasProcess path, then groups them by their ontology source namespace.",
         "limitations": "Only covers processes explicitly annotated in the RDF data. Ontology classification is based on URI prefix patterns. Some processes may be classified differently across ontologies.",
-        "sparql": "SELECT ?process (COUNT(?process) AS ?count)\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    ?ke aopo:has_biological_process ?process .\n  }\n}\nGROUP BY ?process"
+        "sparql": "SELECT ?process (COUNT(?process) AS ?count)\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    ?ke a aopo:KeyEvent ;\n        aopo:hasBiologicalEvent ?bioevent .\n    ?bioevent aopo:hasProcess ?process .\n  }\n}\nGROUP BY ?process"
     },
     "latest_ontology_usage": {
         "title": "Ontology Usage",
@@ -86,9 +86,9 @@
     "latest_object_usage": {
         "title": "Biological Object Usage",
         "description": "Shows the distribution of biological object ontology terms used in Key Event annotations. Identifies which ontologies are most commonly referenced for describing biological objects (molecules, genes, proteins, etc.) in KE component annotations.",
-        "data_source": "SPARQL queries retrieve all biological object URIs from KE component annotations (via aopo:has_biological_object), then group them by their ontology source namespace.",
+        "data_source": "A SPARQL query retrieves biological object URIs reached from Key Events via the aopo:hasBiologicalEvent → aopo:hasObject path, then groups them by their ontology source namespace.",
         "limitations": "Only covers objects explicitly annotated in the RDF data. Ontology classification is based on URI prefix patterns. Multiple ontology terms may refer to the same biological entity.",
-        "sparql": "SELECT ?object (COUNT(?object) AS ?count)\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    ?ke aopo:has_biological_object ?object .\n  }\n}\nGROUP BY ?object"
+        "sparql": "SELECT ?object (COUNT(?object) AS ?count)\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    ?ke a aopo:KeyEvent ;\n        aopo:hasBiologicalEvent ?bioevent .\n    ?bioevent aopo:hasObject ?object .\n  }\n}\nGROUP BY ?object"
     },
     "aop_entity_counts": {
         "title": "AOP Entity Counts Over Time",
@@ -177,37 +177,37 @@
     "ke_component_annotations": {
         "title": "KE Component Annotations Over Time",
         "description": "Tracks how many Key Event annotations include Process, Object, and Action elements over time. Shows the absolute number of each component type across database versions.",
-        "data_source": "SPARQL queries count KEs with each component type (aopo:has_biological_process, aopo:has_biological_object, aopo:has_action) per version. Totals represent the number of KE-to-component relationships.",
+        "data_source": "Per-version parallel SPARQL queries count Key Events that reach process, object, and action annotations via the aopo:hasBiologicalEvent hop (?ke aopo:hasBiologicalEvent ?ev . ?ev aopo:hasProcess|hasObject|hasAction ?term). Totals represent the number of KE-to-component relationships per version graph.",
         "limitations": "Counts the number of annotations, not unique terms. A KE with multiple process annotations contributes multiple counts. Growth in annotations may reflect both new KEs and enrichment of existing ones. Trend data covers only the published RDF release versions available in the SPARQL endpoint; the AOP-Wiki knowledge base predates the earliest RDF release, so earlier activity is not captured.",
-        "sparql": "SELECT ?graph\n  (COUNT(DISTINCT ?process) AS ?processes)\n  (COUNT(DISTINCT ?object) AS ?objects)\n  (COUNT(DISTINCT ?action) AS ?actions)\nWHERE {\n  GRAPH ?graph {\n    ?ke a aopo:KeyEvent .\n    OPTIONAL { ?ke aopo:has_biological_process ?process . }\n    OPTIONAL { ?ke aopo:has_biological_object ?object . }\n    OPTIONAL { ?ke aopo:has_action ?action . }\n  }\n}\nGROUP BY ?graph\nORDER BY ?graph"
+        "sparql": "SELECT\n  (COUNT(?process) AS ?process_count)\n  (COUNT(?object) AS ?object_count)\n  (COUNT(?action) AS ?action_count)\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    ?ke a aopo:KeyEvent ;\n        aopo:hasBiologicalEvent ?bioevent .\n    OPTIONAL { ?bioevent aopo:hasProcess ?process . }\n    OPTIONAL { ?bioevent aopo:hasObject ?object . }\n    OPTIONAL { ?bioevent aopo:hasAction ?action . }\n  }\n}"
     },
     "ke_components_percentage": {
         "title": "KE Components as Percentage of Total KEs",
         "description": "Shows how many Key Events have Process, Object, and Action annotations as a percentage of all KEs per version. Normalizes for growth in total KE count to reveal annotation coverage trends.",
         "data_source": "Uses the same SPARQL query as KE Component Annotations, but divides each component count by the total KE count per version to produce percentages.",
         "limitations": "Percentage calculations assume consistent definition of what constitutes a KE across versions. Changes in RDF conversion methodology could affect comparability between versions. Trend data covers only the published RDF release versions available in the SPARQL endpoint; the AOP-Wiki knowledge base predates the earliest RDF release, so earlier activity is not captured.",
-        "sparql": "SELECT ?graph\n  (COUNT(DISTINCT ?ke) AS ?total_kes)\n  (COUNT(DISTINCT ?process_ke) AS ?with_process)\nWHERE {\n  GRAPH ?graph {\n    ?ke a aopo:KeyEvent .\n    OPTIONAL { ?ke aopo:has_biological_process ?p . BIND(?ke AS ?process_ke) }\n  }\n}\nGROUP BY ?graph\nORDER BY ?graph"
+        "sparql": "SELECT\n  (COUNT(?process) AS ?process_count)\n  (COUNT(?object) AS ?object_count)\n  (COUNT(?action) AS ?action_count)\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    ?ke a aopo:KeyEvent ;\n        aopo:hasBiologicalEvent ?bioevent .\n    OPTIONAL { ?bioevent aopo:hasProcess ?process . }\n    OPTIONAL { ?bioevent aopo:hasObject ?object . }\n    OPTIONAL { ?bioevent aopo:hasAction ?action . }\n  }\n}"
     },
     "unique_ke_components": {
         "title": "Unique KE Component Annotations Over Time",
         "description": "Tracks the total number of unique (distinct) Process, Object, and Action annotations used in Key Events over time. Unlike the component count, this measures the vocabulary diversity of annotations.",
         "data_source": "SPARQL queries count distinct URIs for each component type (biological processes, objects, actions) across all KEs per version.",
         "limitations": "Unique counts are based on distinct URIs, so the same biological concept referenced by different ontology URIs would be counted separately. Does not measure the frequency of use for each unique term. Trend data covers only the published RDF release versions available in the SPARQL endpoint; the AOP-Wiki knowledge base predates the earliest RDF release, so earlier activity is not captured.",
-        "sparql": "SELECT ?graph\n  (COUNT(DISTINCT ?process) AS ?unique_processes)\n  (COUNT(DISTINCT ?object) AS ?unique_objects)\n  (COUNT(DISTINCT ?action) AS ?unique_actions)\nWHERE {\n  GRAPH ?graph {\n    ?ke a aopo:KeyEvent .\n    OPTIONAL { ?ke aopo:has_biological_process ?process . }\n    OPTIONAL { ?ke aopo:has_biological_object ?object . }\n    OPTIONAL { ?ke aopo:has_action ?action . }\n  }\n}\nGROUP BY ?graph\nORDER BY ?graph"
+        "sparql": "SELECT\n  (COUNT(DISTINCT ?process) AS ?process_count)\n  (COUNT(DISTINCT ?object) AS ?object_count)\n  (COUNT(DISTINCT ?action) AS ?action_count)\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    ?ke a aopo:KeyEvent ;\n        aopo:hasBiologicalEvent ?bioevent .\n    OPTIONAL { ?bioevent aopo:hasProcess ?process . }\n    OPTIONAL { ?bioevent aopo:hasObject ?object . }\n    OPTIONAL { ?bioevent aopo:hasAction ?action . }\n  }\n}"
     },
     "bio_annotations": {
         "title": "Biological Process and Object Annotations Over Time",
         "description": "Tracks KE annotations with biological processes and objects grouped by ontology source. Shows which ontologies (GO, MESH, NCIT, etc.) are most commonly used for annotating Key Events over time.",
         "data_source": "SPARQL queries retrieve all biological process and object URIs from KE annotations, classify them by ontology namespace prefix, and count occurrences per version.",
         "limitations": "Ontology classification is based on URI prefix pattern matching. Some URIs may not match known prefixes and would be classified as 'Other'. Does not measure the quality or specificity of ontology term usage. Trend data covers only the published RDF release versions available in the SPARQL endpoint; the AOP-Wiki knowledge base predates the earliest RDF release, so earlier activity is not captured.",
-        "sparql": "SELECT ?graph ?process (COUNT(?process) AS ?count)\nWHERE {\n  GRAPH ?graph {\n    ?ke aopo:has_biological_process ?process .\n  }\n}\nGROUP BY ?graph ?process\nORDER BY ?graph"
+        "sparql": "SELECT ?process (COUNT(?process) AS ?count)\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    ?ke a aopo:KeyEvent ;\n        aopo:hasBiologicalEvent ?bioevent .\n    ?bioevent aopo:hasProcess ?process .\n  }\n}\nGROUP BY ?process"
     },
     "kes_by_kec_count": {
         "title": "KEs by Number of KE Components Over Time",
         "description": "Tracks how many Key Events contain a specific number of Key Event Components (0, 1, 2, or 3) over time. Reveals annotation completeness trends and whether the community is enriching existing KEs or primarily creating new ones.",
-        "data_source": "For each version, SPARQL queries count the component types per KE, then aggregate KEs by their component count (0 through 3). Results show the distribution shift over time.",
+        "data_source": "A SPARQL query counts biological-event annotations per Key Event (?ke aopo:hasBiologicalEvent ?bioevent) using an inner subquery, then buckets KEs into groups by their bioevent count (0, 1, 2, 3, 4, 5, 6+) per version graph.",
         "limitations": "Only counts distinct component types (max 3: Process, Object, Action), not total annotations. A KE with multiple processes but no objects or actions would count as 1. Does not measure annotation quality. Trend data covers only the published RDF release versions available in the SPARQL endpoint; the AOP-Wiki knowledge base predates the earliest RDF release, so earlier activity is not captured.",
-        "sparql": "SELECT ?graph ?ke\n  (COUNT(DISTINCT ?process) AS ?p)\n  (COUNT(DISTINCT ?object) AS ?o)\n  (COUNT(DISTINCT ?action) AS ?a)\nWHERE {\n  GRAPH ?graph {\n    ?ke a aopo:KeyEvent .\n    OPTIONAL { ?ke aopo:has_biological_process ?process . }\n    OPTIONAL { ?ke aopo:has_biological_object ?object . }\n    OPTIONAL { ?ke aopo:has_action ?action . }\n  }\n}\nGROUP BY ?graph ?ke\nORDER BY ?graph"
+        "sparql": "SELECT ?graph ?bioevent_count_group\n  (COUNT(DISTINCT ?ke) AS ?total_kes)\nWHERE {\n  GRAPH ?graph {\n    ?ke a aopo:KeyEvent .\n    OPTIONAL { ?ke aopo:hasBiologicalEvent ?bioevent . }\n    {\n      SELECT ?ke (COUNT(DISTINCT ?bioevent2) AS ?bioevent_count)\n      WHERE {\n        ?ke a aopo:KeyEvent .\n        OPTIONAL { ?ke aopo:hasBiologicalEvent ?bioevent2 . }\n      }\n      GROUP BY ?ke\n    }\n    BIND(\n      IF(?bioevent_count = 0, \"0\",\n        IF(?bioevent_count = 1, \"1\",\n          IF(?bioevent_count = 2, \"2\",\n            IF(?bioevent_count = 3, \"3\",\n              IF(?bioevent_count = 4, \"4\",\n                IF(?bioevent_count = 5, \"5\",\n                  IF(?bioevent_count >= 6, \"6+\", \">1\"))))))) AS ?bioevent_count_group\n    )\n  }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph ?bioevent_count_group\nORDER BY ?graph xsd:integer(?bioevent_count_group)"
     },
     "latest_ke_by_bio_level": {
         "title": "Key Events by Biological Level",
@@ -249,14 +249,14 @@
         "description": "Counts the number of unique ontology terms used per source ontology (GO, CHEBI, UBERON, NCBITAXON, etc.) in KE annotations. Shows the breadth of ontology vocabulary in use.",
         "data_source": "SPARQL query retrieves all distinct ontology-linked IRIs from biological process and biological object annotations. Python post-processing classifies each IRI by ontology namespace prefix and counts unique terms per source.",
         "limitations": "Shows aggregate counts of unique terms per ontology, not coverage vs reference ontologies (Phase 5 scope). Classification is based on URI prefix patterns. Terms from unrecognized ontologies appear as 'Other'.",
-        "sparql": "SELECT DISTINCT ?term\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    { ?s aopo:has_biological_process ?term }\n    UNION\n    { ?s aopo:has_biological_object ?term }\n  }\n  FILTER(isIRI(?term))\n}"
+        "sparql": "SELECT DISTINCT ?term\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    ?ke a aopo:KeyEvent ;\n        aopo:hasBiologicalEvent ?be .\n    { ?be aopo:hasProcess ?term . }\n    UNION\n    { ?be aopo:hasObject ?term . }\n  }\n  FILTER(isIRI(?term))\n}"
     },
     "ontology_term_growth": {
         "title": "Ontology Term Growth Over Time",
         "description": "Tracks the number of unique ontology terms used in biological process and object annotations across database versions. Growth indicates expanding annotation vocabulary and richer biological characterization.",
-        "data_source": "Per-version parallel SPARQL queries count distinct IRI-valued terms from aopo:has_biological_process and aopo:has_biological_object annotations. Results are plotted as line chart (absolute) and bar chart (delta per version).",
+        "data_source": "Per-version parallel SPARQL queries count distinct IRI-valued terms reached from Key Events via the aopo:hasBiologicalEvent hop, taking the union of aopo:hasProcess and aopo:hasObject paths. Results are plotted as line chart (absolute) and bar chart (delta per version).",
         "limitations": "Counts unique term IRIs, not unique biological concepts (different IRIs may reference the same concept across ontologies). Only covers process and object annotations. Trend data covers only the published RDF release versions available in the SPARQL endpoint.",
-        "sparql": "SELECT (COUNT(DISTINCT ?term) AS ?unique_terms)\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    { ?s aopo:has_biological_process ?term }\n    UNION\n    { ?s aopo:has_biological_object ?term }\n    FILTER(isIRI(?term))\n  }\n}"
+        "sparql": "SELECT (COUNT(DISTINCT ?term) AS ?unique_terms)\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    ?ke a aopo:KeyEvent ;\n        aopo:hasBiologicalEvent ?be .\n    { ?be aopo:hasProcess ?term . }\n    UNION\n    { ?be aopo:hasObject ?term . }\n    FILTER(isIRI(?term))\n  }\n}"
     },
     "latest_organ_coverage": {
         "title": "AOP Coverage of Organ Systems",
