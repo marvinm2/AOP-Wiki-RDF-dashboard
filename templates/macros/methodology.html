@@ -50,11 +50,19 @@
             </a>
         </p>
         {% endif %}
-        {% if sparql_text %}
+        {% if note.queries %}
+            {# New multi-query schema (issue #40): list of {caption, query} pairs #}
+            {% for q in note.queries %}
+                {% set q_text = q.query | replace('__GRAPH_URI__', graph_uri_sparql) %}
+                {{ _sparql_panel(q.caption, q_text) }}
+            {% endfor %}
+        {% elif sparql_text %}
+            {# Legacy single-query schema: sparql: str #}
             {% set main_label = note.sparql_label | default('View SPARQL Query') %}
             {{ _sparql_panel(main_label, sparql_text) }}
         {% endif %}
         {% if note.additional_queries %}
+            {# Legacy additional_queries (organ-coverage family); coexists with sparql but not with queries[] #}
             {% for extra in note.additional_queries %}
                 {% set extra_text = extra.query | replace('__GRAPH_URI__', graph_uri_sparql) %}
                 {{ _sparql_panel(extra.label, extra_text) }}

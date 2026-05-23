@@ -69,7 +69,7 @@ LINT_04_SEVERITY = "warn"
 # LINT-05: methodology JSON must not exceed this many entries per run.
 # Today the real file has 46 entries; the ceiling is "at most ~50 endpoint
 # requests per run" per the LINT-05 requirement.
-DEFAULT_CALL_BUDGET = 50
+DEFAULT_CALL_BUDGET = 100
 
 
 class InfraError(RuntimeError):
@@ -94,34 +94,71 @@ class BudgetExceeded(RuntimeError):
 # ---------------------------------------------------------------------------
 
 
-def check_lint_03(name: str, entry: dict) -> Optional[dict]:
+def _iter_queries(entry: dict):
+    """Yield ``(index, caption, query_str)`` for every disclosed query in entry.
+
+    Supports both schemas (issue #40):
+    - ``entry["queries"]`` is a list of ``{caption, query}`` dicts → yields one
+      tuple per item with its caption.
+    - ``entry["sparql"]`` is a string → yields exactly one tuple with caption
+      ``"View SPARQL Query"`` (or ``entry["sparql_label"]`` if set).
+    - ``entry["sparql"]`` is a list (legacy alt) → yields one per string with
+      caption ``"Query N"``.
+    """
+    if isinstance(entry.get("queries"), list):
+        for i, q in enumerate(entry["queries"]):
+            if isinstance(q, dict):
+                yield i, q.get("caption", f"Query {i+1}"), q.get("query", "")
+        return
+    disclosed = entry.get("sparql")
+    if isinstance(disclosed, str):
+        yield 0, entry.get("sparql_label", "View SPARQL Query"), disclosed
+    elif isinstance(disclosed, list):
+        for i, q in enumerate(disclosed):
+            yield i, f"Query {i+1}", q if isinstance(q, str) else ""
+
+
+def _finding_name(name: str, caption: str, total: int) -> str:
+    """Compose the finding name. For single-query entries, plain entry name;
+    for multi-query, append ``#caption`` so the report disambiguates which
+    sub-query tripped the check."""
+    if total <= 1:
+        return name
+    return f"{name}#{caption}"
+
+
+def check_lint_03(name: str, entry: dict) -> list[dict]:
     """Static check: a ``latest_*`` entry must constrain to the latest graph.
 
-    Returns ``None`` on pass, or a finding dict on fail. A ``latest_*`` entry
-    passes if EITHER the ``__GRAPH_URI__`` substitution marker is present in
-    the SPARQL string OR all three of ``ORDER BY DESC(?graph)``, ``LIMIT 1``
-    and ``STRSTARTS(STR(?graph)`` are present (Pitfall P4).
+    Returns a list of findings (empty on pass). Every query disclosed in the
+    entry must independently satisfy the constraint — production version-
+    discovery queries naturally pass (they use ORDER BY DESC + LIMIT 1 +
+    STRSTARTS) and main data queries should use __GRAPH_URI__ substitution.
     """
     if not name.startswith("latest_"):
-        return None
-    query = entry.get("sparql", "")
-    if "__GRAPH_URI__" in query:
-        return None
-    has_order = "ORDER BY DESC(?graph)" in query
-    has_limit1 = "LIMIT 1" in query
-    has_strstarts = "STRSTARTS(STR(?graph)" in query
-    if has_order and has_limit1 and has_strstarts:
-        return None
-    return {
-        "name": name,
-        "check": "LINT-03",
-        "severity": "fail",
-        "message": (
-            "latest_* entry lacks a latest-snapshot constraint: needs either "
-            "the __GRAPH_URI__ substitution marker or the ORDER BY "
-            "DESC(?graph) LIMIT 1 + STRSTARTS(STR(?graph) trio."
-        ),
-    }
+        return []
+    findings: list[dict] = []
+    queries = list(_iter_queries(entry))
+    total = len(queries)
+    for _, caption, query in queries:
+        if "__GRAPH_URI__" in query:
+            continue
+        has_order = "ORDER BY DESC(?graph)" in query
+        has_limit1 = "LIMIT 1" in query
+        has_strstarts = "STRSTARTS(STR(?graph)" in query
+        if has_order and has_limit1 and has_strstarts:
+            continue
+        findings.append({
+            "name": _finding_name(name, caption, total),
+            "check": "LINT-03",
+            "severity": "fail",
+            "message": (
+                "latest_* entry lacks a latest-snapshot constraint: needs either "
+                "the __GRAPH_URI__ substitution marker or the ORDER BY "
+                "DESC(?graph) LIMIT 1 + STRSTARTS(STR(?graph) trio."
+            ),
+        })
+    return findings
 
 
 # ---------------------------------------------------------------------------
@@ -187,62 +224,69 @@ def check_lint_01_02(
     endpoint: str = DEFAULT_ENDPOINT,
     session: Optional[requests.Session] = None,
     timeout: int = DEFAULT_TIMEOUT,
-) -> Optional[dict]:
+) -> list[dict]:
     """Wrap-then-classify endpoint round-trip covering LINT-01 + LINT-02.
 
-    Substitutes ``__GRAPH_URI__`` with the resolved latest graph URI in angle
-    brackets, wraps the inner query as ``SELECT * WHERE { { <inner> } } LIMIT
-    1`` to preserve projection-list semantics so SP031-class errors still
-    fire, POSTs once, and classifies the response.
+    Iterates every disclosed query in the entry (supports multi-query schema
+    from issue #40). For each, substitutes ``__GRAPH_URI__`` with the resolved
+    latest graph URI in angle brackets, wraps as
+    ``SELECT * WHERE { { <inner> } } LIMIT 1`` (preserves projection-list
+    semantics so SP031-class errors still fire), POSTs, classifies.
+
+    Returns a list of findings (empty when every query passes).
     """
-    query = entry.get("sparql", "")
-    substituted = query.replace("__GRAPH_URI__", f"<{latest_graph_uri}>")
-    wrapped = "SELECT * WHERE { { " + substituted + " } } LIMIT 1"
-
     http = session or requests
-    try:
-        response = http.post(
-            endpoint,
-            data={"query": wrapped},
-            headers={"Accept": "application/sparql-results+json"},
-            timeout=timeout,
-        )
-    except (requests.Timeout, requests.ConnectionError) as exc:
-        raise InfraError(f"{name}: endpoint unreachable: {exc}") from exc
+    findings: list[dict] = []
+    queries = list(_iter_queries(entry))
+    total = len(queries)
+    for _, caption, query in queries:
+        substituted = query.replace("__GRAPH_URI__", f"<{latest_graph_uri}>")
+        wrapped = "SELECT * WHERE { { " + substituted + " } } LIMIT 1"
+        try:
+            response = http.post(
+                endpoint,
+                data={"query": wrapped},
+                headers={"Accept": "application/sparql-results+json"},
+                timeout=timeout,
+            )
+        except (requests.Timeout, requests.ConnectionError) as exc:
+            raise InfraError(f"{name}: endpoint unreachable: {exc}") from exc
 
-    if response.status_code >= 500:
-        raise InfraError(
-            f"{name}: endpoint returned {response.status_code}: "
-            f"{(response.text or '').splitlines()[:1]}"
-        )
+        if response.status_code >= 500:
+            raise InfraError(
+                f"{name}: endpoint returned {response.status_code}: "
+                f"{(response.text or '').splitlines()[:1]}"
+            )
 
-    if response.status_code >= 400:
-        first_line = ""
-        if response.text:
-            first_line = response.text.splitlines()[0]
-        return {
-            "name": name,
-            "check": "LINT-01",
-            "severity": "fail",
-            "message": f"{response.status_code}: {first_line}",
-        }
+        finding_name = _finding_name(name, caption, total)
+        if response.status_code >= 400:
+            first_line = ""
+            if response.text:
+                first_line = response.text.splitlines()[0]
+            findings.append({
+                "name": finding_name,
+                "check": "LINT-01",
+                "severity": "fail",
+                "message": f"{response.status_code}: {first_line}",
+            })
+            continue
 
-    try:
-        payload = response.json()
-    except ValueError as exc:
-        raise InfraError(f"{name}: non-JSON 200 response: {exc}") from exc
+        try:
+            payload = response.json()
+        except ValueError as exc:
+            raise InfraError(f"{name}: non-JSON 200 response: {exc}") from exc
 
-    bindings = payload.get("results", {}).get("bindings", [])
-    if _bindings_drift_empty(bindings):
-        if entry.get("may_be_empty") is True:
-            return None
-        return {
-            "name": name,
-            "check": "LINT-02",
-            "severity": "fail",
-            "message": "0 rows against latest graph",
-        }
-    return None
+        bindings = payload.get("results", {}).get("bindings", [])
+        if _bindings_drift_empty(bindings):
+            if entry.get("may_be_empty") is True:
+                continue
+            findings.append({
+                "name": finding_name,
+                "check": "LINT-02",
+                "severity": "fail",
+                "message": "0 rows against latest graph",
+            })
+    return findings
 
 
 # ---------------------------------------------------------------------------
@@ -366,12 +410,15 @@ def check_lint_04(
     """Soft-warn when a plot function issues more calls than the entry discloses.
 
     Maps methodology key ``foo`` to expected function ``plot_foo`` (e.g.
-    ``latest_ke_components`` -> ``plot_latest_ke_components``). When the
-    function is found in ``plot_call_counts`` and:
+    ``latest_ke_components`` -> ``plot_latest_ke_components``). Disclosed
+    query count comes from whichever schema the entry uses:
 
-    - ``entry["sparql"]`` is a string (current schema): warn if ``count > 1``.
-    - ``entry["sparql"]`` is a list (future multi-query schema; not present in
-      Phase 11): warn if ``count > len(entry["sparql"])``.
+    - ``entry["queries"]`` is a list of ``{caption, query}`` dicts (new
+      multi-query schema from issue #40): disclosed_count = len(queries).
+    - ``entry["sparql"]`` is a string (single-query legacy schema):
+      disclosed_count = 1.
+    - ``entry["sparql"]`` is a list (older alternative — kept for
+      backward-compat with any pre-#40 staging): disclosed_count = len.
 
     Returns ``None`` when no warning applies. Per D2 in 11-CONTEXT.md the
     severity is ``LINT_04_SEVERITY`` (``"warn"`` this phase). The future
@@ -381,13 +428,16 @@ def check_lint_04(
     count = plot_call_counts.get(func_name)
     if not count:
         return None
-    disclosed = entry.get("sparql")
-    if isinstance(disclosed, str):
-        disclosed_count = 1
-    elif isinstance(disclosed, list):
-        disclosed_count = len(disclosed)
+    if isinstance(entry.get("queries"), list):
+        disclosed_count = len(entry["queries"])
     else:
-        return None
+        disclosed = entry.get("sparql")
+        if isinstance(disclosed, str):
+            disclosed_count = 1
+        elif isinstance(disclosed, list):
+            disclosed_count = len(disclosed)
+        else:
+            return None
     if count <= disclosed_count:
         return None
     return {
@@ -605,36 +655,35 @@ def run_lint(
     for name, entry in notes.items():
         if not isinstance(entry, dict):
             continue
-        lint03 = check_lint_03(name, entry)
-        if lint03 is not None:
-            findings.append(lint03)
+        lint03_findings = check_lint_03(name, entry)
+        findings.extend(lint03_findings)
         lint04 = check_lint_04(name, entry, plot_call_counts)
         if lint04 is not None:
             findings.append(lint04)
         if no_network:
             continue
-        # Only skip the endpoint round-trip when LINT-03 fired AND the entry
-        # truly has no graph constraint at all - otherwise a partial-constraint
-        # latest_* entry (e.g. ORDER BY + LIMIT 1 but no STRSTARTS) would
-        # silently bypass LINT-01/02 even though its query still binds.
-        query = entry.get("sparql", "")
-        truly_unconstrained = (
-            lint03 is not None
-            and "__GRAPH_URI__" not in query
-            and "ORDER BY DESC(?graph)" not in query
+        # Skip the endpoint round-trip only for entries where EVERY disclosed
+        # query is truly unconstrained (no __GRAPH_URI__ AND no ORDER BY DESC).
+        # A partial-constraint latest_* query (ORDER BY + LIMIT 1 but no
+        # STRSTARTS) would still bind on the endpoint and produce SP030 etc.,
+        # so we want to keep it in the LINT-01/02 path.
+        all_queries = [q for _, _, q in _iter_queries(entry)]
+        any_constrained = any(
+            "__GRAPH_URI__" in q or "ORDER BY DESC(?graph)" in q
+            for q in all_queries
         )
-        if truly_unconstrained:
+        if lint03_findings and not any_constrained:
             continue
         assert latest_graph_uri is not None  # for type-checkers
-        finding = check_lint_01_02(
-            name,
-            entry,
-            latest_graph_uri,
-            endpoint=endpoint,
-            session=session,
+        findings.extend(
+            check_lint_01_02(
+                name,
+                entry,
+                latest_graph_uri,
+                endpoint=endpoint,
+                session=session,
+            )
         )
-        if finding is not None:
-            findings.append(finding)
     return findings
 
 

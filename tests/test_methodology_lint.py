@@ -45,15 +45,15 @@ def _only_entry(fixture_path: pathlib.Path) -> tuple[str, dict]:
 
 def test_lint03_no_constraint_fails(fixtures_dir):
     name, entry = _only_entry(fixtures_dir / "known_broken_no_constraint.json")
-    finding = lint_methodology.check_lint_03(name, entry)
-    assert finding is not None
-    assert finding["check"] == "LINT-03"
-    assert finding["severity"] == "fail"
+    findings = lint_methodology.check_lint_03(name, entry)
+    assert findings
+    assert findings[0]["check"] == "LINT-03"
+    assert findings[0]["severity"] == "fail"
 
 
 def test_lint03_known_good_passes(fixtures_dir):
     name, entry = _only_entry(fixtures_dir / "known_good.json")
-    assert lint_methodology.check_lint_03(name, entry) is None
+    assert lint_methodology.check_lint_03(name, entry) == []
 
 
 def test_lint03_orderby_strstarts_passes():
@@ -68,14 +68,14 @@ def test_lint03_orderby_strstarts_passes():
             "} ORDER BY DESC(?graph) LIMIT 1"
         ),
     }
-    assert lint_methodology.check_lint_03(name, entry) is None
+    assert lint_methodology.check_lint_03(name, entry) == []
 
 
 def test_lint03_non_latest_key_skipped():
     # Keys that don't start with "latest_" are out of scope for LINT-03.
     name = "main_ke_components"
     entry = {"sparql": "SELECT ?s WHERE { ?s a aopo:KeyEvent } LIMIT 5"}
-    assert lint_methodology.check_lint_03(name, entry) is None
+    assert lint_methodology.check_lint_03(name, entry) == []
 
 
 def test_latest_graph_constraint_check(fixtures_dir):
@@ -88,13 +88,13 @@ def test_latest_graph_constraint_check(fixtures_dir):
     }
     for fname, expected in cases.items():
         name, entry = _only_entry(fixtures_dir / fname)
-        result = lint_methodology.check_lint_03(name, entry)
+        results = lint_methodology.check_lint_03(name, entry)
         if expected is None:
-            assert result is None, f"{fname}: expected pass, got {result}"
+            assert results == [], f"{fname}: expected pass, got {result}"
         else:
-            assert result is not None, f"{fname}: expected {expected} fail"
-            assert result["check"] == expected, (
-                f"{fname}: expected {expected}, got {result['check']}"
+            assert results, f"{fname}: expected {expected} fail"
+            assert results[0]["check"] == expected, (
+                f"{fname}: expected {expected}, got {results[0]['check']}"
             )
 
 
@@ -115,15 +115,15 @@ def test_lint01_classifier_on_mocked_400(endpoint_url):
         ),
         status=400,
     )
-    finding = lint_methodology.check_lint_01_02(
+    findings = lint_methodology.check_lint_01_02(
         "latest_synthetic",
         {"sparql": "SELECT ?graph WHERE { GRAPH ?graph { ?s ?p ?o } } LIMIT 1"},
         "http://aopwiki.org/graph/2026-04-01",
         endpoint=endpoint_url,
     )
-    assert finding is not None
-    assert finding["check"] == "LINT-01"
-    assert "SP031" in finding["message"]
+    assert findings
+    assert findings[0]["check"] == "LINT-01"
+    assert "SP031" in findings[0]["message"]
 
 
 @responses.activate
@@ -134,14 +134,14 @@ def test_lint02_classifier_on_empty_bindings(endpoint_url):
         json={"results": {"bindings": []}},
         status=200,
     )
-    finding = lint_methodology.check_lint_01_02(
+    findings = lint_methodology.check_lint_01_02(
         "latest_synthetic",
         {"sparql": "SELECT ?s WHERE { ?s :nonexistentPredicate ?o }"},
         "http://aopwiki.org/graph/2026-04-01",
         endpoint=endpoint_url,
     )
-    assert finding is not None
-    assert finding["check"] == "LINT-02"
+    assert findings
+    assert findings[0]["check"] == "LINT-02"
 
 
 @responses.activate
@@ -181,14 +181,14 @@ def test_lint02_classifier_on_all_zero_aggregate_row(endpoint_url):
         },
         status=200,
     )
-    finding = lint_methodology.check_lint_01_02(
+    findings = lint_methodology.check_lint_01_02(
         "latest_ke_components",
         {"sparql": "SELECT ?graph (COUNT(?p) AS ?processes) WHERE { ... }"},
         "http://aopwiki.org/graph/2026-04-01",
         endpoint=endpoint_url,
     )
-    assert finding is not None
-    assert finding["check"] == "LINT-02"
+    assert findings
+    assert findings[0]["check"] == "LINT-02"
 
 
 @responses.activate
@@ -205,13 +205,13 @@ def test_lint01_02_passes_when_results_nonempty(endpoint_url):
         },
         status=200,
     )
-    finding = lint_methodology.check_lint_01_02(
+    findings = lint_methodology.check_lint_01_02(
         "latest_known_good_entity_counts",
         {"sparql": "SELECT (COUNT(?aop) AS ?count) WHERE { ... }"},
         "http://aopwiki.org/graph/2026-04-01",
         endpoint=endpoint_url,
     )
-    assert finding is None
+    assert findings == []
 
 
 # ---------------------------------------------------------------------------
@@ -238,23 +238,23 @@ def test_sp031_anchor_fails(fixtures_dir, endpoint_url):
     """Verifies Assumption A4: wrapped SP031 anchor still returns HTTP 400."""
     name, entry = _only_entry(fixtures_dir / "known_broken_sp031.json")
     latest = lint_methodology.resolve_latest_graph_uri(endpoint_url)
-    finding = lint_methodology.check_lint_01_02(
+    findings = lint_methodology.check_lint_01_02(
         name, entry, latest, endpoint=endpoint_url
     )
-    assert finding is not None
-    assert finding["check"] == "LINT-01"
-    assert "SP031" in finding["message"]
+    assert findings
+    assert findings[0]["check"] == "LINT-01"
+    assert "SP031" in findings[0]["message"]
 
 
 @pytest.mark.slow
 def test_empty_result_fails(fixtures_dir, endpoint_url):
     name, entry = _only_entry(fixtures_dir / "known_broken_empty.json")
     latest = lint_methodology.resolve_latest_graph_uri(endpoint_url)
-    finding = lint_methodology.check_lint_01_02(
+    findings = lint_methodology.check_lint_01_02(
         name, entry, latest, endpoint=endpoint_url
     )
-    assert finding is not None
-    assert finding["check"] == "LINT-02"
+    assert findings
+    assert findings[0]["check"] == "LINT-02"
 
 
 @pytest.mark.slow
@@ -262,21 +262,21 @@ def test_may_be_empty_overrides_lint02(fixtures_dir, endpoint_url):
     name, entry = _only_entry(fixtures_dir / "known_broken_empty.json")
     entry = {**entry, "may_be_empty": True}
     latest = lint_methodology.resolve_latest_graph_uri(endpoint_url)
-    finding = lint_methodology.check_lint_01_02(
+    findings = lint_methodology.check_lint_01_02(
         name, entry, latest, endpoint=endpoint_url
     )
-    assert finding is None
+    assert findings == []
 
 
 @pytest.mark.slow
 def test_known_good_passes(fixtures_dir, endpoint_url):
     name, entry = _only_entry(fixtures_dir / "known_good.json")
-    assert lint_methodology.check_lint_03(name, entry) is None
+    assert lint_methodology.check_lint_03(name, entry) == []
     latest = lint_methodology.resolve_latest_graph_uri(endpoint_url)
-    finding = lint_methodology.check_lint_01_02(
+    findings = lint_methodology.check_lint_01_02(
         name, entry, latest, endpoint=endpoint_url
     )
-    assert finding is None
+    assert findings == []
 
 
 # ---------------------------------------------------------------------------
