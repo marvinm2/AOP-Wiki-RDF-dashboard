@@ -1,0 +1,9 @@
+{
+  "latest_known_good_entity_counts": {
+    "title": "Known-good LINT fixture: latest AOP count",
+    "description": "Minimal positive methodology fixture; counts AdverseOutcomePathway instances in the latest snapshot via __GRAPH_URI__ substitution.",
+    "data_source": "Synthetic SPARQL query against the latest dated named graph; uses the __GRAPH_URI__ marker which the lint substitutes at runtime.",
+    "limitations": "Not a real plot query; exists only as a frozen positive-case test fixture and must NOT be added to static/data/methodology_notes.json.",
+    "sparql": "SELECT (COUNT(?aop) AS ?count) WHERE { GRAPH __GRAPH_URI__ { ?aop a aopo:AdverseOutcomePathway } }"
+  }
+}

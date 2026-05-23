@@ -1,0 +1,9 @@
+{
+  "latest_ontology_usage": {
+    "title": "Ontology Usage",
+    "description": "Shows the distribution of ontology terms used to annotate Key Event biological components (processes, objects, actions). Groups terms by their source ontology (GO, MP, NBO, MI, VT, MESH, HP, OTHER) to reveal which ontologies are most commonly used in the AOP-Wiki knowledge base.",
+    "data_source": "SPARQL query retrieves all biological event terms linked to Key Events via aopo:hasProcess, aopo:hasObject, and aopo:hasAction predicates, then classifies each term by its URI prefix to determine the source ontology.",
+    "limitations": "Ontology classification is based on URI prefix matching (e.g., GO_, MP_, HP_). Terms with unrecognized prefixes are grouped as OTHER. Only counts distinct terms, not total usage frequency. Limited to Key Event annotations in the selected version.",
+    "sparql": "SELECT ?ontology (COUNT(DISTINCT ?term) AS ?count)\nWHERE {\n  GRAPH ?graph {\n    ?ke a aopo:KeyEvent ;\n        aopo:hasBiologicalEvent ?bioevent .\n    {\n      ?bioevent aopo:hasProcess ?term .\n    } UNION {\n      ?bioevent aopo:hasObject ?term .\n    } UNION {\n      ?bioevent aopo:hasAction ?term .\n    }\n    BIND(\n      IF(STRSTARTS(STR(?term), \"http://purl.obolibrary.org/obo/GO_\"), \"GO\",\n      IF(STRSTARTS(STR(?term), \"http://purl.obolibrary.org/obo/MP_\"), \"MP\",\n      IF(STRSTARTS(STR(?term), \"http://purl.obolibrary.org/obo/NBO_\"), \"NBO\",\n      IF(STRSTARTS(STR(?term), \"http://purl.obolibrary.org/obo/MI_\"), \"MI\",\n      IF(STRSTARTS(STR(?term), \"http://purl.obolibrary.org/obo/VT_\"), \"VT\",\n      IF(STRSTARTS(STR(?term), \"http://purl.org/commons/record/mesh/\"), \"MESH\",\n      IF(STRSTARTS(STR(?term), \"http://purl.obolibrary.org/obo/HP_\"), \"HP\", \"OTHER\"))))))) AS ?ontology)\n  }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?ontology\nORDER BY DESC(?graph) LIMIT 1"
+  }
+}

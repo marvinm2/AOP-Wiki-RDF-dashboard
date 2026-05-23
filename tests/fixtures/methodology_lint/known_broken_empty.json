@@ -1,0 +1,9 @@
+{
+  "latest_ke_components": {
+    "title": "KE Component Distribution",
+    "description": "Shows the distribution of Key Event Component annotations (Biological Process, Biological Object, and Action) across all Key Events. Each KE can have up to three component annotations describing the biological context.",
+    "data_source": "SPARQL queries count Key Events that have annotations for each component type: biological processes (via aopo:has_biological_process), biological objects (via aopo:has_biological_object), and actions (via aopo:has_action).",
+    "limitations": "Only counts presence/absence of each component type, not the quality or specificity of annotations. KEs without any component annotations are not shown. Some KEs may have multiple annotations of the same type.",
+    "sparql": "SELECT ?graph\n  (COUNT(DISTINCT ?process) AS ?processes)\n  (COUNT(DISTINCT ?object) AS ?objects)\n  (COUNT(DISTINCT ?action) AS ?actions)\nWHERE {\n  GRAPH ?graph {\n    ?ke a aopo:KeyEvent .\n    OPTIONAL { ?ke aopo:has_biological_process ?process . }\n    OPTIONAL { ?ke aopo:has_biological_object ?object . }\n    OPTIONAL { ?ke aopo:has_action ?action . }\n  }\n}\nGROUP BY ?graph\nORDER BY DESC(?graph) LIMIT 1"
+  }
+}

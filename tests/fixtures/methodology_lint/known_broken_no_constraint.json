@@ -1,0 +1,9 @@
+{
+  "latest_synthetic_no_constraint": {
+    "title": "Synthetic LINT-03 fixture",
+    "description": "Synthetic latest_* methodology entry that selects across all snapshots instead of the latest one; used to exercise the LINT-03 static check.",
+    "data_source": "Synthetic query that intentionally omits both the __GRAPH_URI__ token and the ORDER BY DESC(?graph) LIMIT 1 + STRSTARTS(STR(?graph), ...) latest-snapshot constraint pair.",
+    "limitations": "Not a real plot query; exists only as a frozen LINT-03 negative-case test fixture and must NOT be added to static/data/methodology_notes.json.",
+    "sparql": "SELECT ?s WHERE { ?s a aopo:AdverseOutcomePathway } LIMIT 5"
+  }
+}

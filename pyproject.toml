@@ -1,0 +1,6 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "slow: integration tests hitting the live SPARQL endpoint",
+]
+addopts = "-m 'not slow'"
