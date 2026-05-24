@@ -1,7 +1,7 @@
 {
     "latest_entity_counts": {
         "title": "Entity Counts",
-        "description": "Counts the total number of each major entity type (AOPs, Key Events, Key Event Relationships, Stressors) and unique authors in the selected version of the AOP-Wiki RDF database. Provides a high-level overview of database size and composition.",
+        "description": "Full inventory of the selected snapshot: AOPs, Key Events, Key Event Relationships, Stressors, and the count of distinct authors who have contributed content. Use this card for a complete picture of database scope; use the Core Entity Summary card next to it for a stripped-down AOP/KE/KER view.",
         "data_source": "SPARQL queries against the AOP-Wiki RDF endpoint count instances of each entity class (aopo:AdverseOutcomePathway, aopo:KeyEvent, aopo:KeyEventRelationship, nci:C54571 for Stressors) and distinct creator URIs within a single named graph version.",
         "limitations": "Data reflects the RDF transformation of AOP-Wiki, not the raw database. Author counts are based on unique dc:creator URIs and may not correspond exactly to AOP-Wiki user accounts. Entities without RDF type annotations would not be counted.",
         "sparql": "SELECT ?graph (COUNT(?aop) AS ?count)\nWHERE {\n  GRAPH ?graph {\n    ?aop a aopo:AdverseOutcomePathway .\n  }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph\nORDER BY DESC(?graph) LIMIT 1"
@@ -15,7 +15,7 @@
     },
     "latest_database_summary": {
         "title": "Core Entity Summary",
-        "description": "Counts the three core entity types in the AOP-Wiki RDF database: Adverse Outcome Pathways (AOPs), Key Events (KEs), and Key Event Relationships (KERs). Provides a quick overview of the database's structural composition in the selected version.",
+        "description": "At-a-glance view of just the three network entities — AOPs, Key Events, and Key Event Relationships — for the selected snapshot. Intentionally narrower than the Entity Counts card (which also reports Stressors and authors) so the three quantities that define the AOP network shape stand out on their own.",
         "data_source": "Three separate SPARQL queries each count instances of one entity class (aopo:AdverseOutcomePathway, aopo:KeyEvent, aopo:KeyEventRelationship) within a single named graph version.",
         "limitations": "Counts reflect the RDF transformation of AOP-Wiki, not the raw database. Does not include stressors or authors (see Entity Counts plot for those). Each entity type is queried independently.",
         "sparql": "SELECT ?graph (COUNT(?aop) AS ?count)\nWHERE {\n  GRAPH ?graph {\n    ?aop a aopo:AdverseOutcomePathway .\n  }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph\nORDER BY DESC(?graph) LIMIT 1"
@@ -313,7 +313,7 @@
         "description": "Measures how densely connected the KE-KER graph is over time. Network density is the ratio of actual edges (KERs) to the maximum possible edges between KE nodes, showing whether the knowledge base is becoming more interconnected.",
         "data_source": "SPARQL queries count unique Key Events (nodes) and Key Event Relationships (edges) per version. Density = edges / (nodes * (nodes - 1) / 2) for an undirected graph interpretation.",
         "limitations": "Network density depends on explicitly declared KE-KER relationships in the RDF data. Adding many new KEs without corresponding KERs will decrease density. The metric is sensitive to the number of isolated or poorly connected nodes. Trend data covers only the published RDF release versions available in the SPARQL endpoint; the AOP-Wiki knowledge base predates the earliest RDF release, so earlier activity is not captured.",
-        "sparql": "SELECT ?graph\n  (COUNT(DISTINCT ?ke) AS ?nodes)\n  (COUNT(DISTINCT ?ker) AS ?edges)\nWHERE {\n  GRAPH ?graph {\n    ?ke a aopo:KeyEvent .\n    OPTIONAL { ?ker a aopo:KeyEventRelationship . }\n  }\n}\nGROUP BY ?graph\nORDER BY ?graph"
+        "sparql": "SELECT ?graph (COUNT(DISTINCT ?ke) AS ?nodes) (COUNT(?ker) AS ?edges)\nWHERE {\n  GRAPH ?graph {\n    ?aop a aopo:AdverseOutcomePathway ;\n         aopo:has_key_event ?ke ;\n         aopo:has_key_event_relationship ?ker .\n  }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph\nORDER BY ?graph"
     },
     "aop_authors": {
         "title": "Authors of AOPs Over Time",
