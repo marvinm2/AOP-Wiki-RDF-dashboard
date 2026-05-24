@@ -42,7 +42,10 @@
      */
     function updateURLState(version) {
         var params = new URLSearchParams(window.location.search);
-        if (version && version !== '') {
+        var latest = availableVersions[0] && availableVersions[0].version;
+        // Treat "no version" and "latest version" the same in the URL so
+        // bookmarking /snapshot stays clean (#49).
+        if (version && version !== '' && version !== latest) {
             params.set('version', version);
         } else {
             params.delete('version');
@@ -128,20 +131,17 @@
         // Clear existing options
         selector.innerHTML = '';
 
-        // Add "Current" option
-        const latestOption = document.createElement('option');
-        latestOption.value = '';
-        latestOption.textContent = `Current (${availableVersions[0].version})`;
-        latestOption.selected = true;
-        selector.appendChild(latestOption);
-
-        // Add historical versions
+        // Pre-select the latest version with its actual date value so the
+        // dropdown never shows an empty <option value=""> placeholder (#49).
+        // updateURLState below drops the version param when it equals the
+        // latest, so the URL stays clean.
         availableVersions.forEach((versionObj, index) => {
-            if (index === 0) return; // Skip first (already added as "Current")
-
             const option = document.createElement('option');
             option.value = versionObj.version;
-            option.textContent = versionObj.version;
+            option.textContent = index === 0
+                ? `Current (${versionObj.version})`
+                : versionObj.version;
+            if (index === 0) option.selected = true;
             selector.appendChild(option);
         });
 

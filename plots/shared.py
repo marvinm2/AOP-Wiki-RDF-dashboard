@@ -951,43 +951,32 @@ def safe_plot_execution(plot_func, *args, **kwargs) -> Any:
 def get_latest_version() -> str:
     """Get the latest AOP-Wiki RDF database version.
 
-    Queries the SPARQL endpoint to get all graphs, then filters and sorts
-    in Python for better performance with Virtuoso triplestore.
+    Pushes the prefix filter and ordering into SPARQL so Virtuoso returns
+    only the latest AOP-Wiki graph URI directly, without a Python-side
+    filter pass. Removes the previous LIMIT 100 ceiling so this still
+    works if the triplestore ever holds more than 100 named graphs (#52).
 
     Returns:
-        str: Latest version string (e.g., "2025-07-01")
-
-    Example:
-        >>> version = get_latest_version()
-        >>> print(f"Latest version: {version}")
-        Latest version: 2025-07-01
+        str: Latest version string (e.g., "2026-04-01"), or "Unknown" on failure.
     """
     query = """
-    SELECT DISTINCT ?g
+    SELECT ?g
     WHERE {
         GRAPH ?g { ?s ?p ?o }
+        FILTER(STRSTARTS(STR(?g), "http://aopwiki.org/graph/"))
     }
-    LIMIT 100
+    GROUP BY ?g
+    ORDER BY DESC(?g)
+    LIMIT 1
     """
 
     try:
         results = run_sparql_query_with_retry(query)
-        if results and len(results) > 0:
-            # Filter for AOP-Wiki graphs
-            aop_graphs = [
-                r.get('g', {}).get('value', '')
-                for r in results
-                if 'aopwiki.org/graph' in r.get('g', {}).get('value', '')
-            ]
-
-            if aop_graphs:
-                # Sort in descending order and get the latest
-                aop_graphs.sort(reverse=True)
-                graph_uri = aop_graphs[0]
-                # Extract version from URI like http://aopwiki.org/graph/2025-07-01
-                version = graph_uri.split('/')[-1]
-                return version
-
+        if results:
+            graph_uri = results[0].get('g', {}).get('value', '')
+            if graph_uri:
+                # Extract version from URI like http://aopwiki.org/graph/2026-04-01
+                return graph_uri.rsplit('/', 1)[-1]
         return "Unknown"
     except Exception as e:
         logger.error(f"Error getting latest version: {e}")
