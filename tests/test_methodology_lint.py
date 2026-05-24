@@ -288,7 +288,7 @@ def _synthetic_plots_dir(fixtures_dir: pathlib.Path) -> pathlib.Path:
     return fixtures_dir / "synthetic_plots"
 
 
-def test_lint04_over_disclosed_warns(fixtures_dir):
+def test_lint04_over_disclosed_fails(fixtures_dir):
     plots_dir = _synthetic_plots_dir(fixtures_dir)
     counts = lint_methodology.scan_plots_dir(plots_dir)
     assert counts.get("plot_latest_over_disclosed") == 3
@@ -299,7 +299,7 @@ def test_lint04_over_disclosed_warns(fixtures_dir):
     )
     assert finding is not None
     assert finding["check"] == "LINT-04"
-    assert finding["severity"] == "warn"
+    assert finding["severity"] == "fail"
     assert "3" in finding["message"]
 
 
@@ -330,14 +330,17 @@ def test_lint04_under_disclosed_passes(fixtures_dir):
 
 
 def test_lint04_severity_constant():
-    # This test deliberately locks the soft-warn semantics for Phase 11. The
-    # future schema-migration phase (issue #40) flips this to "fail" — that
-    # flip breaks one test, which is the intended forcing-function so the
-    # contributor acknowledges the change.
-    assert lint_methodology.LINT_04_SEVERITY == "warn"
+    # LINT-04 was soft-warn through Phase 11 to allow the multi-query schema
+    # migration (issue #40) to land separately. Once #40 shipped (2026-05-24)
+    # and all 21 multi-query entries migrated to queries: [{caption, query}],
+    # the severity flipped to "fail" — every plot's multi-query disclosure
+    # is now a hard CI requirement.
+    assert lint_methodology.LINT_04_SEVERITY == "fail"
 
 
-def test_lint04_warn_does_not_change_exit_code(fixtures_dir, tmp_path):
+def test_lint04_now_fails_exit_code(fixtures_dir, tmp_path):
+    # After the #40 schema migration, LINT-04 is a hard fail: an under-disclosed
+    # plot (production calls > queries[] length) returns exit code 1.
     synthetic_dir = _synthetic_plots_dir(fixtures_dir)
     synthetic_json = synthetic_dir / "methodology.json"
     report_md = tmp_path / "r.md"
@@ -349,13 +352,12 @@ def test_lint04_warn_does_not_change_exit_code(fixtures_dir, tmp_path):
         "--report", str(report_md),
         "--json-report", str(report_json),
     ])
-    assert rc == 0, f"expected exit code 0 with only LINT-04 warns, got {rc}"
+    assert rc == 1, f"expected exit code 1 from LINT-04 fail, got {rc}"
     payload = json.loads(report_json.read_text())
-    assert payload["summary"]["warn"] >= 1
-    assert payload["summary"]["fail"] == 0
+    assert payload["summary"]["fail"] >= 1
     lint04_findings = [f for f in payload["findings"] if f["check"] == "LINT-04"]
     assert lint04_findings, "expected at least one LINT-04 finding"
-    assert all(f["severity"] == "warn" for f in lint04_findings)
+    assert all(f["severity"] == "fail" for f in lint04_findings)
 
 
 # ---------------------------------------------------------------------------

@@ -60,11 +60,12 @@ BUDGET_EXIT = 3
 # by ``plots/shared.py``. Centralised so future renames are a one-line change.
 SPARQL_HELPER_NAMES = frozenset({"run_sparql_query", "run_sparql_query_with_retry"})
 
-# LINT-04 is a SOFT warn this phase (per D2 in 11-CONTEXT.md). When the
-# multi-query disclosure schema migration (issue #40) lands, flip this to
-# "fail" — that one-line change deliberately breaks the
-# ``test_lint04_severity_constant`` test so contributors notice.
-LINT_04_SEVERITY = "warn"
+# LINT-04 is a HARD fail since the multi-query disclosure schema migration
+# (issue #40) landed in 2026-05-24. Each entry's queries[] list must enumerate
+# every SPARQL call the production plot function makes; missing disclosures
+# now block PRs. Keep this constant centralised so future relaxations remain
+# a one-line change.
+LINT_04_SEVERITY = "fail"
 
 # LINT-05: methodology JSON must not exceed this many entries per run.
 # Today the real file has 46 entries; the ceiling is "at most ~50 endpoint
