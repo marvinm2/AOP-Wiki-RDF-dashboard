@@ -50,7 +50,10 @@ services:
       - DBA_PASSWORD=${DBA_PASSWORD}
       - VIRT_Parameters_DirsAllowed=., ../vad, /usr/share/proj, /database/data
     volumes:
-      - /mnt/gluster/docker/aopwiki-dashboard/virtuoso-data:/database/data
+      # Mount the whole /database directory so virtuoso.db and friends survive
+      # container recreates. TTL inputs live in the data/ subdirectory, keeping
+      # the /database/data path inside the container unchanged. See issue #57.
+      - /mnt/gluster/docker/aopwiki-dashboard/virtuoso-data:/database
     deploy:
       placement:
         constraints:
