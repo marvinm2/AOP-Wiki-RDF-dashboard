@@ -327,7 +327,7 @@
         "description": "Visualizes temporal patterns of AOP creation and modification. Includes three views: (1) number of AOPs created per year, (2) number of AOPs last modified per year, and (3) a scatter plot of creation date vs. last modification date for each AOP.",
         "data_source": "SPARQL queries retrieve dc:date (creation) and dcterms:modified (last modification) timestamps for all AOPs in the latest version. Dates are parsed and grouped by year for the histogram views.",
         "limitations": "Creation and modification dates reflect what is stored in the RDF data, which may differ from the AOP-Wiki web interface timestamps. Some AOPs may have missing or malformed date values. Only the latest version's date information is used. Trend data covers only the published RDF release versions available in the SPARQL endpoint; the AOP-Wiki knowledge base predates the earliest RDF release, so earlier activity is not captured.",
-        "sparql": "SELECT ?aop ?created ?modified\nWHERE {\n  GRAPH ?graph {\n    ?aop a aopo:AdverseOutcomePathway .\n    OPTIONAL { ?aop dc:date ?created . }\n    OPTIONAL { ?aop dcterms:modified ?modified . }\n  }\n}\nORDER BY DESC(?graph)"
+        "sparql": "SELECT ?aop ?created ?modified\nWHERE {\n  GRAPH ?graph {\n    ?aop a aopo:AdverseOutcomePathway .\n    OPTIONAL { ?aop dc:date ?created . }\n    OPTIONAL { ?aop dcterms:modified ?modified . }\n  }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nORDER BY DESC(?graph)"
     },
     "ke_component_annotations": {
         "title": "KE Component Annotations Over Time",
