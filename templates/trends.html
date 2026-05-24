@@ -1,66 +1,3 @@
-<section class="tab-intro">
-    <h2>How to Use This Dashboard</h2>
-    <p>
-        This dashboard provides interactive visualizations of the AOP-Wiki database evolution over time.
-        Toggle between absolute values (total counts) and deltas (changes since previous release) using the button below.
-        Use the navigation buttons to jump to different sections.
-    </p>
-</section>
-
-<!-- Navigation Buttons -->
-<div style="text-align:center; margin:20px;">
-    <button class="nav-button" onclick="document.getElementById('main-trends').scrollIntoView({behavior:'smooth'});">Main Trends</button>
-    <button class="nav-button" onclick="document.getElementById('network-connectivity').scrollIntoView({behavior:'smooth'});">Connectivity</button>
-    <button class="nav-button" onclick="document.getElementById('authors').scrollIntoView({behavior:'smooth'});">Authors & Lifetime</button>
-    <button class="nav-button" onclick="document.getElementById('ke-components').scrollIntoView({behavior:'smooth'});">KE Components</button>
-</div>
-
-<!-- Date-Range Selector (#44) -->
-<div id="trends-range-selector" style="margin:20px auto; padding:15px 20px; background-color:#f5f5f5; border-radius:8px; max-width:900px; display:flex; flex-wrap:wrap; gap:15px; align-items:center; justify-content:center;">
-    <strong style="color:#29235C;">📅 Date range:</strong>
-    <label style="display:flex; align-items:center; gap:6px;">
-        From
-        <select id="trends-range-start" class="trends-range-input" style="padding:5px 8px; border:1px solid #ccc; border-radius:4px; font-size:14px;"></select>
-    </label>
-    <label style="display:flex; align-items:center; gap:6px;">
-        To
-        <select id="trends-range-end" class="trends-range-input" style="padding:5px 8px; border:1px solid #ccc; border-radius:4px; font-size:14px;"></select>
-    </label>
-    <button id="trends-range-reset" class="nav-button" style="padding:5px 12px; font-size:13px;">Reset</button>
-    <span id="trends-range-status" style="color:#666; font-size:13px; flex-basis:100%; text-align:center; margin-top:4px;">
-        Showing all snapshots. Lifetime/creation-date plots are not affected.
-    </span>
-</div>
-
-<!-- Bulk Download Section -->
-<div style="text-align:center; margin:20px; padding:15px; background-color: #f9f9f9; border-radius: 8px;">
-    <h3 style="margin-top:0; color:#29235C;">📦 Bulk Download</h3>
-    <p style="font-size:14px; color:#666; margin:10px 0;">Download all trend plots at once in multiple formats</p>
-    <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
-        <a href="/download/bulk?category=trends-all&formats=csv,png,svg" class="nav-button" style="text-decoration:none; display:inline-block;">
-            📥 Download All (CSV + PNG + SVG)
-        </a>
-        <a href="/download/bulk?category=trends-all&formats=csv" class="nav-button" style="text-decoration:none; display:inline-block;">
-            📄 CSV Only
-        </a>
-        <a href="/download/bulk?category=trends-all&formats=png" class="nav-button" style="text-decoration:none; display:inline-block;">
-            🖼️ PNG Only
-        </a>
-    </div>
-    <p style="font-size:12px; color:#999; margin:10px 0;">Or download by category:</p>
-    <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap; font-size:13px;">
-        <a href="/download/bulk?category=trends-main&formats=png" style="color:#307BBF;">Main Trends</a>
-        <a href="/download/bulk?category=trends-network&formats=png" style="color:#307BBF;">Network</a>
-        <a href="/download/bulk?category=trends-components&formats=png" style="color:#307BBF;">Components</a>
-        <a href="/download/bulk?category=trends-ontology&formats=png" style="color:#307BBF;">Ontology</a>
-    </div>
-</div>
-
-<!-- Global Toggle -->
-<div style="text-align:center; padding: 20px;">
-    <button id="toggle-delta" class="toggle-button">Switch to Delta Mode</button>
-</div>
-
 <section class="section-block" id="main-trends">
     <!-- Main trends -->
     <h2 class="section-header">Main Entity Trends</h2>
@@ -900,22 +837,28 @@ document.querySelectorAll(".plot-toggle").forEach(toggle => {
 });
 </script>
 <script>
-    document.getElementById("toggle-delta").addEventListener("click", function () {
-        const isDelta = this.classList.toggle("active");
-        this.textContent = isDelta ? "Switch to Absolute Mode" : "Switch to Delta Mode";
+    (function () {
+        const btn = document.getElementById("toggle-delta");
+        if (!btn) return;
+        btn.addEventListener("click", function () {
+            const isDelta = this.classList.toggle("is-active");
+            this.classList.toggle("active", isDelta);  // back-compat for any legacy CSS
+            this.setAttribute("aria-pressed", isDelta ? "true" : "false");
+            this.textContent = isDelta ? "Switch to Absolute Mode" : "Switch to Delta Mode";
 
-        document.querySelectorAll(".plot-box").forEach(box => {
-            const abs = box.querySelector(".abs");
-            const delta = box.querySelector(".delta");
-            const checkbox = box.querySelector(".plot-toggle");
-            if (abs && delta) {
-                abs.style.display = isDelta ? "none" : "block";
-                delta.style.display = isDelta ? "block" : "none";
-            }
-            if (checkbox) {
-                checkbox.checked = isDelta;
-            }
+            document.querySelectorAll(".plot-box").forEach(box => {
+                const abs = box.querySelector(".abs");
+                const delta = box.querySelector(".delta");
+                const checkbox = box.querySelector(".plot-toggle");
+                if (abs && delta) {
+                    abs.style.display = isDelta ? "none" : "block";
+                    delta.style.display = isDelta ? "block" : "none";
+                }
+                if (checkbox) {
+                    checkbox.checked = isDelta;
+                }
+            });
+            window.dispatchEvent(new Event('resize'));
         });
-        window.dispatchEvent(new Event('resize'));
-    });
+    })();
 </script>

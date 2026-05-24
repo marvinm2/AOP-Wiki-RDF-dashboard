@@ -1452,6 +1452,75 @@ footer img {
     background-color: var(--color-warm-pink, #ff3399);
 }
 
+/* Trends-topbar extensions: date-range controls and mode-toggle pill.
+   Reused on /trends — the snapshot-topbar shell already styles title,
+   background gradient, and Download-all dropdown. */
+.snapshot-topbar-range {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.snapshot-topbar-range .version-selector-label {
+    color: white;
+    font-weight: 500;
+    font-size: 14px;
+    margin: 0;
+}
+
+.snapshot-topbar-range-sep {
+    color: white;
+    opacity: 0.85;
+    font-size: 14px;
+    line-height: 1;
+}
+
+.version-selector--compact {
+    min-width: 130px;
+    padding: 5px 8px;
+    font-size: 13px;
+}
+
+.snapshot-topbar-mode {
+    display: flex;
+    align-items: center;
+}
+
+.snapshot-topbar-pill {
+    background: rgba(255, 255, 255, 0.12);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.snapshot-topbar-pill:hover {
+    background: rgba(255, 255, 255, 0.22);
+}
+
+.snapshot-topbar-pill--toggle.is-active {
+    background: var(--color-cta);
+    border-color: var(--color-cta);
+    color: white;
+}
+
+.snapshot-topbar-pill--toggle.is-active:hover {
+    background: var(--color-warm-pink, #ff3399);
+    border-color: var(--color-warm-pink, #ff3399);
+}
+
+.trends-range-status-bar {
+    text-align: center;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    margin: -10px auto 14px;
+}
+
 .snapshot-section-nav {
     display: flex;
     flex-wrap: wrap;
@@ -1573,6 +1642,8 @@ footer img {
     }
 
     .snapshot-topbar-version,
+    .snapshot-topbar-range,
+    .snapshot-topbar-mode,
     .snapshot-topbar-download {
         justify-content: center;
         display: flex;

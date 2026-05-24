@@ -7,18 +7,58 @@
 {% endblock %}
 
 {% block page_header %}
-<div class="page-title-section">
-    <h1>Historical Trends Analysis</h1>
-    <p>
-        Evolution and growth patterns of the AOP-Wiki database over time, using quarterly releases.
-        Explore how the knowledge base has developed and changed across versions.
-    </p>
+<div class="snapshot-topbar">
+    <div class="snapshot-topbar-title">
+        <h1>Historical Trends</h1>
+    </div>
+    <div class="snapshot-topbar-range">
+        <span class="version-selector-label">Range:</span>
+        <select id="trends-range-start" class="version-selector version-selector--compact" aria-label="Start version"></select>
+        <span class="snapshot-topbar-range-sep">→</span>
+        <select id="trends-range-end" class="version-selector version-selector--compact" aria-label="End version"></select>
+        <button id="trends-range-reset" type="button" class="snapshot-topbar-pill" title="Reset to full range">Reset</button>
+    </div>
+    <div class="snapshot-topbar-mode">
+        <button id="toggle-delta" type="button" class="snapshot-topbar-pill snapshot-topbar-pill--toggle" aria-pressed="false">Switch to Delta Mode</button>
+    </div>
+    <div class="snapshot-topbar-download">
+        <div class="download-dropdown">
+            <button class="download-button dropdown-toggle" type="button">Download all &#x25BC;</button>
+            <div class="dropdown-menu">
+                <a href="/download/bulk?category=trends-all&formats=csv,png,svg" class="dropdown-item">CSV + PNG + SVG</a>
+                <a href="/download/bulk?category=trends-all&formats=csv" class="dropdown-item">CSV only</a>
+                <a href="/download/bulk?category=trends-all&formats=png" class="dropdown-item">PNG only</a>
+                <a href="/download/bulk?category=trends-all&formats=svg" class="dropdown-item">SVG only</a>
+            </div>
+        </div>
+    </div>
 </div>
+<nav class="snapshot-section-nav" aria-label="Jump to section">
+    <button class="nav-button nav-button--compact" onclick="document.getElementById('main-trends').scrollIntoView({behavior:'smooth'});">Main Trends</button>
+    <button class="nav-button nav-button--compact" onclick="document.getElementById('entity-completeness').scrollIntoView({behavior:'smooth'});">Completeness</button>
+    <button class="nav-button nav-button--compact" onclick="document.getElementById('network-connectivity').scrollIntoView({behavior:'smooth'});">Connectivity</button>
+    <button class="nav-button nav-button--compact" onclick="document.getElementById('authors').scrollIntoView({behavior:'smooth'});">Authors & Lifetime</button>
+    <button class="nav-button nav-button--compact" onclick="document.getElementById('ke-components').scrollIntoView({behavior:'smooth'});">KE Components</button>
+</nav>
 {% endblock %}
 
 {% block content %}
 {% from 'macros/methodology.html' import methodology_note with context %}
 {% from 'macros/data_table.html' import data_table_toggle %}
+
+<details class="tab-intro-collapsible">
+    <summary>About this page</summary>
+    <p>
+        Evolution and growth patterns of the AOP-Wiki database over time, using quarterly releases.
+        Toggle the global <strong>Delta Mode</strong> button at the top to switch every plot between absolute counts and per-version deltas, or use the per-plot checkbox.
+        Use the <strong>Range</strong> selectors to constrain every snapshot-keyed plot to a sub-window; CSV/PNG/SVG downloads honour the same window.
+        Lifetime / creation-date plots are not affected by the range selector — their x-axis is creation year, not snapshot date.
+    </p>
+</details>
+
+<div id="trends-range-status-bar" class="trends-range-status-bar">
+    <span id="trends-range-status">Showing all snapshots.</span>
+</div>
 
 {% include 'trends.html' %}
 {% endblock %}

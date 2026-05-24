@@ -28,15 +28,24 @@
     let startVersion = null;
     let endVersion = null;
 
+    function hideTopbarRange() {
+        // Hide the topbar range controls and status line if /api/versions
+        // is unavailable; the page is still functional without filtering.
+        const range = document.querySelector('.snapshot-topbar-range');
+        const status = document.getElementById('trends-range-status-bar');
+        if (range) range.style.display = 'none';
+        if (status) status.style.display = 'none';
+    }
+
     async function init() {
-        const container = document.getElementById('trends-range-selector');
-        if (!container) return; // not on /trends
+        // Bail if the trends topbar isn't on this page.
+        if (!document.getElementById('trends-range-start')) return;
 
         try {
             const resp = await fetch('/api/versions');
             const data = await resp.json();
             if (!data.versions || data.versions.length === 0) {
-                container.style.display = 'none';
+                hideTopbarRange();
                 return;
             }
             allVersions = data.versions
@@ -44,7 +53,7 @@
                 .sort((a, b) => (a.version < b.version ? -1 : 1)); // ascending
         } catch (e) {
             console.error('trends-range-selector: /api/versions failed', e);
-            container.style.display = 'none';
+            hideTopbarRange();
             return;
         }
 
@@ -146,12 +155,12 @@
     function updateStatus() {
         const status = document.getElementById('trends-range-status');
         if (!status) return;
-        if (isFullRange()) {
-            status.textContent =
-                'Showing all snapshots. Lifetime/creation-date plots are not affected.';
-        } else {
-            status.textContent = `Constrained to ${startVersion} → ${endVersion}. Lifetime/creation-date plots are not affected.`;
-        }
+        // Caveat about lifetime/creation-date plots lives in the "About this
+        // page" disclosure; keep this line short so it doesn't dominate the
+        // top of the page.
+        status.textContent = isFullRange()
+            ? 'Showing all snapshots.'
+            : `Constrained to ${startVersion} → ${endVersion}.`;
     }
 
     function updateURLState() {
