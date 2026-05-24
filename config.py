@@ -78,6 +78,10 @@ class Config:
     
     # SPARQL Configuration
     SPARQL_ENDPOINT = os.getenv("SPARQL_ENDPOINT", "http://localhost:8890/sparql")
+    # Public-facing endpoint URL embedded in user-facing "Run on Endpoint" links.
+    # Falls back to SPARQL_ENDPOINT for local dev; in production override with the
+    # external Traefik-routed URL (Docker overlay hostnames are unreachable from browsers).
+    SPARQL_PUBLIC_ENDPOINT = os.getenv("SPARQL_PUBLIC_ENDPOINT", os.getenv("SPARQL_ENDPOINT", "http://localhost:8890/sparql"))
     SPARQL_TIMEOUT = int(os.getenv("SPARQL_TIMEOUT", "30"))
     SPARQL_MAX_RETRIES = int(os.getenv("SPARQL_MAX_RETRIES", "3"))
     SPARQL_RETRY_DELAY = int(os.getenv("SPARQL_RETRY_DELAY", "2"))
