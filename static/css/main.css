@@ -1144,6 +1144,12 @@ footer img {
     display: block;
 }
 
+.nav-brand-logo-full {
+    height: 44px;
+    width: auto;
+    display: block;
+}
+
 .nav-brand:hover {
     color: var(--color-nav-hover);
 }
@@ -1226,10 +1232,10 @@ footer img {
 }
 
 .footer-logo-vhp {
-    max-height: 38px;
+    max-height: 64px;
     background-color: #ffffff;
-    padding: 4px 8px;
-    border-radius: 4px;
+    padding: 6px 12px;
+    border-radius: 6px;
 }
 
 .footer-project-name {
@@ -1272,11 +1278,16 @@ footer img {
 .footer-funding {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
     font-size: var(--font-size-small);
     opacity: 0.95;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     justify-content: center;
+    max-width: 460px;
+}
+
+.footer-funding-text {
+    line-height: 1.4;
 }
 
 .footer-funding a {

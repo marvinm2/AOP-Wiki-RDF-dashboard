@@ -13,9 +13,8 @@
     <nav class="main-nav">
         <div class="nav-container">
             <a href="/" class="nav-brand">
-                <img src="{{ url_for('static', filename='images/AOP_flavico_UM.png') }}"
-                     alt="" class="nav-brand-logo" aria-hidden="true">
-                <span>AOP-Wiki RDF Dashboard</span>
+                <img src="{{ url_for('static', filename='images/AOP-Wiki RDF Dashboard logo.png') }}"
+                     alt="AOP-Wiki RDF Dashboard" class="nav-brand-logo-full">
             </a>
             <div class="nav-links">
                 <a href="/snapshot" class="nav-link {% if active_page == 'snapshot' %}active{% endif %}">Database Snapshot</a>
@@ -52,7 +51,7 @@
                     <img src="{{ url_for('static', filename='images/vhplogo.png') }}"
                          alt="VHP4Safety" class="footer-logo footer-logo-vhp">
                 </a>
-                <span>Developed within the <a href="https://vhp4safety.nl" target="_blank" rel="noopener">VHP4Safety</a> project, funded by NWO</span>
+                <span class="footer-funding-text">This project which is funded by the Netherlands Research Council (NWO) &lsquo;Netherlands Research Agenda: Research on Routes by Consortia&rsquo; (NWA-ORC 1292.19.272)</span>
             </div>
         </div>
     </footer>
