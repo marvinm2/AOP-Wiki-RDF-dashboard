@@ -42,7 +42,11 @@ services:
       start_period: 120s
 
   virtuoso:
-    image: openlink/virtuoso-opensource-7
+    # Pinned to the last known-good digest. The May 7 2026 :latest (Virtuoso
+    # 07.20.3243) regresses GROUP BY ?graph + FILTER(STRSTARTS(STR(?graph), ...))
+    # — counts come back correct but every row is mislabeled with the same URI,
+    # collapsing 33 trend points to 1 in the dashboard. See issue #58.
+    image: openlink/virtuoso-opensource-7@sha256:e7a5cd1915569d70d8363503dc62f6bf818b485f1501b230c7608cde8528c72d
     networks:
       - core
       - internal
