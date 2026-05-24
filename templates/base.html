@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>{% block title %}AOP-Wiki RDF Dashboard{% endblock %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/AOP_flavico_UM.png') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/lazy-loading.css') }}">
     {% block head_extra %}{% endblock %}
@@ -12,7 +12,11 @@
 <body class="site-body">
     <nav class="main-nav">
         <div class="nav-container">
-            <a href="/" class="nav-brand">AOP-Wiki RDF Dashboard</a>
+            <a href="/" class="nav-brand">
+                <img src="{{ url_for('static', filename='images/AOP_flavico_UM.png') }}"
+                     alt="" class="nav-brand-logo" aria-hidden="true">
+                <span>AOP-Wiki RDF Dashboard</span>
+            </a>
             <div class="nav-links">
                 <a href="/snapshot" class="nav-link {% if active_page == 'snapshot' %}active{% endif %}">Database Snapshot</a>
                 <a href="/trends" class="nav-link {% if active_page == 'trends' %}active{% endif %}">Historical Trends</a>
@@ -31,18 +35,24 @@
     <footer class="main-footer">
         <div class="footer-container">
             <div class="footer-branding">
-                <img src="{{ url_for('static', filename='images/vhp4safety-logo.svg') }}"
-                     alt="VHP4Safety" class="footer-logo"
-                     onerror="this.style.display='none'">
+                <img src="{{ url_for('static', filename='images/Logo-TGX.png') }}"
+                     alt="Department of Translational Genomics" class="footer-logo footer-logo-tgx">
                 <span class="footer-project-name">AOP-Wiki RDF Dashboard</span>
             </div>
             <div class="footer-links">
                 <a href="https://aopwiki-multirdf.vhp4safety.nl/sparql" target="_blank" rel="noopener">SPARQL Endpoint</a>
-                <a href="https://github.com/marvinm2/AOP-Wiki-RDF-dashboard" target="_blank" rel="noopener">GitHub</a>
+                <a href="https://github.com/marvinm2/AOP-Wiki-RDF-dashboard" target="_blank" rel="noopener" class="footer-link-icon" aria-label="GitHub repository">
+                    <img src="{{ url_for('static', filename='images/github.svg') }}" alt="" aria-hidden="true">
+                    <span>GitHub</span>
+                </a>
                 <a href="https://github.com/marvinm2/AOP-Wiki-RDF-dashboard/issues" target="_blank" rel="noopener">Report an Issue</a>
             </div>
             <div class="footer-funding">
-                Developed within the <a href="https://vhp4safety.nl" target="_blank" rel="noopener">VHP4Safety</a> project, funded by NWO
+                <a href="https://vhp4safety.nl" target="_blank" rel="noopener" class="footer-vhp-link">
+                    <img src="{{ url_for('static', filename='images/vhplogo.png') }}"
+                         alt="VHP4Safety" class="footer-logo footer-logo-vhp">
+                </a>
+                <span>Developed within the <a href="https://vhp4safety.nl" target="_blank" rel="noopener">VHP4Safety</a> project, funded by NWO</span>
             </div>
         </div>
     </footer>

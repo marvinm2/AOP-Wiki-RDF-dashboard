@@ -1132,7 +1132,16 @@ footer img {
     font-weight: 700;
     white-space: nowrap;
     margin-right: auto;
-    padding: 12px 0;
+    padding: 8px 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.nav-brand-logo {
+    height: 32px;
+    width: auto;
+    display: block;
 }
 
 .nav-brand:hover {
@@ -1210,6 +1219,17 @@ footer img {
     width: auto;
 }
 
+.footer-logo-tgx {
+    max-height: 44px;
+}
+
+.footer-logo-vhp {
+    max-height: 38px;
+    background-color: #ffffff;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
 .footer-project-name {
     font-weight: 600;
     font-size: 1rem;
@@ -1220,6 +1240,7 @@ footer img {
     gap: 24px;
     flex-wrap: wrap;
     justify-content: center;
+    align-items: center;
 }
 
 .footer-links a {
@@ -1233,14 +1254,38 @@ footer img {
     text-decoration: underline;
 }
 
-.footer-funding {
-    font-size: var(--font-size-small);
+.footer-link-icon {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.footer-link-icon img {
+    height: 16px;
+    width: 16px;
+    filter: invert(1);
     opacity: 0.85;
+}
+
+.footer-funding {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: var(--font-size-small);
+    opacity: 0.95;
+    flex-wrap: wrap;
+    justify-content: center;
 }
 
 .footer-funding a {
     color: var(--color-footer-text);
     text-decoration: underline;
+}
+
+.footer-vhp-link {
+    text-decoration: none !important;
+    display: inline-flex;
+    align-items: center;
 }
 
 /* ==========================================================================
