@@ -215,15 +215,36 @@
             window.Plotly.relayout(plotDiv, { 'xaxis.autorange': true });
             return;
         }
-        const startIdx = allVersions.findIndex((v) => v.version === startVersion);
-        const endIdx = allVersions.findIndex((v) => v.version === endVersion);
-        if (startIdx === -1 || endIdx === -1) return;
-        // Plotly indexes categorical x-axes by ordinal position. ±0.5 gives a
-        // half-step pad so the first/last markers aren't clipped.
+        // Plotly auto-detects the x-axis type. For our trend plots it lands
+        // on 'date' (YYYY-MM-DD strings); the boxplot-style ones can be
+        // categorical. Pass a range in whichever units the axis expects —
+        // passing ordinal indices to a date axis makes them get reinterpreted
+        // as milliseconds-since-epoch and the plot collapses to 1970.
+        const xaxis = (plotDiv._fullLayout && plotDiv._fullLayout.xaxis) || {};
+        const axisType = xaxis.type;
+
+        let range;
+        if (axisType === 'date') {
+            // Pad by half a day so the boundary markers aren't clipped.
+            range = [pad(startVersion, -12 * 3600 * 1000), pad(endVersion, 12 * 3600 * 1000)];
+        } else {
+            // Categorical / linear: use ordinal positions.
+            const startIdx = allVersions.findIndex((v) => v.version === startVersion);
+            const endIdx = allVersions.findIndex((v) => v.version === endVersion);
+            if (startIdx === -1 || endIdx === -1) return;
+            range = [startIdx - 0.5, endIdx + 0.5];
+        }
         window.Plotly.relayout(plotDiv, {
-            'xaxis.range': [startIdx - 0.5, endIdx + 0.5],
+            'xaxis.range': range,
             'xaxis.autorange': false
         });
+    }
+
+    function pad(dateStr, deltaMs) {
+        // Plotly accepts ms-since-epoch as numeric date range values.
+        const t = Date.parse(dateStr + 'T00:00:00Z');
+        if (Number.isNaN(t)) return dateStr;
+        return new Date(t + deltaMs).toISOString();
     }
 
     if (document.readyState === 'loading') {
