@@ -1107,19 +1107,32 @@ def export_figure_as_image(
         fig = _plot_figure_cache[plot_name]
 
         # If a date-range is requested, clone the figure and clamp the x-axis
-        # to the matching ordinal-position window. Trend plots use categorical
-        # string axes, so range is expressed in index space (start-0.5, end+0.5)
-        # — same convention the client-side relayout uses.
+        # to the matching window. Trend plots use YYYY-MM-DD strings on the
+        # x-axis, which Plotly auto-detects as type='date' — so we need to
+        # pass the range in the same units (ISO date strings, ±12h padded
+        # so boundary markers don't clip). Categorical plots that happen to
+        # use the same string convention also accept ISO strings as a range
+        # if we force type='category'… but every trend plot here renders as
+        # date, so we keep the simple path.
         if start or end:
             try:
                 import copy
+                from datetime import datetime, timedelta
                 fig = copy.deepcopy(fig)
                 versions = _figure_x_categories(fig)
                 if versions:
-                    s_idx = _index_at_or_after(versions, start) if start else 0
-                    e_idx = _index_at_or_before(versions, end) if end else len(versions) - 1
-                    if s_idx is not None and e_idx is not None and s_idx <= e_idx:
-                        fig.update_xaxes(range=[s_idx - 0.5, e_idx + 0.5])
+                    s_str = start if start else versions[0]
+                    e_str = end if end else versions[-1]
+                    try:
+                        s_dt = datetime.strptime(s_str, '%Y-%m-%d') - timedelta(hours=12)
+                        e_dt = datetime.strptime(e_str, '%Y-%m-%d') + timedelta(hours=12)
+                        fig.update_xaxes(range=[s_dt.isoformat(), e_dt.isoformat()], autorange=False)
+                    except ValueError:
+                        # Not a YYYY-MM-DD axis — fall back to ordinal positions.
+                        s_idx = _index_at_or_after(versions, start) if start else 0
+                        e_idx = _index_at_or_before(versions, end) if end else len(versions) - 1
+                        if s_idx is not None and e_idx is not None and s_idx <= e_idx:
+                            fig.update_xaxes(range=[s_idx - 0.5, e_idx + 0.5], autorange=False)
             except Exception as e:  # never let a clamp failure break the export
                 logger.warning(f"Could not apply date-range clamp to {plot_name}: {e}")
 
