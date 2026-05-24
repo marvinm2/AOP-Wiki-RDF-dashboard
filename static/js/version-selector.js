@@ -189,10 +189,53 @@
         // Dispatch version-changed event so data tables can reset
         document.dispatchEvent(new CustomEvent('version-changed', { detail: { version: selectedVersion } }));
 
+        // Re-render the SPARQL methodology previews so the displayed graph URI
+        // matches the selected version (issue #43).
+        updateMethodologyQueryUris(selectedVersion);
+
         // Reload all versioned plots
         console.log('Starting plot reload...');
         await reloadVersionedPlots();
         console.log('Plot reload complete!');
+    }
+
+    /**
+     * Update the graph URI in every methodology SPARQL preview to match the
+     * selected version. Walks both the visible <code> text and the
+     * "Run on Endpoint" anchor href, only touching URIs that look like
+     * <http://aopwiki.org/graph/YYYY-MM-DD> so multi-graph trend queries
+     * (which iterate across all snapshots) are left alone.
+     */
+    function updateMethodologyQueryUris(version) {
+        const targetVersion = version || (availableVersions[0] && availableVersions[0].version);
+        if (!targetVersion) return;
+        const newUriBracketed = `<http://aopwiki.org/graph/${targetVersion}>`;
+        const uriRegex = /<http:\/\/aopwiki\.org\/graph\/\d{4}-\d{2}-\d{2}>/g;
+
+        const panels = document.querySelectorAll('details.sparql-query');
+        panels.forEach(panel => {
+            const code = panel.querySelector('code');
+            if (!code) return;
+
+            const original = code.textContent;
+            if (!uriRegex.test(original)) return;
+            uriRegex.lastIndex = 0;
+            const updated = original.replace(uriRegex, newUriBracketed);
+            if (updated === original) return;
+
+            code.textContent = updated;
+
+            const link = panel.querySelector('a.sparql-run-btn');
+            if (link && link.href) {
+                try {
+                    const url = new URL(link.href);
+                    url.searchParams.set('query', updated);
+                    link.href = url.toString();
+                } catch (e) {
+                    console.warn('Could not rebuild Run-on-Endpoint href:', e);
+                }
+            }
+        });
     }
 
     /**
