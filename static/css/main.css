@@ -1231,6 +1231,20 @@ footer img {
     max-height: 44px;
 }
 
+.footer-logo-um {
+    max-height: 44px;
+    background-color: #ffffff;
+    padding: 4px 8px;
+    border-radius: 4px;
+    display: block;
+}
+
+.footer-affil-link {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+}
+
 .footer-logo-vhp {
     max-height: 64px;
     background-color: #ffffff;
