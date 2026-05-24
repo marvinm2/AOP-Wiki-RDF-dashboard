@@ -15,6 +15,23 @@
     <button class="nav-button" onclick="document.getElementById('ke-components').scrollIntoView({behavior:'smooth'});">KE Components</button>
 </div>
 
+<!-- Date-Range Selector (#44) -->
+<div id="trends-range-selector" style="margin:20px auto; padding:15px 20px; background-color:#f5f5f5; border-radius:8px; max-width:900px; display:flex; flex-wrap:wrap; gap:15px; align-items:center; justify-content:center;">
+    <strong style="color:#29235C;">📅 Date range:</strong>
+    <label style="display:flex; align-items:center; gap:6px;">
+        From
+        <select id="trends-range-start" class="trends-range-input" style="padding:5px 8px; border:1px solid #ccc; border-radius:4px; font-size:14px;"></select>
+    </label>
+    <label style="display:flex; align-items:center; gap:6px;">
+        To
+        <select id="trends-range-end" class="trends-range-input" style="padding:5px 8px; border:1px solid #ccc; border-radius:4px; font-size:14px;"></select>
+    </label>
+    <button id="trends-range-reset" class="nav-button" style="padding:5px 12px; font-size:13px;">Reset</button>
+    <span id="trends-range-status" style="color:#666; font-size:13px; flex-basis:100%; text-align:center; margin-top:4px;">
+        Showing all snapshots. Lifetime/creation-date plots are not affected.
+    </span>
+</div>
+
 <!-- Bulk Download Section -->
 <div style="text-align:center; margin:20px; padding:15px; background-color: #f9f9f9; border-radius: 8px;">
     <h3 style="margin-top:0; color:#29235C;">📦 Bulk Download</h3>

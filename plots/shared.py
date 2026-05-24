@@ -1071,7 +1071,14 @@ def build_export_filename(plot_name: str, format: str, version: str = None) -> s
     return f"{clean_name}_{date_str}.{format}"
 
 
-def export_figure_as_image(plot_name: str, format: str = 'png', width: int = 1200, height: int = 800) -> Optional[bytes]:
+def export_figure_as_image(
+    plot_name: str,
+    format: str = 'png',
+    width: int = 1200,
+    height: int = 800,
+    start: Optional[str] = None,
+    end: Optional[str] = None,
+) -> Optional[bytes]:
     """Export a cached Plotly figure as PNG or SVG image.
 
     Args:
@@ -1079,6 +1086,9 @@ def export_figure_as_image(plot_name: str, format: str = 'png', width: int = 120
         format: Image format ('png' or 'svg')
         width: Image width in pixels
         height: Image height in pixels
+        start: Optional YYYY-MM-DD lower bound for the snapshot range (#44).
+            Applied as an x-axis clamp on snapshot-keyed trend plots.
+        end: Optional YYYY-MM-DD upper bound for the snapshot range (#44).
 
     Returns:
         bytes: Image data as bytes, or None if export fails
@@ -1095,6 +1105,23 @@ def export_figure_as_image(plot_name: str, format: str = 'png', width: int = 120
             return None
 
         fig = _plot_figure_cache[plot_name]
+
+        # If a date-range is requested, clone the figure and clamp the x-axis
+        # to the matching ordinal-position window. Trend plots use categorical
+        # string axes, so range is expressed in index space (start-0.5, end+0.5)
+        # — same convention the client-side relayout uses.
+        if start or end:
+            try:
+                import copy
+                fig = copy.deepcopy(fig)
+                versions = _figure_x_categories(fig)
+                if versions:
+                    s_idx = _index_at_or_after(versions, start) if start else 0
+                    e_idx = _index_at_or_before(versions, end) if end else len(versions) - 1
+                    if s_idx is not None and e_idx is not None and s_idx <= e_idx:
+                        fig.update_xaxes(range=[s_idx - 0.5, e_idx + 0.5])
+            except Exception as e:  # never let a clamp failure break the export
+                logger.warning(f"Could not apply date-range clamp to {plot_name}: {e}")
 
         # Export to image format using Kaleido
         image_bytes = pio.to_image(
@@ -1113,12 +1140,55 @@ def export_figure_as_image(plot_name: str, format: str = 'png', width: int = 120
         return None
 
 
-def get_csv_with_metadata(plot_name: str, include_metadata: bool = True) -> Optional[str]:
+def _figure_x_categories(fig) -> list:
+    """Collect the sorted union of x-values across all traces of a figure.
+
+    Trend plots have a categorical x-axis whose values are YYYY-MM-DD strings.
+    Different traces (e.g. one per Entity) may have different per-trace x
+    lists; the union — sorted lexicographically (which equals chronological
+    for YYYY-MM-DD) — gives a stable index space.
+    """
+    seen = set()
+    for tr in getattr(fig, 'data', []) or []:
+        xs = getattr(tr, 'x', None)
+        if xs is None:
+            continue
+        for x in xs:
+            if isinstance(x, str):
+                seen.add(x)
+    return sorted(seen)
+
+
+def _index_at_or_after(versions: list, target: str) -> Optional[int]:
+    for i, v in enumerate(versions):
+        if v >= target:
+            return i
+    return None
+
+
+def _index_at_or_before(versions: list, target: str) -> Optional[int]:
+    last = None
+    for i, v in enumerate(versions):
+        if v <= target:
+            last = i
+    return last
+
+
+def get_csv_with_metadata(
+    plot_name: str,
+    include_metadata: bool = True,
+    start: Optional[str] = None,
+    end: Optional[str] = None,
+) -> Optional[str]:
     """Generate CSV string with optional metadata headers.
 
     Args:
         plot_name: Name of the plot in _plot_data_cache
         include_metadata: Whether to include metadata header rows
+        start: Optional YYYY-MM-DD lower bound (inclusive) on the snapshot
+            version column (#44). Rows are filtered against a `version` or
+            `Version` column; plots without one are returned unfiltered.
+        end: Optional YYYY-MM-DD upper bound (inclusive).
 
     Returns:
         str: CSV string with optional metadata, or None if data not found
@@ -1137,6 +1207,18 @@ def get_csv_with_metadata(plot_name: str, include_metadata: bool = True) -> Opti
 
         df = _plot_data_cache[plot_name]
 
+        # Apply optional snapshot-range filter (#44). YYYY-MM-DD strings sort
+        # lexicographically the same as chronologically, so a direct string
+        # comparison is correct.
+        version_col = 'version' if 'version' in df.columns else ('Version' if 'Version' in df.columns else None)
+        if version_col and (start or end):
+            mask = pd.Series(True, index=df.index)
+            if start:
+                mask &= df[version_col].astype(str) >= start
+            if end:
+                mask &= df[version_col].astype(str) <= end
+            df = df[mask]
+
         if include_metadata:
             from datetime import datetime
             metadata_lines = [
@@ -1147,6 +1229,11 @@ def get_csv_with_metadata(plot_name: str, include_metadata: bool = True) -> Opti
                 f"# Rows: {len(df)}",
                 f"#"
             ]
+            if start or end:
+                metadata_lines.insert(
+                    4,
+                    f"# Snapshot range: {start or '(unbounded)'} → {end or '(unbounded)'}"
+                )
 
             # Add version if available in DataFrame
             if 'Version' in df.columns and not df.empty:
@@ -1163,12 +1250,19 @@ def get_csv_with_metadata(plot_name: str, include_metadata: bool = True) -> Opti
         return None
 
 
-def create_bulk_download(plot_names: list, formats: list = ['csv', 'png', 'svg']) -> Optional[bytes]:
+def create_bulk_download(
+    plot_names: list,
+    formats: list = ['csv', 'png', 'svg'],
+    start: Optional[str] = None,
+    end: Optional[str] = None,
+) -> Optional[bytes]:
     """Create a ZIP archive containing multiple plots in multiple formats.
 
     Args:
         plot_names: List of plot names to include in the ZIP
         formats: List of formats to export ('csv', 'png', 'svg')
+        start: Optional YYYY-MM-DD lower bound forwarded to each export (#44).
+        end: Optional YYYY-MM-DD upper bound forwarded to each export.
 
     Returns:
         bytes: ZIP file contents as bytes, or None if creation fails
@@ -1190,21 +1284,21 @@ def create_bulk_download(plot_names: list, formats: list = ['csv', 'png', 'svg']
             for plot_name in plot_names:
                 # Add CSV if requested
                 if 'csv' in formats:
-                    csv_data = get_csv_with_metadata(plot_name, include_metadata=True)
+                    csv_data = get_csv_with_metadata(plot_name, include_metadata=True, start=start, end=end)
                     if csv_data:
                         zip_file.writestr(f'{plot_name}.csv', csv_data)
                         logger.info(f"Added {plot_name}.csv to ZIP")
 
                 # Add PNG if requested
                 if 'png' in formats:
-                    png_bytes = export_figure_as_image(plot_name, 'png')
+                    png_bytes = export_figure_as_image(plot_name, 'png', start=start, end=end)
                     if png_bytes:
                         zip_file.writestr(f'{plot_name}.png', png_bytes)
                         logger.info(f"Added {plot_name}.png to ZIP")
 
                 # Add SVG if requested
                 if 'svg' in formats:
-                    svg_bytes = export_figure_as_image(plot_name, 'svg')
+                    svg_bytes = export_figure_as_image(plot_name, 'svg', start=start, end=end)
                     if svg_bytes:
                         zip_file.writestr(f'{plot_name}.svg', svg_bytes)
                         logger.info(f"Added {plot_name}.svg to ZIP")

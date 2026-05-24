@@ -1280,10 +1280,12 @@ def download_trend_plot(plot_name):
     """
     export_format = request.args.get('format', 'csv').lower()
     include_metadata = request.args.get('metadata', 'true').lower() == 'true'
+    start = request.args.get('start')
+    end = request.args.get('end')
 
     try:
         if export_format == 'csv':
-            csv_data = get_csv_with_metadata(plot_name, include_metadata)
+            csv_data = get_csv_with_metadata(plot_name, include_metadata, start=start, end=end)
             if not csv_data:
                 return "No data available for download", 404
 
@@ -1294,7 +1296,7 @@ def download_trend_plot(plot_name):
             )
 
         elif export_format in ['png', 'svg']:
-            image_bytes = export_figure_as_image(plot_name, export_format)
+            image_bytes = export_figure_as_image(plot_name, export_format, start=start, end=end)
             if not image_bytes:
                 return "No figure available for export", 404
 
@@ -1325,13 +1327,15 @@ def download_generic(plot_name):
     export_format = request.args.get('format', 'csv').lower()
     include_metadata = request.args.get('metadata', 'true').lower() == 'true'
     version = request.args.get('version')
+    start = request.args.get('start')
+    end = request.args.get('end')
 
     csv_key = plot_name if plot_name in _plot_data_cache else f"{plot_name}_{version or 'latest'}"
     fig_key = plot_name if plot_name in _plot_figure_cache else f"{plot_name}_{version or 'latest'}"
 
     try:
         if export_format == 'csv':
-            csv_data = get_csv_with_metadata(csv_key, include_metadata)
+            csv_data = get_csv_with_metadata(csv_key, include_metadata, start=start, end=end)
             if not csv_data:
                 return "No data available for download", 404
             return Response(
@@ -1341,7 +1345,7 @@ def download_generic(plot_name):
             )
 
         if export_format in ('png', 'svg'):
-            image_bytes = export_figure_as_image(fig_key, export_format)
+            image_bytes = export_figure_as_image(fig_key, export_format, start=start, end=end)
             if not image_bytes:
                 return "No figure available for export", 404
             return Response(
@@ -1444,8 +1448,10 @@ def download_bulk():
         if not formats:
             return "No valid formats specified. Use csv, png, or svg.", 400
 
-        # Create ZIP file
-        zip_bytes = create_bulk_download(plot_names, formats)
+        # Create ZIP file, honouring optional snapshot-range filter (#44)
+        start = request.args.get('start')
+        end = request.args.get('end')
+        zip_bytes = create_bulk_download(plot_names, formats, start=start, end=end)
         if not zip_bytes:
             return "Failed to create bulk download", 500
 
