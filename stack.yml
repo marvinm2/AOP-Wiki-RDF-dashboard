@@ -71,7 +71,10 @@ services:
         reservations:
           memory: 2G
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- 'http://localhost:8890/sparql?query=ASK+%7B%7D' || exit 1"]
+      # Tool-free TCP probe via bash built-in /dev/tcp — survives upstream image
+      # changes that drop wget/curl (openlink/virtuoso-opensource-7:latest after
+      # May 2026 no longer ships wget, which broke the previous healthcheck).
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/8890' || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 20
