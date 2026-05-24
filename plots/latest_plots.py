@@ -636,6 +636,8 @@ def plot_latest_ontology_usage(version: str = None) -> str:
         return create_fallback_plot("Ontology Usage", "No ontology terms found")
 
     df = pd.DataFrame(data)
+    df["Version"] = latest_version
+    _plot_data_cache['latest_ontology_usage'] = df
 
     fig = px.pie(
         df, values="Terms", names="Ontology",
@@ -1120,6 +1122,9 @@ def plot_latest_database_summary(version: str = None) -> str:
         return create_fallback_plot("Core Entity Summary", "No database data available")
 
     df = pd.DataFrame(data)
+    if latest_version is not None:
+        df["Version"] = latest_version
+    _plot_data_cache['latest_database_summary'] = df
 
     # Regular bar chart since values are in similar ranges
     fig = px.bar(
@@ -2455,6 +2460,7 @@ def plot_latest_ontology_diversity(version: str = None) -> str:
     df["Version"] = latest_version
 
     _plot_data_cache[cache_key] = df
+    _plot_data_cache['latest_ontology_diversity'] = df
 
     fig = px.bar(
         df,
@@ -2474,6 +2480,8 @@ def plot_latest_ontology_diversity(version: str = None) -> str:
     )
 
     _plot_figure_cache[cache_key] = fig
+    _plot_figure_cache['latest_ontology_diversity'] = fig
+    return render_plot_html(fig)
 
 
 # ===========================================================================

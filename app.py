@@ -1312,6 +1312,51 @@ def download_trend_plot(plot_name):
         logger.error(f"Download failed for trend plot {plot_name}: {str(e)}")
         return f"Download failed: {str(e)}", 500
 
+
+@app.route("/download/<plot_name>")
+def download_generic(plot_name):
+    """Generic /download/<plot_name> catch-all (#42).
+
+    Hit when a plot URL like /download/latest_ontology_diversity doesn't match
+    any of the explicitly-registered routes above. Tries the bare cache key
+    first, then falls back to a version-suffixed form so we don't have to add
+    a per-plot route for every new latest_* plot.
+    """
+    export_format = request.args.get('format', 'csv').lower()
+    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
+    version = request.args.get('version')
+
+    csv_key = plot_name if plot_name in _plot_data_cache else f"{plot_name}_{version or 'latest'}"
+    fig_key = plot_name if plot_name in _plot_figure_cache else f"{plot_name}_{version or 'latest'}"
+
+    try:
+        if export_format == 'csv':
+            csv_data = get_csv_with_metadata(csv_key, include_metadata)
+            if not csv_data:
+                return "No data available for download", 404
+            return Response(
+                csv_data,
+                mimetype='text/csv',
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, "csv", version)}'}
+            )
+
+        if export_format in ('png', 'svg'):
+            image_bytes = export_figure_as_image(fig_key, export_format)
+            if not image_bytes:
+                return "No figure available for export", 404
+            return Response(
+                image_bytes,
+                mimetype=f'image/{export_format}',
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, export_format, version)}'}
+            )
+
+        return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
+
+    except Exception as e:
+        logger.error(f"Download failed for plot {plot_name}: {str(e)}")
+        return f"Download failed: {str(e)}", 500
+
+
 @app.route("/download/bulk")
 def download_bulk():
     """Bulk download multiple plots in a ZIP archive.

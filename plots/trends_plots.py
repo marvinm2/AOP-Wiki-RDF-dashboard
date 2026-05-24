@@ -268,9 +268,15 @@ def plot_main_graph() -> tuple[str, str, pd.DataFrame]:
             tickangle=-45
         )
 
-        # Store absolute and delta data in cache for CSV download
+        # Store absolute and delta data in cache for CSV download.
+        # Legacy `main_graph_*` keys kept for backwards-compat with old
+        # /download/main_graph_absolute and /download/main_graph_delta routes;
+        # `aop_entity_counts_*` aliases match the template's current download
+        # URLs (#34).
         _plot_data_cache['main_graph_absolute'] = df_abs_melted
         _plot_data_cache['main_graph_delta'] = df_delta_melted
+        _plot_data_cache['aop_entity_counts_absolute'] = df_abs_melted
+        _plot_data_cache['aop_entity_counts_delta'] = df_delta_melted
 
         # Cache figures for image export
         _plot_figure_cache['aop_entity_counts_absolute'] = fig_abs
