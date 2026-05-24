@@ -1203,9 +1203,11 @@ footer img {
     max-width: var(--content-max-width);
     margin: 0 auto;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
-    gap: 12px;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
 }
 
 .footer-branding {
@@ -1354,7 +1356,8 @@ footer img {
     }
 
     .footer-container {
-        gap: 10px;
+        flex-direction: column;
+        gap: 14px;
     }
 
     .footer-links {
