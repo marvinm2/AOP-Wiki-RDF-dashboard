@@ -210,6 +210,13 @@
         "limitations": "Only entities present as `a aopo:AdverseOutcomePathway` / `aopo:KeyEvent` / `aopo:KeyEventRelationship` / `nci:C54571` are tracked. A URI changing identifier between versions (re-minted) will look like a removal + addition; merges or splits will look similar. The earliest snapshot has no predecessor and is therefore omitted. Trend data covers only the published RDF release versions available in the SPARQL endpoint.",
         "sparql": "SELECT DISTINCT ?e\nWHERE {\n  GRAPH __GRAPH_URI__ { ?e a aopo:KeyEvent . }\n}"
     },
+    "entity_cumulative_removed": {
+        "title": "Cumulative Removed Entities",
+        "description": "For each snapshot N, the running count of entities that appeared in any earlier snapshot but are absent in N. One trace per entity type (AOPs, KEs, KERs, Stressors). Companion to the birth/death curve above: that plot shows per-quarter flow (births and deaths), this one shows the accumulated stock of attrition. A re-addition (URI absent in v_N but back in v_{N+1}) decrements the line.",
+        "data_source": "The same per-graph entity URI fetch as Entity Birth/Death (the query below, run once per snapshot per entity class). For each entity type we then walk snapshots chronologically, maintain the running union of all URIs ever seen, and at each step count `(ever_seen_through_N) − URIs_in_N` — entities seen at any earlier point AND absent right now. The downloadable CSV lists every absent URI per snapshot.",
+        "limitations": "Counts only entities typed as `a aopo:AdverseOutcomePathway` / `aopo:KeyEvent` / `aopo:KeyEventRelationship` / `nci:C54571`. A URI re-minted between snapshots will look like a removal even if the entity semantically still exists. The earliest snapshot is always 0 (nothing has been seen yet). Trend data covers only the published RDF release versions available in the SPARQL endpoint.",
+        "sparql": "SELECT DISTINCT ?e\nWHERE {\n  GRAPH __GRAPH_URI__ { ?e a aopo:KeyEvent . }\n}"
+    },
     "aop_property_presence": {
         "title": "AOP Property Presence Over Time",
         "description": "Tracks which metadata properties are present in AOPs over time. Shows absolute counts of AOPs containing each property per version. Properties that are always 100% present are excluded to highlight meaningful variation in documentation completeness.",

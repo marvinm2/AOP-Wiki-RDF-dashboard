@@ -63,6 +63,7 @@ from .shared import (
     safe_read_csv, create_fallback_plot, get_properties_for_entity,
     get_all_versions, render_plot_html,
     ENTITY_TYPE_CLASSES, diff_entities_between_versions,
+    fetch_entity_uris_by_version,
 )
 from .organ_systems import (
     ORGAN_SYSTEM_BUCKETS,
@@ -414,6 +415,114 @@ def plot_entity_birth_death() -> tuple[str, pd.DataFrame]:
         logger.error(f"Failed to generate entity birth/death plot: {str(e)}")
         return (
             create_fallback_plot("Entity Birth/Death Curve", str(e)),
+            pd.DataFrame(),
+        )
+
+
+def plot_entity_cumulative_removed() -> tuple[str, pd.DataFrame]:
+    """Running graveyard view — entities that once existed and are now absent.
+
+    Companion to `plot_entity_birth_death` (#71): #71 shows the *flow*
+    (per-quarter births and deaths); this plot shows the *stock* (total
+    ever-removed up to each snapshot).
+
+    For each snapshot N and entity type, the count is
+    ``len(union(URIs in graphs ≤ N) − URIs in N)`` — entities seen at any
+    earlier point but absent right now. An entity that disappears in v_N
+    and reappears in v_{N+2} is counted in N and N+1 but not in N+2; the
+    line is monotonic modulo re-additions.
+
+    The downloadable CSV preserves the actual absent URIs per snapshot so
+    curators can audit a concrete "deprecated entities" list.
+
+    Returns:
+        tuple[str, pd.DataFrame]:
+            - HTML for a 4-trace line chart (one trace per entity type).
+            - DataFrame with columns: version, entity_type,
+              cumulative_removed_count, removed_uris.
+    """
+    global _plot_data_cache, _plot_figure_cache
+
+    try:
+        versions = sorted({v['version'] for v in get_all_versions()})
+        if len(versions) < 2:
+            logger.warning("Not enough versions for cumulative-removed curve")
+            return (
+                create_fallback_plot(
+                    "Cumulative Removed Entities",
+                    "Need at least two snapshot versions to compute the running set."
+                ),
+                pd.DataFrame(),
+            )
+
+        # Each entity type runs its own per-version fetch pool (5 workers each).
+        # Cap the outer pool at 4 since there are 4 entity types.
+        per_type_uris: dict[str, dict[str, set]] = {}
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            futures = {
+                pool.submit(fetch_entity_uris_by_version, entity_type, versions): entity_type
+                for entity_type in ENTITY_TYPE_CLASSES
+            }
+            for fut in as_completed(futures):
+                entity_type = futures[fut]
+                try:
+                    per_type_uris[entity_type] = fut.result()
+                except Exception as e:
+                    logger.error(f"Cumulative-removed fetch failed for {entity_type}: {e}")
+                    per_type_uris[entity_type] = {v: set() for v in versions}
+
+        rows = []
+        for entity_type in ENTITY_TYPE_CLASSES:
+            uris_by_version = per_type_uris.get(entity_type, {})
+            ever_seen: set[str] = set()
+            for v in versions:
+                current = uris_by_version.get(v, set())
+                ever_seen |= current
+                # Entities seen at any earlier point AND absent in the current snapshot.
+                absent_now = ever_seen - current
+                rows.append({
+                    'version': v,
+                    'entity_type': entity_type,
+                    'cumulative_removed_count': len(absent_now),
+                    'removed_uris': ';'.join(sorted(absent_now)),
+                })
+
+        df = pd.DataFrame(rows)
+        entity_order = list(ENTITY_TYPE_CLASSES.keys())
+        df['entity_type'] = pd.Categorical(df['entity_type'], categories=entity_order, ordered=True)
+        df = df.sort_values(['entity_type', 'version']).reset_index(drop=True)
+
+        fig = px.line(
+            df,
+            x='version',
+            y='cumulative_removed_count',
+            color='entity_type',
+            markers=True,
+            category_orders={'entity_type': entity_order},
+            color_discrete_sequence=BRAND_COLORS['palette'],
+            labels={
+                'version': 'Snapshot',
+                'cumulative_removed_count': 'Entities ever-removed and currently absent',
+                'entity_type': 'Entity type',
+            },
+        )
+        fig.update_xaxes(
+            tickmode='array',
+            tickvals=versions,
+            ticktext=versions,
+            tickangle=-45,
+        )
+        fig.update_layout(margin=dict(l=60, r=30, t=50, b=80))
+
+        _plot_data_cache['entity_cumulative_removed'] = df
+        _plot_figure_cache['entity_cumulative_removed'] = fig
+
+        return render_plot_html(fig), df
+
+    except Exception as e:
+        logger.error(f"Failed to generate cumulative-removed plot: {str(e)}")
+        return (
+            create_fallback_plot("Cumulative Removed Entities", str(e)),
             pd.DataFrame(),
         )
 

@@ -73,6 +73,36 @@
     </div>
 
 
+    <!-- Cumulative Removed Entities (#72) -->
+    <div class="plot-box full-width" id="entity-cumulative-removed">
+        <div class="plot-header">
+            <h3>Cumulative Removed Entities</h3>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/entity_cumulative_removed?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/entity_cumulative_removed?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/entity_cumulative_removed?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <p class="plot-description">
+            Running graveyard view — for each snapshot, the count of entities that appeared in any
+            earlier snapshot but are absent now. Companion to the birth/death curve above:
+            that view shows per-quarter <em>flow</em>, this one shows accumulated <em>stock</em>.
+            Re-additions decrement the line. The CSV lists every absent URI per snapshot so curators
+            can audit deprecations.
+        </p>
+        {{ methodology_note(methodology_notes, 'entity_cumulative_removed') }}
+        <div class="lazy-plot" data-plot-name="entity_cumulative_removed">
+            <!-- Plot will be loaded here via JavaScript -->
+        </div>
+        {{ data_table_toggle('entity_cumulative_removed') }}
+    </div>
+
+
     <!-- AOP Property Presence -->
     <div class="plot-box full-width" id="aop-property-presence">
         <div class="plot-header">

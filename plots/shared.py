@@ -1078,6 +1078,52 @@ def fetch_entity_uris_in_graph(graph_uri: str, entity_class: str) -> set:
         return set()
 
 
+def fetch_entity_uris_by_version(
+    entity_type: str,
+    versions: List[str],
+    max_workers: int = 5,
+) -> Dict[str, set]:
+    """Fetch the entity URI set for one class across all given versions in parallel.
+
+    Internal helper shared by `diff_entities_between_versions` (#71) and by
+    the cumulative-removed view (#72). Centralised so both views run the
+    same per-version fetch implementation.
+
+    Args:
+        entity_type: A key in `ENTITY_TYPE_CLASSES`.
+        versions: List of YYYY-MM-DD version strings to fetch.
+        max_workers: ThreadPool size for the parallel per-version queries.
+
+    Returns:
+        dict[version_str, set[str]]: Per-version sets of distinct entity URIs.
+        Versions whose query fails resolve to an empty set (logged).
+    """
+    if entity_type not in ENTITY_TYPE_CLASSES:
+        raise ValueError(
+            f"Unknown entity_type {entity_type!r}; expected one of "
+            f"{sorted(ENTITY_TYPE_CLASSES)}"
+        )
+    entity_class = ENTITY_TYPE_CLASSES[entity_type]
+    uris_by_version: Dict[str, set] = {}
+    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+        futures = {
+            pool.submit(
+                fetch_entity_uris_in_graph,
+                f"http://aopwiki.org/graph/{v}",
+                entity_class,
+            ): v
+            for v in versions
+        }
+        for fut in as_completed(futures):
+            v = futures[fut]
+            try:
+                uris_by_version[v] = fut.result() or set()
+            except Exception as e:
+                logger.error(f"Failed to fetch {entity_type} URIs for {v}: {e}")
+                uris_by_version[v] = set()
+    return uris_by_version
+
+
 def diff_entities_between_versions(
     entity_type: str,
     versions: Optional[List[str]] = None,
@@ -1113,13 +1159,6 @@ def diff_entities_between_versions(
         The earliest version has no v_prev and is therefore omitted from
         the result.
     """
-    if entity_type not in ENTITY_TYPE_CLASSES:
-        raise ValueError(
-            f"Unknown entity_type {entity_type!r}; expected one of "
-            f"{sorted(ENTITY_TYPE_CLASSES)}"
-        )
-    entity_class = ENTITY_TYPE_CLASSES[entity_type]
-
     if versions is None:
         versions = [v['version'] for v in get_all_versions()]
     # Chronological order (YYYY-MM-DD sorts lexicographically).
@@ -1132,24 +1171,7 @@ def diff_entities_between_versions(
             'added_uris', 'removed_uris',
         ])
 
-    # Fetch entity URI sets per version in parallel.
-    uris_by_version: Dict[str, set] = {}
-    with ThreadPoolExecutor(max_workers=max_workers) as pool:
-        futures = {
-            pool.submit(
-                fetch_entity_uris_in_graph,
-                f"http://aopwiki.org/graph/{v}",
-                entity_class,
-            ): v
-            for v in versions
-        }
-        for fut in as_completed(futures):
-            v = futures[fut]
-            try:
-                uris_by_version[v] = fut.result() or set()
-            except Exception as e:
-                logger.error(f"Failed to fetch {entity_type} URIs for {v}: {e}")
-                uris_by_version[v] = set()
+    uris_by_version = fetch_entity_uris_by_version(entity_type, versions, max_workers=max_workers)
 
     rows = []
     for prev, curr in zip(versions, versions[1:]):
