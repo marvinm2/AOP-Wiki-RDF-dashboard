@@ -76,6 +76,7 @@ from plots import (
     plot_entity_birth_death,
     plot_entity_cumulative_removed,
     plot_quarterly_growth_rate,
+    plot_oecd_status_distribution,
     plot_avg_per_aop,
     plot_network_density,
     plot_ke_components,
@@ -191,6 +192,7 @@ def compute_plots_parallel() -> dict:
         ('entity_birth_death', lambda: safe_plot_execution(plot_entity_birth_death)),
         ('entity_cumulative_removed', lambda: safe_plot_execution(plot_entity_cumulative_removed)),
         ('quarterly_growth_rate', lambda: safe_plot_execution(plot_quarterly_growth_rate)),
+        ('oecd_status_distribution', lambda: safe_plot_execution(plot_oecd_status_distribution)),
         ('avg_per_aop', lambda: safe_plot_execution(plot_avg_per_aop)),
         ('network_density', lambda: safe_plot_execution(plot_network_density)),
         ('ke_components', lambda: safe_plot_execution(plot_ke_components)),
@@ -292,6 +294,13 @@ try:
         graph_quarterly_growth_rate = ""
 except (TypeError, ValueError):
     graph_quarterly_growth_rate = ""
+
+try:
+    graph_oecd_status_abs, graph_oecd_status_pct, _ = plot_results.get('oecd_status_distribution', (None, None, None))
+    if graph_oecd_status_abs is None:
+        graph_oecd_status_abs = graph_oecd_status_pct = ""
+except (TypeError, ValueError):
+    graph_oecd_status_abs = graph_oecd_status_pct = ""
 
 try:
     graph_avg_abs, graph_avg_delta = plot_results.get('avg_per_aop', (None, None))
@@ -1689,6 +1698,8 @@ def get_plot(plot_name):
         'entity_birth_death': graph_entity_birth_death,
         'entity_cumulative_removed': graph_entity_cumulative_removed,
         'quarterly_growth_rate': graph_quarterly_growth_rate,
+        'oecd_status_distribution_absolute': graph_oecd_status_abs,
+        'oecd_status_distribution_percentage': graph_oecd_status_pct,
         'average_components_per_aop_absolute': graph_avg_abs,
         'average_components_per_aop_delta': graph_avg_delta,
         'aop_network_density': graph_density,

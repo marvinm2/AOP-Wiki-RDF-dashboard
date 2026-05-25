@@ -386,6 +386,51 @@
         </div>
         {{ data_table_toggle('oecd_completeness_trend') }}
     </div>
+
+
+    <!-- OECD Status Distribution (#76) -->
+    <div class="plot-box full-width" id="oecd-status-distribution">
+        <div class="plot-header">
+            <h3>OECD Status Distribution Over Time</h3>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download Absolute ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/oecd_status_distribution_absolute?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/oecd_status_distribution_absolute?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/oecd_status_distribution_absolute?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download Percentage ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/oecd_status_distribution_percentage?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/oecd_status_distribution_percentage?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/oecd_status_distribution_percentage?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+                <label><input type="checkbox" class="plot-toggle"> Show Percentage</label>
+            </div>
+        </div>
+        <p class="plot-description">
+            How the OECD-status mix of AOP-Wiki has evolved — fraction of AOPs in each OECD status
+            (No Status, Under Development, Under Review, WPHA/WNT Endorsed, etc.) per snapshot.
+            Answers "is AOP-Wiki maturing or accumulating drafts?" Companion to the OECD-completeness
+            plot above, which measures average completeness per status.
+        </p>
+        {{ methodology_note(methodology_notes, 'oecd_status_distribution') }}
+        <div class="abs">
+            <div class="lazy-plot" data-plot-name="oecd_status_distribution_absolute">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+        <div class="delta" style="display:none;">
+            <div class="lazy-plot" data-plot-name="oecd_status_distribution_percentage">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+        {{ data_table_toggle('oecd_status_distribution_absolute') }}
+    </div>
     </div>
 </section>
 

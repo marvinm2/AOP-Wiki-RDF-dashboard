@@ -217,6 +217,13 @@
         "limitations": "Counts only entities typed as `a aopo:AdverseOutcomePathway` / `aopo:KeyEvent` / `aopo:KeyEventRelationship` / `nci:C54571`. A URI re-minted between snapshots will look like a removal even if the entity semantically still exists. The earliest snapshot is always 0 (nothing has been seen yet). Trend data covers only the published RDF release versions available in the SPARQL endpoint.",
         "sparql": "SELECT DISTINCT ?e\nWHERE {\n  GRAPH __GRAPH_URI__ { ?e a aopo:KeyEvent . }\n}"
     },
+    "oecd_status_distribution": {
+        "title": "OECD Status Distribution Over Time",
+        "description": "Per-version count of AOPs in each OECD status. Companion to the OECD completeness trend above — that view measures *quality* per status; this view measures *mix*. Reveals whether AOP-Wiki is maturing (more endorsed/approved AOPs) or accumulating drafts. Absolute mode shows raw counts; the percentage toggle shows the share of each status in the snapshot total.",
+        "data_source": "One per-version SPARQL aggregation. The status predicate is the NCI Thesaurus term `<http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25688>` (same predicate used by the OECD completeness trend). AOPs without the predicate are bucketed as `No Status` via a COALESCE binding so they remain visible in the chart.",
+        "limitations": "Some historical status labels (e.g. `EAGMST Approved`, `Archived`) only appear in earlier snapshots; they are kept on the chart with their own colour so the historical sequence is faithful. `No Status` is a heterogeneous bucket — it includes both AOPs that have never been submitted to OECD and AOPs whose status triple was lost during a curation cleanup. Trend data covers only the published RDF release versions available in the SPARQL endpoint.",
+        "sparql": "SELECT ?graph ?status_str (COUNT(DISTINCT ?aop) AS ?n_aops)\nWHERE {\n  GRAPH ?graph {\n    ?aop a aopo:AdverseOutcomePathway .\n    OPTIONAL {\n      ?aop <http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25688> ?s .\n    }\n    BIND(COALESCE(STR(?s), \"No Status\") AS ?status_str)\n  }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph ?status_str"
+    },
     "quarterly_growth_rate": {
         "title": "Quarterly Growth Rate",
         "description": "Quarter-over-quarter Δ for the four headline entity types (AOPs, KEs, KERs, Stressors). One panel per entity type. The largest positive and largest negative Δ per entity are auto-annotated. Same numbers as the delta tab of AOP Entity Counts, isolated here for prominence — cumulative line charts hide the slope-change inflection points (e.g. the 2026-Q1 +22-AOP acceleration is subtle on the cumulative curve but obvious as a bar).",

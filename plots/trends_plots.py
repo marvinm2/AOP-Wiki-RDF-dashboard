@@ -634,6 +634,108 @@ def plot_quarterly_growth_rate() -> tuple[str, pd.DataFrame]:
         )
 
 
+def plot_oecd_status_distribution() -> tuple[str, str, pd.DataFrame]:
+    """Per-version count of AOPs in each OECD status (absolute + percentage).
+
+    Companion to `plot_oecd_completeness_trend` (which measures *completeness*
+    grouped by status). This view answers a different question: how is the
+    status *mix* of AOP-Wiki evolving? Are we accumulating drafts or
+    converting them to endorsed AOPs?
+
+    Returns:
+        tuple[str, str, pd.DataFrame]:
+            - absolute stacked-area HTML
+            - percentage (100%-stacked) HTML
+            - long-form DataFrame (version, status, n_aops, percentage).
+    """
+    global _plot_data_cache, _plot_figure_cache
+
+    try:
+        query = """
+        SELECT ?graph ?status_str (COUNT(DISTINCT ?aop) AS ?n_aops)
+        WHERE {
+            GRAPH ?graph {
+                ?aop a aopo:AdverseOutcomePathway .
+                OPTIONAL {
+                    ?aop <http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25688> ?s .
+                }
+                BIND(COALESCE(STR(?s), "No Status") AS ?status_str)
+            }
+            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        GROUP BY ?graph ?status_str
+        """
+        results = run_sparql_query_with_retry(query)
+        if not results:
+            return (
+                create_fallback_plot("OECD Status Distribution", "No data available"),
+                create_fallback_plot("OECD Status Distribution (%)", "No data available"),
+                pd.DataFrame(),
+            )
+
+        rows = []
+        for r in results:
+            graph_uri = r.get('graph', {}).get('value', '')
+            version = graph_uri.rsplit('/', 1)[-1] if graph_uri else None
+            rows.append({
+                'version': version,
+                'status': r.get('status_str', {}).get('value', 'No Status'),
+                'n_aops': int(r.get('n_aops', {}).get('value', 0)),
+            })
+        df = pd.DataFrame(rows).dropna(subset=['version'])
+        df['_dt'] = pd.to_datetime(df['version'], errors='coerce')
+        df = df.sort_values(['_dt', 'status']).drop(columns='_dt').reset_index(drop=True)
+
+        totals = df.groupby('version', as_index=False)['n_aops'].sum().rename(
+            columns={'n_aops': 'total'}
+        )
+        df = df.merge(totals, on='version')
+        df['percentage'] = (df['n_aops'] / df['total'] * 100).round(2)
+
+        # Use brand OECD palette where status names match; fall back to palette.
+        oecd_colors = BRAND_COLORS.get('oecd_status', {})
+        status_order = sorted(df['status'].unique(), key=lambda s: (s == 'No Status', s))
+        color_map = {
+            s: oecd_colors.get(s, BRAND_COLORS['palette'][i % len(BRAND_COLORS['palette'])])
+            for i, s in enumerate(status_order)
+        }
+
+        fig_abs = px.area(
+            df, x='version', y='n_aops', color='status',
+            category_orders={'status': status_order},
+            color_discrete_map=color_map,
+            labels={'version': 'Snapshot', 'n_aops': 'AOPs', 'status': 'OECD status'},
+        )
+        fig_abs.update_layout(margin=dict(l=60, r=30, t=50, b=80))
+        fig_abs.update_xaxes(tickangle=-45)
+
+        fig_pct = px.area(
+            df, x='version', y='percentage', color='status',
+            category_orders={'status': status_order},
+            color_discrete_map=color_map,
+            groupnorm='percent',
+            labels={'version': 'Snapshot', 'percentage': '% of AOPs', 'status': 'OECD status'},
+        )
+        fig_pct.update_layout(margin=dict(l=60, r=30, t=50, b=80))
+        fig_pct.update_xaxes(tickangle=-45)
+        fig_pct.update_yaxes(range=[0, 100])
+
+        _plot_data_cache['oecd_status_distribution_absolute'] = df
+        _plot_data_cache['oecd_status_distribution_percentage'] = df
+        _plot_figure_cache['oecd_status_distribution_absolute'] = fig_abs
+        _plot_figure_cache['oecd_status_distribution_percentage'] = fig_pct
+
+        return render_plot_html(fig_abs), render_plot_html(fig_pct), df
+
+    except Exception as e:
+        logger.error(f"Failed to generate OECD status distribution: {str(e)}")
+        return (
+            create_fallback_plot("OECD Status Distribution", str(e)),
+            create_fallback_plot("OECD Status Distribution (%)", str(e)),
+            pd.DataFrame(),
+        )
+
+
 def plot_avg_per_aop() -> tuple[str, str]:
     """Generate average components per AOP visualization with absolute and delta views."""
     global _plot_data_cache, _plot_figure_cache
