@@ -79,6 +79,7 @@ from plots import (
     plot_oecd_status_distribution,
     plot_stressor_coverage_growth,
     plot_aops_per_stressor_distribution,
+    plot_ke_mmo_coverage_trends,
     plot_avg_per_aop,
     plot_network_density,
     plot_ke_components,
@@ -124,6 +125,7 @@ from plots import (
     plot_latest_organ_coverage_pie,
     plot_latest_multi_organ_aops,
     plot_latest_life_stage,
+    plot_latest_ke_mmo_coverage,
     plot_ontology_term_growth,
     plot_organ_coverage_trends,
     check_sparql_endpoint_health,
@@ -197,6 +199,7 @@ def compute_plots_parallel() -> dict:
         ('oecd_status_distribution', lambda: safe_plot_execution(plot_oecd_status_distribution)),
         ('stressor_coverage_growth', lambda: safe_plot_execution(plot_stressor_coverage_growth)),
         ('aops_per_stressor_distribution', lambda: safe_plot_execution(plot_aops_per_stressor_distribution)),
+        ('ke_mmo_coverage', lambda: safe_plot_execution(plot_ke_mmo_coverage_trends)),
         ('avg_per_aop', lambda: safe_plot_execution(plot_avg_per_aop)),
         ('network_density', lambda: safe_plot_execution(plot_network_density)),
         ('ke_components', lambda: safe_plot_execution(plot_ke_components)),
@@ -319,6 +322,13 @@ try:
         graph_aops_per_stressor_abs = graph_aops_per_stressor_pct = ""
 except (TypeError, ValueError):
     graph_aops_per_stressor_abs = graph_aops_per_stressor_pct = ""
+
+try:
+    graph_ke_mmo_abs, graph_ke_mmo_pct, _ = plot_results.get('ke_mmo_coverage', (None, None, None))
+    if graph_ke_mmo_abs is None:
+        graph_ke_mmo_abs = graph_ke_mmo_pct = ""
+except (TypeError, ValueError):
+    graph_ke_mmo_abs = graph_ke_mmo_pct = ""
 
 try:
     graph_avg_abs, graph_avg_delta = plot_results.get('avg_per_aop', (None, None))
@@ -1722,6 +1732,8 @@ def get_plot(plot_name):
         'stressor_coverage_growth_delta': graph_stressor_growth_delta,
         'aops_per_stressor_distribution_absolute': graph_aops_per_stressor_abs,
         'aops_per_stressor_distribution_percentage': graph_aops_per_stressor_pct,
+        'ke_mmo_coverage_absolute': graph_ke_mmo_abs,
+        'ke_mmo_coverage_percentage': graph_ke_mmo_pct,
         'average_components_per_aop_absolute': graph_avg_abs,
         'average_components_per_aop_delta': graph_avg_delta,
         'aop_network_density': graph_density,
@@ -1789,6 +1801,7 @@ def get_plot(plot_name):
         'latest_organ_coverage_pie': plot_latest_organ_coverage_pie,
         'latest_multi_organ_aops': plot_latest_multi_organ_aops,
         'latest_life_stage': plot_latest_life_stage,
+        'latest_ke_mmo_coverage': plot_latest_ke_mmo_coverage,
     }
 
     # Handle latest_* plots without version support yet (use pre-computed)

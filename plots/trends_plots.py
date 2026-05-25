@@ -920,6 +920,103 @@ def plot_aops_per_stressor_distribution() -> tuple[str, str, pd.DataFrame]:
         )
 
 
+def plot_ke_mmo_coverage_trends() -> tuple[str, str, pd.DataFrame]:
+    """Historical trend of KE measurement-method (obo:MMO_0000000) coverage (#68).
+
+    Per-version share of KEs that carry an `obo:MMO_0000000` description.
+    Companion to the latest-snapshot donut on /snapshot. Shows whether the
+    NAM-readiness signal is improving over time.
+
+    Returns:
+        tuple[str, str, pd.DataFrame]:
+            - absolute_html (count of KEs with vs without MMO)
+            - percentage_html (% of KEs with MMO over time)
+            - long DataFrame (version, with_mmo, without_mmo, total, percentage)
+    """
+    global _plot_data_cache, _plot_figure_cache
+
+    try:
+        query = """
+        SELECT ?graph
+               (SUM(IF(BOUND(?mmo), 1, 0)) AS ?with_mmo)
+               (COUNT(?ke) AS ?total)
+        WHERE {
+            GRAPH ?graph {
+                ?ke a aopo:KeyEvent .
+                OPTIONAL { ?ke <http://purl.obolibrary.org/obo/MMO_0000000> ?mmo }
+            }
+            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        GROUP BY ?graph
+        """
+        results = run_sparql_query_with_retry(query)
+        if not results:
+            return (
+                create_fallback_plot("KE MMO Coverage (absolute)", "No data"),
+                create_fallback_plot("KE MMO Coverage (%)", "No data"),
+                pd.DataFrame(),
+            )
+
+        rows = []
+        for r in results:
+            uri = r.get('graph', {}).get('value', '')
+            with_mmo = int(r.get('with_mmo', {}).get('value', 0))
+            total = int(r.get('total', {}).get('value', 0))
+            rows.append({
+                'version': uri.rsplit('/', 1)[-1] if uri else None,
+                'with_mmo': with_mmo,
+                'without_mmo': max(0, total - with_mmo),
+                'total': total,
+                'percentage': round(with_mmo / total * 100, 2) if total else 0.0,
+            })
+        df = pd.DataFrame(rows).dropna(subset=['version'])
+        df['_dt'] = pd.to_datetime(df['version'], errors='coerce')
+        df = df.sort_values('_dt').drop(columns='_dt').reset_index(drop=True)
+
+        # Absolute: stacked bar (with + without).
+        long_abs = df.melt(id_vars='version', value_vars=['with_mmo', 'without_mmo'],
+                           var_name='Status', value_name='KEs')
+        long_abs['Status'] = long_abs['Status'].map({
+            'with_mmo': 'With MMO assay',
+            'without_mmo': 'Without MMO assay',
+        })
+        fig_abs = px.bar(
+            long_abs, x='version', y='KEs', color='Status',
+            color_discrete_map={
+                'With MMO assay': BRAND_COLORS['magenta'],
+                'Without MMO assay': BRAND_COLORS['primary'],
+            },
+            labels={'version': 'Snapshot', 'KEs': 'Key Events'},
+        )
+        fig_abs.update_xaxes(tickangle=-45)
+        fig_abs.update_layout(barmode='stack', margin=dict(l=60, r=30, t=50, b=80))
+
+        # Percentage: single line.
+        fig_pct = px.line(
+            df, x='version', y='percentage', markers=True,
+            color_discrete_sequence=[BRAND_COLORS['magenta']],
+            labels={'version': 'Snapshot', 'percentage': '% of KEs with MMO assay'},
+        )
+        fig_pct.update_xaxes(tickangle=-45)
+        fig_pct.update_yaxes(range=[0, 100])
+        fig_pct.update_layout(margin=dict(l=60, r=30, t=50, b=80))
+
+        _plot_data_cache['ke_mmo_coverage_absolute'] = df
+        _plot_data_cache['ke_mmo_coverage_percentage'] = df
+        _plot_figure_cache['ke_mmo_coverage_absolute'] = fig_abs
+        _plot_figure_cache['ke_mmo_coverage_percentage'] = fig_pct
+
+        return render_plot_html(fig_abs), render_plot_html(fig_pct), df
+
+    except Exception as e:
+        logger.error(f"Failed to generate KE MMO coverage trend: {e}")
+        return (
+            create_fallback_plot("KE MMO Coverage (absolute)", str(e)),
+            create_fallback_plot("KE MMO Coverage (%)", str(e)),
+            pd.DataFrame(),
+        )
+
+
 def plot_avg_per_aop() -> tuple[str, str]:
     """Generate average components per AOP visualization with absolute and delta views."""
     global _plot_data_cache, _plot_figure_cache

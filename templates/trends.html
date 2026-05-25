@@ -519,6 +519,51 @@
         </div>
         {{ data_table_toggle('aops_per_stressor_distribution_absolute') }}
     </div>
+
+
+    <!-- KE MMO Coverage Trend (#68) -->
+    <div class="plot-box full-width" id="ke-mmo-coverage-trends">
+        <div class="plot-header">
+            <h3>KE Measurement-Method Coverage Over Time</h3>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download Absolute ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/ke_mmo_coverage_absolute?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/ke_mmo_coverage_absolute?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/ke_mmo_coverage_absolute?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download Percentage ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/ke_mmo_coverage_percentage?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/ke_mmo_coverage_percentage?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/ke_mmo_coverage_percentage?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+                <label><input type="checkbox" class="plot-toggle"> Show Percentage</label>
+            </div>
+        </div>
+        <p class="plot-description">
+            Historical trend of KE measurement-method coverage (companion to the latest-snapshot
+            donut on the snapshot page). Tracks the percentage of Key Events carrying an
+            <code>obo:MMO_0000000</code> assay description over time — a key signal for
+            NAM-readiness.
+        </p>
+        {{ methodology_note(methodology_notes, 'ke_mmo_coverage') }}
+        <div class="abs">
+            <div class="lazy-plot" data-plot-name="ke_mmo_coverage_absolute">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+        <div class="delta" style="display:none;">
+            <div class="lazy-plot" data-plot-name="ke_mmo_coverage_percentage">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+        {{ data_table_toggle('ke_mmo_coverage_absolute') }}
+    </div>
     </div>
 </section>
 

@@ -146,6 +146,7 @@ from .trends_plots import (
     plot_oecd_status_distribution,
     plot_stressor_coverage_growth,
     plot_aops_per_stressor_distribution,
+    plot_ke_mmo_coverage_trends,
     plot_avg_per_aop,
     plot_network_density,
     plot_author_counts,
@@ -236,6 +237,7 @@ from .latest_plots import (
     plot_latest_organ_coverage_pie,
     plot_latest_multi_organ_aops,
     plot_latest_life_stage,
+    plot_latest_ke_mmo_coverage,
 )
 
 # Define module version and metadata
@@ -274,6 +276,7 @@ __all__ = [
     'plot_oecd_status_distribution',
     'plot_stressor_coverage_growth',
     'plot_aops_per_stressor_distribution',
+    'plot_ke_mmo_coverage_trends',
     'plot_avg_per_aop',
     'plot_network_density',
     'plot_author_counts',
@@ -322,6 +325,7 @@ __all__ = [
     'plot_latest_organ_coverage_pie',
     'plot_latest_multi_organ_aops',
     'plot_latest_life_stage',
+    'plot_latest_ke_mmo_coverage',
 
     # Network analysis functions
     'build_aop_network',
@@ -346,6 +350,7 @@ def get_available_functions():
             'plot_oecd_status_distribution',
             'plot_stressor_coverage_growth',
             'plot_aops_per_stressor_distribution',
+            'plot_ke_mmo_coverage_trends',
             'plot_avg_per_aop',
             'plot_network_density',
             'plot_author_counts',
@@ -394,6 +399,7 @@ def get_available_functions():
             'plot_latest_organ_coverage_pie',
             'plot_latest_multi_organ_aops',
             'plot_latest_life_stage',
+            'plot_latest_ke_mmo_coverage',
         ],
         'network_analysis': [
             'build_aop_network',

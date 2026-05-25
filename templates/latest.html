@@ -451,6 +451,30 @@
 <section class="section-block" id="data-quality">
     <h2 class="section-header">Data Quality & Completeness</h2>
     <div class="plot-grid">
+        <!-- KE MMO Coverage (#68) -->
+        <div class="plot-box">
+            <div class="plot-header">
+                <h3>KE Measurement-Method Coverage</h3>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download &#x25BC;</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/latest/ke_mmo_coverage?format=csv" class="dropdown-item">CSV</a>
+                        <a href="/download/latest/ke_mmo_coverage?format=png" class="dropdown-item">PNG</a>
+                        <a href="/download/latest/ke_mmo_coverage?format=svg" class="dropdown-item">SVG</a>
+                    </div>
+                </div>
+            </div>
+            <p class="plot-description">
+                Share of Key Events that carry an <code>obo:MMO_0000000</code> (measurement method)
+                description — the single biggest completeness signal for NAM-ready AOPs.
+                Currently only ~37% of KEs have one.
+            </p>
+            {{ methodology_note(methodology_notes, 'latest_ke_mmo_coverage') }}
+            <div class="lazy-plot" data-plot-name="latest_ke_mmo_coverage">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+            {{ data_table_toggle('latest_ke_mmo_coverage') }}
+        </div>
         <div class="plot-box">
             <div class="plot-header">
                 <h3>Ontology Term Diversity</h3>

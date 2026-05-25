@@ -217,6 +217,20 @@
         "limitations": "Counts only entities typed as `a aopo:AdverseOutcomePathway` / `aopo:KeyEvent` / `aopo:KeyEventRelationship` / `nci:C54571`. A URI re-minted between snapshots will look like a removal even if the entity semantically still exists. The earliest snapshot is always 0 (nothing has been seen yet). Trend data covers only the published RDF release versions available in the SPARQL endpoint.",
         "sparql": "SELECT DISTINCT ?e\nWHERE {\n  GRAPH __GRAPH_URI__ { ?e a aopo:KeyEvent . }\n}"
     },
+    "ke_mmo_coverage": {
+        "title": "KE Measurement-Method Coverage Over Time",
+        "description": "Per-version share of Key Events that carry an `obo:MMO_0000000` description — the predicate AOP-Wiki uses for free-text measurement-method / assay text. Currently only ~37% of KEs have one; the gap is the largest single completeness signal for NAM-ready AOPs. Companion to the snapshot donut on the Latest page.",
+        "data_source": "One per-version aggregation. `SUM(IF(BOUND(?mmo), 1, 0))` counts KEs with at least one MMO triple; `COUNT(?ke)` is the denominator. Percentage = with / total × 100.",
+        "limitations": "Measures presence, not quality — a KE with a one-character MMO string and a KE with a full assay paragraph both count as `with MMO`. Trend data covers only the published RDF release versions available in the SPARQL endpoint.",
+        "sparql": "SELECT ?graph\n       (SUM(IF(BOUND(?mmo), 1, 0)) AS ?with_mmo)\n       (COUNT(?ke) AS ?total)\nWHERE {\n  GRAPH ?graph {\n    ?ke a aopo:KeyEvent .\n    OPTIONAL { ?ke <http://purl.obolibrary.org/obo/MMO_0000000> ?mmo }\n  }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph"
+    },
+    "latest_ke_mmo_coverage": {
+        "title": "KE Measurement-Method Coverage (current snapshot)",
+        "description": "Donut showing what fraction of KEs in the latest snapshot carry an `obo:MMO_0000000` measurement-method description. ~37% covered today; the uncovered ~63% is the single biggest NAM-readiness gap visible in AOP-Wiki RDF. Companion to the historical trend on the Trends page.",
+        "data_source": "Single SPARQL aggregation over the latest named graph: `SUM(IF(BOUND(?mmo), 1, 0))` divided by `COUNT(?ke)`.",
+        "limitations": "Counts presence of any MMO triple — does not assess length or quality of the assay text. KEs reused across AOPs are counted once.",
+        "sparql": "SELECT (SUM(IF(BOUND(?mmo), 1, 0)) AS ?with_mmo)\n       (COUNT(?ke) AS ?total)\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    ?ke a aopo:KeyEvent .\n    OPTIONAL { ?ke <http://purl.obolibrary.org/obo/MMO_0000000> ?mmo }\n  }\n}"
+    },
     "stressor_coverage_growth": {
         "title": "Stressor Coverage Growth",
         "description": "Per-version count of distinct stressors typed `nci:C54571`. Same numbers as the Stressors trace of the headline AOP Entity Counts plot, isolated so it can be downloaded, methodology-cited, and toggled to a Δ view on its own. Best read alongside the AOPs-per-stressor distribution to distinguish *broadening* (new stressors) from *deepening* (same stressors, more AOPs).",

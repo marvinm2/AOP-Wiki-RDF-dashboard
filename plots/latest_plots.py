@@ -3328,3 +3328,80 @@ def plot_latest_multi_organ_aops(version: str = None) -> str:
 
     _plot_figure_cache[cache_key] = fig
     return render_plot_html(fig)
+
+def plot_latest_ke_mmo_coverage(version: str = None) -> str:
+    """KE measurement-method (obo:MMO_0000000) coverage for the current snapshot.
+
+    Per PLOT-IDEAS.md §4.1 (#68): the percentage of KEs that lack
+    `obo:MMO_0000000` (free-text measurement-method / assay descriptions)
+    is the single biggest completeness signal for NAM-ready AOPs and is
+    currently invisible on the dashboard. Latest snapshot: ~36% of KEs
+    carry an MMO description, ~64% don't.
+
+    Renders a donut split: With MMO (magenta) vs Without MMO (primary).
+    """
+    global _plot_data_cache, _plot_figure_cache
+
+    where_filter, order_limit = _build_graph_filter(version)
+    query = f"""
+        SELECT ?graph
+               (SUM(IF(BOUND(?mmo), 1, 0)) AS ?with_mmo)
+               (COUNT(?ke) AS ?total)
+        WHERE {{
+            GRAPH ?graph {{
+                ?ke a aopo:KeyEvent .
+                OPTIONAL {{ ?ke <http://purl.obolibrary.org/obo/MMO_0000000> ?mmo }}
+            }}
+            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+            {where_filter}
+        }}
+        GROUP BY ?graph
+        {order_limit}
+    """
+    try:
+        results = run_sparql_query(query)
+        if not results:
+            return create_fallback_plot("KE MMO Coverage", "No data available")
+
+        row = results[0]
+        with_mmo = int(row.get('with_mmo', {}).get('value', 0))
+        total = int(row.get('total', {}).get('value', 0))
+        without = max(0, total - with_mmo)
+        version_str = row.get('graph', {}).get('value', '').rsplit('/', 1)[-1]
+
+        df = pd.DataFrame({
+            'Status': ['With MMO assay', 'Without MMO assay'],
+            'KEs': [with_mmo, without],
+            'Version': [version_str, version_str],
+        })
+
+        fig = px.pie(
+            df, names='Status', values='KEs', hole=0.55,
+            color='Status',
+            color_discrete_map={
+                'With MMO assay': BRAND_COLORS['magenta'],
+                'Without MMO assay': BRAND_COLORS['primary'],
+            },
+        )
+        pct_covered = (with_mmo / total * 100) if total else 0
+        fig.update_layout(
+            margin=dict(l=30, r=30, t=80, b=30),
+            annotations=[dict(
+                text=f"<b>{pct_covered:.0f}%</b><br>covered",
+                x=0.5, y=0.5, font=dict(size=18, color=BRAND_COLORS['primary']),
+                showarrow=False,
+            )],
+            title={"text": f"KE measurement-method coverage<br><sub>{with_mmo}/{total} KEs carry an obo:MMO_0000000 description (v{version_str})</sub>"},
+        )
+
+        cache_key = f"latest_ke_mmo_coverage_{version or 'latest'}"
+        _plot_data_cache[cache_key] = df
+        _plot_data_cache['latest_ke_mmo_coverage'] = df
+        _plot_figure_cache[cache_key] = fig
+        _plot_figure_cache['latest_ke_mmo_coverage'] = fig
+
+        return render_plot_html(fig)
+
+    except Exception as e:
+        logger.error(f"Failed to generate KE MMO coverage: {e}")
+        return create_fallback_plot("KE MMO Coverage", str(e))
