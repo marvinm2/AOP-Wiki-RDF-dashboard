@@ -238,6 +238,7 @@ from .latest_plots import (
     plot_latest_multi_organ_aops,
     plot_latest_life_stage,
     plot_latest_ke_mmo_coverage,
+    plot_latest_aop_aop_overlap,
 )
 
 # Define module version and metadata
@@ -326,6 +327,7 @@ __all__ = [
     'plot_latest_multi_organ_aops',
     'plot_latest_life_stage',
     'plot_latest_ke_mmo_coverage',
+    'plot_latest_aop_aop_overlap',
 
     # Network analysis functions
     'build_aop_network',
@@ -400,6 +402,7 @@ def get_available_functions():
             'plot_latest_multi_organ_aops',
             'plot_latest_life_stage',
             'plot_latest_ke_mmo_coverage',
+            'plot_latest_aop_aop_overlap',
         ],
         'network_analysis': [
             'build_aop_network',

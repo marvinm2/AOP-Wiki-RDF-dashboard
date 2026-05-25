@@ -3405,3 +3405,181 @@ def plot_latest_ke_mmo_coverage(version: str = None) -> str:
     except Exception as e:
         logger.error(f"Failed to generate KE MMO coverage: {e}")
         return create_fallback_plot("KE MMO Coverage", str(e))
+
+
+def plot_latest_aop_aop_overlap(version: str = None, min_shared_kes: int = 5, max_pairs: int = 250) -> str:
+    """AOP-AOP overlap network: nodes=AOPs, edges=#shared KEs (#67).
+
+    Renders a force-directed graph showing pairs of AOPs that share a
+    KE backbone. Nodes coloured by OECD status; node size = #KEs in
+    the AOP; edge width = #shared KEs. Hover for AOP titles + edge
+    detail.
+
+    Args:
+        version: Optional snapshot date string. Defaults to latest.
+        min_shared_kes: Threshold for displaying an edge. Default 5 to
+            keep the network legible (the v1 issue acceptance criteria
+            says default 2 but with 584 AOPs that yields >2400 edges).
+            Tune down via the methodology query box to inspect specific
+            sub-clusters.
+        max_pairs: Hard cap on edges rendered to protect Plotly perf.
+    """
+    import math
+    try:
+        import networkx as nx
+    except ImportError:
+        return create_fallback_plot("AOP-AOP Overlap Network", "networkx not installed")
+
+    where_filter, order_limit = _build_graph_filter(version)
+
+    # Resolve target graph explicitly (we need it for follow-on title/status queries).
+    if version:
+        graph_uri = f"http://aopwiki.org/graph/{version}"
+    else:
+        latest_q = """
+        SELECT ?g WHERE {
+            GRAPH ?g { ?s a aopo:AdverseOutcomePathway . }
+            FILTER(STRSTARTS(STR(?g), "http://aopwiki.org/graph/"))
+        } GROUP BY ?g ORDER BY DESC(?g) LIMIT 1
+        """
+        res = run_sparql_query(latest_q)
+        if not res:
+            return create_fallback_plot("AOP-AOP Overlap Network", "No data")
+        graph_uri = res[0]['g']['value']
+
+    version_str = graph_uri.rsplit('/', 1)[-1]
+
+    # Edge query.
+    edge_q = f"""
+    SELECT ?aop1 ?aop2 (COUNT(DISTINCT ?ke) AS ?sharedKEs)
+    WHERE {{
+        GRAPH <{graph_uri}> {{
+            ?aop1 a aopo:AdverseOutcomePathway ; aopo:has_key_event ?ke .
+            ?aop2 a aopo:AdverseOutcomePathway ; aopo:has_key_event ?ke .
+            FILTER (STR(?aop1) < STR(?aop2))
+        }}
+    }}
+    GROUP BY ?aop1 ?aop2
+    HAVING (COUNT(DISTINCT ?ke) >= {min_shared_kes})
+    ORDER BY DESC(?sharedKEs)
+    LIMIT {max_pairs}
+    """
+    edges = run_sparql_query(edge_q)
+    if not edges:
+        return create_fallback_plot(
+            "AOP-AOP Overlap Network",
+            f"No AOP pairs share {min_shared_kes}+ Key Events in this snapshot."
+        )
+
+    # Per-AOP metadata for nodes that appear in any edge.
+    aop_uris = sorted({e['aop1']['value'] for e in edges} | {e['aop2']['value'] for e in edges})
+    values_block = ' '.join(f'<{u}>' for u in aop_uris)
+    meta_q = f"""
+    SELECT ?aop ?title (COUNT(DISTINCT ?ke) AS ?ke_count) ?status
+    WHERE {{
+        GRAPH <{graph_uri}> {{
+            VALUES ?aop {{ {values_block} }}
+            ?aop a aopo:AdverseOutcomePathway ;
+                 aopo:has_key_event ?ke .
+            OPTIONAL {{ ?aop <http://purl.org/dc/elements/1.1/title> ?title }}
+            OPTIONAL {{ ?aop <http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25688> ?s . BIND(STR(?s) AS ?status) }}
+        }}
+    }}
+    GROUP BY ?aop ?title ?status
+    """
+    meta = run_sparql_query(meta_q)
+    meta_by_uri = {}
+    for r in meta:
+        uri = r.get('aop', {}).get('value', '')
+        meta_by_uri[uri] = {
+            'title': r.get('title', {}).get('value', uri.rsplit('/', 1)[-1]),
+            'ke_count': int(r.get('ke_count', {}).get('value', 0)),
+            'status': r.get('status', {}).get('value', 'No Status'),
+        }
+
+    # Build graph.
+    G = nx.Graph()
+    for u in aop_uris:
+        info = meta_by_uri.get(u, {'title': u.rsplit('/', 1)[-1], 'ke_count': 0, 'status': 'No Status'})
+        G.add_node(u, **info)
+    for e in edges:
+        G.add_edge(e['aop1']['value'], e['aop2']['value'],
+                   shared_kes=int(e['sharedKEs']['value']))
+
+    # Layout — spring is stable enough for sub-300-node graphs.
+    pos = nx.spring_layout(G, k=1.5 / math.sqrt(len(G.nodes())), iterations=80, seed=42)
+
+    oecd_colors = BRAND_COLORS.get('oecd_status', {})
+    default_color = BRAND_COLORS['palette'][0]
+
+    # Edge traces — one trace per width bucket so legend works cleanly.
+    edge_x, edge_y, edge_widths, edge_hover = [], [], [], []
+    for a, b, attrs in G.edges(data=True):
+        x0, y0 = pos[a]; x1, y1 = pos[b]
+        edge_x += [x0, x1, None]
+        edge_y += [y0, y1, None]
+        edge_widths.append(attrs['shared_kes'])
+        edge_hover.append(f"{meta_by_uri.get(a, {}).get('title', a)} ↔ {meta_by_uri.get(b, {}).get('title', b)}: {attrs['shared_kes']} shared KEs")
+
+    edge_trace = go.Scatter(
+        x=edge_x, y=edge_y,
+        mode='lines',
+        line=dict(color='rgba(50,50,80,0.25)', width=1),
+        hoverinfo='none',
+        showlegend=False,
+    )
+
+    # Node traces grouped by OECD status.
+    statuses = sorted({d['status'] for _, d in G.nodes(data=True)})
+    node_traces = []
+    for status in statuses:
+        sub_nodes = [n for n, d in G.nodes(data=True) if d['status'] == status]
+        xs = [pos[n][0] for n in sub_nodes]
+        ys = [pos[n][1] for n in sub_nodes]
+        texts = []
+        sizes = []
+        for n in sub_nodes:
+            d = G.nodes[n]
+            short = n.rsplit('/', 1)[-1]
+            texts.append(f"<b>AOP {short}</b><br>{d['title']}<br>KEs: {d['ke_count']}<br>OECD: {d['status']}")
+            sizes.append(8 + math.sqrt(max(1, d['ke_count'])) * 2.5)
+        node_traces.append(go.Scatter(
+            x=xs, y=ys,
+            mode='markers',
+            marker=dict(size=sizes, color=oecd_colors.get(status, default_color),
+                        line=dict(color='white', width=1)),
+            name=status,
+            text=texts,
+            hoverinfo='text',
+        ))
+
+    fig = go.Figure(data=[edge_trace, *node_traces])
+    fig.update_layout(
+        title={"text": f"AOP-AOP overlap network<br><sub>{G.number_of_nodes()} AOPs sharing {min_shared_kes}+ KEs ({G.number_of_edges()} edges, v{version_str})</sub>"},
+        xaxis=dict(visible=False),
+        yaxis=dict(visible=False, scaleanchor='x', scaleratio=1),
+        margin=dict(l=30, r=30, t=80, b=30),
+        height=700,
+        hovermode='closest',
+        legend=dict(orientation='v', x=1.02, y=1.0),
+    )
+
+    # Cache (per-edge data is the most useful CSV).
+    edge_df = pd.DataFrame([
+        {
+            'aop1': a,
+            'aop2': b,
+            'aop1_title': meta_by_uri.get(a, {}).get('title', ''),
+            'aop2_title': meta_by_uri.get(b, {}).get('title', ''),
+            'shared_kes': attrs['shared_kes'],
+            'Version': version_str,
+        }
+        for a, b, attrs in G.edges(data=True)
+    ])
+    cache_key = f"latest_aop_aop_overlap_{version or 'latest'}"
+    _plot_data_cache[cache_key] = edge_df
+    _plot_data_cache['latest_aop_aop_overlap'] = edge_df
+    _plot_figure_cache[cache_key] = fig
+    _plot_figure_cache['latest_aop_aop_overlap'] = fig
+
+    return render_plot_html(fig)

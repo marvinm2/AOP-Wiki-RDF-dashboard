@@ -224,6 +224,22 @@
         "limitations": "Measures presence, not quality — a KE with a one-character MMO string and a KE with a full assay paragraph both count as `with MMO`. Trend data covers only the published RDF release versions available in the SPARQL endpoint.",
         "sparql": "SELECT ?graph\n       (SUM(IF(BOUND(?mmo), 1, 0)) AS ?with_mmo)\n       (COUNT(?ke) AS ?total)\nWHERE {\n  GRAPH ?graph {\n    ?ke a aopo:KeyEvent .\n    OPTIONAL { ?ke <http://purl.obolibrary.org/obo/MMO_0000000> ?mmo }\n  }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph"
     },
+    "latest_aop_aop_overlap": {
+        "title": "AOP-AOP Overlap Network",
+        "description": "Force-directed network of AOPs that share a Key Event backbone. Nodes are AOPs (colour = OECD status, size = #KEs); edges connect pairs sharing ≥5 KEs. The threshold is chosen so the network stays legible — with 584 AOPs there are >2400 pairs at ≥2 shared KEs and ~200 at ≥5. Tightly clustered nodes share KEs because they describe related biology (e.g. AOPs 624-629 in the MASLD family share 14-17 KEs each).",
+        "data_source": "Two SPARQL queries against the latest graph. First aggregates AOP pairs by shared-KE count with a `FILTER (STR(?aop1) < STR(?aop2))` to deduplicate. Second fetches per-AOP metadata (title, KE count, OECD status) for all AOPs that appear in any edge. Spring layout (k = 1.5/√n, seed=42) is computed in Python via networkx.",
+        "limitations": "The 5-shared-KE threshold is editorial — adjust the `HAVING` clause to explore lower-density structure. Edge count is capped at 250 to protect Plotly rendering; with 208 actual pairs at threshold 5, this isn't hit today but a future snapshot might. Spring layout has no inherent meaning — proximity reflects shared KEs, not biological similarity. The network is undirected (AOP1↔AOP2); KE-level directionality is lost.",
+        "queries": [
+            {
+                "caption": "AOP pairs sharing ≥5 KEs (run on the latest graph)",
+                "query": "SELECT ?aop1 ?aop2 (COUNT(DISTINCT ?ke) AS ?sharedKEs)\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    ?aop1 a aopo:AdverseOutcomePathway ; aopo:has_key_event ?ke .\n    ?aop2 a aopo:AdverseOutcomePathway ; aopo:has_key_event ?ke .\n    FILTER (STR(?aop1) < STR(?aop2))\n  }\n}\nGROUP BY ?aop1 ?aop2\nHAVING (COUNT(DISTINCT ?ke) >= 5)\nORDER BY DESC(?sharedKEs)\nLIMIT 250"
+            },
+            {
+                "caption": "Per-AOP metadata (title, KE count, OECD status) for nodes",
+                "query": "SELECT ?aop ?title (COUNT(DISTINCT ?ke) AS ?ke_count) ?status\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    ?aop a aopo:AdverseOutcomePathway ;\n         aopo:has_key_event ?ke .\n    OPTIONAL { ?aop <http://purl.org/dc/elements/1.1/title> ?title }\n    OPTIONAL { ?aop <http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25688> ?s . BIND(STR(?s) AS ?status) }\n  }\n}\nGROUP BY ?aop ?title ?status"
+            }
+        ]
+    },
     "latest_ke_mmo_coverage": {
         "title": "KE Measurement-Method Coverage (current snapshot)",
         "description": "Donut showing what fraction of KEs in the latest snapshot carry an `obo:MMO_0000000` measurement-method description. ~37% covered today; the uncovered ~63% is the single biggest NAM-readiness gap visible in AOP-Wiki RDF. Companion to the historical trend on the Trends page.",

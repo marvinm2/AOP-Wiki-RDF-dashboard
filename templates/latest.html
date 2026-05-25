@@ -162,6 +162,33 @@
             </div>
             {{ data_table_toggle('latest_avg_per_aop') }}
         </div>
+
+        <!-- AOP-AOP Overlap Network (#67) -->
+        <div class="plot-box full-width" id="latest-aop-aop-overlap">
+            <div class="plot-header">
+                <h3>AOP-AOP Overlap Network</h3>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download &#x25BC;</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/latest/aop_aop_overlap?format=csv" class="dropdown-item">CSV</a>
+                        <a href="/download/latest/aop_aop_overlap?format=png" class="dropdown-item">PNG</a>
+                        <a href="/download/latest/aop_aop_overlap?format=svg" class="dropdown-item">SVG</a>
+                    </div>
+                </div>
+            </div>
+            <p class="plot-description">
+                Force-directed network where nodes are AOPs and edges connect AOP pairs that share Key
+                Events. Default threshold: ≥5 shared KEs (to keep the chart legible). Node colour =
+                OECD status, node size = #KEs in the AOP, edge thickness = #shared KEs.
+                Hover a node for its title and metadata. Tightly-clustered nodes (e.g. the MASLD AOP
+                family 624-629) share a KE backbone and likely reflect related biology.
+            </p>
+            {{ methodology_note(methodology_notes, 'latest_aop_aop_overlap') }}
+            <div class="lazy-plot" data-plot-name="latest_aop_aop_overlap">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+            {{ data_table_toggle('latest_aop_aop_overlap') }}
+        </div>
     </div>
 </section>
 
