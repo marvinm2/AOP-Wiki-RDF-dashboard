@@ -431,6 +431,94 @@
         </div>
         {{ data_table_toggle('oecd_status_distribution_absolute') }}
     </div>
+
+
+    <!-- Stressor Coverage Growth (#75 part A) -->
+    <div class="plot-box" id="stressor-coverage-growth">
+        <div class="plot-header">
+            <h3>Stressor Coverage Growth</h3>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download Absolute ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/stressor_coverage_growth_absolute?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/stressor_coverage_growth_absolute?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/stressor_coverage_growth_absolute?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download Delta ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/stressor_coverage_growth_delta?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/stressor_coverage_growth_delta?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/stressor_coverage_growth_delta?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+                <label><input type="checkbox" class="plot-toggle"> Show Delta</label>
+            </div>
+        </div>
+        <p class="plot-description">
+            Distinct stressors (`nci:C54571`) over time. Isolated from the AOP Entity Counts plot
+            for focused download. Pair with the AOPs-per-stressor distribution next to it to
+            distinguish broadening (more stressors) from deepening (same stressors, more AOPs).
+        </p>
+        {{ methodology_note(methodology_notes, 'stressor_coverage_growth') }}
+        <div class="abs">
+            <div class="lazy-plot" data-plot-name="stressor_coverage_growth_absolute">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+        <div class="delta" style="display:none;">
+            <div class="lazy-plot" data-plot-name="stressor_coverage_growth_delta">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+        {{ data_table_toggle('stressor_coverage_growth_absolute') }}
+    </div>
+
+
+    <!-- AOPs per Stressor Distribution (#75 part B) -->
+    <div class="plot-box" id="aops-per-stressor-distribution">
+        <div class="plot-header">
+            <h3>AOPs per Stressor Distribution</h3>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download Absolute ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/aops_per_stressor_distribution_absolute?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/aops_per_stressor_distribution_absolute?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/aops_per_stressor_distribution_absolute?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download Percentage ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/aops_per_stressor_distribution_percentage?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/aops_per_stressor_distribution_percentage?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/aops_per_stressor_distribution_percentage?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+                <label><input type="checkbox" class="plot-toggle"> Show Percentage</label>
+            </div>
+        </div>
+        <p class="plot-description">
+            Stressors bucketed by how many AOPs reference them: 1 AOP, 2 AOPs, 3-5, 6-10, 11+.
+            Reveals whether the stressor coverage is broadening (most stressors appear in 1 AOP)
+            or deepening (a few popular stressors carry many AOPs).
+        </p>
+        {{ methodology_note(methodology_notes, 'aops_per_stressor_distribution') }}
+        <div class="abs">
+            <div class="lazy-plot" data-plot-name="aops_per_stressor_distribution_absolute">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+        <div class="delta" style="display:none;">
+            <div class="lazy-plot" data-plot-name="aops_per_stressor_distribution_percentage">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+        {{ data_table_toggle('aops_per_stressor_distribution_absolute') }}
+    </div>
     </div>
 </section>
 

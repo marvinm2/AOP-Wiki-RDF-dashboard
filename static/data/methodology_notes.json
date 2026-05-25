@@ -217,6 +217,20 @@
         "limitations": "Counts only entities typed as `a aopo:AdverseOutcomePathway` / `aopo:KeyEvent` / `aopo:KeyEventRelationship` / `nci:C54571`. A URI re-minted between snapshots will look like a removal even if the entity semantically still exists. The earliest snapshot is always 0 (nothing has been seen yet). Trend data covers only the published RDF release versions available in the SPARQL endpoint.",
         "sparql": "SELECT DISTINCT ?e\nWHERE {\n  GRAPH __GRAPH_URI__ { ?e a aopo:KeyEvent . }\n}"
     },
+    "stressor_coverage_growth": {
+        "title": "Stressor Coverage Growth",
+        "description": "Per-version count of distinct stressors typed `nci:C54571`. Same numbers as the Stressors trace of the headline AOP Entity Counts plot, isolated so it can be downloaded, methodology-cited, and toggled to a Δ view on its own. Best read alongside the AOPs-per-stressor distribution to distinguish *broadening* (new stressors) from *deepening* (same stressors, more AOPs).",
+        "data_source": "One COUNT-per-graph aggregation. The Δ view is computed in Python from the absolute counts (pandas diff).",
+        "limitations": "Counts the distinct stressor URIs of class `nci:C54571` regardless of whether they are linked to any AOP. A stressor may exist in the RDF without yet being attached to an AOP. Trend data covers only the published RDF release versions available in the SPARQL endpoint.",
+        "sparql": "SELECT ?graph (COUNT(DISTINCT ?s) AS ?n_stressors)\nWHERE {\n  GRAPH ?graph { ?s a <http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C54571> . }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph"
+    },
+    "aops_per_stressor_distribution": {
+        "title": "AOPs per Stressor Distribution",
+        "description": "Per snapshot, stressors bucketed by how many AOPs reference them: {1 AOP, 2 AOPs, 3-5, 6-10, 11+}. The stacked-area view reveals whether AOP-Wiki is broadening (most stressors used in 1 AOP each) or deepening (a few popular stressors carry many AOPs). Latest snapshot has ~74% of stressors in just one AOP — coverage is currently broad and shallow.",
+        "data_source": "One per-version GROUP BY aggregation returning (graph, stressor URI, #AOPs referencing it). Bucketing is applied in Python. The percentage view normalises against the total number of stressors in that snapshot.",
+        "limitations": "Only counts AOP→stressor edges via the `nci:C54571` predicate (the AOP-Wiki RDF uses the same URI for both the class and the linking predicate — unusual modelling but consistent). Stressors not yet attached to any AOP do not appear in this view (use the Stressor Coverage Growth plot for total counts).",
+        "sparql": "SELECT ?graph ?stressor (COUNT(DISTINCT ?aop) AS ?aop_count)\nWHERE {\n  GRAPH ?graph {\n    ?aop a aopo:AdverseOutcomePathway ;\n         <http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C54571> ?stressor .\n    ?stressor a <http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C54571> .\n  }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph ?stressor"
+    },
     "oecd_status_distribution": {
         "title": "OECD Status Distribution Over Time",
         "description": "Per-version count of AOPs in each OECD status. Companion to the OECD completeness trend above — that view measures *quality* per status; this view measures *mix*. Reveals whether AOP-Wiki is maturing (more endorsed/approved AOPs) or accumulating drafts. Absolute mode shows raw counts; the percentage toggle shows the share of each status in the snapshot total.",

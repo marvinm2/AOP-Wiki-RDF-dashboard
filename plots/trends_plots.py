@@ -736,6 +736,190 @@ def plot_oecd_status_distribution() -> tuple[str, str, pd.DataFrame]:
         )
 
 
+def plot_stressor_coverage_growth() -> tuple[str, str, pd.DataFrame]:
+    """Stressor coverage growth (absolute + delta) over snapshots.
+
+    Same numbers as the Stressors trace of `plot_main_graph` but isolated
+    so it can be downloaded and methodology-cited on its own (#75). Used
+    in conjunction with the AOPs-per-stressor distribution view to answer
+    "is AOP-Wiki broadening (more stressors) or deepening (same stressors,
+    more AOPs)?"
+
+    Returns:
+        tuple[str, str, pd.DataFrame]: absolute_html, delta_html, df.
+    """
+    global _plot_data_cache, _plot_figure_cache
+
+    try:
+        query = """
+        SELECT ?graph (COUNT(DISTINCT ?s) AS ?n_stressors)
+        WHERE {
+            GRAPH ?graph { ?s a <http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C54571> . }
+            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        GROUP BY ?graph
+        """
+        results = run_sparql_query_with_retry(query)
+        if not results:
+            return (
+                create_fallback_plot("Stressor Coverage Growth", "No data"),
+                create_fallback_plot("Stressor Coverage Growth (Δ)", "No data"),
+                pd.DataFrame(),
+            )
+        rows = []
+        for r in results:
+            uri = r.get('graph', {}).get('value', '')
+            rows.append({
+                'version': uri.rsplit('/', 1)[-1] if uri else None,
+                'Stressors': int(r.get('n_stressors', {}).get('value', 0)),
+            })
+        df = pd.DataFrame(rows).dropna(subset=['version'])
+        df['_dt'] = pd.to_datetime(df['version'], errors='coerce')
+        df = df.sort_values('_dt').drop(columns='_dt').reset_index(drop=True)
+        df['Δ'] = df['Stressors'].diff().fillna(0).astype(int)
+
+        fig_abs = px.line(
+            df, x='version', y='Stressors', markers=True,
+            color_discrete_sequence=[BRAND_COLORS['orange']],
+            labels={'version': 'Snapshot', 'Stressors': 'Distinct stressors'},
+        )
+        fig_abs.update_xaxes(tickangle=-45)
+        fig_abs.update_layout(margin=dict(l=60, r=30, t=50, b=80))
+
+        fig_delta = px.bar(
+            df, x='version', y='Δ',
+            color_discrete_sequence=[BRAND_COLORS['orange']],
+            labels={'version': 'Snapshot', 'Δ': 'Quarter-over-quarter Δ'},
+        )
+        fig_delta.update_xaxes(tickangle=-45)
+        fig_delta.update_layout(margin=dict(l=60, r=30, t=50, b=80))
+
+        _plot_data_cache['stressor_coverage_growth_absolute'] = df[['version', 'Stressors']]
+        _plot_data_cache['stressor_coverage_growth_delta'] = df[['version', 'Δ']].rename(columns={'Δ': 'delta'})
+        _plot_figure_cache['stressor_coverage_growth_absolute'] = fig_abs
+        _plot_figure_cache['stressor_coverage_growth_delta'] = fig_delta
+
+        return render_plot_html(fig_abs), render_plot_html(fig_delta), df
+
+    except Exception as e:
+        logger.error(f"Failed to generate stressor coverage growth: {str(e)}")
+        return (
+            create_fallback_plot("Stressor Coverage Growth", str(e)),
+            create_fallback_plot("Stressor Coverage Growth (Δ)", str(e)),
+            pd.DataFrame(),
+        )
+
+
+def plot_aops_per_stressor_distribution() -> tuple[str, str, pd.DataFrame]:
+    """Stressors bucketed by #AOPs that reference them, over snapshots (#75).
+
+    Answers whether AOP-Wiki is *broadening* (more stressors used in one AOP
+    each) or *deepening* (same set of "popular" stressors reused across many
+    AOPs). Bucket boundaries: {1, 2, 3-5, 6-10, 11+}.
+
+    Returns:
+        tuple[str, str, pd.DataFrame]: absolute_html, percentage_html, df.
+    """
+    global _plot_data_cache, _plot_figure_cache
+
+    try:
+        query = """
+        SELECT ?graph ?stressor (COUNT(DISTINCT ?aop) AS ?aop_count)
+        WHERE {
+            GRAPH ?graph {
+                ?aop a aopo:AdverseOutcomePathway ;
+                     <http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C54571> ?stressor .
+                ?stressor a <http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C54571> .
+            }
+            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        GROUP BY ?graph ?stressor
+        """
+        results = run_sparql_query_with_retry(query)
+        if not results:
+            return (
+                create_fallback_plot("AOPs per Stressor Distribution", "No data"),
+                create_fallback_plot("AOPs per Stressor Distribution (%)", "No data"),
+                pd.DataFrame(),
+            )
+
+        rows = []
+        for r in results:
+            uri = r.get('graph', {}).get('value', '')
+            rows.append({
+                'version': uri.rsplit('/', 1)[-1] if uri else None,
+                'stressor': r.get('stressor', {}).get('value', ''),
+                'aop_count': int(r.get('aop_count', {}).get('value', 0)),
+            })
+        raw = pd.DataFrame(rows).dropna(subset=['version'])
+
+        bucket_order = ['1 AOP', '2 AOPs', '3-5 AOPs', '6-10 AOPs', '11+ AOPs']
+
+        def _bucket(n: int) -> str:
+            if n <= 1:
+                return '1 AOP'
+            if n == 2:
+                return '2 AOPs'
+            if n <= 5:
+                return '3-5 AOPs'
+            if n <= 10:
+                return '6-10 AOPs'
+            return '11+ AOPs'
+
+        raw['bucket'] = raw['aop_count'].map(_bucket)
+        df = raw.groupby(['version', 'bucket'], as_index=False).size().rename(columns={'size': 'n_stressors'})
+
+        # Ensure every (version, bucket) combination is present (even zero).
+        all_versions = sorted(df['version'].unique(), key=lambda v: pd.to_datetime(v, errors='coerce'))
+        full_idx = pd.MultiIndex.from_product([all_versions, bucket_order], names=['version', 'bucket'])
+        df = df.set_index(['version', 'bucket']).reindex(full_idx, fill_value=0).reset_index()
+
+        # Percentages computed against snapshot total.
+        totals = df.groupby('version', as_index=False)['n_stressors'].sum().rename(columns={'n_stressors': 'total'})
+        df = df.merge(totals, on='version')
+        df['percentage'] = (df['n_stressors'] / df['total'] * 100).fillna(0).round(2)
+
+        # Brand colour ramp — light → dark for low → high concentration.
+        ramp = [BRAND_COLORS['sky_blue'], BRAND_COLORS['light_blue'], BRAND_COLORS['blue'],
+                BRAND_COLORS['violet'], BRAND_COLORS['deep_magenta']]
+        color_map = dict(zip(bucket_order, ramp))
+
+        fig_abs = px.area(
+            df, x='version', y='n_stressors', color='bucket',
+            category_orders={'bucket': bucket_order},
+            color_discrete_map=color_map,
+            labels={'version': 'Snapshot', 'n_stressors': 'Stressors', 'bucket': 'AOPs referencing this stressor'},
+        )
+        fig_abs.update_xaxes(tickangle=-45)
+        fig_abs.update_layout(margin=dict(l=60, r=30, t=50, b=80))
+
+        fig_pct = px.area(
+            df, x='version', y='percentage', color='bucket',
+            category_orders={'bucket': bucket_order},
+            color_discrete_map=color_map,
+            groupnorm='percent',
+            labels={'version': 'Snapshot', 'percentage': '% of stressors', 'bucket': 'AOPs referencing this stressor'},
+        )
+        fig_pct.update_xaxes(tickangle=-45)
+        fig_pct.update_yaxes(range=[0, 100])
+        fig_pct.update_layout(margin=dict(l=60, r=30, t=50, b=80))
+
+        _plot_data_cache['aops_per_stressor_distribution_absolute'] = df
+        _plot_data_cache['aops_per_stressor_distribution_percentage'] = df
+        _plot_figure_cache['aops_per_stressor_distribution_absolute'] = fig_abs
+        _plot_figure_cache['aops_per_stressor_distribution_percentage'] = fig_pct
+
+        return render_plot_html(fig_abs), render_plot_html(fig_pct), df
+
+    except Exception as e:
+        logger.error(f"Failed to generate AOPs-per-stressor distribution: {str(e)}")
+        return (
+            create_fallback_plot("AOPs per Stressor Distribution", str(e)),
+            create_fallback_plot("AOPs per Stressor Distribution (%)", str(e)),
+            pd.DataFrame(),
+        )
+
+
 def plot_avg_per_aop() -> tuple[str, str]:
     """Generate average components per AOP visualization with absolute and delta views."""
     global _plot_data_cache, _plot_figure_cache
