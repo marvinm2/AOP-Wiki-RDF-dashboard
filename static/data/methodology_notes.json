@@ -217,6 +217,13 @@
         "limitations": "Counts only entities typed as `a aopo:AdverseOutcomePathway` / `aopo:KeyEvent` / `aopo:KeyEventRelationship` / `nci:C54571`. A URI re-minted between snapshots will look like a removal even if the entity semantically still exists. The earliest snapshot is always 0 (nothing has been seen yet). Trend data covers only the published RDF release versions available in the SPARQL endpoint.",
         "sparql": "SELECT DISTINCT ?e\nWHERE {\n  GRAPH __GRAPH_URI__ { ?e a aopo:KeyEvent . }\n}"
     },
+    "quarterly_growth_rate": {
+        "title": "Quarterly Growth Rate",
+        "description": "Quarter-over-quarter Δ for the four headline entity types (AOPs, KEs, KERs, Stressors). One panel per entity type. The largest positive and largest negative Δ per entity are auto-annotated. Same numbers as the delta tab of AOP Entity Counts, isolated here for prominence — cumulative line charts hide the slope-change inflection points (e.g. the 2026-Q1 +22-AOP acceleration is subtle on the cumulative curve but obvious as a bar).",
+        "data_source": "Same four COUNT-per-graph queries as AOP Entity Counts. For each entity class, the count per snapshot is fetched, then the per-version Δ is computed in Python (pandas diff). The earliest snapshot is dropped (no predecessor → Δ undefined).",
+        "limitations": "Δ is in absolute units, not percent — a +5 KE quarter when there are 1500 KEs looks the same size on the chart as a +5 KE quarter when there are 200. Trend data covers only the published RDF release versions available in the SPARQL endpoint.",
+        "sparql": "SELECT ?graph (COUNT(?aop) AS ?count)\nWHERE {\n  GRAPH ?graph { ?aop a aopo:AdverseOutcomePathway . }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph\nORDER BY ?graph"
+    },
     "aop_property_presence": {
         "title": "AOP Property Presence Over Time",
         "description": "Tracks which metadata properties are present in AOPs over time. Shows absolute counts of AOPs containing each property per version. Properties that are always 100% present are excluded to highlight meaningful variation in documentation completeness.",

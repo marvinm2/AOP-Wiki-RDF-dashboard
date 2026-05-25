@@ -527,6 +527,113 @@ def plot_entity_cumulative_removed() -> tuple[str, pd.DataFrame]:
         )
 
 
+def plot_quarterly_growth_rate() -> tuple[str, pd.DataFrame]:
+    """Quarter-over-quarter Δ for AOPs / KEs / KERs / Stressors.
+
+    Same numbers as the delta tab of `plot_main_graph`, but presented as a
+    standalone grouped bar chart with the largest positive and negative
+    quarters per entity type auto-annotated. Cumulative lines hide
+    inflection points (the 2026-Q1 +22-AOP acceleration and the 2025-Q3
+    -5-KE dip are both real but visually subtle on the absolute curve);
+    this view makes them obvious.
+
+    Returns:
+        tuple[str, pd.DataFrame]: HTML for the bar chart plus a long-form
+        DataFrame with columns (version, Entity, delta).
+    """
+    global _plot_data_cache, _plot_figure_cache
+
+    try:
+        # Same four queries used by plot_main_graph. Kept self-sufficient so
+        # this plot doesn't depend on plot_main_graph having run first —
+        # startup uses a ThreadPoolExecutor so ordering isn't guaranteed.
+        sparql_queries = {
+            "AOPs": "SELECT ?graph (COUNT(?aop) AS ?count) WHERE { GRAPH ?graph { ?aop a aopo:AdverseOutcomePathway . } FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\")) } GROUP BY ?graph",
+            "KEs": "SELECT ?graph (COUNT(?ke) AS ?count) WHERE { GRAPH ?graph { ?ke a aopo:KeyEvent . } FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\")) } GROUP BY ?graph",
+            "KERs": "SELECT ?graph (COUNT(?ker) AS ?count) WHERE { GRAPH ?graph { ?ker a aopo:KeyEventRelationship . } FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\")) } GROUP BY ?graph",
+            "Stressors": "SELECT ?graph (COUNT(?s) AS ?count) WHERE { GRAPH ?graph { ?s a nci:C54571 . } FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\")) } GROUP BY ?graph",
+        }
+        df_list = []
+        for label, query in sparql_queries.items():
+            results = run_sparql_query(query)
+            df = extract_counts(results)
+            df.rename(columns={"count": label}, inplace=True)
+            df_list.append(df)
+
+        df_all = reduce(lambda l, r: pd.merge(l, r, on="version", how="outer"), df_list)
+        if df_all.empty:
+            return (
+                create_fallback_plot("Quarterly Growth Rate", "No data available"),
+                pd.DataFrame(),
+            )
+
+        df_all["_dt"] = pd.to_datetime(df_all["version"], errors="coerce")
+        df_all = df_all.sort_values("_dt").drop(columns="_dt").reset_index(drop=True)
+
+        entity_order = ["AOPs", "KEs", "KERs", "Stressors"]
+        for col in entity_order:
+            df_all[col] = pd.to_numeric(df_all[col], errors="coerce").fillna(0).astype(int)
+            df_all[col] = df_all[col].diff().fillna(0).astype(int)
+        # Drop the first row (Δ is meaningless against a missing predecessor).
+        df_all = df_all.iloc[1:].reset_index(drop=True)
+
+        long_df = df_all.melt(id_vars="version", value_vars=entity_order,
+                              var_name="Entity", value_name="delta")
+        long_df["Entity"] = pd.Categorical(long_df["Entity"], categories=entity_order, ordered=True)
+
+        fig = px.bar(
+            long_df,
+            x="version",
+            y="delta",
+            color="Entity",
+            facet_col="Entity",
+            facet_col_wrap=2,
+            category_orders={"Entity": entity_order},
+            color_discrete_sequence=BRAND_COLORS['palette'],
+            labels={"version": "Snapshot", "delta": "Quarter-over-quarter Δ"},
+        )
+        fig.for_each_annotation(lambda a: a.update(text=a.text.split('=')[-1]))
+        fig.update_yaxes(matches=None, showticklabels=True, zeroline=True, zerolinecolor='#888', zerolinewidth=1)
+        fig.update_xaxes(tickangle=-45)
+
+        # Annotate the largest positive and largest negative Δ per entity type.
+        for entity in entity_order:
+            sub = long_df[long_df["Entity"] == entity]
+            if sub.empty:
+                continue
+            max_row = sub.loc[sub["delta"].idxmax()]
+            min_row = sub.loc[sub["delta"].idxmin()]
+            for row, color in [(max_row, BRAND_COLORS['orange']), (min_row, BRAND_COLORS['deep_magenta'])]:
+                if int(row["delta"]) == 0:
+                    continue
+                fig.add_annotation(
+                    x=row["version"], y=int(row["delta"]),
+                    text=f"{int(row['delta']):+d}",
+                    showarrow=False, yshift=10 if int(row["delta"]) >= 0 else -10,
+                    font=dict(size=10, color=color),
+                    row=(entity_order.index(entity) // 2) + 1,
+                    col=(entity_order.index(entity) % 2) + 1,
+                )
+
+        fig.update_layout(
+            margin=dict(l=60, r=30, t=50, b=80),
+            height=600,
+            showlegend=False,
+        )
+
+        _plot_data_cache['quarterly_growth_rate'] = long_df
+        _plot_figure_cache['quarterly_growth_rate'] = fig
+
+        return render_plot_html(fig), long_df
+
+    except Exception as e:
+        logger.error(f"Failed to generate quarterly growth-rate plot: {str(e)}")
+        return (
+            create_fallback_plot("Quarterly Growth Rate", str(e)),
+            pd.DataFrame(),
+        )
+
+
 def plot_avg_per_aop() -> tuple[str, str]:
     """Generate average components per AOP visualization with absolute and delta views."""
     global _plot_data_cache, _plot_figure_cache

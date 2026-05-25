@@ -75,6 +75,7 @@ from plots import (
     plot_main_graph,
     plot_entity_birth_death,
     plot_entity_cumulative_removed,
+    plot_quarterly_growth_rate,
     plot_avg_per_aop,
     plot_network_density,
     plot_ke_components,
@@ -189,6 +190,7 @@ def compute_plots_parallel() -> dict:
         ('main_graph', lambda: safe_plot_execution(plot_main_graph)),
         ('entity_birth_death', lambda: safe_plot_execution(plot_entity_birth_death)),
         ('entity_cumulative_removed', lambda: safe_plot_execution(plot_entity_cumulative_removed)),
+        ('quarterly_growth_rate', lambda: safe_plot_execution(plot_quarterly_growth_rate)),
         ('avg_per_aop', lambda: safe_plot_execution(plot_avg_per_aop)),
         ('network_density', lambda: safe_plot_execution(plot_network_density)),
         ('ke_components', lambda: safe_plot_execution(plot_ke_components)),
@@ -283,6 +285,13 @@ try:
         graph_entity_cumulative_removed = ""
 except (TypeError, ValueError):
     graph_entity_cumulative_removed = ""
+
+try:
+    graph_quarterly_growth_rate, _ = plot_results.get('quarterly_growth_rate', (None, None))
+    if graph_quarterly_growth_rate is None:
+        graph_quarterly_growth_rate = ""
+except (TypeError, ValueError):
+    graph_quarterly_growth_rate = ""
 
 try:
     graph_avg_abs, graph_avg_delta = plot_results.get('avg_per_aop', (None, None))
@@ -1415,13 +1424,13 @@ def download_bulk():
 
             # Trend plots (absolute views only to avoid duplication)
             'trends-all': [
-                'aop_entity_counts_absolute', 'entity_birth_death', 'entity_cumulative_removed', 'average_components_per_aop_absolute', 'aop_network_density', 'aop_authors_absolute',
+                'aop_entity_counts_absolute', 'entity_birth_death', 'entity_cumulative_removed', 'quarterly_growth_rate', 'average_components_per_aop_absolute', 'aop_network_density', 'aop_authors_absolute',
                 'aops_created_over_time', 'aops_modified_over_time', 'aop_creation_vs_modification_timeline',
                 'ke_component_annotations_absolute', 'ke_components_percentage_absolute', 'unique_ke_components_absolute',
                 'biological_process_annotations_absolute', 'biological_object_annotations_absolute',
                 'aop_property_presence_absolute', 'aop_property_presence_unique_absolute', 'kes_by_kec_count_absolute'
             ],
-            'trends-main': ['aop_entity_counts_absolute', 'aop_entity_counts_delta', 'entity_birth_death', 'entity_cumulative_removed'],
+            'trends-main': ['aop_entity_counts_absolute', 'aop_entity_counts_delta', 'entity_birth_death', 'entity_cumulative_removed', 'quarterly_growth_rate'],
             'trends-network': ['average_components_per_aop_absolute', 'average_components_per_aop_delta', 'aop_network_density'],
             'trends-authors': ['aop_authors_absolute', 'aop_authors_delta', 'aops_created_over_time', 'aops_modified_over_time', 'aop_creation_vs_modification_timeline'],
             'trends-components': [
@@ -1437,7 +1446,7 @@ def download_bulk():
                 'latest_entity_counts', 'latest_ke_components', 'latest_aop_connectivity',
                 'latest_avg_per_aop', 'latest_process_usage', 'latest_object_usage',
                 'latest_aop_completeness', 'latest_ke_annotation_depth',
-                'aop_entity_counts_absolute', 'entity_birth_death', 'entity_cumulative_removed', 'average_components_per_aop_absolute', 'aop_network_density', 'aop_authors_absolute',
+                'aop_entity_counts_absolute', 'entity_birth_death', 'entity_cumulative_removed', 'quarterly_growth_rate', 'average_components_per_aop_absolute', 'aop_network_density', 'aop_authors_absolute',
                 'aops_created_over_time', 'aops_modified_over_time', 'aop_creation_vs_modification_timeline',
                 'ke_component_annotations_absolute', 'ke_components_percentage_absolute', 'unique_ke_components_absolute',
                 'biological_process_annotations_absolute', 'biological_object_annotations_absolute',
@@ -1679,6 +1688,7 @@ def get_plot(plot_name):
         'aop_entity_counts_delta': graph_main_delta,
         'entity_birth_death': graph_entity_birth_death,
         'entity_cumulative_removed': graph_entity_cumulative_removed,
+        'quarterly_growth_rate': graph_quarterly_growth_rate,
         'average_components_per_aop_absolute': graph_avg_abs,
         'average_components_per_aop_delta': graph_avg_delta,
         'aop_network_density': graph_density,

@@ -103,6 +103,35 @@
     </div>
 
 
+    <!-- Quarterly Growth Rate (#77) -->
+    <div class="plot-box full-width" id="quarterly-growth-rate">
+        <div class="plot-header">
+            <h3>Quarterly Growth Rate</h3>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/quarterly_growth_rate?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/quarterly_growth_rate?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/quarterly_growth_rate?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <p class="plot-description">
+            Quarter-over-quarter Δ for AOPs, KEs, KERs, and Stressors — one panel each.
+            Cumulative views hide slope changes; this view makes inflection points
+            (e.g. the 2026-Q1 +22-AOP jump or the 2025-Q3 KE dip) visible as bars.
+            The largest positive and negative quarters per entity are auto-annotated.
+        </p>
+        {{ methodology_note(methodology_notes, 'quarterly_growth_rate') }}
+        <div class="lazy-plot" data-plot-name="quarterly_growth_rate">
+            <!-- Plot will be loaded here via JavaScript -->
+        </div>
+        {{ data_table_toggle('quarterly_growth_rate') }}
+    </div>
+
+
     <!-- AOP Property Presence -->
     <div class="plot-box full-width" id="aop-property-presence">
         <div class="plot-header">
