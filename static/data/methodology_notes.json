@@ -232,7 +232,7 @@
         "queries": [
             {
                 "caption": "Resolve latest snapshot graph URI",
-                "query": "SELECT ?g WHERE {\n  GRAPH ?g { ?s a aopo:AdverseOutcomePathway . }\n  FILTER(STRSTARTS(STR(?g), \"http://aopwiki.org/graph/\"))\n} GROUP BY ?g ORDER BY DESC(?g) LIMIT 1"
+                "query": "SELECT ?graph WHERE {\n  GRAPH ?graph { ?s a aopo:AdverseOutcomePathway . }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n} GROUP BY ?graph ORDER BY DESC(?graph) LIMIT 1"
             },
             {
                 "caption": "AOP pairs sharing ≥5 KEs (run on the latest graph)",
