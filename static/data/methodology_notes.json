@@ -231,6 +231,10 @@
         "limitations": "The 5-shared-KE threshold is editorial — adjust the `HAVING` clause to explore lower-density structure. Edge count is capped at 250 to protect Plotly rendering; with 208 actual pairs at threshold 5, this isn't hit today but a future snapshot might. Spring layout has no inherent meaning — proximity reflects shared KEs, not biological similarity. The network is undirected (AOP1↔AOP2); KE-level directionality is lost.",
         "queries": [
             {
+                "caption": "Resolve latest snapshot graph URI",
+                "query": "SELECT ?g WHERE {\n  GRAPH ?g { ?s a aopo:AdverseOutcomePathway . }\n  FILTER(STRSTARTS(STR(?g), \"http://aopwiki.org/graph/\"))\n} GROUP BY ?g ORDER BY DESC(?g) LIMIT 1"
+            },
+            {
                 "caption": "AOP pairs sharing ≥5 KEs (run on the latest graph)",
                 "query": "SELECT ?aop1 ?aop2 (COUNT(DISTINCT ?ke) AS ?sharedKEs)\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    ?aop1 a aopo:AdverseOutcomePathway ; aopo:has_key_event ?ke .\n    ?aop2 a aopo:AdverseOutcomePathway ; aopo:has_key_event ?ke .\n    FILTER (STR(?aop1) < STR(?aop2))\n  }\n}\nGROUP BY ?aop1 ?aop2\nHAVING (COUNT(DISTINCT ?ke) >= 5)\nORDER BY DESC(?sharedKEs)\nLIMIT 250"
             },
