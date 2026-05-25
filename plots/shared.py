@@ -1042,6 +1042,136 @@ def get_all_versions() -> list[dict]:
         return []
 
 
+# SPARQL class URIs for the four headline entity types tracked across versions
+# (also used by the entity birth/death helper below).
+ENTITY_TYPE_CLASSES: Dict[str, str] = {
+    "AOPs": "aopo:AdverseOutcomePathway",
+    "KEs": "aopo:KeyEvent",
+    "KERs": "aopo:KeyEventRelationship",
+    "Stressors": "nci:C54571",
+}
+
+
+def fetch_entity_uris_in_graph(graph_uri: str, entity_class: str) -> set:
+    """Fetch the set of entity URIs of a given class in a single named graph.
+
+    Args:
+        graph_uri: Full graph URI (e.g. "http://aopwiki.org/graph/2025-07-01").
+        entity_class: Prefixed SPARQL class name (e.g. "aopo:KeyEvent",
+            "nci:C54571"). The endpoint must have the corresponding prefix
+            bound — Virtuoso's AOP-Wiki deployment has aopo/nci preconfigured.
+
+    Returns:
+        set[str]: Set of distinct entity URIs in the graph.
+    """
+    query = f"""
+        SELECT DISTINCT ?e
+        WHERE {{
+            GRAPH <{graph_uri}> {{ ?e a {entity_class} . }}
+        }}
+    """
+    try:
+        results = run_sparql_query_with_retry(query)
+        return {r.get('e', {}).get('value', '') for r in results if r.get('e', {}).get('value')}
+    except Exception as e:
+        logger.error(f"Error fetching entities of class {entity_class} in {graph_uri}: {e}")
+        return set()
+
+
+def diff_entities_between_versions(
+    entity_type: str,
+    versions: Optional[List[str]] = None,
+    max_workers: int = 5,
+) -> pd.DataFrame:
+    """Compute the per-version gross added/removed entity flow ("birth/death" curve).
+
+    For each adjacent snapshot pair (v_prev → v_curr), counts entities that
+    are present in v_curr but not v_prev (added) and present in v_prev but
+    not v_curr (removed). A net delta of zero can hide significant churn —
+    this helper exposes it. Used by `plot_entity_birth_death` (#71) and
+    reusable by other PRs that need version-to-version set differences
+    (#66 KE migration map, #70 curator view, #72 cumulative removals).
+
+    Args:
+        entity_type: One of the keys in `ENTITY_TYPE_CLASSES`
+            ("AOPs", "KEs", "KERs", "Stressors").
+        versions: Optional pre-sorted list of YYYY-MM-DD version strings.
+            If omitted, queried via `get_all_versions()`.
+        max_workers: ThreadPool size for the per-version fetch queries.
+
+    Returns:
+        pd.DataFrame with one row per transition (indexed by v_curr) and
+        columns:
+            - version (str): v_curr (the newer of the pair).
+            - prev_version (str): v_prev.
+            - entity_type (str): the input entity_type.
+            - added_count (int)
+            - removed_count (int)
+            - stable_count (int)
+            - added_uris (str): semicolon-joined list of added URIs.
+            - removed_uris (str): semicolon-joined list of removed URIs.
+        The earliest version has no v_prev and is therefore omitted from
+        the result.
+    """
+    if entity_type not in ENTITY_TYPE_CLASSES:
+        raise ValueError(
+            f"Unknown entity_type {entity_type!r}; expected one of "
+            f"{sorted(ENTITY_TYPE_CLASSES)}"
+        )
+    entity_class = ENTITY_TYPE_CLASSES[entity_type]
+
+    if versions is None:
+        versions = [v['version'] for v in get_all_versions()]
+    # Chronological order (YYYY-MM-DD sorts lexicographically).
+    versions = sorted(set(versions))
+
+    if len(versions) < 2:
+        return pd.DataFrame(columns=[
+            'version', 'prev_version', 'entity_type',
+            'added_count', 'removed_count', 'stable_count',
+            'added_uris', 'removed_uris',
+        ])
+
+    # Fetch entity URI sets per version in parallel.
+    uris_by_version: Dict[str, set] = {}
+    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+        futures = {
+            pool.submit(
+                fetch_entity_uris_in_graph,
+                f"http://aopwiki.org/graph/{v}",
+                entity_class,
+            ): v
+            for v in versions
+        }
+        for fut in as_completed(futures):
+            v = futures[fut]
+            try:
+                uris_by_version[v] = fut.result() or set()
+            except Exception as e:
+                logger.error(f"Failed to fetch {entity_type} URIs for {v}: {e}")
+                uris_by_version[v] = set()
+
+    rows = []
+    for prev, curr in zip(versions, versions[1:]):
+        prev_set = uris_by_version.get(prev, set())
+        curr_set = uris_by_version.get(curr, set())
+        added = curr_set - prev_set
+        removed = prev_set - curr_set
+        stable = prev_set & curr_set
+        rows.append({
+            'version': curr,
+            'prev_version': prev,
+            'entity_type': entity_type,
+            'added_count': len(added),
+            'removed_count': len(removed),
+            'stable_count': len(stable),
+            'added_uris': ';'.join(sorted(added)),
+            'removed_uris': ';'.join(sorted(removed)),
+        })
+
+    return pd.DataFrame(rows)
+
+
 def build_export_filename(plot_name: str, format: str, version: str = None) -> str:
     """Build self-documenting export filename with date and optional version.
 

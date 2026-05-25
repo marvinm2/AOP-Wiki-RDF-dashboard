@@ -73,6 +73,7 @@ with open(methodology_notes_path, 'r') as f:
 
 from plots import (
     plot_main_graph,
+    plot_entity_birth_death,
     plot_avg_per_aop,
     plot_network_density,
     plot_ke_components,
@@ -185,6 +186,7 @@ def compute_plots_parallel() -> dict:
     # Define plot functions and their expected results
     plot_tasks = [
         ('main_graph', lambda: safe_plot_execution(plot_main_graph)),
+        ('entity_birth_death', lambda: safe_plot_execution(plot_entity_birth_death)),
         ('avg_per_aop', lambda: safe_plot_execution(plot_avg_per_aop)),
         ('network_density', lambda: safe_plot_execution(plot_network_density)),
         ('ke_components', lambda: safe_plot_execution(plot_ke_components)),
@@ -265,6 +267,13 @@ try:
 except (TypeError, ValueError):
     graph_main_abs = graph_main_delta = ""
     df_all = pd.DataFrame()
+
+try:
+    graph_entity_birth_death, _ = plot_results.get('entity_birth_death', (None, None))
+    if graph_entity_birth_death is None:
+        graph_entity_birth_death = ""
+except (TypeError, ValueError):
+    graph_entity_birth_death = ""
 
 try:
     graph_avg_abs, graph_avg_delta = plot_results.get('avg_per_aop', (None, None))
@@ -1397,13 +1406,13 @@ def download_bulk():
 
             # Trend plots (absolute views only to avoid duplication)
             'trends-all': [
-                'aop_entity_counts_absolute', 'average_components_per_aop_absolute', 'aop_network_density', 'aop_authors_absolute',
+                'aop_entity_counts_absolute', 'entity_birth_death', 'average_components_per_aop_absolute', 'aop_network_density', 'aop_authors_absolute',
                 'aops_created_over_time', 'aops_modified_over_time', 'aop_creation_vs_modification_timeline',
                 'ke_component_annotations_absolute', 'ke_components_percentage_absolute', 'unique_ke_components_absolute',
                 'biological_process_annotations_absolute', 'biological_object_annotations_absolute',
                 'aop_property_presence_absolute', 'aop_property_presence_unique_absolute', 'kes_by_kec_count_absolute'
             ],
-            'trends-main': ['aop_entity_counts_absolute', 'aop_entity_counts_delta'],
+            'trends-main': ['aop_entity_counts_absolute', 'aop_entity_counts_delta', 'entity_birth_death'],
             'trends-network': ['average_components_per_aop_absolute', 'average_components_per_aop_delta', 'aop_network_density'],
             'trends-authors': ['aop_authors_absolute', 'aop_authors_delta', 'aops_created_over_time', 'aops_modified_over_time', 'aop_creation_vs_modification_timeline'],
             'trends-components': [
@@ -1419,7 +1428,7 @@ def download_bulk():
                 'latest_entity_counts', 'latest_ke_components', 'latest_aop_connectivity',
                 'latest_avg_per_aop', 'latest_process_usage', 'latest_object_usage',
                 'latest_aop_completeness', 'latest_ke_annotation_depth',
-                'aop_entity_counts_absolute', 'average_components_per_aop_absolute', 'aop_network_density', 'aop_authors_absolute',
+                'aop_entity_counts_absolute', 'entity_birth_death', 'average_components_per_aop_absolute', 'aop_network_density', 'aop_authors_absolute',
                 'aops_created_over_time', 'aops_modified_over_time', 'aop_creation_vs_modification_timeline',
                 'ke_component_annotations_absolute', 'ke_components_percentage_absolute', 'unique_ke_components_absolute',
                 'biological_process_annotations_absolute', 'biological_object_annotations_absolute',
@@ -1659,6 +1668,7 @@ def get_plot(plot_name):
     plot_map = {
         'aop_entity_counts_absolute': graph_main_abs,
         'aop_entity_counts_delta': graph_main_delta,
+        'entity_birth_death': graph_entity_birth_death,
         'average_components_per_aop_absolute': graph_avg_abs,
         'average_components_per_aop_delta': graph_avg_delta,
         'aop_network_density': graph_density,

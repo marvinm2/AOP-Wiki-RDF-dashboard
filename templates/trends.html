@@ -44,6 +44,34 @@
     </div>
 
 
+    <!-- Entity Birth/Death Curve (#71) -->
+    <div class="plot-box full-width" id="entity-birth-death">
+        <div class="plot-header">
+            <h3>Entity Birth/Death Curve</h3>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/entity_birth_death?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/entity_birth_death?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/entity_birth_death?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <p class="plot-description">
+            Gross additions vs removals between adjacent snapshots — one panel per entity type.
+            Additions sit above the zero line, removals below. A net delta of zero (cf. the chart above)
+            can still hide churn; this view exposes it. The CSV includes the URIs of every entity that
+            was added or removed per quarter, for curator follow-up.
+        </p>
+        {{ methodology_note(methodology_notes, 'entity_birth_death') }}
+        <div class="lazy-plot" data-plot-name="entity_birth_death">
+            <!-- Plot will be loaded here via JavaScript -->
+        </div>
+        {{ data_table_toggle('entity_birth_death') }}
+    </div>
+
 
     <!-- AOP Property Presence -->
     <div class="plot-box full-width" id="aop-property-presence">

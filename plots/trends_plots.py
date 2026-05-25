@@ -61,7 +61,8 @@ from .shared import (
     BRAND_COLORS, config, _plot_data_cache, _plot_figure_cache,
     run_sparql_query, run_sparql_query_with_retry, extract_counts,
     safe_read_csv, create_fallback_plot, get_properties_for_entity,
-    get_all_versions, render_plot_html
+    get_all_versions, render_plot_html,
+    ENTITY_TYPE_CLASSES, diff_entities_between_versions,
 )
 from .organ_systems import (
     ORGAN_SYSTEM_BUCKETS,
@@ -294,6 +295,126 @@ def plot_main_graph() -> tuple[str, str, pd.DataFrame]:
             create_fallback_plot("Entity Evolution Over Time", str(e)),
             create_fallback_plot("Entity Change Between Versions", str(e)),
             pd.DataFrame()
+        )
+
+
+def plot_entity_birth_death() -> tuple[str, pd.DataFrame]:
+    """Gross additions vs removals per snapshot transition (birth/death curve).
+
+    Net entity counts hide churn: a delta of zero can mask "5 new KEs added,
+    5 existing KEs removed/merged/deprecated." This plot exposes both flows
+    by diffing the entity URI set of each pair of adjacent named graphs.
+
+    The result is a faceted diverging bar chart — additions above the zero
+    line, removals below — one panel per entity type. The cached DataFrame
+    also stores the actual added/removed URIs per quarter, so curators can
+    inspect whether removals were intentional.
+
+    See `diff_entities_between_versions` (plots/shared.py) for the
+    underlying set-difference helper; that helper is reused by issues #66,
+    #70, and #72.
+
+    Returns:
+        tuple[str, pd.DataFrame]:
+            - HTML for the faceted diverging-bar plot.
+            - DataFrame with one row per (version, entity_type) transition,
+              columns: version, prev_version, entity_type, added_count,
+              removed_count, stable_count, added_uris, removed_uris.
+    """
+    global _plot_data_cache, _plot_figure_cache
+
+    try:
+        versions = [v['version'] for v in get_all_versions()]
+        versions = sorted(set(versions))
+        if len(versions) < 2:
+            logger.warning("Not enough versions for birth/death curve")
+            return (
+                create_fallback_plot(
+                    "Entity Birth/Death Curve",
+                    "Need at least two snapshot versions to compute a diff."
+                ),
+                pd.DataFrame(),
+            )
+
+        # Run the four entity types in parallel — each spawns its own per-version
+        # fetch pool internally. Cap workers at 4 since there are 4 types.
+        per_type_dfs: list[pd.DataFrame] = []
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            futures = {
+                pool.submit(diff_entities_between_versions, entity_type, versions): entity_type
+                for entity_type in ENTITY_TYPE_CLASSES
+            }
+            for fut in as_completed(futures):
+                entity_type = futures[fut]
+                try:
+                    per_type_dfs.append(fut.result())
+                except Exception as e:
+                    logger.error(f"Birth/death diff failed for {entity_type}: {e}")
+
+        if not per_type_dfs:
+            return (
+                create_fallback_plot("Entity Birth/Death Curve", "No diff data available"),
+                pd.DataFrame(),
+            )
+
+        df = pd.concat(per_type_dfs, ignore_index=True)
+        # Stable chronological + entity ordering for downstream UX.
+        entity_order = list(ENTITY_TYPE_CLASSES.keys())
+        df['entity_type'] = pd.Categorical(df['entity_type'], categories=entity_order, ordered=True)
+        df = df.sort_values(['entity_type', 'version']).reset_index(drop=True)
+
+        # Long-form frame for plotly: signed bars — additions positive, removals negative.
+        plot_df = pd.concat([
+            df.assign(
+                Direction='Added',
+                Count=df['added_count'].astype(int),
+            )[['version', 'entity_type', 'Direction', 'Count']],
+            df.assign(
+                Direction='Removed',
+                Count=-df['removed_count'].astype(int),
+            )[['version', 'entity_type', 'Direction', 'Count']],
+        ], ignore_index=True)
+
+        fig = px.bar(
+            plot_df,
+            x='version',
+            y='Count',
+            color='Direction',
+            facet_col='entity_type',
+            facet_col_wrap=2,
+            category_orders={
+                'entity_type': entity_order,
+                'Direction': ['Added', 'Removed'],
+            },
+            color_discrete_map={
+                'Added': BRAND_COLORS['magenta'],
+                'Removed': BRAND_COLORS['primary'],
+            },
+            labels={'version': 'Snapshot', 'Count': 'Entities (added / removed)'},
+        )
+        # Per-facet title cleanup: "entity_type=AOPs" → "AOPs".
+        fig.for_each_annotation(lambda a: a.update(text=a.text.split('=')[-1]))
+        # Free y-axes so KEs/KERs don't squash AOP/Stressor panels.
+        fig.update_yaxes(matches=None, showticklabels=True)
+        fig.update_xaxes(tickangle=-45)
+        fig.add_hline(y=0, line_dash='dot', line_color='#888', line_width=1)
+        fig.update_layout(
+            barmode='relative',
+            margin=dict(l=60, r=30, t=50, b=80),
+            height=600,
+            legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1.0),
+        )
+
+        _plot_data_cache['entity_birth_death'] = df
+        _plot_figure_cache['entity_birth_death'] = fig
+
+        return render_plot_html(fig), df
+
+    except Exception as e:
+        logger.error(f"Failed to generate entity birth/death plot: {str(e)}")
+        return (
+            create_fallback_plot("Entity Birth/Death Curve", str(e)),
+            pd.DataFrame(),
         )
 
 

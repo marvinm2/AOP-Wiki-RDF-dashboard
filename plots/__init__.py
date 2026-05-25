@@ -140,6 +140,7 @@ from .shared import (
 from .trends_plots import (
     # Core evolution analysis
     plot_main_graph,
+    plot_entity_birth_death,
     plot_avg_per_aop,
     plot_network_density,
     plot_author_counts,
@@ -262,6 +263,7 @@ __all__ = [
 
     # Historical trends functions
     'plot_main_graph',
+    'plot_entity_birth_death',
     'plot_avg_per_aop',
     'plot_network_density',
     'plot_author_counts',
@@ -328,6 +330,7 @@ def get_available_functions():
     return {
         'historical_trends': [
             'plot_main_graph',
+            'plot_entity_birth_death',
             'plot_avg_per_aop',
             'plot_network_density',
             'plot_author_counts',

@@ -203,6 +203,13 @@
         "limitations": "Data reflects the RDF transformation, not the raw AOP-Wiki database. Entity counts include all instances regardless of completeness or quality. Some versions may have data quality variations due to changes in the RDF conversion pipeline. Trend data covers only the published RDF release versions available in the SPARQL endpoint; the AOP-Wiki knowledge base predates the earliest RDF release, so earlier activity is not captured.",
         "sparql": "SELECT ?graph (COUNT(?aop) AS ?count)\nWHERE {\n  GRAPH ?graph {\n    ?aop a aopo:AdverseOutcomePathway .\n  }\n}\nGROUP BY ?graph\nORDER BY ?graph"
     },
+    "entity_birth_death": {
+        "title": "Entity Birth/Death Curve",
+        "description": "Gross additions vs removals per snapshot transition, one panel per entity type. Additions appear above the zero line, removals below. The AOP Entity Counts plot above shows net change — a delta of zero can still hide significant churn (e.g. five new KEs added while five existing KEs were merged or deprecated). This view exposes both flows.",
+        "data_source": "For each entity class (AOPs, KEs, KERs, Stressors), the distinct set of entity URIs is fetched per named graph using the query below; consecutive snapshots are then diffed in Python. `added` = present in v_curr but not v_prev, `removed` = present in v_prev but not v_curr. An equivalent endpoint-side computation would substitute two graph URIs into a `GRAPH <v_curr> { … } MINUS { GRAPH <v_prev> { … } }` pattern. The downloadable CSV preserves the actual added/removed URIs per quarter for curator follow-up.",
+        "limitations": "Only entities present as `a aopo:AdverseOutcomePathway` / `aopo:KeyEvent` / `aopo:KeyEventRelationship` / `nci:C54571` are tracked. A URI changing identifier between versions (re-minted) will look like a removal + addition; merges or splits will look similar. The earliest snapshot has no predecessor and is therefore omitted. Trend data covers only the published RDF release versions available in the SPARQL endpoint.",
+        "sparql": "SELECT DISTINCT ?e\nWHERE {\n  GRAPH __GRAPH_URI__ { ?e a aopo:KeyEvent . }\n}"
+    },
     "aop_property_presence": {
         "title": "AOP Property Presence Over Time",
         "description": "Tracks which metadata properties are present in AOPs over time. Shows absolute counts of AOPs containing each property per version. Properties that are always 100% present are excluded to highlight meaningful variation in documentation completeness.",
