@@ -3583,3 +3583,264 @@ def plot_latest_aop_aop_overlap(version: str = None, min_shared_kes: int = 5, ma
     _plot_figure_cache['latest_aop_aop_overlap'] = fig
 
     return render_plot_html(fig)
+
+
+def _compute_aop_maturity(graph_uri: str) -> pd.DataFrame:
+    """Per-AOP maturity scores on 4 dimensions for the given snapshot graph.
+
+    Computes the underlying aggregation that backs both
+    `plot_latest_aop_maturity_index` (composite #64) and
+    `plot_latest_qaop_readiness` (per-dimension #65). Pulled into a
+    separate helper because both views need exactly the same numbers.
+
+    Dimensions:
+        1. mmo_pct       — % of the AOP's KEs that have `obo:MMO_0000000`
+        2. evidence_pct  — % of the AOP's KERs that have `edam:data_2042`
+        3. desc_pct      — % of the AOP's KEs that have a `dc:description`
+        4. context_pct   — % of the AOP's KEs that have at least one of
+                           OrganContext / CellTypeContext / LifeStageContext
+
+    Note: the original issue prediction (#64 / #65) calls out
+    `edam:operation_3799` (quantitative understanding) and `nciT:C80263`
+    (essentiality of KE) as the 3rd and 4th dimensions. Both predicates
+    return 0 hits against the live AOP-Wiki RDF — they are aspirational
+    rather than populated. Substituted with description and biological
+    context, which are populated and capture similar documentation depth.
+
+    Returns:
+        pd.DataFrame: columns aop_uri, aop_id, title, n_kes, n_kers,
+        mmo_pct, evidence_pct, desc_pct, context_pct, maturity (composite).
+    """
+    queries = {
+        # Per-AOP counts of KEs / KERs and sub-counts meeting each predicate.
+        'base': """
+            SELECT ?aop (COUNT(DISTINCT ?ke) AS ?n_kes)
+                   (COUNT(DISTINCT ?ke_mmo) AS ?n_mmo)
+                   (COUNT(DISTINCT ?ke_desc) AS ?n_desc)
+                   (COUNT(DISTINCT ?ke_ctx) AS ?n_ctx)
+            WHERE {
+              GRAPH <__G__> {
+                ?aop a aopo:AdverseOutcomePathway ;
+                     aopo:has_key_event ?ke .
+                OPTIONAL { ?ke <http://purl.obolibrary.org/obo/MMO_0000000> ?_m .
+                           BIND(?ke AS ?ke_mmo) }
+                OPTIONAL { ?ke <http://purl.org/dc/elements/1.1/description> ?_d .
+                           BIND(?ke AS ?ke_desc) }
+                OPTIONAL { ?ke ?_ctx_pred ?_ctx_val .
+                           FILTER(?_ctx_pred IN (
+                               <http://aopkb.org/aop_ontology#OrganContext>,
+                               <http://aopkb.org/aop_ontology#CellTypeContext>,
+                               <http://aopkb.org/aop_ontology#LifeStageContext>
+                           ))
+                           BIND(?ke AS ?ke_ctx) }
+              }
+            }
+            GROUP BY ?aop
+        """,
+        # Per-AOP KER counts and how many KERs have empirical evidence.
+        'kers': """
+            SELECT ?aop (COUNT(DISTINCT ?ker) AS ?n_kers)
+                   (COUNT(DISTINCT ?ker_ev) AS ?n_evidence)
+            WHERE {
+              GRAPH <__G__> {
+                ?aop a aopo:AdverseOutcomePathway ;
+                     aopo:has_key_event_relationship ?ker .
+                OPTIONAL { ?ker <http://edamontology.org/data_2042> ?_ev .
+                           BIND(?ker AS ?ker_ev) }
+              }
+            }
+            GROUP BY ?aop
+        """,
+        # AOP titles for the chart axis.
+        'titles': """
+            SELECT ?aop ?title WHERE {
+              GRAPH <__G__> {
+                ?aop a aopo:AdverseOutcomePathway .
+                OPTIONAL { ?aop <http://purl.org/dc/elements/1.1/title> ?title }
+              }
+            }
+        """,
+    }
+
+    base_rows = run_sparql_query(queries['base'].replace('__G__', graph_uri))
+    ker_rows = run_sparql_query(queries['kers'].replace('__G__', graph_uri))
+    title_rows = run_sparql_query(queries['titles'].replace('__G__', graph_uri))
+
+    base = pd.DataFrame([{
+        'aop_uri': r['aop']['value'],
+        'n_kes': int(r.get('n_kes', {}).get('value', 0)),
+        'n_mmo': int(r.get('n_mmo', {}).get('value', 0)),
+        'n_desc': int(r.get('n_desc', {}).get('value', 0)),
+        'n_ctx': int(r.get('n_ctx', {}).get('value', 0)),
+    } for r in base_rows])
+    kers = pd.DataFrame([{
+        'aop_uri': r['aop']['value'],
+        'n_kers': int(r.get('n_kers', {}).get('value', 0)),
+        'n_evidence': int(r.get('n_evidence', {}).get('value', 0)),
+    } for r in ker_rows]) if ker_rows else pd.DataFrame(columns=['aop_uri', 'n_kers', 'n_evidence'])
+    titles = pd.DataFrame([{
+        'aop_uri': r['aop']['value'],
+        'title': r.get('title', {}).get('value', r['aop']['value'].rsplit('/', 1)[-1]),
+    } for r in title_rows])
+
+    df = base.merge(kers, on='aop_uri', how='left').merge(titles, on='aop_uri', how='left')
+    df[['n_kers', 'n_evidence']] = df[['n_kers', 'n_evidence']].fillna(0).astype(int)
+    df['title'] = df['title'].fillna(df['aop_uri'].str.rsplit('/', n=1).str[-1])
+    df['aop_id'] = df['aop_uri'].str.rsplit('/', n=1).str[-1]
+
+    df['mmo_pct'] = (df['n_mmo'] / df['n_kes'].where(df['n_kes'] > 0) * 100).fillna(0)
+    df['evidence_pct'] = (df['n_evidence'] / df['n_kers'].where(df['n_kers'] > 0) * 100).fillna(0)
+    df['desc_pct'] = (df['n_desc'] / df['n_kes'].where(df['n_kes'] > 0) * 100).fillna(0)
+    df['context_pct'] = (df['n_ctx'] / df['n_kes'].where(df['n_kes'] > 0) * 100).fillna(0)
+
+    dims = ['mmo_pct', 'evidence_pct', 'desc_pct', 'context_pct']
+    df['maturity'] = df[dims].mean(axis=1)
+    for c in [*dims, 'maturity']:
+        df[c] = df[c].round(1)
+
+    return df
+
+
+def _resolve_latest_graph_for_aop_maturity(version: str = None) -> str:
+    if version:
+        return f"http://aopwiki.org/graph/{version}"
+    q = """
+    SELECT ?graph WHERE {
+        GRAPH ?graph { ?s a aopo:AdverseOutcomePathway . }
+        FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+    } GROUP BY ?graph ORDER BY DESC(?graph) LIMIT 1
+    """
+    res = run_sparql_query(q)
+    return res[0]['graph']['value'] if res else ""
+
+
+def plot_latest_aop_maturity_index(version: str = None) -> str:
+    """Composite AOP maturity index (#64).
+
+    Per-AOP weighted mean of four documentation-completeness sub-scores
+    (% KEs with MMO, % KERs with edam:data_2042 evidence, % KEs with
+    `dc:description`, % KEs with biological context). Default weights
+    are equal (¼ each). Renders the top-30 AOPs by composite as a
+    horizontal bar chart, with the four sub-scores stacked underneath
+    via hover for transparency.
+    """
+    graph_uri = _resolve_latest_graph_for_aop_maturity(version)
+    if not graph_uri:
+        return create_fallback_plot("AOP Maturity Index", "No data")
+    version_str = graph_uri.rsplit('/', 1)[-1]
+    try:
+        df = _compute_aop_maturity(graph_uri)
+        if df.empty:
+            return create_fallback_plot("AOP Maturity Index", "No AOPs in snapshot")
+
+        top = df.sort_values('maturity', ascending=True).tail(30).copy()
+        top['label'] = top['aop_id'] + " — " + top['title'].str.slice(0, 60)
+        top['hover'] = top.apply(
+            lambda r: (
+                f"<b>{r['aop_id']}</b><br>{r['title']}<br>"
+                f"Maturity: <b>{r['maturity']:.1f}</b><br>"
+                f"MMO: {r['mmo_pct']:.0f}% • Evidence: {r['evidence_pct']:.0f}%<br>"
+                f"Description: {r['desc_pct']:.0f}% • Context: {r['context_pct']:.0f}%<br>"
+                f"KEs: {r['n_kes']} • KERs: {r['n_kers']}"
+            ),
+            axis=1,
+        )
+
+        fig = px.bar(
+            top, x='maturity', y='label', orientation='h',
+            color='maturity', color_continuous_scale=[
+                BRAND_COLORS['primary'], BRAND_COLORS['blue'], BRAND_COLORS['magenta']
+            ],
+            labels={'maturity': 'Composite maturity (mean of 4 sub-scores, 0-100)', 'label': 'AOP'},
+        )
+        fig.update_traces(hovertemplate=top['hover'] + '<extra></extra>')
+        fig.update_layout(
+            title={"text": f"AOP Maturity Index — top 30<br><sub>Mean of (MMO%, Evidence%, Description%, Context%) per AOP (v{version_str})</sub>"},
+            height=900,
+            margin=dict(l=200, r=30, t=80, b=60),
+            coloraxis_showscale=False,
+        )
+        fig.update_xaxes(range=[0, 100])
+
+        cache_key = f"latest_aop_maturity_index_{version or 'latest'}"
+        export_df = df[['aop_id', 'aop_uri', 'title', 'n_kes', 'n_kers',
+                        'mmo_pct', 'evidence_pct', 'desc_pct', 'context_pct', 'maturity']].copy()
+        export_df.insert(0, 'Version', version_str)
+        _plot_data_cache[cache_key] = export_df
+        _plot_data_cache['latest_aop_maturity_index'] = export_df
+        _plot_figure_cache[cache_key] = fig
+        _plot_figure_cache['latest_aop_maturity_index'] = fig
+
+        return render_plot_html(fig)
+    except Exception as e:
+        logger.error(f"Failed to compute AOP maturity index: {e}")
+        return create_fallback_plot("AOP Maturity Index", str(e))
+
+
+def plot_latest_qaop_readiness(version: str = None) -> str:
+    """Per-AOP qAOP-readiness scorecard (#65) — four sub-scores, top 20.
+
+    Same underlying aggregation as the maturity index (#64), but
+    presented as a grouped horizontal bar chart with one bar per
+    sub-score per AOP. Sorted by composite descending. Lets users see
+    where each AOP is strong vs weak across the four documentation
+    dimensions.
+    """
+    graph_uri = _resolve_latest_graph_for_aop_maturity(version)
+    if not graph_uri:
+        return create_fallback_plot("qAOP Readiness Scorecard", "No data")
+    version_str = graph_uri.rsplit('/', 1)[-1]
+    try:
+        df = _compute_aop_maturity(graph_uri)
+        if df.empty:
+            return create_fallback_plot("qAOP Readiness Scorecard", "No AOPs in snapshot")
+
+        top = df.sort_values('maturity', ascending=False).head(20).copy()
+        top['label'] = top['aop_id'] + " — " + top['title'].str.slice(0, 50)
+
+        long = top.melt(
+            id_vars=['label', 'aop_id', 'title', 'maturity'],
+            value_vars=['mmo_pct', 'evidence_pct', 'desc_pct', 'context_pct'],
+            var_name='Dimension', value_name='Score',
+        )
+        dim_labels = {
+            'mmo_pct': 'Measurement (MMO)',
+            'evidence_pct': 'Empirical evidence (edam:data_2042)',
+            'desc_pct': 'KE description',
+            'context_pct': 'Biological context',
+        }
+        long['Dimension'] = long['Dimension'].map(dim_labels)
+        dim_order = list(dim_labels.values())
+
+        fig = px.bar(
+            long, x='Score', y='label', color='Dimension', orientation='h',
+            barmode='group',
+            category_orders={'Dimension': dim_order, 'label': top['label'].tolist()[::-1]},
+            color_discrete_sequence=[BRAND_COLORS['magenta'], BRAND_COLORS['blue'],
+                                     BRAND_COLORS['orange'], BRAND_COLORS['teal']],
+            labels={'Score': '% covered (0-100)', 'label': 'AOP'},
+        )
+        fig.update_layout(
+            title={"text": f"qAOP-readiness scorecard — top 20 AOPs by composite maturity<br><sub>Four sub-scores per AOP, sortable & downloadable (v{version_str})</sub>"},
+            height=900,
+            margin=dict(l=200, r=30, t=80, b=60),
+            legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1.0),
+        )
+        fig.update_xaxes(range=[0, 105])
+
+        cache_key = f"latest_qaop_readiness_{version or 'latest'}"
+        export_df = df.sort_values('maturity', ascending=False)[[
+            'aop_id', 'aop_uri', 'title', 'maturity',
+            'mmo_pct', 'evidence_pct', 'desc_pct', 'context_pct',
+            'n_kes', 'n_kers',
+        ]].copy()
+        export_df.insert(0, 'Version', version_str)
+        _plot_data_cache[cache_key] = export_df
+        _plot_data_cache['latest_qaop_readiness'] = export_df
+        _plot_figure_cache[cache_key] = fig
+        _plot_figure_cache['latest_qaop_readiness'] = fig
+
+        return render_plot_html(fig)
+    except Exception as e:
+        logger.error(f"Failed to compute qAOP readiness: {e}")
+        return create_fallback_plot("qAOP Readiness Scorecard", str(e))

@@ -127,6 +127,8 @@ from plots import (
     plot_latest_life_stage,
     plot_latest_ke_mmo_coverage,
     plot_latest_aop_aop_overlap,
+    plot_latest_aop_maturity_index,
+    plot_latest_qaop_readiness,
     plot_ontology_term_growth,
     plot_organ_coverage_trends,
     check_sparql_endpoint_health,
@@ -1804,6 +1806,8 @@ def get_plot(plot_name):
         'latest_life_stage': plot_latest_life_stage,
         'latest_ke_mmo_coverage': plot_latest_ke_mmo_coverage,
         'latest_aop_aop_overlap': plot_latest_aop_aop_overlap,
+        'latest_aop_maturity_index': plot_latest_aop_maturity_index,
+        'latest_qaop_readiness': plot_latest_qaop_readiness,
     }
 
     # Handle latest_* plots without version support yet (use pre-computed)
