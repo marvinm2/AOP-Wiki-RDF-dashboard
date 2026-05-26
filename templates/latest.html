@@ -141,28 +141,6 @@
             </div>
             {{ data_table_toggle('latest_aop_connectivity') }}
         </div>
-        <div class="plot-box">
-            <div class="plot-header">
-                <h3>Average Components per AOP</h3>
-                <div class="download-dropdown">
-                    <button class="download-button dropdown-toggle">Download &#x25BC;</button>
-                    <div class="dropdown-menu">
-                        <a href="/download/latest_avg_per_aop?format=csv" class="dropdown-item">CSV</a>
-                        <a href="/download/latest_avg_per_aop?format=png" class="dropdown-item">PNG</a>
-                        <a href="/download/latest_avg_per_aop?format=svg" class="dropdown-item">SVG</a>
-                    </div>
-                </div>
-            </div>
-            <p class="plot-description">
-                Average number of Key Events and Key Event Relationships per AOP in the current database.
-            </p>
-            {{ methodology_note(methodology_notes, 'latest_avg_per_aop') }}
-            <div class="lazy-plot" data-plot-name="latest_avg_per_aop">
-                <!-- Plot will be loaded here via JavaScript -->
-            </div>
-            {{ data_table_toggle('latest_avg_per_aop') }}
-        </div>
-
         <!-- AOP-AOP Overlap Network (#67) -->
         <div class="plot-box full-width" id="latest-aop-aop-overlap">
             <div class="plot-header">
@@ -196,6 +174,28 @@
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
             {{ data_table_toggle('latest_aop_aop_overlap') }}
+        </div>
+
+        <div class="plot-box">
+            <div class="plot-header">
+                <h3>Average Components per AOP</h3>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download &#x25BC;</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/latest_avg_per_aop?format=csv" class="dropdown-item">CSV</a>
+                        <a href="/download/latest_avg_per_aop?format=png" class="dropdown-item">PNG</a>
+                        <a href="/download/latest_avg_per_aop?format=svg" class="dropdown-item">SVG</a>
+                    </div>
+                </div>
+            </div>
+            <p class="plot-description">
+                Average number of Key Events and Key Event Relationships per AOP in the current database.
+            </p>
+            {{ methodology_note(methodology_notes, 'latest_avg_per_aop') }}
+            <div class="lazy-plot" data-plot-name="latest_avg_per_aop">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+            {{ data_table_toggle('latest_avg_per_aop') }}
         </div>
     </div>
 </section>
@@ -441,6 +441,27 @@
     <div class="plot-grid">
         <div class="plot-box">
             <div class="plot-header">
+                <h3>Key Event Reuse Distribution</h3>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download &#x25BC;</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/latest/ke_reuse_distribution?format=csv" class="dropdown-item">CSV</a>
+                        <a href="/download/latest/ke_reuse_distribution?format=png" class="dropdown-item">PNG</a>
+                        <a href="/download/latest/ke_reuse_distribution?format=svg" class="dropdown-item">SVG</a>
+                    </div>
+                </div>
+            </div>
+            <p class="plot-description">
+                Histogram showing how many AOPs each Key Event belongs to. Most KEs appear in only 1 AOP, but some are shared across many pathways.
+            </p>
+            {{ methodology_note(methodology_notes, 'latest_ke_reuse_distribution') }}
+            <div class="lazy-plot" data-plot-name="latest_ke_reuse_distribution">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+            {{ data_table_toggle('latest_ke_reuse_distribution') }}
+        </div>
+        <div class="plot-box">
+            <div class="plot-header">
                 <h3>Most Reused Key Events Across AOPs</h3>
                 <div class="download-dropdown">
                     <button class="download-button dropdown-toggle">Download &#x25BC;</button>
@@ -460,27 +481,6 @@
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
             {{ data_table_toggle('latest_ke_reuse') }}
-        </div>
-        <div class="plot-box">
-            <div class="plot-header">
-                <h3>Key Event Reuse Distribution</h3>
-                <div class="download-dropdown">
-                    <button class="download-button dropdown-toggle">Download &#x25BC;</button>
-                    <div class="dropdown-menu">
-                        <a href="/download/latest/ke_reuse_distribution?format=csv" class="dropdown-item">CSV</a>
-                        <a href="/download/latest/ke_reuse_distribution?format=png" class="dropdown-item">PNG</a>
-                        <a href="/download/latest/ke_reuse_distribution?format=svg" class="dropdown-item">SVG</a>
-                    </div>
-                </div>
-            </div>
-            <p class="plot-description">
-                Histogram showing how many AOPs each Key Event belongs to. Most KEs appear in only 1 AOP, but some are shared across many pathways.
-            </p>
-            {{ methodology_note(methodology_notes, 'latest_ke_reuse_distribution') }}
-            <div class="lazy-plot" data-plot-name="latest_ke_reuse_distribution">
-                <!-- Plot will be loaded here via JavaScript -->
-            </div>
-            {{ data_table_toggle('latest_ke_reuse_distribution') }}
         </div>
     </div>
 </section>
