@@ -135,6 +135,7 @@ from plots import (
     plot_ontology_term_growth,
     plot_organ_coverage_trends,
     check_sparql_endpoint_health,
+    run_sparql_query,
     safe_plot_execution,
     get_latest_version,
     get_all_versions,
