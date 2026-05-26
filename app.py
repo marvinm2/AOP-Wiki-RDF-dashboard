@@ -243,6 +243,16 @@ def compute_plots_parallel() -> dict:
         ('latest_ke_annotation_depth', lambda: safe_plot_execution(plot_latest_ke_annotation_depth)),
         ('ontology_term_growth', lambda: safe_plot_execution(plot_ontology_term_growth)),
         ('organ_coverage', lambda: safe_plot_execution(plot_organ_coverage_trends)),
+        # New latest-snapshot plots — pre-rendered at startup so first hit is instant (#64-#70, #67-#69)
+        ('latest_aop_aop_overlap', lambda: safe_plot_execution(plot_latest_aop_aop_overlap)),
+        ('latest_aop_maturity_index', lambda: safe_plot_execution(plot_latest_aop_maturity_index)),
+        ('latest_qaop_readiness', lambda: safe_plot_execution(plot_latest_qaop_readiness)),
+        ('latest_ke_mmo_coverage', lambda: safe_plot_execution(plot_latest_ke_mmo_coverage)),
+        ('latest_curator_orphan_kes', lambda: safe_plot_execution(plot_latest_curator_orphan_kes)),
+        ('latest_curator_stale_aops', lambda: safe_plot_execution(plot_latest_curator_stale_aops)),
+        ('latest_curator_evidence_free_kers', lambda: safe_plot_execution(plot_latest_curator_evidence_free_kers)),
+        ('latest_curator_abandoned_aops', lambda: safe_plot_execution(plot_latest_curator_abandoned_aops)),
+        ('latest_ke_wikipathways_overlay', lambda: safe_plot_execution(plot_latest_ke_wikipathways_overlay)),
     ]
     
     results = {}
@@ -273,6 +283,24 @@ def compute_plots_parallel() -> dict:
 _startup_complete = False
 plot_results = compute_plots_parallel()
 _startup_complete = True
+
+# Pre-rendered HTML for latest_* plots that don't take a version parameter
+# from the UI. The lazy-load endpoint returns these directly so first-paint
+# is instant; the underlying plot function still runs when a specific
+# version is requested via ?version=YYYY-MM-DD.
+_latest_precomputed_html: dict[str, str] = {
+    k: plot_results[k] for k in (
+        'latest_aop_aop_overlap',
+        'latest_aop_maturity_index',
+        'latest_qaop_readiness',
+        'latest_ke_mmo_coverage',
+        'latest_curator_orphan_kes',
+        'latest_curator_stale_aops',
+        'latest_curator_evidence_free_kers',
+        'latest_curator_abandoned_aops',
+        'latest_ke_wikipathways_overlay',
+    ) if isinstance(plot_results.get(k), str) and plot_results[k]
+}
 
 # Pin latest version in caches so it is never evicted
 _latest_version = get_latest_version()
@@ -1832,6 +1860,10 @@ def get_plot(plot_name):
 
     # Handle latest_* plots without version support yet (use pre-computed)
     latest_plots_precomputed = {}
+
+    # Fast path: pre-rendered latest plots (no version requested).
+    if not version and plot_name in _latest_precomputed_html:
+        return jsonify({'html': _latest_precomputed_html[plot_name], 'success': True})
 
     # Check if it's a versioned latest plot
     if plot_name in latest_plots_with_version:

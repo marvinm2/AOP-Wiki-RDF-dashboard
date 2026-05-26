@@ -3585,8 +3585,16 @@ def plot_latest_aop_aop_overlap(version: str = None, min_shared_kes: int = 5, ma
     return render_plot_html(fig)
 
 
+_maturity_cache: dict[str, pd.DataFrame] = {}
+
+
 def _compute_aop_maturity(graph_uri: str) -> pd.DataFrame:
     """Per-AOP maturity scores on 4 dimensions for the given snapshot graph.
+
+    Memoised by `graph_uri` — both `plot_latest_aop_maturity_index` and
+    `plot_latest_qaop_readiness` call this, and they run on the same
+    snapshot. Without the cache we'd hit the SPARQL endpoint 6 times
+    instead of 3.
 
     Computes the underlying aggregation that backs both
     `plot_latest_aop_maturity_index` (composite #64) and
@@ -3611,6 +3619,8 @@ def _compute_aop_maturity(graph_uri: str) -> pd.DataFrame:
         pd.DataFrame: columns aop_uri, aop_id, title, n_kes, n_kers,
         mmo_pct, evidence_pct, desc_pct, context_pct, maturity (composite).
     """
+    if graph_uri in _maturity_cache:
+        return _maturity_cache[graph_uri].copy()
     queries = {
         # Per-AOP counts of KEs / KERs and sub-counts meeting each predicate.
         'base': """
@@ -3698,7 +3708,8 @@ def _compute_aop_maturity(graph_uri: str) -> pd.DataFrame:
     for c in [*dims, 'maturity']:
         df[c] = df[c].round(1)
 
-    return df
+    _maturity_cache[graph_uri] = df
+    return df.copy()
 
 
 def _resolve_latest_graph_for_aop_maturity(version: str = None) -> str:
@@ -4084,6 +4095,9 @@ def plot_latest_curator_abandoned_aops(version: str = None) -> str:
         return create_fallback_plot("Abandoned AOPs", str(e))
 
 
+_wp_overlay_cache: dict[str, str] = {}
+
+
 def plot_latest_ke_wikipathways_overlay(version: str = None, min_mapped_genes: int = 3, top_n: int = 30) -> str:
     """KE ↔ WikiPathways overlay (#69) — pathway support per KE.
 
@@ -4108,6 +4122,10 @@ def plot_latest_ke_wikipathways_overlay(version: str = None, min_mapped_genes: i
     if not graph_uri:
         return create_fallback_plot("KE ↔ WikiPathways Overlay", "No data")
     version_str = graph_uri.rsplit('/', 1)[-1]
+
+    cache_signature = f"{graph_uri}|{min_mapped_genes}|{top_n}"
+    if cache_signature in _wp_overlay_cache:
+        return _wp_overlay_cache[cache_signature]
 
     # 1. From AOPWikiRDF: KE → list of HGNC symbols (filtered to KEs with ≥N genes).
     ke_q = f"""
@@ -4243,4 +4261,6 @@ def plot_latest_ke_wikipathways_overlay(version: str = None, min_mapped_genes: i
     _plot_figure_cache[cache_key] = fig
     _plot_figure_cache['latest_ke_wikipathways_overlay'] = fig
 
-    return render_plot_html(fig)
+    html = render_plot_html(fig)
+    _wp_overlay_cache[cache_signature] = html
+    return html
