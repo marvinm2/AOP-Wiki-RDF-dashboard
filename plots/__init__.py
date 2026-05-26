@@ -44,7 +44,6 @@ Historical Trends (trends_plots):
 Current Snapshots (latest_plots):
     Database State:
         - plot_latest_entity_counts(): Current entity distribution
-        - plot_latest_database_summary(): Core entity summary
         - plot_latest_avg_per_aop(): Current average components per AOP
 
     Component Analysis:
@@ -142,7 +141,6 @@ from .trends_plots import (
     plot_main_graph,
     plot_entity_birth_death,
     plot_entity_cumulative_removed,
-    plot_quarterly_growth_rate,
     plot_oecd_status_distribution,
     plot_stressor_coverage_growth,
     plot_aops_per_stressor_distribution,
@@ -195,7 +193,6 @@ from .network import (
 from .latest_plots import (
     # Database state analysis
     plot_latest_entity_counts,
-    plot_latest_database_summary,
     plot_latest_avg_per_aop,
 
     # Component analysis
@@ -274,7 +271,6 @@ __all__ = [
     'plot_main_graph',
     'plot_entity_birth_death',
     'plot_entity_cumulative_removed',
-    'plot_quarterly_growth_rate',
     'plot_oecd_status_distribution',
     'plot_stressor_coverage_growth',
     'plot_aops_per_stressor_distribution',
@@ -302,7 +298,6 @@ __all__ = [
 
     # Current snapshot functions
     'plot_latest_entity_counts',
-    'plot_latest_database_summary',
     'plot_latest_avg_per_aop',
     'plot_latest_ke_components',
     'plot_latest_ke_annotation_depth',
@@ -350,7 +345,6 @@ def get_available_functions():
             'plot_main_graph',
             'plot_entity_birth_death',
             'plot_entity_cumulative_removed',
-            'plot_quarterly_growth_rate',
             'plot_oecd_status_distribution',
             'plot_stressor_coverage_growth',
             'plot_aops_per_stressor_distribution',
@@ -378,7 +372,6 @@ def get_available_functions():
         ],
         'current_snapshots': [
             'plot_latest_entity_counts',
-            'plot_latest_database_summary',
             'plot_latest_avg_per_aop',
             'plot_latest_ke_components',
             'plot_latest_ke_annotation_depth',

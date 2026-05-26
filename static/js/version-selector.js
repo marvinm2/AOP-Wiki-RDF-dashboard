@@ -23,7 +23,6 @@
         'latest_aop_completeness',
         'latest_aop_completeness_unique',
         'latest_ontology_usage',
-        'latest_database_summary',
         'latest_ke_annotation_depth',
         'latest_ke_by_bio_level',
         'latest_taxonomic_groups',

@@ -14,7 +14,6 @@ Key Features:
 Latest Data Plot Functions:
     Core Database State:
         - plot_latest_entity_counts(): Current entity distribution (AOPs, KEs, KERs, etc.)
-        - plot_latest_database_summary(): Core entity summary overview
         - plot_latest_avg_per_aop(): Current average components per AOP
 
     Component Analysis:
@@ -1063,86 +1062,6 @@ def plot_latest_aop_completeness_unique_colors(version: str = None) -> str:
 
     # Cache the figure object for image export (PNG/SVG/PDF)
     _plot_figure_cache['latest_aop_completeness_unique'] = fig
-
-    return render_plot_html(fig)
-
-
-def plot_latest_database_summary(version: str = None) -> str:
-    """Create a simple summary chart of main entities in current version."""
-
-    where_filter, order_limit = _build_graph_filter(version)
-
-    # Ultra-simple separate queries for each entity type
-    queries = {
-        "AOPs": f"""
-            SELECT ?graph (COUNT(?aop) AS ?count)
-            WHERE {{
-                GRAPH ?graph {{ ?aop a aopo:AdverseOutcomePathway . }}
-                FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-                {where_filter}
-            }}
-            GROUP BY ?graph
-            {order_limit}
-        """,
-        "Key Events": f"""
-            SELECT ?graph (COUNT(?ke) AS ?count)
-            WHERE {{
-                GRAPH ?graph {{ ?ke a aopo:KeyEvent . }}
-                FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-                {where_filter}
-            }}
-            GROUP BY ?graph
-            {order_limit}
-        """,
-        "KE Relationships": f"""
-            SELECT ?graph (COUNT(?ker) AS ?count)
-            WHERE {{
-                GRAPH ?graph {{ ?ker a aopo:KeyEventRelationship . }}
-                FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-                {where_filter}
-            }}
-            GROUP BY ?graph
-            {order_limit}
-        """
-    }
-
-    data = []
-    latest_version = None
-
-    for entity_type, query in queries.items():
-        results = run_sparql_query(query)
-        if results:
-            count = int(results[0]["count"]["value"])
-            version = results[0]["graph"]["value"].split("/")[-1]
-            if latest_version is None:
-                latest_version = version
-            data.append({"Entity": entity_type, "Count": count})
-
-    if not data:
-        return create_fallback_plot("Core Entity Summary", "No database data available")
-
-    df = pd.DataFrame(data)
-    if latest_version is not None:
-        df["Version"] = latest_version
-    _plot_data_cache['latest_database_summary'] = df
-
-    # Regular bar chart since values are in similar ranges
-    fig = px.bar(
-        df, x="Entity", y="Count",
-        text="Count",
-    )
-
-    fig.update_traces(marker_color=BRAND_COLORS['blue'], textposition='outside')
-    fig.update_layout(
-
-        showlegend=False,
-
-        margin=dict(l=50, r=20, t=50, b=50),
-        yaxis=dict(title="Count")
-    )
-
-    # Cache the figure object for image export (PNG/SVG/PDF)
-    _plot_figure_cache['latest_database_summary'] = fig
 
     return render_plot_html(fig)
 
