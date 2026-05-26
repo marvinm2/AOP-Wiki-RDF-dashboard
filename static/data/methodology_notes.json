@@ -231,23 +231,6 @@
         "limitations": "Measures presence, not quality — a KE with a one-character MMO string and a KE with a full assay paragraph both count as `with MMO`. Trend data covers only the published RDF release versions available in the SPARQL endpoint.",
         "sparql": "SELECT ?graph\n       (SUM(IF(BOUND(?mmo), 1, 0)) AS ?with_mmo)\n       (COUNT(?ke) AS ?total)\nWHERE {\n  GRAPH ?graph {\n    ?ke a aopo:KeyEvent .\n    OPTIONAL { ?ke <http://purl.obolibrary.org/obo/MMO_0000000> ?mmo }\n  }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph"
     },
-    "latest_ke_wikipathways_overlay": {
-        "title": "KE ↔ WikiPathways Overlay",
-        "description": "Per KE (with ≥3 HGNC mappings), the count of WikiPathways pathways that touch at least one of the KE's mapped genes. Bridges Marvin's two pillars — D1 AOP-Wiki RDF and D2 WikiPathways — by computing pathway support across both knowledge bases. Latest snapshot: ~206 KEs qualify, with top KE supported by 600+ pathways.",
-        "data_source": "Two separate SPARQL endpoints with a Python-side join (NOT federation — the AOP-Wiki Virtuoso doesn't allow outbound SERVICE calls). (1) From AOP-Wiki RDF: KE → list of HGNC symbols, filtered to KEs with ≥3 distinct symbols. (2) From `sparql.wikipathways.org/sparql`: for the union of symbols, gene → pathway memberships. Query is chunked (80 symbols per request) to keep request size under WP throttling limits. Pathway count is then aggregated per KE in Python.",
-        "limitations": "Live WP query — first load can take ~30s and depends on WP endpoint availability. WP queries that time out or are throttled produce empty cells (the KE will still appear with 0 supporting pathways if all chunks for it failed). The WP RDF model uses `rdfs:label` on `wp:GeneProduct` instances for symbols — the issue's originally proposed `wp:bdbHgncSymbol` predicate has been superseded. Substituted accordingly and validated against the live WP endpoint.",
-        "queries": [
-            {
-                "caption": "Resolve latest snapshot graph URI",
-                "query": "SELECT ?graph WHERE {\n  GRAPH ?graph { ?s a aopo:AdverseOutcomePathway . }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n} GROUP BY ?graph ORDER BY DESC(?graph) LIMIT 1"
-            },
-            {
-                "caption": "AOP-Wiki RDF: KE → HGNC symbols (filtered to ≥3 mappings)",
-                "query": "SELECT ?ke ?title ?sym WHERE {\n  GRAPH __GRAPH_URI__ {\n    ?ke a aopo:KeyEvent ;\n        <http://edamontology.org/data_1025> ?gene .\n    ?gene <http://www.w3.org/2000/01/rdf-schema#label> ?sym .\n    OPTIONAL { ?ke <http://purl.org/dc/elements/1.1/title> ?title }\n    { SELECT ?ke WHERE {\n        GRAPH __GRAPH_URI__ {\n          ?ke a aopo:KeyEvent ;\n              <http://edamontology.org/data_1025> ?g .\n        }\n      } GROUP BY ?ke HAVING (COUNT(DISTINCT ?g) >= 3)\n    }\n  }\n}"
-            }
-        ],
-        "wikipathways_query": "PREFIX wp: <http://vocabularies.wikipathways.org/wp#> PREFIX dcterms: <http://purl.org/dc/terms/> PREFIX dc: <http://purl.org/dc/elements/1.1/> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> SELECT DISTINCT ?sym ?pathway ?pwTitle WHERE { ?g a wp:GeneProduct ; rdfs:label ?sym ; dcterms:isPartOf ?pathway . ?pathway a wp:Pathway ; dc:title ?pwTitle . VALUES ?sym { ... user-provided symbols, chunked 80 per request ... } } — run against https://sparql.wikipathways.org/sparql, not the AOP-Wiki Virtuoso (which doesn't allow outbound SERVICE federation). Joined to the AOP-Wiki RDF in Python."
-    },
     "latest_curator_orphan_kes": {
         "title": "Orphan Key Events",
         "description": "KEs not currently referenced by any AOP via `aopo:has_key_event`. Latest snapshot has zero orphans — the AOP-Wiki RDF is tightly stitched today — but the view stays available as a watchdog (a regression here would indicate either a curation drift or a conversion bug).",
@@ -276,54 +259,6 @@
         "data_source": "Two equality FILTERs on the `created` and `modified` date strings. Oldest first.",
         "limitations": "An AOP that was created complete in a single sitting will also match this filter (false positive). Pair with the maturity index (#64) to distinguish complete first-pass AOPs from abandoned drafts.",
         "sparql": "SELECT ?aop ?title ?created ?modified WHERE {\n  GRAPH __GRAPH_URI__ {\n    ?aop a aopo:AdverseOutcomePathway ;\n         <http://purl.org/dc/terms/created> ?created ;\n         <http://purl.org/dc/terms/modified> ?modified .\n    OPTIONAL { ?aop <http://purl.org/dc/elements/1.1/title> ?title }\n    FILTER(STR(?created) = STR(?modified))\n    FILTER(STR(?modified) < \"2024-05-25\")\n  }\n}\nORDER BY ?modified\nLIMIT 200"
-    },
-    "latest_aop_maturity_index": {
-        "title": "AOP Maturity Index (composite)",
-        "description": "Per-AOP equal-weighted mean of four documentation-completeness sub-scores: % of the AOP's KEs that have an `obo:MMO_0000000` measurement-method description, % of the AOP's KERs that carry an `edam:data_2042` empirical-evidence note, % of KEs with a `dc:description` free-text body, and % of KEs that have at least one of `aopkb:OrganContext` / `aopkb:CellTypeContext` / `aopkb:LifeStageContext`. Default weights are equal (¼ each); the CSV exposes all four sub-scores so users can rerank by their own weights.",
-        "data_source": "Three SPARQL aggregations against the latest graph: per-AOP KE counts with MMO/description/context flags (via OPTIONAL+BIND), per-AOP KER counts with edam:data_2042 flag, and per-AOP titles. Composite is computed in Python as the mean of the four sub-scores. Latest snapshot has 533 AOPs scored.",
-        "limitations": "The original issue prediction calls out `edam:operation_3799` (quantitative understanding) and `nciT:C80263` (essentiality of KE) as the 3rd and 4th dimensions. Both predicates return 0 hits against the live AOP-Wiki RDF — they are aspirational rather than populated. They have been substituted with KE-description coverage and biological-context coverage, which are populated and capture similar documentation depth. Re-introduce the original predicates once the RDF starts emitting them.",
-        "queries": [
-            {
-                "caption": "Resolve latest snapshot graph URI",
-                "query": "SELECT ?graph WHERE {\n  GRAPH ?graph { ?s a aopo:AdverseOutcomePathway . }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n} GROUP BY ?graph ORDER BY DESC(?graph) LIMIT 1"
-            },
-            {
-                "caption": "Per-AOP KE counts with MMO / description / biological-context flags",
-                "query": "SELECT ?aop (COUNT(DISTINCT ?ke) AS ?n_kes)\n       (COUNT(DISTINCT ?ke_mmo) AS ?n_mmo)\n       (COUNT(DISTINCT ?ke_desc) AS ?n_desc)\n       (COUNT(DISTINCT ?ke_ctx) AS ?n_ctx)\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    ?aop a aopo:AdverseOutcomePathway ;\n         aopo:has_key_event ?ke .\n    OPTIONAL { ?ke <http://purl.obolibrary.org/obo/MMO_0000000> ?_m . BIND(?ke AS ?ke_mmo) }\n    OPTIONAL { ?ke <http://purl.org/dc/elements/1.1/description> ?_d . BIND(?ke AS ?ke_desc) }\n    OPTIONAL { ?ke ?_p ?_v .\n               FILTER(?_p IN (<http://aopkb.org/aop_ontology#OrganContext>, <http://aopkb.org/aop_ontology#CellTypeContext>, <http://aopkb.org/aop_ontology#LifeStageContext>))\n               BIND(?ke AS ?ke_ctx) }\n  }\n}\nGROUP BY ?aop"
-            },
-            {
-                "caption": "Per-AOP KER counts with empirical-evidence flag",
-                "query": "SELECT ?aop (COUNT(DISTINCT ?ker) AS ?n_kers)\n       (COUNT(DISTINCT ?ker_ev) AS ?n_evidence)\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    ?aop a aopo:AdverseOutcomePathway ;\n         aopo:has_key_event_relationship ?ker .\n    OPTIONAL { ?ker <http://edamontology.org/data_2042> ?_ev . BIND(?ker AS ?ker_ev) }\n  }\n}\nGROUP BY ?aop"
-            },
-            {
-                "caption": "AOP titles for the chart axis",
-                "query": "SELECT ?aop ?title WHERE {\n  GRAPH __GRAPH_URI__ {\n    ?aop a aopo:AdverseOutcomePathway .\n    OPTIONAL { ?aop <http://purl.org/dc/elements/1.1/title> ?title }\n  }\n}"
-            }
-        ]
-    },
-    "latest_qaop_readiness": {
-        "title": "qAOP-Readiness Scorecard",
-        "description": "Per-AOP detail across the four documentation-completeness dimensions used by the AOP Maturity Index (#64). Top 20 AOPs by composite are rendered as a grouped horizontal bar with one bar per sub-score, so users can see at a glance where each AOP is strong vs weak across measurement (MMO), empirical evidence, description depth, and biological context. Shares its underlying SPARQL aggregation with the Maturity Index — single data source, two views.",
-        "data_source": "See the AOP Maturity Index methodology — identical queries. The qAOP-readiness view re-renders the same per-AOP DataFrame as a melted, grouped-bar Plotly chart instead of a composite-bar chart.",
-        "limitations": "Same as the Maturity Index: two of the four originally-specified dimensions (quantitative understanding, KE essentiality) are not present in the live AOP-Wiki RDF and have been substituted with description-coverage and biological-context-coverage. The top-20 cap is a rendering choice; the CSV download includes all AOPs ranked by composite.",
-        "queries": [
-            {
-                "caption": "Resolve latest snapshot graph URI",
-                "query": "SELECT ?graph WHERE {\n  GRAPH ?graph { ?s a aopo:AdverseOutcomePathway . }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n} GROUP BY ?graph ORDER BY DESC(?graph) LIMIT 1"
-            },
-            {
-                "caption": "Per-AOP KE counts with MMO / description / biological-context flags",
-                "query": "SELECT ?aop (COUNT(DISTINCT ?ke) AS ?n_kes)\n       (COUNT(DISTINCT ?ke_mmo) AS ?n_mmo)\n       (COUNT(DISTINCT ?ke_desc) AS ?n_desc)\n       (COUNT(DISTINCT ?ke_ctx) AS ?n_ctx)\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    ?aop a aopo:AdverseOutcomePathway ;\n         aopo:has_key_event ?ke .\n    OPTIONAL { ?ke <http://purl.obolibrary.org/obo/MMO_0000000> ?_m . BIND(?ke AS ?ke_mmo) }\n    OPTIONAL { ?ke <http://purl.org/dc/elements/1.1/description> ?_d . BIND(?ke AS ?ke_desc) }\n    OPTIONAL { ?ke ?_p ?_v .\n               FILTER(?_p IN (<http://aopkb.org/aop_ontology#OrganContext>, <http://aopkb.org/aop_ontology#CellTypeContext>, <http://aopkb.org/aop_ontology#LifeStageContext>))\n               BIND(?ke AS ?ke_ctx) }\n  }\n}\nGROUP BY ?aop"
-            },
-            {
-                "caption": "Per-AOP KER counts with empirical-evidence flag",
-                "query": "SELECT ?aop (COUNT(DISTINCT ?ker) AS ?n_kers)\n       (COUNT(DISTINCT ?ker_ev) AS ?n_evidence)\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    ?aop a aopo:AdverseOutcomePathway ;\n         aopo:has_key_event_relationship ?ker .\n    OPTIONAL { ?ker <http://edamontology.org/data_2042> ?_ev . BIND(?ker AS ?ker_ev) }\n  }\n}\nGROUP BY ?aop"
-            },
-            {
-                "caption": "AOP titles for the chart axis",
-                "query": "SELECT ?aop ?title WHERE {\n  GRAPH __GRAPH_URI__ {\n    ?aop a aopo:AdverseOutcomePathway .\n    OPTIONAL { ?aop <http://purl.org/dc/elements/1.1/title> ?title }\n  }\n}"
-            }
-        ]
     },
     "latest_aop_aop_overlap": {
         "title": "AOP-AOP Overlap Network",

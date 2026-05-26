@@ -424,32 +424,6 @@
             {{ data_table_toggle('latest_life_stage') }}
         </div>
 
-        <!-- KE↔WikiPathways overlay (#69) -->
-        <div class="plot-box full-width" id="latest-ke-wikipathways-overlay">
-            <div class="plot-header">
-                <h3>KE ↔ WikiPathways Overlay</h3>
-                <div class="download-dropdown">
-                    <button class="download-button dropdown-toggle">Download &#x25BC;</button>
-                    <div class="dropdown-menu">
-                        <a href="/download/latest/ke_wikipathways_overlay?format=csv" class="dropdown-item">CSV</a>
-                        <a href="/download/latest/ke_wikipathways_overlay?format=png" class="dropdown-item">PNG</a>
-                        <a href="/download/latest/ke_wikipathways_overlay?format=svg" class="dropdown-item">SVG</a>
-                    </div>
-                </div>
-            </div>
-            <p class="plot-description">
-                For each KE with ≥3 HGNC mappings, counts the number of WikiPathways pathways
-                that touch at least one of the KE's mapped genes. Bridges the AOP-Wiki RDF
-                and WikiPathways. The bar shows pathway support count (higher = the KE's gene set
-                is more central to canonical pathway biology); colour encodes #HGNC mappings on the KE.
-                Live WP query — first load may take ~30s while the WP SPARQL endpoint responds.
-            </p>
-            {{ methodology_note(methodology_notes, 'latest_ke_wikipathways_overlay') }}
-            <div class="lazy-plot" data-plot-name="latest_ke_wikipathways_overlay">
-                <!-- Plot will be loaded here via JavaScript -->
-            </div>
-            {{ data_table_toggle('latest_ke_wikipathways_overlay') }}
-        </div>
     </div>
 </section>
 
@@ -505,58 +479,6 @@
 <section class="section-block" id="data-quality">
     <h2 class="section-header">Data Quality & Completeness</h2>
     <div class="plot-grid">
-        <!-- AOP Maturity Index (#64) -->
-        <div class="plot-box full-width" id="latest-aop-maturity-index">
-            <div class="plot-header">
-                <h3>AOP Maturity Index</h3>
-                <div class="download-dropdown">
-                    <button class="download-button dropdown-toggle">Download &#x25BC;</button>
-                    <div class="dropdown-menu">
-                        <a href="/download/latest/aop_maturity_index?format=csv" class="dropdown-item">CSV</a>
-                        <a href="/download/latest/aop_maturity_index?format=png" class="dropdown-item">PNG</a>
-                        <a href="/download/latest/aop_maturity_index?format=svg" class="dropdown-item">SVG</a>
-                    </div>
-                </div>
-            </div>
-            <p class="plot-description">
-                Composite documentation-completeness score per AOP — equal-weighted mean of four sub-scores:
-                % KEs with MMO assay, % KERs with empirical evidence (<code>edam:data_2042</code>),
-                % KEs with free-text description, % KEs with biological context (organ/cell/lifestage).
-                Top 30 AOPs by composite shown; full ranking in the CSV. Hover for the per-dimension breakdown.
-            </p>
-            {{ methodology_note(methodology_notes, 'latest_aop_maturity_index') }}
-            <div class="lazy-plot" data-plot-name="latest_aop_maturity_index">
-                <!-- Plot will be loaded here via JavaScript -->
-            </div>
-            {{ data_table_toggle('latest_aop_maturity_index') }}
-        </div>
-
-        <!-- qAOP Readiness Scorecard (#65) -->
-        <div class="plot-box full-width" id="latest-qaop-readiness">
-            <div class="plot-header">
-                <h3>qAOP-Readiness Scorecard</h3>
-                <div class="download-dropdown">
-                    <button class="download-button dropdown-toggle">Download &#x25BC;</button>
-                    <div class="dropdown-menu">
-                        <a href="/download/latest/qaop_readiness?format=csv" class="dropdown-item">CSV</a>
-                        <a href="/download/latest/qaop_readiness?format=png" class="dropdown-item">PNG</a>
-                        <a href="/download/latest/qaop_readiness?format=svg" class="dropdown-item">SVG</a>
-                    </div>
-                </div>
-            </div>
-            <p class="plot-description">
-                Per-AOP qAOP modelling readiness across the same four dimensions as the Maturity Index,
-                but presented as a grouped bar — one bar per sub-score. Top 20 AOPs by composite shown,
-                so you can see where each is strong vs weak across measurement (MMO), empirical evidence,
-                description depth, and biological context.
-            </p>
-            {{ methodology_note(methodology_notes, 'latest_qaop_readiness') }}
-            <div class="lazy-plot" data-plot-name="latest_qaop_readiness">
-                <!-- Plot will be loaded here via JavaScript -->
-            </div>
-            {{ data_table_toggle('latest_qaop_readiness') }}
-        </div>
-
         <!-- KE MMO Coverage (#68) -->
         <div class="plot-box">
             <div class="plot-header">

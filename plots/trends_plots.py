@@ -597,24 +597,6 @@ def plot_quarterly_growth_rate() -> tuple[str, pd.DataFrame]:
         fig.update_xaxes(tickangle=-45)
 
         # Annotate the largest positive and largest negative Δ per entity type.
-        for entity in entity_order:
-            sub = long_df[long_df["Entity"] == entity]
-            if sub.empty:
-                continue
-            max_row = sub.loc[sub["delta"].idxmax()]
-            min_row = sub.loc[sub["delta"].idxmin()]
-            for row, color in [(max_row, BRAND_COLORS['orange']), (min_row, BRAND_COLORS['deep_magenta'])]:
-                if int(row["delta"]) == 0:
-                    continue
-                fig.add_annotation(
-                    x=row["version"], y=int(row["delta"]),
-                    text=f"{int(row['delta']):+d}",
-                    showarrow=False, yshift=10 if int(row["delta"]) >= 0 else -10,
-                    font=dict(size=10, color=color),
-                    row=(entity_order.index(entity) // 2) + 1,
-                    col=(entity_order.index(entity) % 2) + 1,
-                )
-
         fig.update_layout(
             margin=dict(l=60, r=30, t=50, b=80),
             height=600,
