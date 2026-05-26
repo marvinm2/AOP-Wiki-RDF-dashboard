@@ -128,10 +128,6 @@ from plots import (
     plot_latest_life_stage,
     plot_latest_ke_mmo_coverage,
     plot_latest_aop_aop_overlap,
-    plot_latest_curator_orphan_kes,
-    plot_latest_curator_stale_aops,
-    plot_latest_curator_evidence_free_kers,
-    plot_latest_curator_abandoned_aops,
     plot_ontology_term_growth,
     plot_organ_coverage_trends,
     check_sparql_endpoint_health,
@@ -243,10 +239,6 @@ def compute_plots_parallel() -> dict:
         # New latest-snapshot plots — pre-rendered at startup so first hit is instant (#67, #68, #70)
         ('latest_aop_aop_overlap', lambda: safe_plot_execution(plot_latest_aop_aop_overlap)),
         ('latest_ke_mmo_coverage', lambda: safe_plot_execution(plot_latest_ke_mmo_coverage)),
-        ('latest_curator_orphan_kes', lambda: safe_plot_execution(plot_latest_curator_orphan_kes)),
-        ('latest_curator_stale_aops', lambda: safe_plot_execution(plot_latest_curator_stale_aops)),
-        ('latest_curator_evidence_free_kers', lambda: safe_plot_execution(plot_latest_curator_evidence_free_kers)),
-        ('latest_curator_abandoned_aops', lambda: safe_plot_execution(plot_latest_curator_abandoned_aops)),
     ]
     
     results = {}
@@ -286,10 +278,6 @@ _latest_precomputed_html: dict[str, str] = {
     k: plot_results[k] for k in (
         'latest_aop_aop_overlap',
         'latest_ke_mmo_coverage',
-        'latest_curator_orphan_kes',
-        'latest_curator_stale_aops',
-        'latest_curator_evidence_free_kers',
-        'latest_curator_abandoned_aops',
     ) if isinstance(plot_results.get(k), str) and plot_results[k]
 }
 
@@ -1840,10 +1828,6 @@ def get_plot(plot_name):
         'latest_life_stage': plot_latest_life_stage,
         'latest_ke_mmo_coverage': plot_latest_ke_mmo_coverage,
         'latest_aop_aop_overlap': plot_latest_aop_aop_overlap,
-        'latest_curator_orphan_kes': plot_latest_curator_orphan_kes,
-        'latest_curator_stale_aops': plot_latest_curator_stale_aops,
-        'latest_curator_evidence_free_kers': plot_latest_curator_evidence_free_kers,
-        'latest_curator_abandoned_aops': plot_latest_curator_abandoned_aops,
     }
 
     # Handle latest_* plots without version support yet (use pre-computed)

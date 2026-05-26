@@ -231,35 +231,6 @@
         "limitations": "Measures presence, not quality — a KE with a one-character MMO string and a KE with a full assay paragraph both count as `with MMO`. Trend data covers only the published RDF release versions available in the SPARQL endpoint.",
         "sparql": "SELECT ?graph\n       (SUM(IF(BOUND(?mmo), 1, 0)) AS ?with_mmo)\n       (COUNT(?ke) AS ?total)\nWHERE {\n  GRAPH ?graph {\n    ?ke a aopo:KeyEvent .\n    OPTIONAL { ?ke <http://purl.obolibrary.org/obo/MMO_0000000> ?mmo }\n  }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph"
     },
-    "latest_curator_orphan_kes": {
-        "title": "Orphan Key Events",
-        "description": "KEs not currently referenced by any AOP via `aopo:has_key_event`. Latest snapshot has zero orphans — the AOP-Wiki RDF is tightly stitched today — but the view stays available as a watchdog (a regression here would indicate either a curation drift or a conversion bug).",
-        "data_source": "Single SPARQL with `FILTER NOT EXISTS` over the AOP→KE membership edge. Top 200 KE URIs sorted lexicographically.",
-        "limitations": "Counts KEs typed `a aopo:KeyEvent` that no AOP attaches to. KEs attached via paths other than `aopo:has_key_event` (none today) would be misclassified. A 0 result is the desired state.",
-        "sparql": "SELECT ?ke ?title ?modified WHERE {\n  GRAPH __GRAPH_URI__ {\n    ?ke a aopo:KeyEvent .\n    OPTIONAL { ?ke <http://purl.org/dc/elements/1.1/title> ?title }\n    OPTIONAL { ?ke <http://purl.org/dc/terms/modified> ?modified }\n    FILTER NOT EXISTS { ?aop aopo:has_key_event ?ke }\n  }\n}\nORDER BY ?ke\nLIMIT 200",
-        "may_be_empty": true
-    },
-    "latest_curator_stale_aops": {
-        "title": "Stale AOPs",
-        "description": "AOPs whose `dcterms:modified` is more than 2 years old. ~259 AOPs in the latest snapshot — review whether each is still relevant, needs an evidence refresh, or should be archived.",
-        "data_source": "Single SPARQL with a date-string lexical comparison against (current_date − 730 days). Returns AOP URI, title, modified date, and OECD status. Oldest first.",
-        "limitations": "The 2-year cutoff is editorial — adjust the FILTER threshold to tune. `dcterms:modified` reflects the last curator touch in AOP-Wiki, not the underlying biological evidence's age. OECD status is bucketed under `No Status` when the AOP has no `nciT:C25688` triple.",
-        "sparql": "SELECT ?aop ?title ?modified ?status WHERE {\n  GRAPH __GRAPH_URI__ {\n    ?aop a aopo:AdverseOutcomePathway ;\n         <http://purl.org/dc/terms/modified> ?modified .\n    OPTIONAL { ?aop <http://purl.org/dc/elements/1.1/title> ?title }\n    OPTIONAL { ?aop <http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25688> ?s . BIND(STR(?s) AS ?status) }\n    FILTER(STR(?modified) < \"2024-05-25\")\n  }\n}\nORDER BY ?modified\nLIMIT 200"
-    },
-    "latest_curator_evidence_free_kers": {
-        "title": "Reused KERs missing empirical evidence",
-        "description": "KERs reused across ≥2 AOPs that lack an `edam:data_2042` empirical-evidence text. Highest-leverage curation target: adding evidence to one reused KER lifts every AOP that references it. ~256 records in the latest snapshot; the top KER is reused 13 times.",
-        "data_source": "GROUP BY ?ker with a `HAVING (?n_aops >= 2)` filter and a `FILTER NOT EXISTS` for the evidence triple. Top 100 by reuse count.",
-        "limitations": "Measures presence of any `edam:data_2042` triple — does not assess the quality or completeness of the evidence text. KERs reused only once are excluded by the HAVING clause (they're lower leverage).",
-        "sparql": "SELECT ?ker (COUNT(DISTINCT ?aop) AS ?n_aops)\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    ?ker a aopo:KeyEventRelationship .\n    ?aop aopo:has_key_event_relationship ?ker .\n    FILTER NOT EXISTS { ?ker <http://edamontology.org/data_2042> ?_ }\n  }\n}\nGROUP BY ?ker\nHAVING (COUNT(DISTINCT ?aop) >= 2)\nORDER BY DESC(?n_aops)\nLIMIT 100"
-    },
-    "latest_curator_abandoned_aops": {
-        "title": "First-pass-then-abandoned AOPs",
-        "description": "AOPs whose `dcterms:created` and `dcterms:modified` are identical AND the touch is >2 years old — heuristic for drafts that someone created, walked away from, and never returned to. Latest snapshot: a handful of records.",
-        "data_source": "Two equality FILTERs on the `created` and `modified` date strings. Oldest first.",
-        "limitations": "An AOP that was created complete in a single sitting will also match this filter (false positive). Pair with the maturity index (#64) to distinguish complete first-pass AOPs from abandoned drafts.",
-        "sparql": "SELECT ?aop ?title ?created ?modified WHERE {\n  GRAPH __GRAPH_URI__ {\n    ?aop a aopo:AdverseOutcomePathway ;\n         <http://purl.org/dc/terms/created> ?created ;\n         <http://purl.org/dc/terms/modified> ?modified .\n    OPTIONAL { ?aop <http://purl.org/dc/elements/1.1/title> ?title }\n    FILTER(STR(?created) = STR(?modified))\n    FILTER(STR(?modified) < \"2024-05-25\")\n  }\n}\nORDER BY ?modified\nLIMIT 200"
-    },
     "latest_aop_aop_overlap": {
         "title": "AOP-AOP Overlap Network",
         "description": "Force-directed network of AOPs that share a Key Event backbone. Nodes are AOPs (colour = OECD status, size = #KEs); edges connect pairs sharing ≥5 KEs. The threshold is chosen so the network stays legible — with 584 AOPs there are >2400 pairs at ≥2 shared KEs and ~200 at ≥5. Tightly clustered nodes share KEs because they describe related biology (e.g. AOPs 624-629 in the MASLD family share 14-17 KEs each).",
