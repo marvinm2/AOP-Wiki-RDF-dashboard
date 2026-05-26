@@ -92,6 +92,22 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # The lint step is gated by `continue-on-error: true`, so a failure
+          # at that stage produces lint-report.md and lands here normally.
+          # A failure in the *smoke-test* step (pytest -x) aborts the job
+          # before the lint runs, so the report file is absent — fall back
+          # to a synthesised body that points at the failing run.
+          if [ ! -s lint-report.md ]; then
+            cat > lint-report.md <<EOF
+          ## Methodology lint workflow failed before producing a report
+
+          The unit-test smoke step failed, so \`scripts/lint_methodology.py\`
+          never ran against \`methodology_notes.json\`. Inspect the workflow
+          logs to see which test guard tripped:
+
+          ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EOF
+          fi
           gh issue create \
             --title "Methodology lint regression detected on $(date -I)" \
             --body-file lint-report.md \
