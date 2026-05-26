@@ -244,32 +244,57 @@
         {{ data_table_toggle('entity_completeness_trends') }}
     </div>
 
-    <div class="plot-box" id="aop-completeness-boxplot">
+    <div class="plot-box full-width coverage-pair" id="aop-completeness-boxplot">
         <div class="plot-header">
             <h3>Composite AOP Completeness Distribution Over Time</h3>
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <div class="download-dropdown">
-                    <button class="download-button dropdown-toggle">Download ▼</button>
-                    <div class="dropdown-menu">
-                        <a href="/download/trend/aop_completeness_boxplot?format=csv" class="dropdown-item">📄 CSV</a>
-                        <a href="/download/trend/aop_completeness_boxplot?format=png" class="dropdown-item">🖼️ PNG</a>
-                        <a href="/download/trend/aop_completeness_boxplot?format=svg" class="dropdown-item">📐 SVG</a>
-                    </div>
-                </div>
-            </div>
         </div>
         <p class="plot-description">
-            Shows the distribution of <strong>composite completeness scores</strong> for individual AOPs in each version.
-            Each AOP's score is the average of its own property completeness plus the completeness of all its linked Key Events (KEs) and Key Event Relationships (KERs).
-            This reveals whether entire AOP networks are well-documented or if some networks are sparse.
-            The box shows quartiles (Q1, median, Q3), whiskers extend to 1.5×IQR, and points show outliers.
-            Excludes 100% present properties like the average plot above.
+            Distribution of <strong>composite completeness scores</strong> per AOP per snapshot. Each AOP's
+            score is the flat average of its own property completeness with the completeness of every linked
+            Key Event and Key Event Relationship — so large networks are dominated by their KE/KER averages.
+            Box = Q1 / median / Q3, whiskers = 1.5×IQR, points = outliers. Two cohorts side-by-side: the
+            <em>Optional-only</em> view (left) excludes any property that hits 100% presence in any snapshot
+            — the discriminating signal of curator effort on truly optional fields; the <em>All-properties</em>
+            view (right) uses the full denominator and reads higher because mandatory fields are always in the
+            numerator.
         </p>
         {{ methodology_note(methodology_notes, 'aop_completeness_boxplot') }}
-        <div class="lazy-plot" data-plot-name="aop_completeness_boxplot">
-            <!-- Plot will be loaded here via JavaScript -->
+        <div class="coverage-pair-grid">
+            <div class="coverage-pair-cell">
+                <div class="coverage-pair-cell-header">
+                    <h4>Optional properties only</h4>
+                    <div class="download-dropdown">
+                        <button class="download-button dropdown-toggle">Download ▼</button>
+                        <div class="dropdown-menu">
+                            <a href="/download/trend/aop_completeness_boxplot?format=csv" class="dropdown-item">📄 CSV</a>
+                            <a href="/download/trend/aop_completeness_boxplot?format=png" class="dropdown-item">🖼️ PNG</a>
+                            <a href="/download/trend/aop_completeness_boxplot?format=svg" class="dropdown-item">📐 SVG</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="lazy-plot" data-plot-name="aop_completeness_boxplot">
+                    <!-- Plot will be loaded here via JavaScript -->
+                </div>
+                {{ data_table_toggle('aop_completeness_boxplot') }}
+            </div>
+            <div class="coverage-pair-cell">
+                <div class="coverage-pair-cell-header">
+                    <h4>All properties</h4>
+                    <div class="download-dropdown">
+                        <button class="download-button dropdown-toggle">Download ▼</button>
+                        <div class="dropdown-menu">
+                            <a href="/download/trend/aop_completeness_boxplot_all?format=csv" class="dropdown-item">📄 CSV</a>
+                            <a href="/download/trend/aop_completeness_boxplot_all?format=png" class="dropdown-item">🖼️ PNG</a>
+                            <a href="/download/trend/aop_completeness_boxplot_all?format=svg" class="dropdown-item">📐 SVG</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="lazy-plot" data-plot-name="aop_completeness_boxplot_all">
+                    <!-- Plot will be loaded here via JavaScript -->
+                </div>
+                {{ data_table_toggle('aop_completeness_boxplot_all') }}
+            </div>
         </div>
-        {{ data_table_toggle('aop_completeness_boxplot') }}
     </div>
 
     <div class="plot-box" id="oecd-completeness-trend">

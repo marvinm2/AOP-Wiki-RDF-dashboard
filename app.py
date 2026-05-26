@@ -367,7 +367,10 @@ graph_ke_prop_abs, graph_ke_prop_pct = plot_results.get('ke_property_presence', 
 graph_ker_prop_abs, graph_ker_prop_pct = plot_results.get('ker_property_presence', ("", ""))
 graph_stressor_prop_abs, graph_stressor_prop_pct = plot_results.get('stressor_property_presence', ("", ""))
 graph_entity_completeness = plot_results.get('entity_completeness_trends') or ""
-graph_aop_completeness_boxplot = plot_results.get('aop_completeness_boxplot') or ""
+try:
+    graph_aop_completeness_boxplot, graph_aop_completeness_boxplot_all = plot_results.get('aop_completeness_boxplot', ("", ""))
+except (TypeError, ValueError):
+    graph_aop_completeness_boxplot = graph_aop_completeness_boxplot_all = ""
 graph_oecd_completeness_trend = plot_results.get('oecd_completeness_trend') or ""
 graph_kec_count_abs, graph_kec_count_delta = plot_results.get('kes_by_kec_count', ("", ""))
 
@@ -1773,6 +1776,7 @@ def get_plot(plot_name):
         'stressor_property_presence_percentage': graph_stressor_prop_pct,
         'entity_completeness_trends': graph_entity_completeness,
         'aop_completeness_boxplot': graph_aop_completeness_boxplot,
+        'aop_completeness_boxplot_all': graph_aop_completeness_boxplot_all,
         'oecd_completeness_trend': graph_oecd_completeness_trend,
         'kes_by_kec_count_absolute': graph_kec_count_abs,
         'kes_by_kec_count_delta': graph_kec_count_delta,

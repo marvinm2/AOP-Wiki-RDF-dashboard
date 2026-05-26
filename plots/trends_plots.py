@@ -3232,25 +3232,32 @@ def _query_boxplot_entity_props(version_info, aop_props, ke_props, ker_props,
         return None
 
 
-def plot_aop_completeness_boxplot(label_file="property_labels.csv") -> str:
-    """Generate composite AOP completeness distribution boxplot showing completeness variance across versions.
+def plot_aop_completeness_boxplot(label_file="property_labels.csv") -> tuple[str, str]:
+    """Render two side-by-side composite-completeness boxplots: optional-only and all-properties.
 
-    Creates a boxplot showing the distribution of **composite completeness scores** for AOPs.
-    The composite score includes:
-    - The AOP entity's own property completeness
-    - Average completeness of all KEs (Key Events) linked to the AOP
-    - Average completeness of all KERs (Key Event Relationships) linked to the AOP
+    The composite score per AOP is the flat average of the AOP entity's own
+    property completeness with the completeness of every KE and KER it links
+    to, computed against a per-entity-type property denominator (see
+    ``property_labels.csv``).
 
-    All completeness scores are averaged with equal weight (flat average of all entities in the AOP network).
-    Excludes properties that are 100% present in any version to focus on optional properties.
+    Two cohorts are returned so the reader can see the discriminating signal
+    AND the headline number:
 
-    Uses per-version parallel queries to avoid Virtuoso MaxResultRows truncation.
+    - **Optional-only** (left): excludes properties that reach 100% presence
+      in *any* snapshot. Removes mandatory wiki-form fields like ``dc:title``
+      that don't discriminate between curated and abandoned AOPs.
+    - **All properties** (right): full denominator. Values are uniformly
+      higher because mandatory fields are always in the numerator.
+
+    The data and figures are cached under two keys
+    (``aop_completeness_boxplot`` and ``aop_completeness_boxplot_all``) so
+    the standard ``/download/trend/<plot>`` route works for both.
 
     Args:
-        label_file: Path to CSV file containing property labels and types
+        label_file: Path to CSV file containing property labels and types.
 
     Returns:
-        HTML string containing the Plotly boxplot visualization
+        Tuple of (html_optional, html_all).
     """
     global _plot_data_cache, _plot_figure_cache
 
@@ -3365,19 +3372,33 @@ def plot_aop_completeness_boxplot(label_file="property_labels.csv") -> str:
         ker_prop_count = len(ker_props)
 
     if aop_prop_count == 0 and ke_prop_count == 0 and ker_prop_count == 0:
-        return create_fallback_plot("Composite AOP Completeness Distribution", "All properties are 100% present")
+        fallback = create_fallback_plot("Composite AOP Completeness Distribution", "All properties are 100% present")
+        return fallback, fallback
 
-    logger.info(f"Boxplot: querying {len(versions)} versions for per-entity property counts (AOP:{aop_prop_count}, KE:{ke_prop_count}, KER:{ker_prop_count} props)")
+    # Property counts for the unfiltered "all-properties" cohort (parallel pass below).
+    aop_prop_count_all = len(aop_props_all)
+    ke_prop_count_all = len(ke_props_all)
+    ker_prop_count_all = len(ker_props_all)
 
-    # Step 2: Query per-entity property counts and network structure per version
-    try:
-        version_entity_data = []
+    logger.info(
+        f"Boxplot: querying {len(versions)} versions × 2 cohorts for per-entity property counts "
+        f"(optional AOP:{aop_prop_count}, KE:{ke_prop_count}, KER:{ker_prop_count}; "
+        f"all AOP:{aop_prop_count_all}, KE:{ke_prop_count_all}, KER:{ker_prop_count_all})"
+    )
+
+    # Step 2: For each cohort (optional-only, all-properties) run the per-version
+    # entity-props query and build a composite-score DataFrame. The network query
+    # runs inside each per-version helper invocation but the result is identical
+    # across cohorts; the trade-off is a small extra SPARQL load (~32 redundant
+    # network queries) in exchange for not rewriting the helper signature.
+    def _build_cohort_df(label, props_aop, props_ke, props_ker, n_aop, n_ke, n_ker):
+        cohort_data = []
         with ThreadPoolExecutor(max_workers=4) as executor:
             futures = {
                 executor.submit(
                     _query_boxplot_entity_props, v,
-                    aop_props, ke_props, ker_props,
-                    aop_prop_count, ke_prop_count, ker_prop_count
+                    props_aop, props_ke, props_ker,
+                    n_aop, n_ke, n_ker,
                 ): v["version"]
                 for v in versions
             }
@@ -3386,138 +3407,120 @@ def plot_aop_completeness_boxplot(label_file="property_labels.csv") -> str:
                 try:
                     result = future.result(timeout=60)
                     if result:
-                        version_entity_data.append(result)
+                        cohort_data.append(result)
                 except Exception as e:
-                    logger.warning(f"Boxplot entity query timed out for version {version_str}: {e}")
+                    logger.warning(f"Boxplot entity query timed out for version {version_str} ({label}): {e}")
 
-        if not version_entity_data:
-            return create_fallback_plot("Composite AOP Completeness Distribution", "No entity data available")
+        if not cohort_data:
+            return None
 
-        # Build network map and completeness maps from per-version results
-        network_map = {}
-        aop_completeness = {}
-        ke_completeness = {}
-        ker_completeness = {}
+        network_map: dict[str, dict] = {}
+        aop_completeness: dict[str, dict] = {}
+        ke_completeness: dict[str, dict] = {}
+        ker_completeness: dict[str, dict] = {}
 
-        for vd in version_entity_data:
+        for vd in cohort_data:
             version = vd["version"]
 
-            # Build network map for this version
             network_map[version] = {}
             for r in vd["network"]:
                 aop_uri = r["aop"]["value"]
                 network_map[version][aop_uri] = {"kes": set(), "kers": set()}
-
                 if "kes" in r and r["kes"] and r["kes"]["value"]:
                     network_map[version][aop_uri]["kes"] = set(r["kes"]["value"].split("|"))
                 if "kers" in r and r["kers"] and r["kers"]["value"]:
                     network_map[version][aop_uri]["kers"] = set(r["kers"]["value"].split("|"))
 
-            # Build completeness maps for this version
             for r in vd["entity_props"]:
                 entity_uri = r["entity"]["value"]
                 entity_type = r["entity_type"]["value"]
                 prop_count = int(r["prop_count"]["value"])
+                if entity_type == "AOP" and n_aop > 0:
+                    aop_completeness.setdefault(version, {})[entity_uri] = (prop_count / n_aop) * 100
+                elif entity_type == "KE" and n_ke > 0:
+                    ke_completeness.setdefault(version, {})[entity_uri] = (prop_count / n_ke) * 100
+                elif entity_type == "KER" and n_ker > 0:
+                    ker_completeness.setdefault(version, {})[entity_uri] = (prop_count / n_ker) * 100
 
-                if entity_type == "AOP":
-                    completeness = (prop_count / aop_prop_count) * 100 if aop_prop_count > 0 else 0
-                    if version not in aop_completeness:
-                        aop_completeness[version] = {}
-                    aop_completeness[version][entity_uri] = completeness
-
-                elif entity_type == "KE":
-                    completeness = (prop_count / ke_prop_count) * 100 if ke_prop_count > 0 else 0
-                    if version not in ke_completeness:
-                        ke_completeness[version] = {}
-                    ke_completeness[version][entity_uri] = completeness
-
-                elif entity_type == "KER":
-                    completeness = (prop_count / ker_prop_count) * 100 if ker_prop_count > 0 else 0
-                    if version not in ker_completeness:
-                        ker_completeness[version] = {}
-                    ker_completeness[version][entity_uri] = completeness
-
-        # Step 3: Calculate composite AOP completeness scores
-        completeness_data = []
-
+        rows = []
         for version, aops in network_map.items():
             for aop_uri, network in aops.items():
                 entity_scores = []
-
-                # Add AOP entity completeness
                 if version in aop_completeness and aop_uri in aop_completeness[version]:
                     entity_scores.append(aop_completeness[version][aop_uri])
-                elif aop_prop_count > 0:
-                    entity_scores.append(0)  # AOP exists but has no properties
-
-                # Add KE completeness scores
+                elif n_aop > 0:
+                    entity_scores.append(0)
                 for ke_uri in network["kes"]:
                     if version in ke_completeness and ke_uri in ke_completeness[version]:
                         entity_scores.append(ke_completeness[version][ke_uri])
-                    elif ke_prop_count > 0:
-                        entity_scores.append(0)  # KE exists but has no properties
-
-                # Add KER completeness scores
+                    elif n_ke > 0:
+                        entity_scores.append(0)
                 for ker_uri in network["kers"]:
                     if version in ker_completeness and ker_uri in ker_completeness[version]:
                         entity_scores.append(ker_completeness[version][ker_uri])
-                    elif ker_prop_count > 0:
-                        entity_scores.append(0)  # KER exists but has no properties
-
-                # Calculate composite score as flat average
+                    elif n_ker > 0:
+                        entity_scores.append(0)
                 if entity_scores:
-                    composite_score = sum(entity_scores) / len(entity_scores)
-                    completeness_data.append({
+                    rows.append({
                         "version": version,
                         "aop_uri": aop_uri,
-                        "completeness": composite_score,
-                        "entity_count": len(entity_scores)
+                        "completeness": sum(entity_scores) / len(entity_scores),
+                        "entity_count": len(entity_scores),
                     })
 
-        if not completeness_data:
-            return create_fallback_plot("Composite AOP Completeness Distribution", "No completeness data available")
+        if not rows:
+            return None
 
-        # Create DataFrame
-        df = pd.DataFrame(completeness_data)
-
-        # Sort by version
+        df = pd.DataFrame(rows)
         df["version_dt"] = pd.to_datetime(df["version"], errors="coerce")
-        df = df.sort_values("version_dt")
+        return df.sort_values("version_dt")
 
-        # Cache data for CSV export
-        _plot_data_cache['aop_completeness_boxplot'] = df.copy()
-
-        # Create boxplot
+    def _render_boxplot(df, y_title):
         fig = px.box(
-            df,
-            x="version",
-            y="completeness",
-            labels={
-                "completeness": "Composite Completeness (%)",
-                "version": "Version"
-            }
+            df, x="version", y="completeness",
+            labels={"completeness": y_title, "version": "Version"},
         )
-
         fig.update_traces(
             marker=dict(opacity=0.6, color=BRAND_COLORS["primary"]),
-            line=dict(width=2)
+            line=dict(width=2),
         )
-
         fig.update_layout(
             margin=dict(l=50, r=20, t=50, b=100),
-            yaxis=dict(title="Composite Completeness (%)", range=[0, 105]),
+            yaxis=dict(title=y_title, range=[0, 105]),
             xaxis=dict(title="Version", tickangle=-45),
-            showlegend=False
+            showlegend=False,
+        )
+        return fig
+
+    try:
+        df_optional = _build_cohort_df(
+            "optional", aop_props, ke_props, ker_props,
+            aop_prop_count, ke_prop_count, ker_prop_count,
+        )
+        df_all = _build_cohort_df(
+            "all", aop_props_all, ke_props_all, ker_props_all,
+            aop_prop_count_all, ke_prop_count_all, ker_prop_count_all,
         )
 
-        # Cache figure for image export
-        _plot_figure_cache['aop_completeness_boxplot'] = fig
+        if df_optional is None or df_all is None:
+            fallback = create_fallback_plot("Composite AOP Completeness Distribution", "No completeness data available")
+            return fallback, fallback
 
-        return render_plot_html(fig)
+        _plot_data_cache['aop_completeness_boxplot'] = df_optional.copy()
+        _plot_data_cache['aop_completeness_boxplot_all'] = df_all.copy()
+
+        fig_optional = _render_boxplot(df_optional, "Optional-property composite completeness (%)")
+        fig_all = _render_boxplot(df_all, "All-property composite completeness (%)")
+
+        _plot_figure_cache['aop_completeness_boxplot'] = fig_optional
+        _plot_figure_cache['aop_completeness_boxplot_all'] = fig_all
+
+        return render_plot_html(fig_optional), render_plot_html(fig_all)
 
     except Exception as e:
         logger.error(f"Error creating composite AOP completeness boxplot: {str(e)}")
-        return create_fallback_plot("Composite AOP Completeness Distribution", f"Error: {str(e)}")
+        fallback = create_fallback_plot("Composite AOP Completeness Distribution", f"Error: {str(e)}")
+        return fallback, fallback
 
 
 def plot_oecd_completeness_trend(label_file="property_labels.csv") -> str:
