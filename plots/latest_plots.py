@@ -55,6 +55,9 @@ Author:
     Marvin Martens
 """
 
+import json
+import os
+import re
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -76,6 +79,33 @@ from .organ_systems import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+_NCBI_TAXON_LABELS: dict | None = None
+_NCBI_ID_PATTERN = re.compile(r"(\d+)$")
+
+
+def _load_ncbi_taxon_labels() -> dict:
+    """Lazy-load the curated NCBI taxon ID → species label map.
+
+    The file is `static/data/ncbi_taxon_labels.json` keyed by stringified
+    NCBI taxon ID, with values `{"scientific": ..., "common": ...|None}`.
+    Bootstrap was a one-time NCBI E-utilities fetch covering every taxon
+    ID observed in AOP-Wiki's `NCBITAXON/131567` triples.
+    """
+    global _NCBI_TAXON_LABELS
+    if _NCBI_TAXON_LABELS is None:
+        path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "static", "data", "ncbi_taxon_labels.json",
+        )
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                _NCBI_TAXON_LABELS = json.load(f)
+        except (OSError, json.JSONDecodeError) as e:
+            logger.warning("Could not load NCBI taxon labels (%s): %s", path, e)
+            _NCBI_TAXON_LABELS = {}
+    return _NCBI_TAXON_LABELS
 
 
 def _build_graph_filter(version: str = None) -> tuple[str, str]:
@@ -1452,6 +1482,13 @@ def plot_latest_ke_by_bio_level(version: str = None) -> str:
 
 def plot_latest_taxonomic_groups(version: str = None) -> str:
     """Show which taxonomic groups are most represented across AOPs.
+
+    Resolves the NCBI taxon IDs that AOP-Wiki stores on each AOP
+    (`NCBITAXON/131567` predicate) to scientific names using a curated
+    label map. Coalesces the two storage formats (modern NCBITAXON
+    URIs and legacy `WCS_NNNN` strings) so a single species shows as
+    one bar. Curation-leak `WikiUser_NN` entries — these are user IDs,
+    not taxa — are filtered out.
 
     Args:
         version: Optional version string. If None, uses latest.
