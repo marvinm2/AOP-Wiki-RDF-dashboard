@@ -217,6 +217,13 @@
         "limitations": "Counts only entities typed as `a aopo:AdverseOutcomePathway` / `aopo:KeyEvent` / `aopo:KeyEventRelationship` / `nci:C54571`. A URI re-minted between snapshots will look like a removal even if the entity semantically still exists. The earliest snapshot is always 0 (nothing has been seen yet). Trend data covers only the published RDF release versions available in the SPARQL endpoint.",
         "sparql": "SELECT DISTINCT ?e\nWHERE {\n  GRAPH __GRAPH_URI__ { ?e a aopo:KeyEvent . }\n}"
     },
+    "ke_migration_map": {
+        "title": "KE Migration Map (top 50 most-mobile KEs)",
+        "description": "Across all quarterly snapshots, tracks how each KE's AOP membership evolved. Rendered as a heatmap: Y-axis = top 50 most-mobile KEs (scored as `snapshots_present × peak_aop_count`), X-axis = snapshot date, cell colour = #AOPs the KE was in at that quarter, empty cells = KE absent. Surfaces KEs that were first introduced, removed, merged, or jumped between AOPs over time.",
+        "data_source": "One per-graph aggregation returning (graph, KE, #AOPs containing it). ~41K rows total across 32 snapshots. Mobility score is computed in Python; the top 50 KEs by score are rendered. The CSV download contains the full top-50 timeline (1591 rows: KEs × snapshots in which they appear).",
+        "limitations": "The Sankey rendering the original issue proposed is unreadable at 50 KEs × 32 snapshots × ~500 AOPs (a true Sankey would have thousands of nodes); the heatmap conveys the same per-KE journey signal without the visual collapse. The mobility score is editorial — a single-AOP KE present in every snapshot ranks below a 2-AOP KE present in every snapshot. Empty cells encode either KE absence OR KE present but in zero AOPs (impossible by construction — every KE in the AOP-Wiki RDF is in at least one AOP), so empty = absent.",
+        "sparql": "SELECT ?graph ?ke (COUNT(DISTINCT ?aop) AS ?n_aops)\nWHERE {\n  GRAPH ?graph {\n    ?aop a aopo:AdverseOutcomePathway ;\n         aopo:has_key_event ?ke .\n  }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph ?ke"
+    },
     "ke_mmo_coverage": {
         "title": "KE Measurement-Method Coverage Over Time",
         "description": "Per-version share of Key Events that carry an `obo:MMO_0000000` description — the predicate AOP-Wiki uses for free-text measurement-method / assay text. Currently only ~37% of KEs have one; the gap is the largest single completeness signal for NAM-ready AOPs. Companion to the snapshot donut on the Latest page.",

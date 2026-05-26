@@ -80,6 +80,7 @@ from plots import (
     plot_stressor_coverage_growth,
     plot_aops_per_stressor_distribution,
     plot_ke_mmo_coverage_trends,
+    plot_ke_migration_map,
     plot_avg_per_aop,
     plot_network_density,
     plot_ke_components,
@@ -207,6 +208,7 @@ def compute_plots_parallel() -> dict:
         ('stressor_coverage_growth', lambda: safe_plot_execution(plot_stressor_coverage_growth)),
         ('aops_per_stressor_distribution', lambda: safe_plot_execution(plot_aops_per_stressor_distribution)),
         ('ke_mmo_coverage', lambda: safe_plot_execution(plot_ke_mmo_coverage_trends)),
+        ('ke_migration_map', lambda: safe_plot_execution(plot_ke_migration_map)),
         ('avg_per_aop', lambda: safe_plot_execution(plot_avg_per_aop)),
         ('network_density', lambda: safe_plot_execution(plot_network_density)),
         ('ke_components', lambda: safe_plot_execution(plot_ke_components)),
@@ -336,6 +338,13 @@ try:
         graph_ke_mmo_abs = graph_ke_mmo_pct = ""
 except (TypeError, ValueError):
     graph_ke_mmo_abs = graph_ke_mmo_pct = ""
+
+try:
+    graph_ke_migration_map, _ = plot_results.get('ke_migration_map', (None, None))
+    if graph_ke_migration_map is None:
+        graph_ke_migration_map = ""
+except (TypeError, ValueError):
+    graph_ke_migration_map = ""
 
 try:
     graph_avg_abs, graph_avg_delta = plot_results.get('avg_per_aop', (None, None))
@@ -1741,6 +1750,7 @@ def get_plot(plot_name):
         'aops_per_stressor_distribution_percentage': graph_aops_per_stressor_pct,
         'ke_mmo_coverage_absolute': graph_ke_mmo_abs,
         'ke_mmo_coverage_percentage': graph_ke_mmo_pct,
+        'ke_migration_map': graph_ke_migration_map,
         'average_components_per_aop_absolute': graph_avg_abs,
         'average_components_per_aop_delta': graph_avg_delta,
         'aop_network_density': graph_density,

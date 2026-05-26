@@ -1017,6 +1017,101 @@ def plot_ke_mmo_coverage_trends() -> tuple[str, str, pd.DataFrame]:
         )
 
 
+def plot_ke_migration_map(top_n: int = 50) -> tuple[str, pd.DataFrame]:
+    """KE AOP-membership migration across snapshot history (#66).
+
+    The issue asks for a Sankey of KE→AOP membership over versions. With
+    ~1.5K KEs and ~500 AOPs across 32 snapshots that visualisation is
+    unreadable; v1 ships the same underlying data as a heatmap (Y = top-N
+    most-mobile KEs, X = snapshot date, fill = #AOPs the KE is in that
+    quarter). The heatmap reveals exactly what the issue wants exposed:
+    KEs first introduced, removed, merged, or jumping between AOPs.
+
+    Mobility is scored per KE as `distinct_aops_ever × snapshots_present`
+    so KEs that touch many AOPs and persist across many quarters rank
+    highest. Tunable via the methodology note.
+    """
+    global _plot_data_cache, _plot_figure_cache
+
+    try:
+        q = """
+        SELECT ?graph ?ke (COUNT(DISTINCT ?aop) AS ?n_aops)
+        WHERE {
+            GRAPH ?graph {
+                ?aop a aopo:AdverseOutcomePathway ;
+                     aopo:has_key_event ?ke .
+            }
+            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        GROUP BY ?graph ?ke
+        """
+        rows = run_sparql_query_with_retry(q)
+        if not rows:
+            return (
+                create_fallback_plot("KE Migration Map", "No data"),
+                pd.DataFrame(),
+            )
+
+        df = pd.DataFrame([{
+            'version': r['graph']['value'].rsplit('/', 1)[-1],
+            'ke_uri': r['ke']['value'],
+            'n_aops': int(r['n_aops']['value']),
+        } for r in rows])
+        df['ke_id'] = df['ke_uri'].str.rsplit('/', n=1).str[-1]
+
+        # Mobility = distinct snapshots present × peak #AOPs.
+        mobility = df.groupby('ke_id').agg(
+            snapshots_present=('version', 'nunique'),
+            peak_aops=('n_aops', 'max'),
+        )
+        mobility['score'] = mobility['snapshots_present'] * mobility['peak_aops']
+        top_kes = mobility.sort_values('score', ascending=False).head(top_n).index.tolist()
+        top_df = df[df['ke_id'].isin(top_kes)].copy()
+
+        # Pivot to heatmap matrix.
+        versions = sorted(top_df['version'].unique())
+        pivot = (top_df.pivot_table(index='ke_id', columns='version',
+                                    values='n_aops', aggfunc='max')
+                 .reindex(top_kes).reindex(columns=versions))
+
+        fig = go.Figure(data=go.Heatmap(
+            z=pivot.values,
+            x=versions,
+            y=[f"KE {ke}" for ke in pivot.index],
+            colorscale=[
+                [0.0, '#f2f2f7'],
+                [0.05, BRAND_COLORS['sky_blue']],
+                [0.5, BRAND_COLORS['blue']],
+                [1.0, BRAND_COLORS['deep_magenta']],
+            ],
+            zmin=0,
+            colorbar=dict(title='#AOPs<br>referencing<br>this KE'),
+            hovertemplate='<b>KE %{y}</b><br>Snapshot %{x}<br>In %{z} AOPs<extra></extra>',
+        ))
+        fig.update_layout(
+            title={"text": f"KE migration map — top {len(top_kes)} most-mobile Key Events<br><sub>Cell colour = #AOPs the KE is in at that snapshot; empty cells = KE absent</sub>"},
+            xaxis=dict(tickangle=-45),
+            yaxis=dict(autorange='reversed'),
+            margin=dict(l=80, r=40, t=80, b=80),
+            height=900,
+        )
+
+        # Export DataFrame: rows = top KEs × snapshots, columns = #AOPs, csv-friendly.
+        export = top_df.sort_values(['ke_id', 'version'])[['version', 'ke_id', 'ke_uri', 'n_aops']]
+
+        _plot_data_cache['ke_migration_map'] = export
+        _plot_figure_cache['ke_migration_map'] = fig
+
+        return render_plot_html(fig), export
+
+    except Exception as e:
+        logger.error(f"Failed to generate KE migration map: {e}")
+        return (
+            create_fallback_plot("KE Migration Map", str(e)),
+            pd.DataFrame(),
+        )
+
+
 def plot_avg_per_aop() -> tuple[str, str]:
     """Generate average components per AOP visualization with absolute and delta views."""
     global _plot_data_cache, _plot_figure_cache

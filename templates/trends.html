@@ -564,6 +564,35 @@
         </div>
         {{ data_table_toggle('ke_mmo_coverage_absolute') }}
     </div>
+
+
+    <!-- KE Migration Map (#66) -->
+    <div class="plot-box full-width" id="ke-migration-map">
+        <div class="plot-header">
+            <h3>KE Migration Map</h3>
+            <div class="download-dropdown">
+                <button class="download-button dropdown-toggle">Download ▼</button>
+                <div class="dropdown-menu">
+                    <a href="/download/trend/ke_migration_map?format=csv" class="dropdown-item">📄 CSV</a>
+                    <a href="/download/trend/ke_migration_map?format=png" class="dropdown-item">🖼️ PNG</a>
+                    <a href="/download/trend/ke_migration_map?format=svg" class="dropdown-item">📐 SVG</a>
+                </div>
+            </div>
+        </div>
+        <p class="plot-description">
+            Heatmap of the top 50 most-mobile Key Events across all quarterly snapshots.
+            X-axis is the snapshot date; Y-axis is the KE; cell colour encodes how many AOPs
+            that KE was in at that quarter. Empty cells mean the KE was absent. Reveals KEs
+            that were first introduced, removed, merged, or jumped between AOPs — the
+            single most uniquely multi-endpoint-enabled view (no other AOP-Wiki tool has
+            the versioned graph history to produce it).
+        </p>
+        {{ methodology_note(methodology_notes, 'ke_migration_map') }}
+        <div class="lazy-plot" data-plot-name="ke_migration_map">
+            <!-- Plot will be loaded here via JavaScript -->
+        </div>
+        {{ data_table_toggle('ke_migration_map') }}
+    </div>
     </div>
 </section>
 
