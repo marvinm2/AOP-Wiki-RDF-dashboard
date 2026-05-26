@@ -4082,3 +4082,165 @@ def plot_latest_curator_abandoned_aops(version: str = None) -> str:
     except Exception as e:
         logger.error(f"Failed to compute abandoned-AOPs view: {e}")
         return create_fallback_plot("Abandoned AOPs", str(e))
+
+
+def plot_latest_ke_wikipathways_overlay(version: str = None, min_mapped_genes: int = 3, top_n: int = 30) -> str:
+    """KE ↔ WikiPathways overlay (#69) — pathway support per KE.
+
+    For each KE with ≥`min_mapped_genes` HGNC mappings, queries WikiPathways
+    directly (no SPARQL federation, since the federation surface is unreliable
+    and the WP RDF predicate for gene symbols has moved). Returns the top-N
+    KEs ranked by the number of WikiPathways pathways that touch at least
+    one of the KE's mapped genes.
+
+    Bridges Marvin's two pillars (D1 AOP-Wiki RDF + D2 WikiPathways). The
+    visualisation is a horizontal bar chart of `#pathways supporting`; CSV
+    download has the full (KE, pathway, supporting genes) triples for
+    follow-on biology work.
+
+    Note: WikiPathways queries are made from the dashboard's Python layer
+    against `https://sparql.wikipathways.org/sparql` directly. Throttling /
+    transient failures degrade gracefully (empty cells in the chart).
+    """
+    import requests as _requests
+
+    graph_uri = _resolve_latest_graph_for_aop_maturity(version)
+    if not graph_uri:
+        return create_fallback_plot("KE ↔ WikiPathways Overlay", "No data")
+    version_str = graph_uri.rsplit('/', 1)[-1]
+
+    # 1. From AOPWikiRDF: KE → list of HGNC symbols (filtered to KEs with ≥N genes).
+    ke_q = f"""
+    SELECT ?ke ?title ?sym WHERE {{
+      GRAPH <{graph_uri}> {{
+        ?ke a aopo:KeyEvent ;
+            <http://edamontology.org/data_1025> ?gene .
+        ?gene <http://www.w3.org/2000/01/rdf-schema#label> ?sym .
+        OPTIONAL {{ ?ke <http://purl.org/dc/elements/1.1/title> ?title }}
+        {{ SELECT ?ke WHERE {{
+            GRAPH <{graph_uri}> {{
+              ?ke a aopo:KeyEvent ;
+                  <http://edamontology.org/data_1025> ?g .
+            }}
+          }} GROUP BY ?ke HAVING (COUNT(DISTINCT ?g) >= {min_mapped_genes})
+        }}
+      }}
+    }}
+    """
+    try:
+        ke_rows = run_sparql_query(ke_q)
+    except Exception as e:
+        logger.error(f"KE→symbol query failed: {e}")
+        return create_fallback_plot("KE ↔ WikiPathways Overlay", str(e))
+
+    ke_to_syms: dict[str, set[str]] = {}
+    ke_titles: dict[str, str] = {}
+    for r in ke_rows:
+        ke = r['ke']['value']
+        sym = r.get('sym', {}).get('value', '').strip()
+        if not sym:
+            continue
+        ke_to_syms.setdefault(ke, set()).add(sym)
+        if 'title' in r and ke not in ke_titles:
+            ke_titles[ke] = r.get('title', {}).get('value', '')
+
+    if not ke_to_syms:
+        return create_fallback_plot(
+            "KE ↔ WikiPathways Overlay",
+            f"No KEs with ≥{min_mapped_genes} HGNC mappings in this snapshot."
+        )
+
+    all_symbols = sorted({s for syms in ke_to_syms.values() for s in syms})
+
+    # 2. From WikiPathways: symbol → pathways. Chunk to keep request size reasonable.
+    sym_to_pathways: dict[str, set[tuple[str, str]]] = {}
+    chunk = 80
+    wp_endpoint = "https://sparql.wikipathways.org/sparql"
+    for i in range(0, len(all_symbols), chunk):
+        sub = all_symbols[i:i + chunk]
+        values_block = ' '.join(f'"{s}"' for s in sub)
+        wp_q = f"""
+        PREFIX wp: <http://vocabularies.wikipathways.org/wp#>
+        PREFIX dcterms: <http://purl.org/dc/terms/>
+        PREFIX dc: <http://purl.org/dc/elements/1.1/>
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        SELECT DISTINCT ?sym ?pathway ?pwTitle WHERE {{
+          ?g a wp:GeneProduct ;
+             rdfs:label ?sym ;
+             dcterms:isPartOf ?pathway .
+          ?pathway a wp:Pathway ;
+                   dc:title ?pwTitle .
+          VALUES ?sym {{ {values_block} }}
+        }}
+        """
+        try:
+            resp = _requests.post(
+                wp_endpoint,
+                data={'query': wp_q},
+                headers={'Accept': 'application/sparql-results+json'},
+                timeout=45,
+            )
+            if resp.status_code != 200:
+                logger.warning(f"WP chunk {i//chunk}: HTTP {resp.status_code}")
+                continue
+            for b in resp.json().get('results', {}).get('bindings', []):
+                sym = b['sym']['value']
+                pw = b['pathway']['value']
+                title = b.get('pwTitle', {}).get('value', '')
+                sym_to_pathways.setdefault(sym, set()).add((pw, title))
+        except Exception as e:
+            logger.warning(f"WP chunk {i//chunk} failed: {e}")
+
+    # 3. Aggregate per KE.
+    rows = []
+    for ke, syms in ke_to_syms.items():
+        pathway_genes: dict[tuple[str, str], set[str]] = {}
+        for s in syms:
+            for pw_tuple in sym_to_pathways.get(s, set()):
+                pathway_genes.setdefault(pw_tuple, set()).add(s)
+        n_pw = len(pathway_genes)
+        rows.append({
+            'ke_id': ke.rsplit('/', 1)[-1],
+            'ke_uri': ke,
+            'title': ke_titles.get(ke, '—'),
+            'n_genes': len(syms),
+            'n_pathways': n_pw,
+            'top_pathways': '; '.join(f"{t} ({len(g)} genes)" for (pw, t), g in
+                                       sorted(pathway_genes.items(),
+                                              key=lambda kv: -len(kv[1]))[:5]),
+        })
+
+    df = pd.DataFrame(rows)
+    df = df[df['n_pathways'] > 0].sort_values('n_pathways', ascending=False)
+    if df.empty:
+        return create_fallback_plot(
+            "KE ↔ WikiPathways Overlay",
+            "No WikiPathways pathways found for KE-mapped genes (WP endpoint may be throttling)."
+        )
+
+    top = df.head(top_n).copy()
+    top['label'] = top['ke_id'] + " — " + top['title'].str.slice(0, 55)
+
+    fig = px.bar(
+        top, x='n_pathways', y='label', orientation='h',
+        color='n_genes',
+        color_continuous_scale=[BRAND_COLORS['sky_blue'], BRAND_COLORS['deep_magenta']],
+        labels={'n_pathways': '#WikiPathways pathways supporting this KE',
+                'label': 'Key Event', 'n_genes': '#HGNC genes mapped to this KE'},
+        hover_data={'n_genes': True, 'top_pathways': True, 'label': False},
+    )
+    fig.update_layout(
+        title={"text": f"KE ↔ WikiPathways overlay — top {len(top)} KEs by pathway support<br><sub>KEs with ≥{min_mapped_genes} HGNC mappings (v{version_str}, WP live)</sub>"},
+        height=850,
+        margin=dict(l=200, r=30, t=80, b=60),
+    )
+
+    cache_key = f"latest_ke_wikipathways_overlay_{version or 'latest'}"
+    export = df.copy()
+    export.insert(0, 'Version', version_str)
+    _plot_data_cache[cache_key] = export
+    _plot_data_cache['latest_ke_wikipathways_overlay'] = export
+    _plot_figure_cache[cache_key] = fig
+    _plot_figure_cache['latest_ke_wikipathways_overlay'] = fig
+
+    return render_plot_html(fig)

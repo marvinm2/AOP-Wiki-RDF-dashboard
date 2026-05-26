@@ -231,6 +231,23 @@
         "limitations": "Measures presence, not quality — a KE with a one-character MMO string and a KE with a full assay paragraph both count as `with MMO`. Trend data covers only the published RDF release versions available in the SPARQL endpoint.",
         "sparql": "SELECT ?graph\n       (SUM(IF(BOUND(?mmo), 1, 0)) AS ?with_mmo)\n       (COUNT(?ke) AS ?total)\nWHERE {\n  GRAPH ?graph {\n    ?ke a aopo:KeyEvent .\n    OPTIONAL { ?ke <http://purl.obolibrary.org/obo/MMO_0000000> ?mmo }\n  }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph"
     },
+    "latest_ke_wikipathways_overlay": {
+        "title": "KE ↔ WikiPathways Overlay",
+        "description": "Per KE (with ≥3 HGNC mappings), the count of WikiPathways pathways that touch at least one of the KE's mapped genes. Bridges Marvin's two pillars — D1 AOP-Wiki RDF and D2 WikiPathways — by computing pathway support across both knowledge bases. Latest snapshot: ~206 KEs qualify, with top KE supported by 600+ pathways.",
+        "data_source": "Two separate SPARQL endpoints with a Python-side join (NOT federation — the AOP-Wiki Virtuoso doesn't allow outbound SERVICE calls). (1) From AOP-Wiki RDF: KE → list of HGNC symbols, filtered to KEs with ≥3 distinct symbols. (2) From `sparql.wikipathways.org/sparql`: for the union of symbols, gene → pathway memberships. Query is chunked (80 symbols per request) to keep request size under WP throttling limits. Pathway count is then aggregated per KE in Python.",
+        "limitations": "Live WP query — first load can take ~30s and depends on WP endpoint availability. WP queries that time out or are throttled produce empty cells (the KE will still appear with 0 supporting pathways if all chunks for it failed). The WP RDF model uses `rdfs:label` on `wp:GeneProduct` instances for symbols — the issue's originally proposed `wp:bdbHgncSymbol` predicate has been superseded. Substituted accordingly and validated against the live WP endpoint.",
+        "queries": [
+            {
+                "caption": "Resolve latest snapshot graph URI",
+                "query": "SELECT ?graph WHERE {\n  GRAPH ?graph { ?s a aopo:AdverseOutcomePathway . }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n} GROUP BY ?graph ORDER BY DESC(?graph) LIMIT 1"
+            },
+            {
+                "caption": "AOP-Wiki RDF: KE → HGNC symbols (filtered to ≥3 mappings)",
+                "query": "SELECT ?ke ?title ?sym WHERE {\n  GRAPH __GRAPH_URI__ {\n    ?ke a aopo:KeyEvent ;\n        <http://edamontology.org/data_1025> ?gene .\n    ?gene <http://www.w3.org/2000/01/rdf-schema#label> ?sym .\n    OPTIONAL { ?ke <http://purl.org/dc/elements/1.1/title> ?title }\n    { SELECT ?ke WHERE {\n        GRAPH __GRAPH_URI__ {\n          ?ke a aopo:KeyEvent ;\n              <http://edamontology.org/data_1025> ?g .\n        }\n      } GROUP BY ?ke HAVING (COUNT(DISTINCT ?g) >= 3)\n    }\n  }\n}"
+            }
+        ],
+        "wikipathways_query": "PREFIX wp: <http://vocabularies.wikipathways.org/wp#> PREFIX dcterms: <http://purl.org/dc/terms/> PREFIX dc: <http://purl.org/dc/elements/1.1/> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> SELECT DISTINCT ?sym ?pathway ?pwTitle WHERE { ?g a wp:GeneProduct ; rdfs:label ?sym ; dcterms:isPartOf ?pathway . ?pathway a wp:Pathway ; dc:title ?pwTitle . VALUES ?sym { ... user-provided symbols, chunked 80 per request ... } } — run against https://sparql.wikipathways.org/sparql, not the AOP-Wiki Virtuoso (which doesn't allow outbound SERVICE federation). Joined to the AOP-Wiki RDF in Python."
+    },
     "latest_curator_orphan_kes": {
         "title": "Orphan Key Events",
         "description": "KEs not currently referenced by any AOP via `aopo:has_key_event`. Latest snapshot has zero orphans — the AOP-Wiki RDF is tightly stitched today — but the view stays available as a watchdog (a regression here would indicate either a curation drift or a conversion bug).",

@@ -246,6 +246,7 @@ from .latest_plots import (
     plot_latest_curator_stale_aops,
     plot_latest_curator_evidence_free_kers,
     plot_latest_curator_abandoned_aops,
+    plot_latest_ke_wikipathways_overlay,
 )
 
 # Define module version and metadata
@@ -342,6 +343,7 @@ __all__ = [
     'plot_latest_curator_stale_aops',
     'plot_latest_curator_evidence_free_kers',
     'plot_latest_curator_abandoned_aops',
+    'plot_latest_ke_wikipathways_overlay',
 
     # Network analysis functions
     'build_aop_network',
@@ -424,6 +426,7 @@ def get_available_functions():
             'plot_latest_curator_stale_aops',
             'plot_latest_curator_evidence_free_kers',
             'plot_latest_curator_abandoned_aops',
+            'plot_latest_ke_wikipathways_overlay',
         ],
         'network_analysis': [
             'build_aop_network',

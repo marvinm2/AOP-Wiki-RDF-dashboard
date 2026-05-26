@@ -134,6 +134,7 @@ from plots import (
     plot_latest_curator_stale_aops,
     plot_latest_curator_evidence_free_kers,
     plot_latest_curator_abandoned_aops,
+    plot_latest_ke_wikipathways_overlay,
     plot_ontology_term_growth,
     plot_organ_coverage_trends,
     check_sparql_endpoint_health,
@@ -1826,6 +1827,7 @@ def get_plot(plot_name):
         'latest_curator_stale_aops': plot_latest_curator_stale_aops,
         'latest_curator_evidence_free_kers': plot_latest_curator_evidence_free_kers,
         'latest_curator_abandoned_aops': plot_latest_curator_abandoned_aops,
+        'latest_ke_wikipathways_overlay': plot_latest_ke_wikipathways_overlay,
     }
 
     # Handle latest_* plots without version support yet (use pre-computed)

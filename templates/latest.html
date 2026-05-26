@@ -423,6 +423,33 @@
             </div>
             {{ data_table_toggle('latest_life_stage') }}
         </div>
+
+        <!-- KE↔WikiPathways overlay (#69) -->
+        <div class="plot-box full-width" id="latest-ke-wikipathways-overlay">
+            <div class="plot-header">
+                <h3>KE ↔ WikiPathways Overlay</h3>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download &#x25BC;</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/latest/ke_wikipathways_overlay?format=csv" class="dropdown-item">CSV</a>
+                        <a href="/download/latest/ke_wikipathways_overlay?format=png" class="dropdown-item">PNG</a>
+                        <a href="/download/latest/ke_wikipathways_overlay?format=svg" class="dropdown-item">SVG</a>
+                    </div>
+                </div>
+            </div>
+            <p class="plot-description">
+                For each KE with ≥3 HGNC mappings, counts the number of WikiPathways pathways
+                that touch at least one of the KE's mapped genes. Bridges the AOP-Wiki RDF
+                and WikiPathways. The bar shows pathway support count (higher = the KE's gene set
+                is more central to canonical pathway biology); colour encodes #HGNC mappings on the KE.
+                Live WP query — first load may take ~30s while the WP SPARQL endpoint responds.
+            </p>
+            {{ methodology_note(methodology_notes, 'latest_ke_wikipathways_overlay') }}
+            <div class="lazy-plot" data-plot-name="latest_ke_wikipathways_overlay">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+            {{ data_table_toggle('latest_ke_wikipathways_overlay') }}
+        </div>
     </div>
 </section>
 
