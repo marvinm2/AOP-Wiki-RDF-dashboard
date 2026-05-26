@@ -7,7 +7,7 @@ Deployment of the AOP-Wiki RDF Dashboard and Virtuoso SPARQL endpoint to the VHP
 Before deploying, ensure:
 
 1. **DNS A records** point to `81.169.246.233`:
-   - `aopwiki-dashboard.cloud.vhp4safety.nl`
+   - `aopwiki-dashboard.vhp4safety.nl`
    - `aopwiki-multirdf.vhp4safety.nl`
 
 2. **GlusterFS directory** exists on TGX1:
@@ -23,17 +23,20 @@ Before deploying, ensure:
 
 ## Build
 
-Copy the project to TGX1 and build the Docker image:
+Clone (first time) or pull (updates) from GitHub, then build the Docker image:
 
 ```bash
-# From your local machine
-scp -r . mmartens@81.169.246.233:~/aopwiki-dashboard/
-
 # SSH into TGX1
-ssh mmartens@81.169.246.233
+ssh tgx1
+
+# First time: clone the repo
+git clone https://github.com/marvinm2/AOP-Wiki-RDF-dashboard.git ~/aopwiki-dashboard
+
+# Updates: pull latest
+cd ~/aopwiki-dashboard
+git pull origin main
 
 # Build the dashboard image
-cd ~/aopwiki-dashboard
 docker build -t aopwiki-dashboard:latest .
 ```
 
@@ -62,7 +65,7 @@ docker service logs aopwiki-dashboard_dashboard --tail 50
 docker service logs aopwiki-dashboard_virtuoso --tail 50
 
 # Test health endpoint
-curl https://aopwiki-dashboard.cloud.vhp4safety.nl/health
+curl https://aopwiki-dashboard.vhp4safety.nl/health
 
 # Test SPARQL endpoint
 curl 'https://aopwiki-multirdf.vhp4safety.nl/sparql?query=ASK+%7B%7D'
@@ -73,15 +76,10 @@ curl 'https://aopwiki-multirdf.vhp4safety.nl/sparql?query=ASK+%7B%7D'
 To deploy a new version of the dashboard:
 
 ```bash
-# Copy updated code to TGX1
-scp -r . mmartens@81.169.246.233:~/aopwiki-dashboard/
-
-# SSH in and rebuild
-ssh mmartens@81.169.246.233
+ssh tgx1
 cd ~/aopwiki-dashboard
+git pull origin main
 docker build -t aopwiki-dashboard:latest .
-
-# Force service update to pick up new image
 docker service update --force aopwiki-dashboard_dashboard
 ```
 
@@ -95,7 +93,7 @@ docker service ps aopwiki-dashboard_virtuoso --no-trunc
 Check the `ERROR` column for failure reasons.
 
 **DNS not resolving:**
-Verify A records are propagated: `dig aopwiki-dashboard.cloud.vhp4safety.nl`. If not resolved, the Traefik router will not match incoming requests.
+Verify A records are propagated: `dig aopwiki-dashboard.vhp4safety.nl`. If not resolved, the Traefik router will not match incoming requests.
 
 **Virtuoso not starting:**
 - Check that `/mnt/gluster/aopwiki-dashboard/virtuoso-data` exists and has correct permissions.
