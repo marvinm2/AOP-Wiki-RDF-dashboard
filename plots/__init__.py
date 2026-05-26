@@ -241,6 +241,10 @@ from .latest_plots import (
     plot_latest_aop_aop_overlap,
     plot_latest_aop_maturity_index,
     plot_latest_qaop_readiness,
+    plot_latest_curator_orphan_kes,
+    plot_latest_curator_stale_aops,
+    plot_latest_curator_evidence_free_kers,
+    plot_latest_curator_abandoned_aops,
 )
 
 # Define module version and metadata
@@ -332,6 +336,10 @@ __all__ = [
     'plot_latest_aop_aop_overlap',
     'plot_latest_aop_maturity_index',
     'plot_latest_qaop_readiness',
+    'plot_latest_curator_orphan_kes',
+    'plot_latest_curator_stale_aops',
+    'plot_latest_curator_evidence_free_kers',
+    'plot_latest_curator_abandoned_aops',
 
     # Network analysis functions
     'build_aop_network',
@@ -409,6 +417,10 @@ def get_available_functions():
             'plot_latest_aop_aop_overlap',
             'plot_latest_aop_maturity_index',
             'plot_latest_qaop_readiness',
+            'plot_latest_curator_orphan_kes',
+            'plot_latest_curator_stale_aops',
+            'plot_latest_curator_evidence_free_kers',
+            'plot_latest_curator_abandoned_aops',
         ],
         'network_analysis': [
             'build_aop_network',

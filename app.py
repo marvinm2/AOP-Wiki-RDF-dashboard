@@ -129,6 +129,10 @@ from plots import (
     plot_latest_aop_aop_overlap,
     plot_latest_aop_maturity_index,
     plot_latest_qaop_readiness,
+    plot_latest_curator_orphan_kes,
+    plot_latest_curator_stale_aops,
+    plot_latest_curator_evidence_free_kers,
+    plot_latest_curator_abandoned_aops,
     plot_ontology_term_growth,
     plot_organ_coverage_trends,
     check_sparql_endpoint_health,
@@ -1808,6 +1812,10 @@ def get_plot(plot_name):
         'latest_aop_aop_overlap': plot_latest_aop_aop_overlap,
         'latest_aop_maturity_index': plot_latest_aop_maturity_index,
         'latest_qaop_readiness': plot_latest_qaop_readiness,
+        'latest_curator_orphan_kes': plot_latest_curator_orphan_kes,
+        'latest_curator_stale_aops': plot_latest_curator_stale_aops,
+        'latest_curator_evidence_free_kers': plot_latest_curator_evidence_free_kers,
+        'latest_curator_abandoned_aops': plot_latest_curator_abandoned_aops,
     }
 
     # Handle latest_* plots without version support yet (use pre-computed)
