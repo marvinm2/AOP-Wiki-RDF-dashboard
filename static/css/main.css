@@ -316,6 +316,34 @@ footer img {
     color: white;
 }
 
+.aop-aop-threshold-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: auto;
+    margin-right: 12px;
+    font-size: 13px;
+    color: var(--color-primary);
+}
+
+.aop-aop-threshold-control label {
+    white-space: nowrap;
+}
+
+.aop-aop-threshold-control input[type="range"] {
+    accent-color: var(--color-blue);
+    width: 140px;
+    cursor: pointer;
+}
+
+.aop-aop-threshold-control #aop-aop-threshold-value {
+    font-weight: 600;
+    color: var(--color-blue);
+    min-width: 1.4em;
+    display: inline-block;
+    text-align: right;
+}
+
 /* Download Dropdown Styles */
 .download-dropdown {
     position: relative;

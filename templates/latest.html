@@ -167,6 +167,14 @@
         <div class="plot-box full-width" id="latest-aop-aop-overlap">
             <div class="plot-header">
                 <h3>AOP-AOP Overlap Network</h3>
+                <div class="aop-aop-threshold-control">
+                    <label for="aop-aop-threshold-slider">
+                        Min shared KEs: <span id="aop-aop-threshold-value">5</span>
+                    </label>
+                    <input type="range" id="aop-aop-threshold-slider"
+                           min="2" max="10" step="1" value="5"
+                           data-target-plot="latest_aop_aop_overlap">
+                </div>
                 <div class="download-dropdown">
                     <button class="download-button dropdown-toggle">Download &#x25BC;</button>
                     <div class="dropdown-menu">
@@ -178,13 +186,13 @@
             </div>
             <p class="plot-description">
                 Force-directed network where nodes are AOPs and edges connect AOP pairs that share Key
-                Events. Default threshold: ≥5 shared KEs (to keep the chart legible). Node colour =
-                OECD status, node size = #KEs in the AOP, edge thickness = #shared KEs.
-                Hover a node for its title and metadata. Tightly-clustered nodes (e.g. the MASLD AOP
-                family 624-629) share a KE backbone and likely reflect related biology.
+                Events. Use the slider above to adjust the minimum shared-KE threshold (range 2-10,
+                default 5). Node colour = OECD status, node size = #KEs in the AOP, edge thickness =
+                #shared KEs. Hover a node for its title and metadata. Tightly-clustered nodes
+                (e.g. the MASLD AOP family 624-629) share a KE backbone and likely reflect related biology.
             </p>
             {{ methodology_note(methodology_notes, 'latest_aop_aop_overlap') }}
-            <div class="lazy-plot" data-plot-name="latest_aop_aop_overlap">
+            <div class="lazy-plot" data-plot-name="latest_aop_aop_overlap" data-min-shared-kes="5">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
             {{ data_table_toggle('latest_aop_aop_overlap') }}

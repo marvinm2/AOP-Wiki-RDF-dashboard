@@ -34,7 +34,8 @@
         'latest_organ_coverage_unified',
         'latest_organ_coverage_pie',
         'latest_multi_organ_aops',
-        'latest_life_stage'
+        'latest_life_stage',
+        'latest_aop_aop_overlap'
     ];
 
     /**
@@ -157,6 +158,41 @@
 
         selector.addEventListener('change', handleVersionChange);
         console.log('Event listeners set up');
+
+        setupAopAopThresholdSlider();
+    }
+
+    /**
+     * Wire the AOP-AOP overlap threshold slider.
+     * - input event updates the visible value label live (no reload)
+     * - change event (slider released) updates the plot div dataset and
+     *   reuses reloadPlot() to refetch with the new threshold
+     */
+    function setupAopAopThresholdSlider() {
+        const slider = document.getElementById('aop-aop-threshold-slider');
+        const label = document.getElementById('aop-aop-threshold-value');
+        if (!slider || !label) return;
+
+        const plotName = slider.dataset.targetPlot || 'latest_aop_aop_overlap';
+        const plotDiv = document.querySelector(`[data-plot-name="${plotName}"]`);
+        if (!plotDiv) {
+            console.warn(`Slider target plot div not found: ${plotName}`);
+            return;
+        }
+
+        slider.addEventListener('input', () => {
+            label.textContent = slider.value;
+        });
+
+        slider.addEventListener('change', () => {
+            plotDiv.dataset.minSharedKes = slider.value;
+            if (window.plotLoader) {
+                window.plotLoader.loadedPlots.delete(plotName);
+            }
+            reloadPlot(plotName);
+        });
+
+        console.log('AOP-AOP threshold slider wired');
     }
 
     /**
@@ -303,6 +339,7 @@
             if (selectedVersion) params.set('version', selectedVersion);
             if (plotDiv.dataset.scope) params.set('scope', plotDiv.dataset.scope);
             if (plotDiv.dataset.view) params.set('view', plotDiv.dataset.view);
+            if (plotDiv.dataset.minSharedKes) params.set('min_shared_kes', plotDiv.dataset.minSharedKes);
             const qs = params.toString();
             const url = qs ? `/api/plot/${plotName}?${qs}` : `/api/plot/${plotName}`;
 

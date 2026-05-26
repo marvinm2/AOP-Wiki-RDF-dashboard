@@ -1833,8 +1833,13 @@ def get_plot(plot_name):
     # Handle latest_* plots without version support yet (use pre-computed)
     latest_plots_precomputed = {}
 
-    # Fast path: pre-rendered latest plots (no version requested).
-    if not version and plot_name in _latest_precomputed_html:
+    # Fast path: pre-rendered latest plots (no version requested and no
+    # per-plot tuning args). Any of scope/view/min_shared_kes forces a
+    # re-render so the plot reflects the user's choice instead of the
+    # cached default.
+    _tuning_args = ('scope', 'view', 'min_shared_kes')
+    _has_tuning = any(request.args.get(k) for k in _tuning_args)
+    if not version and not _has_tuning and plot_name in _latest_precomputed_html:
         return jsonify({'html': _latest_precomputed_html[plot_name], 'success': True})
 
     # Check if it's a versioned latest plot
@@ -1847,7 +1852,7 @@ def get_plot(plot_name):
             extra_kwargs = {}
             try:
                 params = inspect.signature(plot_function).parameters
-                for key in ('scope', 'view'):
+                for key in ('scope', 'view', 'min_shared_kes'):
                     if key in params:
                         value = request.args.get(key)
                         if value:

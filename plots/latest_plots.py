@@ -3407,7 +3407,7 @@ def plot_latest_ke_mmo_coverage(version: str = None) -> str:
         return create_fallback_plot("KE MMO Coverage", str(e))
 
 
-def plot_latest_aop_aop_overlap(version: str = None, min_shared_kes: int = 8, max_pairs: int = 200) -> str:
+def plot_latest_aop_aop_overlap(version: str = None, min_shared_kes: int = 5, max_pairs: int = 200) -> str:
     """AOP-AOP overlap network: nodes=AOPs, edges=#shared KEs (#67).
 
     Renders a force-directed graph showing pairs of AOPs that share a
@@ -3417,11 +3417,10 @@ def plot_latest_aop_aop_overlap(version: str = None, min_shared_kes: int = 8, ma
 
     Args:
         version: Optional snapshot date string. Defaults to latest.
-        min_shared_kes: Threshold for displaying an edge. Default 5 to
-            keep the network legible (the v1 issue acceptance criteria
-            says default 2 but with 584 AOPs that yields >2400 edges).
-            Tune down via the methodology query box to inspect specific
-            sub-clusters.
+        min_shared_kes: Threshold for displaying an edge. Default 5;
+            clamped to [2, 10]. At 2 the graph approaches a hairball
+            (>2400 pairs with 584 AOPs); at 10 only a few AOP families
+            (e.g. MASLD) remain. The slider above the plot drives this.
         max_pairs: Hard cap on edges rendered to protect Plotly perf.
     """
     import math
@@ -3429,6 +3428,11 @@ def plot_latest_aop_aop_overlap(version: str = None, min_shared_kes: int = 8, ma
         import networkx as nx
     except ImportError:
         return create_fallback_plot("AOP-AOP Overlap Network", "networkx not installed")
+
+    try:
+        min_shared_kes = max(2, min(10, int(min_shared_kes)))
+    except (TypeError, ValueError):
+        min_shared_kes = 5
 
     where_filter, order_limit = _build_graph_filter(version)
 
