@@ -311,6 +311,10 @@
                 <strong>C</strong> (regex on AOP title — exploratory, grey). Bar and pie views share one
                 scope toggle so they stay in sync; the View toggle drives the bar only (pie slices are
                 inherently proportional).
+                <strong>Tip:</strong> the CSV download below contains <em>one row per AOP × bucket</em>
+                (columns: <code>AOP, AOP Title, AO URI, Organ System, Signals, Best Signal, Version, Scope</code>) —
+                including the "No annotation" bucket, which lists every AOP that the classifier could not place
+                under the current scope.
             </p>
             <div class="coverage-toggle" data-scope="all" data-view="absolute">
                 <div class="coverage-toggle-row">
@@ -382,7 +386,8 @@
             <p class="plot-description">
                 How many distinct organ systems each AOP classifies into across Signals A, A&prime;, B and C.
                 Single-organ AOPs sit in the &ldquo;1&rdquo; column; multi-organ pathways pile into 2, 3, &hellip;.
-                The raw-data toggle lists every multi-organ AOP with its full bucket set.
+                The raw-data toggle lists every multi-organ AOP with its full bucket set; the CSV download
+                gives the same per-AOP detail.
             </p>
             {{ methodology_note(methodology_notes, 'latest_multi_organ_aops') }}
             <div class="lazy-plot" data-plot-name="latest_multi_organ_aops">
