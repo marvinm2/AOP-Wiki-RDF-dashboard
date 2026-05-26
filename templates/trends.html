@@ -44,94 +44,6 @@
     </div>
 
 
-    <!-- Entity Birth/Death Curve (#71) -->
-    <div class="plot-box full-width" id="entity-birth-death">
-        <div class="plot-header">
-            <h3>Entity Birth/Death Curve</h3>
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <div class="download-dropdown">
-                    <button class="download-button dropdown-toggle">Download ▼</button>
-                    <div class="dropdown-menu">
-                        <a href="/download/trend/entity_birth_death?format=csv" class="dropdown-item">📄 CSV</a>
-                        <a href="/download/trend/entity_birth_death?format=png" class="dropdown-item">🖼️ PNG</a>
-                        <a href="/download/trend/entity_birth_death?format=svg" class="dropdown-item">📐 SVG</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <p class="plot-description">
-            Gross additions vs removals between adjacent snapshots — one panel per entity type.
-            Additions sit above the zero line, removals below. A net delta of zero (cf. the chart above)
-            can still hide churn; this view exposes it. The CSV includes the URIs of every entity that
-            was added or removed per quarter, for curator follow-up.
-        </p>
-        {{ methodology_note(methodology_notes, 'entity_birth_death') }}
-        <div class="lazy-plot" data-plot-name="entity_birth_death">
-            <!-- Plot will be loaded here via JavaScript -->
-        </div>
-        {{ data_table_toggle('entity_birth_death') }}
-    </div>
-
-
-    <!-- Cumulative Removed Entities (#72) -->
-    <div class="plot-box full-width" id="entity-cumulative-removed">
-        <div class="plot-header">
-            <h3>Cumulative Removed Entities</h3>
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <div class="download-dropdown">
-                    <button class="download-button dropdown-toggle">Download ▼</button>
-                    <div class="dropdown-menu">
-                        <a href="/download/trend/entity_cumulative_removed?format=csv" class="dropdown-item">📄 CSV</a>
-                        <a href="/download/trend/entity_cumulative_removed?format=png" class="dropdown-item">🖼️ PNG</a>
-                        <a href="/download/trend/entity_cumulative_removed?format=svg" class="dropdown-item">📐 SVG</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <p class="plot-description">
-            Running graveyard view — for each snapshot, the count of entities that appeared in any
-            earlier snapshot but are absent now. Companion to the birth/death curve above:
-            that view shows per-quarter <em>flow</em>, this one shows accumulated <em>stock</em>.
-            Re-additions decrement the line. The CSV lists every absent URI per snapshot so curators
-            can audit deprecations.
-        </p>
-        {{ methodology_note(methodology_notes, 'entity_cumulative_removed') }}
-        <div class="lazy-plot" data-plot-name="entity_cumulative_removed">
-            <!-- Plot will be loaded here via JavaScript -->
-        </div>
-        {{ data_table_toggle('entity_cumulative_removed') }}
-    </div>
-
-
-    <!-- Quarterly Growth Rate (#77) -->
-    <div class="plot-box full-width" id="quarterly-growth-rate">
-        <div class="plot-header">
-            <h3>Quarterly Growth Rate</h3>
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <div class="download-dropdown">
-                    <button class="download-button dropdown-toggle">Download ▼</button>
-                    <div class="dropdown-menu">
-                        <a href="/download/trend/quarterly_growth_rate?format=csv" class="dropdown-item">📄 CSV</a>
-                        <a href="/download/trend/quarterly_growth_rate?format=png" class="dropdown-item">🖼️ PNG</a>
-                        <a href="/download/trend/quarterly_growth_rate?format=svg" class="dropdown-item">📐 SVG</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <p class="plot-description">
-            Quarter-over-quarter Δ for AOPs, KEs, KERs, and Stressors — one panel each.
-            Cumulative views hide slope changes; this view makes inflection points
-            (e.g. the 2026-Q1 +22-AOP jump or the 2025-Q3 KE dip) visible as bars.
-            The largest positive and negative quarters per entity are auto-annotated.
-        </p>
-        {{ methodology_note(methodology_notes, 'quarterly_growth_rate') }}
-        <div class="lazy-plot" data-plot-name="quarterly_growth_rate">
-            <!-- Plot will be loaded here via JavaScript -->
-        </div>
-        {{ data_table_toggle('quarterly_growth_rate') }}
-    </div>
-
-
     <!-- AOP Property Presence -->
     <div class="plot-box full-width" id="aop-property-presence">
         <div class="plot-header">
@@ -1111,6 +1023,95 @@
         {{ data_table_toggle('organ_coverage_absolute') }}
     </div>
 
+    </div>
+</section>
+
+<section class="section-block" id="database-churn">
+    <h2 class="section-header">Database Churn</h2>
+    <div class="plot-grid">
+    <!-- Entity Birth/Death Curve (#71) -->
+    <div class="plot-box full-width" id="entity-birth-death">
+        <div class="plot-header">
+            <h3>Entity Birth/Death Curve</h3>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/entity_birth_death?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/entity_birth_death?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/entity_birth_death?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <p class="plot-description">
+            Gross additions vs removals between adjacent snapshots — one panel per entity type.
+            Additions sit above the zero line, removals below. A net delta of zero can still hide
+            churn (e.g. five new KEs added while five existing KEs were merged or deprecated); this
+            view exposes both flows. The CSV includes the URIs of every entity that was added or
+            removed per quarter for curator follow-up.
+        </p>
+        {{ methodology_note(methodology_notes, 'entity_birth_death') }}
+        <div class="lazy-plot" data-plot-name="entity_birth_death">
+            <!-- Plot will be loaded here via JavaScript -->
+        </div>
+        {{ data_table_toggle('entity_birth_death') }}
+    </div>
+
+    <!-- Cumulative Removed Entities (#72) -->
+    <div class="plot-box full-width" id="entity-cumulative-removed">
+        <div class="plot-header">
+            <h3>Cumulative Removed Entities</h3>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/entity_cumulative_removed?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/entity_cumulative_removed?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/entity_cumulative_removed?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <p class="plot-description">
+            Running graveyard view — for each snapshot, the count of entities that appeared in any
+            earlier snapshot but are absent now. Companion to the birth/death curve above:
+            that view shows per-quarter <em>flow</em>, this one shows accumulated <em>stock</em>.
+            Re-additions decrement the line. The CSV lists every absent URI per snapshot so curators
+            can audit deprecations.
+        </p>
+        {{ methodology_note(methodology_notes, 'entity_cumulative_removed') }}
+        <div class="lazy-plot" data-plot-name="entity_cumulative_removed">
+            <!-- Plot will be loaded here via JavaScript -->
+        </div>
+        {{ data_table_toggle('entity_cumulative_removed') }}
+    </div>
+
+    <!-- Quarterly Growth Rate (#77) -->
+    <div class="plot-box full-width" id="quarterly-growth-rate">
+        <div class="plot-header">
+            <h3>Quarterly Growth Rate</h3>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/quarterly_growth_rate?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/quarterly_growth_rate?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/quarterly_growth_rate?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <p class="plot-description">
+            Quarter-over-quarter Δ for AOPs, KEs, KERs, and Stressors — one panel each.
+            Cumulative views hide slope changes; this view makes inflection points visible as bars.
+        </p>
+        {{ methodology_note(methodology_notes, 'quarterly_growth_rate') }}
+        <div class="lazy-plot" data-plot-name="quarterly_growth_rate">
+            <!-- Plot will be loaded here via JavaScript -->
+        </div>
+        {{ data_table_toggle('quarterly_growth_rate') }}
+    </div>
     </div>
 </section>
 
