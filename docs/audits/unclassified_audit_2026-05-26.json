@@ -1,0 +1,4129 @@
+{
+  "generated": "2026-05-26",
+  "snapshot_version": "2026-04-01",
+  "scope": "all",
+  "total_unclassified": 161,
+  "category_counts": {
+    "genuinely_unannotated": 59,
+    "uberon_missing_from_cache": 50,
+    "cl_unmapped": 19,
+    "go_no_ro_axiom": 8,
+    "fma_missing_from_cache": 7,
+    "exotic_ontology": 12,
+    "phenotype_no_anatomy_axiom": 6
+  },
+  "aops": [
+    {
+      "aop": "https://identifiers.org/aop/621",
+      "title": "NOX2 Driven Oxidative Stress-Induced α-Synuclein Radical Formation and Tau Nitration Leading to Neurodegeneration",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": [
+        "Nervous"
+      ]
+    },
+    {
+      "aop": "https://identifiers.org/aop/479",
+      "title": "Mitochondrial complexes inhibition leading to left ventricular function decrease via increased myocardial oxidative stress",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CL_0000255",
+        "http://purl.obolibrary.org/obo/GO_0005739",
+        "http://purl.obolibrary.org/obo/GO_0008219",
+        "http://purl.obolibrary.org/obo/MP_0003674",
+        "http://purl.obolibrary.org/obo/UBERON_0000062"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000255"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0005739",
+            "http://purl.obolibrary.org/obo/GO_0008219"
+          ],
+          "MP": [
+            "http://purl.obolibrary.org/obo/MP_0003674"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000062"
+          ]
+        },
+        "unknown_ontology": []
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/141",
+      "title": "Alkylation of DNA leading to cancer 2",
+      "category": "cl_unmapped",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_16991",
+        "http://purl.obolibrary.org/obo/CL_0000255",
+        "http://purl.obolibrary.org/obo/GO_0006281",
+        "http://purl.obolibrary.org/obo/GO_0006305",
+        "http://purl.org/commons/record/mesh/D009154",
+        "http://purl.org/commons/record/mesh/D009369"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000255"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0006281",
+            "http://purl.obolibrary.org/obo/GO_0006305"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_16991",
+          "http://purl.org/commons/record/mesh/D009154",
+          "http://purl.org/commons/record/mesh/D009369"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/227",
+      "title": "NSAID induced PTGS1 inactivation to gastric ulcer",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/151",
+      "title": "AhR activation leading to preeclampsia",
+      "category": "cl_unmapped",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CL_0000255",
+        "http://purl.obolibrary.org/obo/CL_0000566",
+        "http://purl.obolibrary.org/obo/GO_0004874",
+        "http://purl.obolibrary.org/obo/GO_0010467",
+        "http://purl.obolibrary.org/obo/GO_0017162",
+        "http://purl.obolibrary.org/obo/GO_0046983",
+        "http://purl.obolibrary.org/obo/MP_0008469",
+        "http://purl.obolibrary.org/obo/PR_000003858",
+        "http://purl.obolibrary.org/obo/PR_000004303",
+        "http://purl.obolibrary.org/obo/PR_000008555",
+        "http://purl.obolibrary.org/obo/PR_000017284"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000255",
+            "http://purl.obolibrary.org/obo/CL_0000566"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0004874",
+            "http://purl.obolibrary.org/obo/GO_0010467",
+            "http://purl.obolibrary.org/obo/GO_0017162",
+            "http://purl.obolibrary.org/obo/GO_0046983"
+          ],
+          "MP": [
+            "http://purl.obolibrary.org/obo/MP_0008469"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/PR_000003858",
+          "http://purl.obolibrary.org/obo/PR_000004303",
+          "http://purl.obolibrary.org/obo/PR_000008555",
+          "http://purl.obolibrary.org/obo/PR_000017284"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/236",
+      "title": "Serotonin 1A Receptor Agonism leading to Anti-depressant Activity via Ca Channel Inhibition",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/598",
+      "title": "Excessive reactive oxygen species leading to growth inhibition via protein oxidation and reduced cell proliferation",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_15422",
+        "http://purl.obolibrary.org/obo/CHEBI_26523",
+        "http://purl.obolibrary.org/obo/CL_0000000",
+        "http://purl.obolibrary.org/obo/GO_0005623",
+        "http://purl.obolibrary.org/obo/GO_0005739",
+        "http://purl.obolibrary.org/obo/GO_0006754",
+        "http://purl.obolibrary.org/obo/GO_0008283",
+        "http://purl.obolibrary.org/obo/GO_0017077",
+        "http://purl.obolibrary.org/obo/GO_0040007",
+        "http://purl.obolibrary.org/obo/GO_0051881",
+        "http://purl.obolibrary.org/obo/GO_1901691",
+        "http://purl.obolibrary.org/obo/GO_1903409",
+        "http://purl.obolibrary.org/obo/MP_0003674",
+        "http://purl.obolibrary.org/obo/UBERON_0000062",
+        "http://purl.obolibrary.org/obo/UBERON_0000468"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0005623",
+            "http://purl.obolibrary.org/obo/GO_0005739",
+            "http://purl.obolibrary.org/obo/GO_0006754",
+            "http://purl.obolibrary.org/obo/GO_0008283",
+            "http://purl.obolibrary.org/obo/GO_0017077",
+            "http://purl.obolibrary.org/obo/GO_0040007",
+            "http://purl.obolibrary.org/obo/GO_0051881",
+            "http://purl.obolibrary.org/obo/GO_1901691",
+            "http://purl.obolibrary.org/obo/GO_1903409"
+          ],
+          "MP": [
+            "http://purl.obolibrary.org/obo/MP_0003674"
+          ],
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000000"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000062",
+            "http://purl.obolibrary.org/obo/UBERON_0000468"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_15422",
+          "http://purl.obolibrary.org/obo/CHEBI_26523"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/435",
+      "title": "Deposition of ionising energy leads to population decline via pollen abnormal",
+      "category": "cl_unmapped",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_16991",
+        "http://purl.obolibrary.org/obo/CL_0000255",
+        "http://purl.obolibrary.org/obo/GO_0005694",
+        "http://purl.obolibrary.org/obo/GO_0051305",
+        "http://purl.obolibrary.org/obo/PCO_0000008",
+        "http://purl.obolibrary.org/obo/RBO_00015021"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000255"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0005694",
+            "http://purl.obolibrary.org/obo/GO_0051305"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_16991",
+          "http://purl.obolibrary.org/obo/PCO_0000008",
+          "http://purl.obolibrary.org/obo/RBO_00015021"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/5",
+      "title": "pentachlorophenol early events",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/358",
+      "title": "Chitinase inhibition leading to mortality",
+      "category": "go_no_ro_axiom",
+      "iris": [
+        "http://purl.obolibrary.org/obo/GO_0018990",
+        "http://purl.org/commons/record/mesh/D009026"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0018990"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.org/commons/record/mesh/D009026"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/360",
+      "title": "Chitin synthase 1 inhibition leading to mortality",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CL_0000658",
+        "http://purl.obolibrary.org/obo/GO_0004100",
+        "http://purl.obolibrary.org/obo/GO_0018990",
+        "http://purl.obolibrary.org/obo/GO_0042335",
+        "http://purl.obolibrary.org/obo/UBERON_0000483",
+        "http://purl.obolibrary.org/obo/UBERON_0001002",
+        "http://purl.org/commons/record/mesh/D009026"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0004100",
+            "http://purl.obolibrary.org/obo/GO_0018990",
+            "http://purl.obolibrary.org/obo/GO_0042335"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000483",
+            "http://purl.obolibrary.org/obo/UBERON_0001002"
+          ],
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000658"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.org/commons/record/mesh/D009026"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/157",
+      "title": "Deiodinase 1 inhibition leading to increased mortality via reduced posterior swim bladder inflation ",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_28774",
+        "http://purl.obolibrary.org/obo/GO_0003824",
+        "http://purl.obolibrary.org/obo/GO_0048798",
+        "http://purl.obolibrary.org/obo/MP_0005473",
+        "http://purl.obolibrary.org/obo/NBO_0000371",
+        "http://purl.obolibrary.org/obo/PCO_0000001",
+        "http://purl.obolibrary.org/obo/PCO_0000008",
+        "http://purl.obolibrary.org/obo/PR_000006480",
+        "http://purl.obolibrary.org/obo/UBERON_0006860",
+        "http://purl.obolibrary.org/obo/UBERON_2001278",
+        "http://purl.org/commons/record/mesh/D009026"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0003824",
+            "http://purl.obolibrary.org/obo/GO_0048798"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0006860",
+            "http://purl.obolibrary.org/obo/UBERON_2001278"
+          ],
+          "MP": [
+            "http://purl.obolibrary.org/obo/MP_0005473"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_28774",
+          "http://purl.obolibrary.org/obo/NBO_0000371",
+          "http://purl.obolibrary.org/obo/PCO_0000001",
+          "http://purl.obolibrary.org/obo/PCO_0000008",
+          "http://purl.obolibrary.org/obo/PR_000006480",
+          "http://purl.org/commons/record/mesh/D009026"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/180",
+      "title": "Varroa mite infestation contributes to abnormal foraging leading to colony loss/failure",
+      "category": "go_no_ro_axiom",
+      "iris": [
+        "http://purl.obolibrary.org/obo/GO_0060756",
+        "http://purl.org/commons/record/mesh/D056631"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0060756"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.org/commons/record/mesh/D056631"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/461",
+      "title": "Deposition of ionising energy leads to population decline via impaired oogenesis and spermatogenesis",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": [
+        "Reproductive"
+      ]
+    },
+    {
+      "aop": "https://identifiers.org/aop/583",
+      "title": "Vascular endothelial HER2 inhibition disrupts cardiomyocyte calcium homeostasis via EGFR/STAT3/PTX3 axis leading to cardiac contractile dysfunction",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": [
+        "Cardiovascular"
+      ]
+    },
+    {
+      "aop": "https://identifiers.org/aop/633",
+      "title": "Increased adrenal glucocorticoid production leading to MASLD progression (4)",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": [
+        "Endocrine"
+      ]
+    },
+    {
+      "aop": "https://identifiers.org/aop/156",
+      "title": "Deiodinase 2 inhibition leading to increased mortality via reduced anterior swim bladder inflation",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_28774",
+        "http://purl.obolibrary.org/obo/GO_0003824",
+        "http://purl.obolibrary.org/obo/GO_0048798",
+        "http://purl.obolibrary.org/obo/MP_0005473",
+        "http://purl.obolibrary.org/obo/NBO_0000371",
+        "http://purl.obolibrary.org/obo/PCO_0000001",
+        "http://purl.obolibrary.org/obo/PCO_0000008",
+        "http://purl.obolibrary.org/obo/PR_000006481",
+        "http://purl.obolibrary.org/obo/UBERON_0006860",
+        "http://purl.obolibrary.org/obo/UBERON_2001277",
+        "http://purl.org/commons/record/mesh/D009026"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0003824",
+            "http://purl.obolibrary.org/obo/GO_0048798"
+          ],
+          "MP": [
+            "http://purl.obolibrary.org/obo/MP_0005473"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0006860",
+            "http://purl.obolibrary.org/obo/UBERON_2001277"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_28774",
+          "http://purl.obolibrary.org/obo/NBO_0000371",
+          "http://purl.obolibrary.org/obo/PCO_0000001",
+          "http://purl.obolibrary.org/obo/PCO_0000008",
+          "http://purl.obolibrary.org/obo/PR_000006481",
+          "http://purl.org/commons/record/mesh/D009026"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/371",
+      "title": "Photosystem II antagonism leading to growth inhibition via dysregulation of growth hormone",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": [
+        "Endocrine"
+      ]
+    },
+    {
+      "aop": "https://identifiers.org/aop/329",
+      "title": "Excessive reactive oxygen species production leading to mortality (3)",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_15422",
+        "http://purl.obolibrary.org/obo/CHEBI_26208",
+        "http://purl.obolibrary.org/obo/CHEBI_26523",
+        "http://purl.obolibrary.org/obo/CL_0000000",
+        "http://purl.obolibrary.org/obo/GO_0006754",
+        "http://purl.obolibrary.org/obo/GO_0034440",
+        "http://purl.obolibrary.org/obo/GO_1903409",
+        "http://purl.obolibrary.org/obo/UBERON_0000062",
+        "http://purl.org/commons/record/mesh/D009026"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0006754",
+            "http://purl.obolibrary.org/obo/GO_0034440",
+            "http://purl.obolibrary.org/obo/GO_1903409"
+          ],
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000000"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000062"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_15422",
+          "http://purl.obolibrary.org/obo/CHEBI_26208",
+          "http://purl.obolibrary.org/obo/CHEBI_26523",
+          "http://purl.org/commons/record/mesh/D009026"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/441",
+      "title": "Ionizing radiation-induced DNA damage leads to microcephaly via apoptosis and premature cell differentiation",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_16991",
+        "http://purl.obolibrary.org/obo/CL_0000000",
+        "http://purl.obolibrary.org/obo/CL_0000255",
+        "http://purl.obolibrary.org/obo/GO_0006915",
+        "http://purl.obolibrary.org/obo/RBO_00015021",
+        "http://purl.obolibrary.org/obo/UBERON_0000062"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000000",
+            "http://purl.obolibrary.org/obo/CL_0000255"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0006915"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000062"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_16991",
+          "http://purl.obolibrary.org/obo/RBO_00015021"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/387",
+      "title": "Deposition of ionising energy leading to population decline via mitochondrial dysfunction",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_15422",
+        "http://purl.obolibrary.org/obo/CHEBI_26523",
+        "http://purl.obolibrary.org/obo/CL_0000000",
+        "http://purl.obolibrary.org/obo/CL_0000255",
+        "http://purl.obolibrary.org/obo/GO_0006754",
+        "http://purl.obolibrary.org/obo/GO_1903409",
+        "http://purl.obolibrary.org/obo/PCO_0000001",
+        "http://purl.obolibrary.org/obo/PCO_0000008",
+        "http://purl.obolibrary.org/obo/RBO_00015021",
+        "http://purl.obolibrary.org/obo/UBERON_0000062"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000000",
+            "http://purl.obolibrary.org/obo/CL_0000255"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0006754",
+            "http://purl.obolibrary.org/obo/GO_1903409"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000062"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_15422",
+          "http://purl.obolibrary.org/obo/CHEBI_26523",
+          "http://purl.obolibrary.org/obo/PCO_0000001",
+          "http://purl.obolibrary.org/obo/PCO_0000008",
+          "http://purl.obolibrary.org/obo/RBO_00015021"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/274",
+      "title": "Histone deacetylase inhibition leads to impeded craniofacial development",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CL_0000000",
+        "http://purl.obolibrary.org/obo/GO_0004857",
+        "http://purl.obolibrary.org/obo/PR_000008478",
+        "http://purl.obolibrary.org/obo/UBERON_0000062"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000000"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000062"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0004857"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/PR_000008478"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/579",
+      "title": "Transthyretin disruption in developing fish leading to projected decline in fish population",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/324",
+      "title": "Excessive reactive oxygen species leading to growth inhibition via uncoupling of oxidative phosphorylation and cell death",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_15422",
+        "http://purl.obolibrary.org/obo/CHEBI_26523",
+        "http://purl.obolibrary.org/obo/CL_0000000",
+        "http://purl.obolibrary.org/obo/CL_0000255",
+        "http://purl.obolibrary.org/obo/GO_0005739",
+        "http://purl.obolibrary.org/obo/GO_0006754",
+        "http://purl.obolibrary.org/obo/GO_0008219",
+        "http://purl.obolibrary.org/obo/GO_0017077",
+        "http://purl.obolibrary.org/obo/GO_0040007",
+        "http://purl.obolibrary.org/obo/GO_0051881",
+        "http://purl.obolibrary.org/obo/GO_1901691",
+        "http://purl.obolibrary.org/obo/GO_1903409",
+        "http://purl.obolibrary.org/obo/MP_0003674",
+        "http://purl.obolibrary.org/obo/UBERON_0000062",
+        "http://purl.obolibrary.org/obo/UBERON_0000468"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000000",
+            "http://purl.obolibrary.org/obo/CL_0000255"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0005739",
+            "http://purl.obolibrary.org/obo/GO_0006754",
+            "http://purl.obolibrary.org/obo/GO_0008219",
+            "http://purl.obolibrary.org/obo/GO_0017077",
+            "http://purl.obolibrary.org/obo/GO_0040007",
+            "http://purl.obolibrary.org/obo/GO_0051881",
+            "http://purl.obolibrary.org/obo/GO_1901691",
+            "http://purl.obolibrary.org/obo/GO_1903409"
+          ],
+          "MP": [
+            "http://purl.obolibrary.org/obo/MP_0003674"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000062",
+            "http://purl.obolibrary.org/obo/UBERON_0000468"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_15422",
+          "http://purl.obolibrary.org/obo/CHEBI_26523"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/567",
+      "title": "Binding to plastoquinone B site leading to decreased population growth rate via photosystem II inhibition",
+      "category": "cl_unmapped",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_15422",
+        "http://purl.obolibrary.org/obo/CL_0000000",
+        "http://purl.obolibrary.org/obo/GO_0006754",
+        "http://purl.obolibrary.org/obo/PCO_0000001",
+        "http://purl.obolibrary.org/obo/PCO_0000008"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000000"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0006754"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_15422",
+          "http://purl.obolibrary.org/obo/PCO_0000001",
+          "http://purl.obolibrary.org/obo/PCO_0000008"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/484",
+      "title": "Bisphenol A analogs induce cellular dysfunction in human trophoblast cells in a thyroid hormone receptor-dependent manner: in silico and in vitro analyses",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": [
+        "Endocrine"
+      ]
+    },
+    {
+      "aop": "https://identifiers.org/aop/298",
+      "title": "Increase in reactive oxygen species (ROS) leading to human treatment-resistant gastric cancer",
+      "category": "fma_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_26523",
+        "http://purl.obolibrary.org/obo/CL_0000000",
+        "http://purl.obolibrary.org/obo/CL_0000066",
+        "http://purl.obolibrary.org/obo/FMA_66768",
+        "http://purl.obolibrary.org/obo/GO_0001837",
+        "http://purl.obolibrary.org/obo/GO_0061355",
+        "http://purl.obolibrary.org/obo/GO_1903409",
+        "http://purl.obolibrary.org/obo/GO_1904863",
+        "http://purl.obolibrary.org/obo/GO_1990907",
+        "http://purl.obolibrary.org/obo/GO_2001038",
+        "http://purl.obolibrary.org/obo/PR_000030936",
+        "http://purl.obolibrary.org/obo/UBERON_0000062"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0001837",
+            "http://purl.obolibrary.org/obo/GO_0061355",
+            "http://purl.obolibrary.org/obo/GO_1903409",
+            "http://purl.obolibrary.org/obo/GO_1904863",
+            "http://purl.obolibrary.org/obo/GO_1990907",
+            "http://purl.obolibrary.org/obo/GO_2001038"
+          ],
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000000",
+            "http://purl.obolibrary.org/obo/CL_0000066"
+          ],
+          "FMA": [
+            "http://purl.obolibrary.org/obo/FMA_66768"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000062"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_26523",
+          "http://purl.obolibrary.org/obo/PR_000030936"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/331",
+      "title": "Excessive reactive oxygen species leading to growth inhibition via lipid peroxidation and cell death",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_15422",
+        "http://purl.obolibrary.org/obo/CHEBI_26208",
+        "http://purl.obolibrary.org/obo/CHEBI_26523",
+        "http://purl.obolibrary.org/obo/CL_0000000",
+        "http://purl.obolibrary.org/obo/CL_0000255",
+        "http://purl.obolibrary.org/obo/GO_0005739",
+        "http://purl.obolibrary.org/obo/GO_0006754",
+        "http://purl.obolibrary.org/obo/GO_0008219",
+        "http://purl.obolibrary.org/obo/GO_0017077",
+        "http://purl.obolibrary.org/obo/GO_0034440",
+        "http://purl.obolibrary.org/obo/GO_0040007",
+        "http://purl.obolibrary.org/obo/GO_0051881",
+        "http://purl.obolibrary.org/obo/GO_1901691",
+        "http://purl.obolibrary.org/obo/GO_1903409",
+        "http://purl.obolibrary.org/obo/MP_0003674",
+        "http://purl.obolibrary.org/obo/UBERON_0000062",
+        "http://purl.obolibrary.org/obo/UBERON_0000468"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000000",
+            "http://purl.obolibrary.org/obo/CL_0000255"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0005739",
+            "http://purl.obolibrary.org/obo/GO_0006754",
+            "http://purl.obolibrary.org/obo/GO_0008219",
+            "http://purl.obolibrary.org/obo/GO_0017077",
+            "http://purl.obolibrary.org/obo/GO_0034440",
+            "http://purl.obolibrary.org/obo/GO_0040007",
+            "http://purl.obolibrary.org/obo/GO_0051881",
+            "http://purl.obolibrary.org/obo/GO_1901691",
+            "http://purl.obolibrary.org/obo/GO_1903409"
+          ],
+          "MP": [
+            "http://purl.obolibrary.org/obo/MP_0003674"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000062",
+            "http://purl.obolibrary.org/obo/UBERON_0000468"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_15422",
+          "http://purl.obolibrary.org/obo/CHEBI_26208",
+          "http://purl.obolibrary.org/obo/CHEBI_26523"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/184",
+      "title": "Nosema infection causes abnormal role change that leads to colony loss/failure",
+      "category": "exotic_ontology",
+      "iris": [
+        "http://purl.org/commons/record/mesh/D012380",
+        "http://purl.org/commons/record/mesh/D056631"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {},
+        "unknown_ontology": [
+          "http://purl.org/commons/record/mesh/D012380",
+          "http://purl.org/commons/record/mesh/D056631"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/596",
+      "title": "Excessive reactive oxygen species leading to growth inhibition via protein oxidation and cell injury/death",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_15422",
+        "http://purl.obolibrary.org/obo/CHEBI_26523",
+        "http://purl.obolibrary.org/obo/CL_0000000",
+        "http://purl.obolibrary.org/obo/CL_0000255",
+        "http://purl.obolibrary.org/obo/GO_0005739",
+        "http://purl.obolibrary.org/obo/GO_0006754",
+        "http://purl.obolibrary.org/obo/GO_0008219",
+        "http://purl.obolibrary.org/obo/GO_0017077",
+        "http://purl.obolibrary.org/obo/GO_0040007",
+        "http://purl.obolibrary.org/obo/GO_0051881",
+        "http://purl.obolibrary.org/obo/GO_1901691",
+        "http://purl.obolibrary.org/obo/GO_1903409",
+        "http://purl.obolibrary.org/obo/MP_0003674",
+        "http://purl.obolibrary.org/obo/UBERON_0000062",
+        "http://purl.obolibrary.org/obo/UBERON_0000468"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000000",
+            "http://purl.obolibrary.org/obo/CL_0000255"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0005739",
+            "http://purl.obolibrary.org/obo/GO_0006754",
+            "http://purl.obolibrary.org/obo/GO_0008219",
+            "http://purl.obolibrary.org/obo/GO_0017077",
+            "http://purl.obolibrary.org/obo/GO_0040007",
+            "http://purl.obolibrary.org/obo/GO_0051881",
+            "http://purl.obolibrary.org/obo/GO_1901691",
+            "http://purl.obolibrary.org/obo/GO_1903409"
+          ],
+          "MP": [
+            "http://purl.obolibrary.org/obo/MP_0003674"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000062",
+            "http://purl.obolibrary.org/obo/UBERON_0000468"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_15422",
+          "http://purl.obolibrary.org/obo/CHEBI_26523"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/404",
+      "title": "Metabolic Syndrome leading to Toll Like Receptor dysregulation",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/620",
+      "title": "The Adverse Outcome Pathway to Deposition of Energy Leading to Female Decreased Fertility",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": [
+        "Reproductive"
+      ]
+    },
+    {
+      "aop": "https://identifiers.org/aop/515",
+      "title": "An overview of adverse outcome pathway linked between PM2.5 exposure and congenital heart defects",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": [
+        "Cardiovascular"
+      ]
+    },
+    {
+      "aop": "https://identifiers.org/aop/326",
+      "title": "Excessive reactive oxygen species leading to growth inhibition via uncoupling of oxidative phosphorylation and reduced cell proliferation",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_15422",
+        "http://purl.obolibrary.org/obo/CHEBI_26523",
+        "http://purl.obolibrary.org/obo/CL_0000000",
+        "http://purl.obolibrary.org/obo/GO_0005623",
+        "http://purl.obolibrary.org/obo/GO_0005739",
+        "http://purl.obolibrary.org/obo/GO_0006754",
+        "http://purl.obolibrary.org/obo/GO_0008283",
+        "http://purl.obolibrary.org/obo/GO_0017077",
+        "http://purl.obolibrary.org/obo/GO_0040007",
+        "http://purl.obolibrary.org/obo/GO_0051881",
+        "http://purl.obolibrary.org/obo/GO_1901691",
+        "http://purl.obolibrary.org/obo/GO_1903409",
+        "http://purl.obolibrary.org/obo/MP_0003674",
+        "http://purl.obolibrary.org/obo/UBERON_0000062",
+        "http://purl.obolibrary.org/obo/UBERON_0000468"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0005623",
+            "http://purl.obolibrary.org/obo/GO_0005739",
+            "http://purl.obolibrary.org/obo/GO_0006754",
+            "http://purl.obolibrary.org/obo/GO_0008283",
+            "http://purl.obolibrary.org/obo/GO_0017077",
+            "http://purl.obolibrary.org/obo/GO_0040007",
+            "http://purl.obolibrary.org/obo/GO_0051881",
+            "http://purl.obolibrary.org/obo/GO_1901691",
+            "http://purl.obolibrary.org/obo/GO_1903409"
+          ],
+          "MP": [
+            "http://purl.obolibrary.org/obo/MP_0003674"
+          ],
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000000"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000062",
+            "http://purl.obolibrary.org/obo/UBERON_0000468"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_15422",
+          "http://purl.obolibrary.org/obo/CHEBI_26523"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/155",
+      "title": "Deiodinase 2 inhibition leading to increased mortality via reduced posterior swim bladder inflation",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_28774",
+        "http://purl.obolibrary.org/obo/GO_0003824",
+        "http://purl.obolibrary.org/obo/GO_0048798",
+        "http://purl.obolibrary.org/obo/MP_0005473",
+        "http://purl.obolibrary.org/obo/NBO_0000371",
+        "http://purl.obolibrary.org/obo/PCO_0000001",
+        "http://purl.obolibrary.org/obo/PCO_0000008",
+        "http://purl.obolibrary.org/obo/PR_000006481",
+        "http://purl.obolibrary.org/obo/UBERON_0006860",
+        "http://purl.obolibrary.org/obo/UBERON_2001278",
+        "http://purl.org/commons/record/mesh/D009026"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0003824",
+            "http://purl.obolibrary.org/obo/GO_0048798"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0006860",
+            "http://purl.obolibrary.org/obo/UBERON_2001278"
+          ],
+          "MP": [
+            "http://purl.obolibrary.org/obo/MP_0005473"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_28774",
+          "http://purl.obolibrary.org/obo/NBO_0000371",
+          "http://purl.obolibrary.org/obo/PCO_0000001",
+          "http://purl.obolibrary.org/obo/PCO_0000008",
+          "http://purl.obolibrary.org/obo/PR_000006481",
+          "http://purl.org/commons/record/mesh/D009026"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/216",
+      "title": "Deposition of energy leading to population decline via DNA strand breaks and follicular atresia",
+      "category": "fma_missing_from_cache",
+      "iris": [
+        "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25830",
+        "http://purl.obolibrary.org/obo/FMA_74412",
+        "http://purl.obolibrary.org/obo/PCO_0000001",
+        "http://purl.obolibrary.org/obo/PCO_0000008",
+        "http://purl.obolibrary.org/obo/RBO_00015021",
+        "http://purl.obolibrary.org/obo/VT_1000294"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "FMA": [
+            "http://purl.obolibrary.org/obo/FMA_74412"
+          ]
+        },
+        "unknown_ontology": [
+          "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25830",
+          "http://purl.obolibrary.org/obo/PCO_0000001",
+          "http://purl.obolibrary.org/obo/PCO_0000008",
+          "http://purl.obolibrary.org/obo/RBO_00015021",
+          "http://purl.obolibrary.org/obo/VT_1000294"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/597",
+      "title": "Excessive reactive oxygen species leading to growth inhibition via protein oxidation and reduced cell growth",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/617",
+      "title": "The adverse outcome pathway of vascular calcification",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": [
+        "Cardiovascular"
+      ]
+    },
+    {
+      "aop": "https://identifiers.org/aop/434",
+      "title": "CYP26 inhibition leading to disturbed dorsal lateral hinge point bending which causes neural tube closure defects",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": [
+        "Nervous"
+      ]
+    },
+    {
+      "aop": "https://identifiers.org/aop/585",
+      "title": "AKT Inhibition blocks the autophagy flow through the PRKAA/AMPK pathway and leads to cardiotoxicity",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": [
+        "Cardiovascular"
+      ]
+    },
+    {
+      "aop": "https://identifiers.org/aop/325",
+      "title": "Excessive reactive oxygen species leading to growth inhibition via uncoupling of oxidative phosphorylation and reduced cell growth",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_15422",
+        "http://purl.obolibrary.org/obo/CHEBI_26523",
+        "http://purl.obolibrary.org/obo/CL_0000000",
+        "http://purl.obolibrary.org/obo/GO_0005739",
+        "http://purl.obolibrary.org/obo/GO_0006754",
+        "http://purl.obolibrary.org/obo/GO_0017077",
+        "http://purl.obolibrary.org/obo/GO_0040007",
+        "http://purl.obolibrary.org/obo/GO_0051881",
+        "http://purl.obolibrary.org/obo/GO_1901691",
+        "http://purl.obolibrary.org/obo/GO_1903409",
+        "http://purl.obolibrary.org/obo/MP_0003674",
+        "http://purl.obolibrary.org/obo/UBERON_0000062",
+        "http://purl.obolibrary.org/obo/UBERON_0000468"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0005739",
+            "http://purl.obolibrary.org/obo/GO_0006754",
+            "http://purl.obolibrary.org/obo/GO_0017077",
+            "http://purl.obolibrary.org/obo/GO_0040007",
+            "http://purl.obolibrary.org/obo/GO_0051881",
+            "http://purl.obolibrary.org/obo/GO_1901691",
+            "http://purl.obolibrary.org/obo/GO_1903409"
+          ],
+          "MP": [
+            "http://purl.obolibrary.org/obo/MP_0003674"
+          ],
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000000"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000062",
+            "http://purl.obolibrary.org/obo/UBERON_0000468"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_15422",
+          "http://purl.obolibrary.org/obo/CHEBI_26523"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/305",
+      "title": "5α-reductase inhibition leading to short anogenital distance (AGD) in male (mammalian) offspring",
+      "category": "fma_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_79436",
+        "http://purl.obolibrary.org/obo/CL_0000255",
+        "http://purl.obolibrary.org/obo/FMA_264621",
+        "http://purl.obolibrary.org/obo/GO_0004882",
+        "http://purl.obolibrary.org/obo/GO_0010468",
+        "http://purl.obolibrary.org/obo/GO_0030521",
+        "http://purl.obolibrary.org/obo/GO_0042446",
+        "http://purl.obolibrary.org/obo/PR_000004191",
+        "http://purl.obolibrary.org/obo/UBERON_0002356"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000255"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0004882",
+            "http://purl.obolibrary.org/obo/GO_0010468",
+            "http://purl.obolibrary.org/obo/GO_0030521",
+            "http://purl.obolibrary.org/obo/GO_0042446"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0002356"
+          ],
+          "FMA": [
+            "http://purl.obolibrary.org/obo/FMA_264621"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_79436",
+          "http://purl.obolibrary.org/obo/PR_000004191"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/378",
+      "title": "Dysregulated underperforming Toll Like Receptors (TLRs) leading to high pathogen load",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/45",
+      "title": "Pro-mutagenic DNA Adducts leading to Hepatocellular Carcinoma (HCC)",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": [
+        "Hepatobiliary"
+      ]
+    },
+    {
+      "aop": "https://identifiers.org/aop/389",
+      "title": " Oxygen-evolving complex damage leading to population decline via inhibition of photosynthesis",
+      "category": "cl_unmapped",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_15422",
+        "http://purl.obolibrary.org/obo/CL_0000000",
+        "http://purl.obolibrary.org/obo/GO_0006754",
+        "http://purl.obolibrary.org/obo/PCO_0000001",
+        "http://purl.obolibrary.org/obo/PCO_0000008"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000000"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0006754"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_15422",
+          "http://purl.obolibrary.org/obo/PCO_0000001",
+          "http://purl.obolibrary.org/obo/PCO_0000008"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/601",
+      "title": "Excessive reactive oxygen species leading to growth inhibition via fatty acid oxidation and reduced cell proliferation",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_15422",
+        "http://purl.obolibrary.org/obo/CHEBI_26523",
+        "http://purl.obolibrary.org/obo/CHEBI_35366",
+        "http://purl.obolibrary.org/obo/CL_0000000",
+        "http://purl.obolibrary.org/obo/GO_0005623",
+        "http://purl.obolibrary.org/obo/GO_0006635",
+        "http://purl.obolibrary.org/obo/GO_0006754",
+        "http://purl.obolibrary.org/obo/GO_0008283",
+        "http://purl.obolibrary.org/obo/GO_0040007",
+        "http://purl.obolibrary.org/obo/GO_1903409",
+        "http://purl.obolibrary.org/obo/MP_0003674",
+        "http://purl.obolibrary.org/obo/UBERON_0000062",
+        "http://purl.obolibrary.org/obo/UBERON_0000468"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0005623",
+            "http://purl.obolibrary.org/obo/GO_0006635",
+            "http://purl.obolibrary.org/obo/GO_0006754",
+            "http://purl.obolibrary.org/obo/GO_0008283",
+            "http://purl.obolibrary.org/obo/GO_0040007",
+            "http://purl.obolibrary.org/obo/GO_1903409"
+          ],
+          "MP": [
+            "http://purl.obolibrary.org/obo/MP_0003674"
+          ],
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000000"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000062",
+            "http://purl.obolibrary.org/obo/UBERON_0000468"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_15422",
+          "http://purl.obolibrary.org/obo/CHEBI_26523",
+          "http://purl.obolibrary.org/obo/CHEBI_35366"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/290",
+      "title": "Mitochondrial ATP synthase antagonism leading to growth inhibition (1)",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_15422",
+        "http://purl.obolibrary.org/obo/CL_0000000",
+        "http://purl.obolibrary.org/obo/GO_0005623",
+        "http://purl.obolibrary.org/obo/GO_0006754",
+        "http://purl.obolibrary.org/obo/GO_0008283",
+        "http://purl.obolibrary.org/obo/GO_0040007",
+        "http://purl.obolibrary.org/obo/UBERON_0000468"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000000"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0005623",
+            "http://purl.obolibrary.org/obo/GO_0006754",
+            "http://purl.obolibrary.org/obo/GO_0008283",
+            "http://purl.obolibrary.org/obo/GO_0040007"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000468"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_15422"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/386",
+      "title": "Deposition of ionizing energy leading to population decline via inhibition of photosynthesis",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_15422",
+        "http://purl.obolibrary.org/obo/CHEBI_26523",
+        "http://purl.obolibrary.org/obo/CL_0000000",
+        "http://purl.obolibrary.org/obo/GO_0006754",
+        "http://purl.obolibrary.org/obo/GO_1903409",
+        "http://purl.obolibrary.org/obo/PCO_0000001",
+        "http://purl.obolibrary.org/obo/PCO_0000008",
+        "http://purl.obolibrary.org/obo/RBO_00015021",
+        "http://purl.obolibrary.org/obo/UBERON_0000062"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0006754",
+            "http://purl.obolibrary.org/obo/GO_1903409"
+          ],
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000000"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000062"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_15422",
+          "http://purl.obolibrary.org/obo/CHEBI_26523",
+          "http://purl.obolibrary.org/obo/PCO_0000001",
+          "http://purl.obolibrary.org/obo/PCO_0000008",
+          "http://purl.obolibrary.org/obo/RBO_00015021"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/531",
+      "title": "VEGFR inhibition leading to Keratinocyte differentiation-associate Hand-foot skin reaction",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": [
+        "Integumentary"
+      ]
+    },
+    {
+      "aop": "https://identifiers.org/aop/369",
+      "title": "Photosystem II antagonism leading to growth inhibition via oxidative damage",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/183",
+      "title": "Nosema infection increases energetic demands leading to colony loss/failure",
+      "category": "phenotype_no_anatomy_axiom",
+      "iris": [
+        "http://purl.obolibrary.org/obo/GO_0060756",
+        "http://purl.obolibrary.org/obo/MP_0004889",
+        "http://purl.org/commons/record/mesh/D013312",
+        "http://purl.org/commons/record/mesh/D056631"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "MP": [
+            "http://purl.obolibrary.org/obo/MP_0004889"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0060756"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.org/commons/record/mesh/D013312",
+          "http://purl.org/commons/record/mesh/D056631"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/473",
+      "title": "Energy deposition from internalized Ra-226 decay lower oxygen binding capacity of hemocyanin",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/GO_0040007",
+        "http://purl.obolibrary.org/obo/RBO_00015021",
+        "http://purl.obolibrary.org/obo/UBERON_0000468"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0040007"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000468"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/RBO_00015021"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/600",
+      "title": "Excessive reactive oxygen species leading to growth inhibition via fatty acid oxidation and reduced cell growth",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_15422",
+        "http://purl.obolibrary.org/obo/CHEBI_26523",
+        "http://purl.obolibrary.org/obo/CHEBI_35366",
+        "http://purl.obolibrary.org/obo/CL_0000000",
+        "http://purl.obolibrary.org/obo/GO_0006635",
+        "http://purl.obolibrary.org/obo/GO_0006754",
+        "http://purl.obolibrary.org/obo/GO_0040007",
+        "http://purl.obolibrary.org/obo/GO_1903409",
+        "http://purl.obolibrary.org/obo/MP_0003674",
+        "http://purl.obolibrary.org/obo/UBERON_0000062",
+        "http://purl.obolibrary.org/obo/UBERON_0000468"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0006635",
+            "http://purl.obolibrary.org/obo/GO_0006754",
+            "http://purl.obolibrary.org/obo/GO_0040007",
+            "http://purl.obolibrary.org/obo/GO_1903409"
+          ],
+          "MP": [
+            "http://purl.obolibrary.org/obo/MP_0003674"
+          ],
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000000"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000062",
+            "http://purl.obolibrary.org/obo/UBERON_0000468"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_15422",
+          "http://purl.obolibrary.org/obo/CHEBI_26523",
+          "http://purl.obolibrary.org/obo/CHEBI_35366"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/603",
+      "title": "Excessive reactive oxygen species leading to growth inhibition via protein oxidation and cell cycle disruption",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_26523",
+        "http://purl.obolibrary.org/obo/CL_0000000",
+        "http://purl.obolibrary.org/obo/GO_0005623",
+        "http://purl.obolibrary.org/obo/GO_0008283",
+        "http://purl.obolibrary.org/obo/GO_0040007",
+        "http://purl.obolibrary.org/obo/GO_0051726",
+        "http://purl.obolibrary.org/obo/GO_1903409",
+        "http://purl.obolibrary.org/obo/MP_0003674",
+        "http://purl.obolibrary.org/obo/PR_000029191",
+        "http://purl.obolibrary.org/obo/UBERON_0000062",
+        "http://purl.obolibrary.org/obo/UBERON_0000468"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0005623",
+            "http://purl.obolibrary.org/obo/GO_0008283",
+            "http://purl.obolibrary.org/obo/GO_0040007",
+            "http://purl.obolibrary.org/obo/GO_0051726",
+            "http://purl.obolibrary.org/obo/GO_1903409"
+          ],
+          "MP": [
+            "http://purl.obolibrary.org/obo/MP_0003674"
+          ],
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000000"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000062",
+            "http://purl.obolibrary.org/obo/UBERON_0000468"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_26523",
+          "http://purl.obolibrary.org/obo/PR_000029191"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/82",
+      "title": "Abnormal role change in worker caste contributes to reduced brood care and leads to colony loss/failure",
+      "category": "phenotype_no_anatomy_axiom",
+      "iris": [
+        "http://purl.obolibrary.org/obo/GO_0002164",
+        "http://purl.obolibrary.org/obo/GO_0019098",
+        "http://purl.obolibrary.org/obo/MP_0001386",
+        "http://purl.org/commons/record/mesh/D056631"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "MP": [
+            "http://purl.obolibrary.org/obo/MP_0001386"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0002164",
+            "http://purl.obolibrary.org/obo/GO_0019098"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.org/commons/record/mesh/D056631"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/448",
+      "title": "ROS, inflammation, and activation of nAChR lead to increased incidence of cardiovascular morbidity and mortality",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": [
+        "Cardiovascular",
+        "Immune/Haematopoietic"
+      ]
+    },
+    {
+      "aop": "https://identifiers.org/aop/11",
+      "title": "Percellome Toxicogenomics Approach for AOP Building: Case study on Pentachlorophenol",
+      "category": "cl_unmapped",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CL_0000255",
+        "http://purl.obolibrary.org/obo/GO_0023052",
+        "http://purl.obolibrary.org/obo/PR_000011397"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000255"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0023052"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/PR_000011397"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/359",
+      "title": "Chitobiase inhibition leading to mortality",
+      "category": "go_no_ro_axiom",
+      "iris": [
+        "http://purl.obolibrary.org/obo/GO_0018990",
+        "http://purl.org/commons/record/mesh/D009026"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0018990"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.org/commons/record/mesh/D009026"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/86",
+      "title": "Decrease Glucose oxidase activity contributes to reduction of antiseptic in food and leads to colony loss/failure",
+      "category": "cl_unmapped",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_16217",
+        "http://purl.obolibrary.org/obo/CHEBI_16240",
+        "http://purl.obolibrary.org/obo/CL_0000255",
+        "http://purl.obolibrary.org/obo/GO_0002164",
+        "http://purl.obolibrary.org/obo/GO_0046562",
+        "http://purl.obolibrary.org/obo/GO_0050665",
+        "http://purl.obolibrary.org/obo/NBO_0000079",
+        "http://purl.org/commons/record/mesh/D056631"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000255"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0002164",
+            "http://purl.obolibrary.org/obo/GO_0046562",
+            "http://purl.obolibrary.org/obo/GO_0050665"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_16217",
+          "http://purl.obolibrary.org/obo/CHEBI_16240",
+          "http://purl.obolibrary.org/obo/NBO_0000079",
+          "http://purl.org/commons/record/mesh/D056631"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/44",
+      "title": "Mutagenic MOA for Cancer: Pro-mutagenic DNA Adducts leading to Hepatocellular Carcinoma (HCC)",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": [
+        "Hepatobiliary"
+      ]
+    },
+    {
+      "aop": "https://identifiers.org/aop/330",
+      "title": "Excessive reactive oxygen species production leading to mortality (4)",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_26523",
+        "http://purl.obolibrary.org/obo/CL_0000000",
+        "http://purl.obolibrary.org/obo/CL_0000255",
+        "http://purl.obolibrary.org/obo/GO_1901031",
+        "http://purl.obolibrary.org/obo/GO_1903409",
+        "http://purl.obolibrary.org/obo/UBERON_0000062",
+        "http://purl.org/commons/record/mesh/D009026"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000000",
+            "http://purl.obolibrary.org/obo/CL_0000255"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_1901031",
+            "http://purl.obolibrary.org/obo/GO_1903409"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000062"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_26523",
+          "http://purl.org/commons/record/mesh/D009026"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/95",
+      "title": "Ether-a-go-go (ERG) voltage-gated potassium channel inhibition leading to reduced survival",
+      "category": "cl_unmapped",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CL_0000255",
+        "http://purl.obolibrary.org/obo/GO_0001508",
+        "http://purl.obolibrary.org/obo/GO_0002120",
+        "http://purl.obolibrary.org/obo/GO_0019870",
+        "http://purl.obolibrary.org/obo/NBO_0000079",
+        "http://purl.obolibrary.org/obo/NBO_0000371",
+        "http://purl.obolibrary.org/obo/PR_Q12809",
+        "http://purl.obolibrary.org/obo/VT_0005372"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000255"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0001508",
+            "http://purl.obolibrary.org/obo/GO_0002120",
+            "http://purl.obolibrary.org/obo/GO_0019870"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/NBO_0000079",
+          "http://purl.obolibrary.org/obo/NBO_0000371",
+          "http://purl.obolibrary.org/obo/PR_Q12809",
+          "http://purl.obolibrary.org/obo/VT_0005372"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/267",
+      "title": "Uncoupling of oxidative phosphorylation leading to growth inhibition via glucose depletion",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CL_0000000",
+        "http://purl.obolibrary.org/obo/GO_0005623",
+        "http://purl.obolibrary.org/obo/GO_0005739",
+        "http://purl.obolibrary.org/obo/GO_0008283",
+        "http://purl.obolibrary.org/obo/GO_0017077",
+        "http://purl.obolibrary.org/obo/GO_0040007",
+        "http://purl.obolibrary.org/obo/GO_0051881",
+        "http://purl.obolibrary.org/obo/GO_1901691",
+        "http://purl.obolibrary.org/obo/UBERON_0000468"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0005623",
+            "http://purl.obolibrary.org/obo/GO_0005739",
+            "http://purl.obolibrary.org/obo/GO_0008283",
+            "http://purl.obolibrary.org/obo/GO_0017077",
+            "http://purl.obolibrary.org/obo/GO_0040007",
+            "http://purl.obolibrary.org/obo/GO_0051881",
+            "http://purl.obolibrary.org/obo/GO_1901691"
+          ],
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000000"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000468"
+          ]
+        },
+        "unknown_ontology": []
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/632",
+      "title": "Increased adrenal glucocorticoid production leading to MASLD progression (3)",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": [
+        "Endocrine"
+      ]
+    },
+    {
+      "aop": "https://identifiers.org/aop/301",
+      "title": "Inhibition of Cystathionine Beta synthase leading to impaired the early development of anterior-posterior axis ",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/283",
+      "title": "L-type calcium channel blockade leading to hypotension",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/569",
+      "title": "Decreased DNA methylation of FAM50B/PTCHD3 leading to IQ loss of children via PI3K-Akt pathway",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_26523",
+        "http://purl.obolibrary.org/obo/CL_0000000",
+        "http://purl.obolibrary.org/obo/GO_1903409",
+        "http://purl.obolibrary.org/obo/UBERON_0000062"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000000"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000062"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_1903409"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_26523"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/370",
+      "title": "Photosystem II antagonism leading to growth inhibition via suppression of photosynthesis",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/211",
+      "title": "Handbook development AOP",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/292",
+      "title": "Inhibition of tyrosinase leads to decreased population in fish",
+      "category": "exotic_ontology",
+      "iris": [
+        "http://purl.obolibrary.org/obo/PCO_0000001",
+        "http://purl.obolibrary.org/obo/PCO_0000008"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {},
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/PCO_0000001",
+          "http://purl.obolibrary.org/obo/PCO_0000008"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/296",
+      "title": "Oxidative DNA damage leading to chromosomal aberrations and mutations",
+      "category": "fma_missing_from_cache",
+      "iris": [
+        "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25830",
+        "http://purl.obolibrary.org/obo/CHEBI_16991",
+        "http://purl.obolibrary.org/obo/CHEBI_26523",
+        "http://purl.obolibrary.org/obo/CL_0000255",
+        "http://purl.obolibrary.org/obo/FMA_74412",
+        "http://purl.obolibrary.org/obo/GO_0005694",
+        "http://purl.obolibrary.org/obo/GO_0006281",
+        "http://purl.obolibrary.org/obo/GO_0031052",
+        "http://purl.obolibrary.org/obo/GO_1901031",
+        "http://purl.obolibrary.org/obo/UBERON_0000062",
+        "http://purl.org/commons/record/mesh/D009154"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000255"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0005694",
+            "http://purl.obolibrary.org/obo/GO_0006281",
+            "http://purl.obolibrary.org/obo/GO_0031052",
+            "http://purl.obolibrary.org/obo/GO_1901031"
+          ],
+          "FMA": [
+            "http://purl.obolibrary.org/obo/FMA_74412"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000062"
+          ]
+        },
+        "unknown_ontology": [
+          "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25830",
+          "http://purl.obolibrary.org/obo/CHEBI_16991",
+          "http://purl.obolibrary.org/obo/CHEBI_26523",
+          "http://purl.org/commons/record/mesh/D009154"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/407",
+      "title": "SARS-CoV-2 infection leading to pyroptosis",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_26523",
+        "http://purl.obolibrary.org/obo/CL_0000000",
+        "http://purl.obolibrary.org/obo/GO_0000302",
+        "http://purl.obolibrary.org/obo/GO_0005102",
+        "http://purl.obolibrary.org/obo/GO_0009299",
+        "http://purl.obolibrary.org/obo/GO_0019015",
+        "http://purl.obolibrary.org/obo/GO_0019024",
+        "http://purl.obolibrary.org/obo/GO_0019074",
+        "http://purl.obolibrary.org/obo/GO_0019081",
+        "http://purl.obolibrary.org/obo/GO_0031381",
+        "http://purl.obolibrary.org/obo/GO_0034599",
+        "http://purl.obolibrary.org/obo/GO_0039690",
+        "http://purl.obolibrary.org/obo/GO_0039694",
+        "http://purl.obolibrary.org/obo/GO_0044546",
+        "http://purl.obolibrary.org/obo/GO_0046718",
+        "http://purl.obolibrary.org/obo/GO_0061025",
+        "http://purl.obolibrary.org/obo/GO_0072516",
+        "http://purl.obolibrary.org/obo/GO_0072559",
+        "http://purl.obolibrary.org/obo/GO_0075509",
+        "http://purl.obolibrary.org/obo/PR_000003622",
+        "http://purl.obolibrary.org/obo/PR_000016456",
+        "http://purl.obolibrary.org/obo/PR_000036197",
+        "http://purl.obolibrary.org/obo/PR_P07711",
+        "http://purl.obolibrary.org/obo/UBERON_0000062"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0000302",
+            "http://purl.obolibrary.org/obo/GO_0005102",
+            "http://purl.obolibrary.org/obo/GO_0009299",
+            "http://purl.obolibrary.org/obo/GO_0019015",
+            "http://purl.obolibrary.org/obo/GO_0019024",
+            "http://purl.obolibrary.org/obo/GO_0019074",
+            "http://purl.obolibrary.org/obo/GO_0019081",
+            "http://purl.obolibrary.org/obo/GO_0031381",
+            "http://purl.obolibrary.org/obo/GO_0034599",
+            "http://purl.obolibrary.org/obo/GO_0039690",
+            "http://purl.obolibrary.org/obo/GO_0039694",
+            "http://purl.obolibrary.org/obo/GO_0044546",
+            "http://purl.obolibrary.org/obo/GO_0046718",
+            "http://purl.obolibrary.org/obo/GO_0061025",
+            "http://purl.obolibrary.org/obo/GO_0072516",
+            "http://purl.obolibrary.org/obo/GO_0072559",
+            "http://purl.obolibrary.org/obo/GO_0075509"
+          ],
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000000"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000062"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_26523",
+          "http://purl.obolibrary.org/obo/PR_000003622",
+          "http://purl.obolibrary.org/obo/PR_000016456",
+          "http://purl.obolibrary.org/obo/PR_000036197",
+          "http://purl.obolibrary.org/obo/PR_P07711"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/299",
+      "title": "Deposition of energy leading to population decline via DNA oxidation and follicular atresia",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_26523",
+        "http://purl.obolibrary.org/obo/CL_0000000",
+        "http://purl.obolibrary.org/obo/CL_0000255",
+        "http://purl.obolibrary.org/obo/GO_1901031",
+        "http://purl.obolibrary.org/obo/GO_1903409",
+        "http://purl.obolibrary.org/obo/PCO_0000001",
+        "http://purl.obolibrary.org/obo/PCO_0000008",
+        "http://purl.obolibrary.org/obo/RBO_00015021",
+        "http://purl.obolibrary.org/obo/UBERON_0000062",
+        "http://purl.obolibrary.org/obo/VT_1000294"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000000",
+            "http://purl.obolibrary.org/obo/CL_0000255"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_1901031",
+            "http://purl.obolibrary.org/obo/GO_1903409"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000062"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_26523",
+          "http://purl.obolibrary.org/obo/PCO_0000001",
+          "http://purl.obolibrary.org/obo/PCO_0000008",
+          "http://purl.obolibrary.org/obo/RBO_00015021",
+          "http://purl.obolibrary.org/obo/VT_1000294"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/576",
+      "title": "5α-reductase inhibition leading to increased nipple retention (NR) in male (rodent) offspring",
+      "category": "cl_unmapped",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_79436",
+        "http://purl.obolibrary.org/obo/CL_0000255",
+        "http://purl.obolibrary.org/obo/GO_0004882",
+        "http://purl.obolibrary.org/obo/GO_0010468",
+        "http://purl.obolibrary.org/obo/GO_0042446",
+        "http://purl.obolibrary.org/obo/PR_000004191"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000255"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0004882",
+            "http://purl.obolibrary.org/obo/GO_0010468",
+            "http://purl.obolibrary.org/obo/GO_0042446"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_79436",
+          "http://purl.obolibrary.org/obo/PR_000004191"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/541",
+      "title": "Excessive ROS generation leading to increased incidence of vascular calcification by VSMC phenotype switching",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": [
+        "Cardiovascular"
+      ]
+    },
+    {
+      "aop": "https://identifiers.org/aop/381",
+      "title": "Binding of viral S-glycoprotein to ACE2 receptor leading to dysgeusia",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CL_0000000",
+        "http://purl.obolibrary.org/obo/GO_0005102",
+        "http://purl.obolibrary.org/obo/PR_000003622",
+        "http://purl.obolibrary.org/obo/UBERON_0000062"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000000"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000062"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0005102"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/PR_000003622"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/276",
+      "title": "Inhibition of complex I of the electron transport chain leading to chemical induced Fanconi syndrome",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CL_0000255",
+        "http://purl.obolibrary.org/obo/GO_0005391",
+        "http://purl.obolibrary.org/obo/GO_0005890",
+        "http://purl.obolibrary.org/obo/GO_0006120",
+        "http://purl.obolibrary.org/obo/GO_0008137",
+        "http://purl.obolibrary.org/obo/PR_000031316",
+        "http://purl.obolibrary.org/obo/UBERON_0000062"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000255"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0005391",
+            "http://purl.obolibrary.org/obo/GO_0005890",
+            "http://purl.obolibrary.org/obo/GO_0006120",
+            "http://purl.obolibrary.org/obo/GO_0008137"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000062"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/PR_000031316"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/635",
+      "title": "Increased adrenal glucocorticoid production leading to MASLD progression (6)",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": [
+        "Endocrine"
+      ]
+    },
+    {
+      "aop": "https://identifiers.org/aop/234",
+      "title": "Mu Opioid Receptor Agonism leading to Analgesia via Ca Channel Inhibition",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/228",
+      "title": "NSAID induced PTGS2 inactivation to gastric ulcer",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/592",
+      "title": "DBDPE-induced DNA strand breaks and LDH activity inhibition leading to population growth rate decline via energy metabolism disrupt and apoptosis",
+      "category": "fma_missing_from_cache",
+      "iris": [
+        "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25830",
+        "http://purl.obolibrary.org/obo/CHEBI_16991",
+        "http://purl.obolibrary.org/obo/CL_0000255",
+        "http://purl.obolibrary.org/obo/FMA_74412",
+        "http://purl.obolibrary.org/obo/GO_0006281",
+        "http://purl.obolibrary.org/obo/GO_0009566",
+        "http://purl.obolibrary.org/obo/PCO_0000001",
+        "http://purl.obolibrary.org/obo/PCO_0000008",
+        "http://purl.org/commons/record/mesh/D005298"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000255"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0006281",
+            "http://purl.obolibrary.org/obo/GO_0009566"
+          ],
+          "FMA": [
+            "http://purl.obolibrary.org/obo/FMA_74412"
+          ]
+        },
+        "unknown_ontology": [
+          "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25830",
+          "http://purl.obolibrary.org/obo/CHEBI_16991",
+          "http://purl.obolibrary.org/obo/PCO_0000001",
+          "http://purl.obolibrary.org/obo/PCO_0000008",
+          "http://purl.org/commons/record/mesh/D005298"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/264",
+      "title": "Uncoupling of oxidative phosphorylation leading to growth inhibition via ATP depletion associated cell death",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_15422",
+        "http://purl.obolibrary.org/obo/CL_0000000",
+        "http://purl.obolibrary.org/obo/CL_0000255",
+        "http://purl.obolibrary.org/obo/GO_0005739",
+        "http://purl.obolibrary.org/obo/GO_0006754",
+        "http://purl.obolibrary.org/obo/GO_0008219",
+        "http://purl.obolibrary.org/obo/GO_0017077",
+        "http://purl.obolibrary.org/obo/GO_0040007",
+        "http://purl.obolibrary.org/obo/GO_0051881",
+        "http://purl.obolibrary.org/obo/GO_1901691",
+        "http://purl.obolibrary.org/obo/UBERON_0000468"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000000",
+            "http://purl.obolibrary.org/obo/CL_0000255"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0005739",
+            "http://purl.obolibrary.org/obo/GO_0006754",
+            "http://purl.obolibrary.org/obo/GO_0008219",
+            "http://purl.obolibrary.org/obo/GO_0017077",
+            "http://purl.obolibrary.org/obo/GO_0040007",
+            "http://purl.obolibrary.org/obo/GO_0051881",
+            "http://purl.obolibrary.org/obo/GO_1901691"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000468"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_15422"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/403",
+      "title": "combined unhealthy lifestyle factors leading to metabolic syndrome",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/397",
+      "title": "Bulky DNA adducts leading to mutations",
+      "category": "go_no_ro_axiom",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_16991",
+        "http://purl.obolibrary.org/obo/GO_0006281",
+        "http://purl.org/commons/record/mesh/D009154"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0006281"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_16991",
+          "http://purl.org/commons/record/mesh/D009154"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/339",
+      "title": "DNA methyltransferase inhibition leading to population decline (4)",
+      "category": "exotic_ontology",
+      "iris": [
+        "http://purl.obolibrary.org/obo/PCO_0000001",
+        "http://purl.obolibrary.org/obo/PCO_0000008"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {},
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/PCO_0000001",
+          "http://purl.obolibrary.org/obo/PCO_0000008"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/453",
+      "title": "Reactive oxygen species and subsequent oxidative stress lead to increased incidence of digestive morbidity and mortality in the general population ",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/438",
+      "title": "reactive oxygen species generation leading to increased cardiovascular morbidity and mortality",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": [
+        "Cardiovascular"
+      ]
+    },
+    {
+      "aop": "https://identifiers.org/aop/268",
+      "title": "Uncoupling of oxidative phosphorylation leading to growth inhibition via mitochondrial swelling",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CL_0000000",
+        "http://purl.obolibrary.org/obo/CL_0000255",
+        "http://purl.obolibrary.org/obo/GO_0005739",
+        "http://purl.obolibrary.org/obo/GO_0008219",
+        "http://purl.obolibrary.org/obo/GO_0017077",
+        "http://purl.obolibrary.org/obo/GO_0040007",
+        "http://purl.obolibrary.org/obo/GO_0051881",
+        "http://purl.obolibrary.org/obo/GO_1901691",
+        "http://purl.obolibrary.org/obo/UBERON_0000468"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000000",
+            "http://purl.obolibrary.org/obo/CL_0000255"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0005739",
+            "http://purl.obolibrary.org/obo/GO_0008219",
+            "http://purl.obolibrary.org/obo/GO_0017077",
+            "http://purl.obolibrary.org/obo/GO_0040007",
+            "http://purl.obolibrary.org/obo/GO_0051881",
+            "http://purl.obolibrary.org/obo/GO_1901691"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000468"
+          ]
+        },
+        "unknown_ontology": []
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/270",
+      "title": "Elevated ATP demand for detoxification and repair mechanisms leading to impaired locomotor activity",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/373",
+      "title": "Mitochondrial dysfunction to metabolic diseases",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/146",
+      "title": "Estrogen Receptor Activation and Female Precocious Puberty",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": [
+        "Reproductive"
+      ]
+    },
+    {
+      "aop": "https://identifiers.org/aop/239",
+      "title": "Oxidative Stress Leading to ILC2-mediated Respiratory Epithelial Remodeling",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": [
+        "Respiratory"
+      ]
+    },
+    {
+      "aop": "https://identifiers.org/aop/634",
+      "title": "Increased adrenal glucocorticoid production leading to MASLD progression (5)",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": [
+        "Endocrine"
+      ]
+    },
+    {
+      "aop": "https://identifiers.org/aop/469",
+      "title": "Reactive oxygen speicies overproduction leading to increased digestive morbidity and mortality in generation population",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/361",
+      "title": "Sulfonylureareceptor binding leading to mortality",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/GO_0018990",
+        "http://purl.obolibrary.org/obo/GO_0042335",
+        "http://purl.obolibrary.org/obo/UBERON_0001002",
+        "http://purl.org/commons/record/mesh/D009026"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0018990",
+            "http://purl.obolibrary.org/obo/GO_0042335"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0001002"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.org/commons/record/mesh/D009026"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/229",
+      "title": "Helicobacter pylori to gastric ulcer",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/430",
+      "title": "Binding of SARS-CoV-2 to ACE2 leads to viral infection proliferation",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CL_0000000",
+        "http://purl.obolibrary.org/obo/CL_0000066",
+        "http://purl.obolibrary.org/obo/GO_0005102",
+        "http://purl.obolibrary.org/obo/GO_0009299",
+        "http://purl.obolibrary.org/obo/GO_0019015",
+        "http://purl.obolibrary.org/obo/GO_0019022",
+        "http://purl.obolibrary.org/obo/GO_0019024",
+        "http://purl.obolibrary.org/obo/GO_0019074",
+        "http://purl.obolibrary.org/obo/GO_0019076",
+        "http://purl.obolibrary.org/obo/GO_0019081",
+        "http://purl.obolibrary.org/obo/GO_0031381",
+        "http://purl.obolibrary.org/obo/GO_0039690",
+        "http://purl.obolibrary.org/obo/GO_0039694",
+        "http://purl.obolibrary.org/obo/GO_0046718",
+        "http://purl.obolibrary.org/obo/GO_0060337",
+        "http://purl.obolibrary.org/obo/GO_0061025",
+        "http://purl.obolibrary.org/obo/GO_0071360",
+        "http://purl.obolibrary.org/obo/GO_0072516",
+        "http://purl.obolibrary.org/obo/GO_0075509",
+        "http://purl.obolibrary.org/obo/PR_000003622",
+        "http://purl.obolibrary.org/obo/PR_000016456",
+        "http://purl.obolibrary.org/obo/PR_000024938",
+        "http://purl.obolibrary.org/obo/PR_000024939",
+        "http://purl.obolibrary.org/obo/PR_000036197",
+        "http://purl.obolibrary.org/obo/PR_P07711",
+        "http://purl.obolibrary.org/obo/UBERON_0000062"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0005102",
+            "http://purl.obolibrary.org/obo/GO_0009299",
+            "http://purl.obolibrary.org/obo/GO_0019015",
+            "http://purl.obolibrary.org/obo/GO_0019022",
+            "http://purl.obolibrary.org/obo/GO_0019024",
+            "http://purl.obolibrary.org/obo/GO_0019074",
+            "http://purl.obolibrary.org/obo/GO_0019076",
+            "http://purl.obolibrary.org/obo/GO_0019081",
+            "http://purl.obolibrary.org/obo/GO_0031381",
+            "http://purl.obolibrary.org/obo/GO_0039690",
+            "http://purl.obolibrary.org/obo/GO_0039694",
+            "http://purl.obolibrary.org/obo/GO_0046718",
+            "http://purl.obolibrary.org/obo/GO_0060337",
+            "http://purl.obolibrary.org/obo/GO_0061025",
+            "http://purl.obolibrary.org/obo/GO_0071360",
+            "http://purl.obolibrary.org/obo/GO_0072516",
+            "http://purl.obolibrary.org/obo/GO_0075509"
+          ],
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000000",
+            "http://purl.obolibrary.org/obo/CL_0000066"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000062"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/PR_000003622",
+          "http://purl.obolibrary.org/obo/PR_000016456",
+          "http://purl.obolibrary.org/obo/PR_000024938",
+          "http://purl.obolibrary.org/obo/PR_000024939",
+          "http://purl.obolibrary.org/obo/PR_000036197",
+          "http://purl.obolibrary.org/obo/PR_P07711"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/179",
+      "title": "Varroa mite infestation increases virus levels leading to colony loss/failure",
+      "category": "exotic_ontology",
+      "iris": [
+        "http://purl.org/commons/record/mesh/D019562",
+        "http://purl.org/commons/record/mesh/D056631"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {},
+        "unknown_ontology": [
+          "http://purl.org/commons/record/mesh/D019562",
+          "http://purl.org/commons/record/mesh/D056631"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/572",
+      "title": "BMP4 Suppression Disrupting Cytoskeletal Remodeling Leading to Neural Tube Closure Defects",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": [
+        "Nervous"
+      ]
+    },
+    {
+      "aop": "https://identifiers.org/aop/93",
+      "title": "sodium channel inhibition leading to increased predation",
+      "category": "cl_unmapped",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CL_0000255",
+        "http://purl.obolibrary.org/obo/GO_0001508",
+        "http://purl.obolibrary.org/obo/GO_0002120",
+        "http://purl.obolibrary.org/obo/GO_0019871",
+        "http://purl.obolibrary.org/obo/GO_0023052",
+        "http://purl.obolibrary.org/obo/NBO_0000371",
+        "http://purl.obolibrary.org/obo/PR_000002095"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0001508",
+            "http://purl.obolibrary.org/obo/GO_0002120",
+            "http://purl.obolibrary.org/obo/GO_0019871",
+            "http://purl.obolibrary.org/obo/GO_0023052"
+          ],
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000255"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/NBO_0000371",
+          "http://purl.obolibrary.org/obo/PR_000002095"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/295",
+      "title": "Early-life stromal estrogen receptor activation by endocrine disrupting chemicals in the mammary gland leading to enhanced cancer risk",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": [
+        "Endocrine",
+        "Reproductive"
+      ]
+    },
+    {
+      "aop": "https://identifiers.org/aop/332",
+      "title": "Excessive reactive oxygen species leading to growth inhibition via lipid peroxidation and reduced cell growth",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_15422",
+        "http://purl.obolibrary.org/obo/CHEBI_26208",
+        "http://purl.obolibrary.org/obo/CHEBI_26523",
+        "http://purl.obolibrary.org/obo/CL_0000000",
+        "http://purl.obolibrary.org/obo/GO_0005739",
+        "http://purl.obolibrary.org/obo/GO_0006754",
+        "http://purl.obolibrary.org/obo/GO_0017077",
+        "http://purl.obolibrary.org/obo/GO_0034440",
+        "http://purl.obolibrary.org/obo/GO_0040007",
+        "http://purl.obolibrary.org/obo/GO_0051881",
+        "http://purl.obolibrary.org/obo/GO_1901691",
+        "http://purl.obolibrary.org/obo/GO_1903409",
+        "http://purl.obolibrary.org/obo/MP_0003674",
+        "http://purl.obolibrary.org/obo/UBERON_0000062",
+        "http://purl.obolibrary.org/obo/UBERON_0000468"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0005739",
+            "http://purl.obolibrary.org/obo/GO_0006754",
+            "http://purl.obolibrary.org/obo/GO_0017077",
+            "http://purl.obolibrary.org/obo/GO_0034440",
+            "http://purl.obolibrary.org/obo/GO_0040007",
+            "http://purl.obolibrary.org/obo/GO_0051881",
+            "http://purl.obolibrary.org/obo/GO_1901691",
+            "http://purl.obolibrary.org/obo/GO_1903409"
+          ],
+          "MP": [
+            "http://purl.obolibrary.org/obo/MP_0003674"
+          ],
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000000"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000062",
+            "http://purl.obolibrary.org/obo/UBERON_0000468"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_15422",
+          "http://purl.obolibrary.org/obo/CHEBI_26208",
+          "http://purl.obolibrary.org/obo/CHEBI_26523"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/455",
+      "title": "Aryl hydrocarbon receptor activation leading to early life stage mortality via sox9 repression induced impeded craniofacial development",
+      "category": "cl_unmapped",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CL_0000255",
+        "http://purl.obolibrary.org/obo/GO_0004874",
+        "http://purl.obolibrary.org/obo/GO_0010467",
+        "http://purl.obolibrary.org/obo/GO_0017162",
+        "http://purl.obolibrary.org/obo/GO_0046983",
+        "http://purl.obolibrary.org/obo/MP_0008762",
+        "http://purl.obolibrary.org/obo/PR_000003858",
+        "http://purl.obolibrary.org/obo/PR_000004303",
+        "http://purl.org/commons/record/mesh/D009026"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000255"
+          ],
+          "MP": [
+            "http://purl.obolibrary.org/obo/MP_0008762"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0004874",
+            "http://purl.obolibrary.org/obo/GO_0010467",
+            "http://purl.obolibrary.org/obo/GO_0017162",
+            "http://purl.obolibrary.org/obo/GO_0046983"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/PR_000003858",
+          "http://purl.obolibrary.org/obo/PR_000004303",
+          "http://purl.org/commons/record/mesh/D009026"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/106",
+      "title": "Chemical binding to tubulin in oocytes leading to aneuploid offspring",
+      "category": "cl_unmapped",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CL_0000021",
+        "http://purl.obolibrary.org/obo/CL_0000255",
+        "http://purl.obolibrary.org/obo/GO_0005694",
+        "http://purl.obolibrary.org/obo/GO_0005819",
+        "http://purl.obolibrary.org/obo/GO_0005874",
+        "http://purl.obolibrary.org/obo/GO_0007019",
+        "http://purl.obolibrary.org/obo/GO_0007051",
+        "http://purl.obolibrary.org/obo/GO_0015631",
+        "http://purl.obolibrary.org/obo/GO_0045298",
+        "http://purl.obolibrary.org/obo/GO_0051305",
+        "http://purl.obolibrary.org/obo/MP_0004023",
+        "http://purl.obolibrary.org/obo/PR_000028799"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0005694",
+            "http://purl.obolibrary.org/obo/GO_0005819",
+            "http://purl.obolibrary.org/obo/GO_0005874",
+            "http://purl.obolibrary.org/obo/GO_0007019",
+            "http://purl.obolibrary.org/obo/GO_0007051",
+            "http://purl.obolibrary.org/obo/GO_0015631",
+            "http://purl.obolibrary.org/obo/GO_0045298",
+            "http://purl.obolibrary.org/obo/GO_0051305"
+          ],
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000021",
+            "http://purl.obolibrary.org/obo/CL_0000255"
+          ],
+          "MP": [
+            "http://purl.obolibrary.org/obo/MP_0004023"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/PR_000028799"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/584",
+      "title": "SQLE accumulation leads to hepatotoxicity via cholesterol/sphingolipid metabolic disturbance and lysosomal damage",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": [
+        "Hepatobiliary"
+      ]
+    },
+    {
+      "aop": "https://identifiers.org/aop/396",
+      "title": "Deposition of ionizing energy leads to population decline via impaired meiosis",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_16991",
+        "http://purl.obolibrary.org/obo/CHEBI_26523",
+        "http://purl.obolibrary.org/obo/CL_0000000",
+        "http://purl.obolibrary.org/obo/CL_0000255",
+        "http://purl.obolibrary.org/obo/GO_0005694",
+        "http://purl.obolibrary.org/obo/GO_0009566",
+        "http://purl.obolibrary.org/obo/GO_0051305",
+        "http://purl.obolibrary.org/obo/GO_0051726",
+        "http://purl.obolibrary.org/obo/GO_1903409",
+        "http://purl.obolibrary.org/obo/MP_0003674",
+        "http://purl.obolibrary.org/obo/PR_000029191",
+        "http://purl.obolibrary.org/obo/UBERON_0000062",
+        "http://purl.org/commons/record/mesh/D005298"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000000",
+            "http://purl.obolibrary.org/obo/CL_0000255"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0005694",
+            "http://purl.obolibrary.org/obo/GO_0009566",
+            "http://purl.obolibrary.org/obo/GO_0051305",
+            "http://purl.obolibrary.org/obo/GO_0051726",
+            "http://purl.obolibrary.org/obo/GO_1903409"
+          ],
+          "MP": [
+            "http://purl.obolibrary.org/obo/MP_0003674"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000062"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_16991",
+          "http://purl.obolibrary.org/obo/CHEBI_26523",
+          "http://purl.obolibrary.org/obo/PR_000029191",
+          "http://purl.org/commons/record/mesh/D005298"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/282",
+      "title": "Adverse outcome pathway on photochemical toxicity initiated by light exposure",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_26523",
+        "http://purl.obolibrary.org/obo/CL_0000000",
+        "http://purl.obolibrary.org/obo/GO_1903409",
+        "http://purl.obolibrary.org/obo/UBERON_0000062"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000000"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000062"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_1903409"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_26523"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/321",
+      "title": "Reduced environmental pH leading to thinner shells in Mytilus edulis",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/334",
+      "title": "Glucocorticoid Receptor Agonism Leading to Impaired Fin Regeneration",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CL_0000255",
+        "http://purl.obolibrary.org/obo/CL_0000354",
+        "http://purl.obolibrary.org/obo/GO_0001649",
+        "http://purl.obolibrary.org/obo/GO_0004883",
+        "http://purl.obolibrary.org/obo/GO_0007166",
+        "http://purl.obolibrary.org/obo/GO_0030154",
+        "http://purl.obolibrary.org/obo/GO_0030316",
+        "http://purl.obolibrary.org/obo/GO_0031101",
+        "http://purl.obolibrary.org/obo/NBO_0000371",
+        "http://purl.obolibrary.org/obo/PCO_0000001",
+        "http://purl.obolibrary.org/obo/PCO_0000008",
+        "http://purl.obolibrary.org/obo/PR_000011406",
+        "http://purl.obolibrary.org/obo/UBERON_0008897"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000255",
+            "http://purl.obolibrary.org/obo/CL_0000354"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0001649",
+            "http://purl.obolibrary.org/obo/GO_0004883",
+            "http://purl.obolibrary.org/obo/GO_0007166",
+            "http://purl.obolibrary.org/obo/GO_0030154",
+            "http://purl.obolibrary.org/obo/GO_0030316",
+            "http://purl.obolibrary.org/obo/GO_0031101"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0008897"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/NBO_0000371",
+          "http://purl.obolibrary.org/obo/PCO_0000001",
+          "http://purl.obolibrary.org/obo/PCO_0000008",
+          "http://purl.obolibrary.org/obo/PR_000011406"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/139",
+      "title": "Alkylation of DNA leading to cancer 1",
+      "category": "cl_unmapped",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_16991",
+        "http://purl.obolibrary.org/obo/CL_0000255",
+        "http://purl.obolibrary.org/obo/GO_0006281",
+        "http://purl.obolibrary.org/obo/GO_0006305",
+        "http://purl.org/commons/record/mesh/D009154",
+        "http://purl.org/commons/record/mesh/D009369"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000255"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0006281",
+            "http://purl.obolibrary.org/obo/GO_0006305"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_16991",
+          "http://purl.org/commons/record/mesh/D009154",
+          "http://purl.org/commons/record/mesh/D009369"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/316",
+      "title": "Trypsin inhibition leading to pancreatic acinar cell tumors",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/189",
+      "title": "Type I iodothyronine deiodinase (DIO1) inhibition leading to altered amphibian metamorphosis",
+      "category": "phenotype_no_anatomy_axiom",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_18258",
+        "http://purl.obolibrary.org/obo/CHEBI_28774",
+        "http://purl.obolibrary.org/obo/GO_0003824",
+        "http://purl.obolibrary.org/obo/GO_0007552",
+        "http://purl.obolibrary.org/obo/MP_0005473",
+        "http://purl.obolibrary.org/obo/PR_000006480"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0003824",
+            "http://purl.obolibrary.org/obo/GO_0007552"
+          ],
+          "MP": [
+            "http://purl.obolibrary.org/obo/MP_0005473"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_18258",
+          "http://purl.obolibrary.org/obo/CHEBI_28774",
+          "http://purl.obolibrary.org/obo/PR_000006480"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/341",
+      "title": "DNA methyltransferase inhibition leading to transgenerational effects (2)",
+      "category": "exotic_ontology",
+      "iris": [
+        "http://purl.obolibrary.org/obo/PCO_0000001",
+        "http://purl.obolibrary.org/obo/PCO_0000008"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {},
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/PCO_0000001",
+          "http://purl.obolibrary.org/obo/PCO_0000008"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/631",
+      "title": "Decreased thyroid hormone receptor beta transcriptional activity leading to MASLD progression via endoplasmic reticulum stress",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": [
+        "Endocrine"
+      ]
+    },
+    {
+      "aop": "https://identifiers.org/aop/466",
+      "title": "Doda decarboxylase leading to mortality",
+      "category": "go_no_ro_axiom",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_17029",
+        "http://purl.obolibrary.org/obo/GO_0006031",
+        "http://purl.org/commons/record/mesh/D009026"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0006031"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_17029",
+          "http://purl.org/commons/record/mesh/D009026"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/606",
+      "title": "Ecdysone receptor antagonism leading to mortality via inhibition of chitin synthase 1",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CL_0000658",
+        "http://purl.obolibrary.org/obo/GO_0004100",
+        "http://purl.obolibrary.org/obo/GO_0018990",
+        "http://purl.obolibrary.org/obo/GO_0042335",
+        "http://purl.obolibrary.org/obo/UBERON_0000483",
+        "http://purl.obolibrary.org/obo/UBERON_0001002",
+        "http://purl.org/commons/record/mesh/D009026"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0004100",
+            "http://purl.obolibrary.org/obo/GO_0018990",
+            "http://purl.obolibrary.org/obo/GO_0042335"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000483",
+            "http://purl.obolibrary.org/obo/UBERON_0001002"
+          ],
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000658"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.org/commons/record/mesh/D009026"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/52",
+      "title": "ER agonism leading to skewed sex ratios due to altered sexual differentiation in males",
+      "category": "cl_unmapped",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CL_0002371",
+        "http://purl.obolibrary.org/obo/GO_0030284",
+        "http://purl.obolibrary.org/obo/GO_0048018",
+        "http://purl.obolibrary.org/obo/PR_000007204",
+        "http://purl.org/commons/record/mesh/D012744"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0002371"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0030284",
+            "http://purl.obolibrary.org/obo/GO_0048018"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/PR_000007204",
+          "http://purl.org/commons/record/mesh/D012744"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/408",
+      "title": "Imbalance in redox homeostasis leading to structural damage to tissues",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/602",
+      "title": "Excessive reactive oxygen species leading to growth inhibition via oxidative DNA damage",
+      "category": "fma_missing_from_cache",
+      "iris": [
+        "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25830",
+        "http://purl.obolibrary.org/obo/CHEBI_16991",
+        "http://purl.obolibrary.org/obo/CHEBI_26523",
+        "http://purl.obolibrary.org/obo/CL_0000000",
+        "http://purl.obolibrary.org/obo/CL_0000255",
+        "http://purl.obolibrary.org/obo/FMA_74412",
+        "http://purl.obolibrary.org/obo/GO_0005623",
+        "http://purl.obolibrary.org/obo/GO_0006281",
+        "http://purl.obolibrary.org/obo/GO_0008283",
+        "http://purl.obolibrary.org/obo/GO_0040007",
+        "http://purl.obolibrary.org/obo/GO_0051726",
+        "http://purl.obolibrary.org/obo/GO_1901031",
+        "http://purl.obolibrary.org/obo/GO_1903409",
+        "http://purl.obolibrary.org/obo/MP_0003674",
+        "http://purl.obolibrary.org/obo/PR_000029191",
+        "http://purl.obolibrary.org/obo/UBERON_0000062",
+        "http://purl.obolibrary.org/obo/UBERON_0000468"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000000",
+            "http://purl.obolibrary.org/obo/CL_0000255"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0005623",
+            "http://purl.obolibrary.org/obo/GO_0006281",
+            "http://purl.obolibrary.org/obo/GO_0008283",
+            "http://purl.obolibrary.org/obo/GO_0040007",
+            "http://purl.obolibrary.org/obo/GO_0051726",
+            "http://purl.obolibrary.org/obo/GO_1901031",
+            "http://purl.obolibrary.org/obo/GO_1903409"
+          ],
+          "MP": [
+            "http://purl.obolibrary.org/obo/MP_0003674"
+          ],
+          "FMA": [
+            "http://purl.obolibrary.org/obo/FMA_74412"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000062",
+            "http://purl.obolibrary.org/obo/UBERON_0000468"
+          ]
+        },
+        "unknown_ontology": [
+          "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25830",
+          "http://purl.obolibrary.org/obo/CHEBI_16991",
+          "http://purl.obolibrary.org/obo/CHEBI_26523",
+          "http://purl.obolibrary.org/obo/PR_000029191"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/599",
+      "title": "Excessive reactive oxygen species leading to growth inhibition via fatty acid oxidation and cell injury/death",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_15422",
+        "http://purl.obolibrary.org/obo/CHEBI_26523",
+        "http://purl.obolibrary.org/obo/CHEBI_35366",
+        "http://purl.obolibrary.org/obo/CL_0000000",
+        "http://purl.obolibrary.org/obo/CL_0000255",
+        "http://purl.obolibrary.org/obo/GO_0006635",
+        "http://purl.obolibrary.org/obo/GO_0006754",
+        "http://purl.obolibrary.org/obo/GO_0008219",
+        "http://purl.obolibrary.org/obo/GO_0040007",
+        "http://purl.obolibrary.org/obo/GO_1903409",
+        "http://purl.obolibrary.org/obo/MP_0003674",
+        "http://purl.obolibrary.org/obo/UBERON_0000062",
+        "http://purl.obolibrary.org/obo/UBERON_0000468"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000000",
+            "http://purl.obolibrary.org/obo/CL_0000255"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0006635",
+            "http://purl.obolibrary.org/obo/GO_0006754",
+            "http://purl.obolibrary.org/obo/GO_0008219",
+            "http://purl.obolibrary.org/obo/GO_0040007",
+            "http://purl.obolibrary.org/obo/GO_1903409"
+          ],
+          "MP": [
+            "http://purl.obolibrary.org/obo/MP_0003674"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000062",
+            "http://purl.obolibrary.org/obo/UBERON_0000468"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_15422",
+          "http://purl.obolibrary.org/obo/CHEBI_26523",
+          "http://purl.obolibrary.org/obo/CHEBI_35366"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/262",
+      "title": "L-type calcium channel blockade leading to the disruption of cardiac electrophysiology",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": [
+        "Cardiovascular"
+      ]
+    },
+    {
+      "aop": "https://identifiers.org/aop/333",
+      "title": "Excessive reactive oxygen species leading to growth inhibition via lipid peroxidation and reduced cell proliferation",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_15422",
+        "http://purl.obolibrary.org/obo/CHEBI_26208",
+        "http://purl.obolibrary.org/obo/CHEBI_26523",
+        "http://purl.obolibrary.org/obo/CL_0000000",
+        "http://purl.obolibrary.org/obo/GO_0005623",
+        "http://purl.obolibrary.org/obo/GO_0005739",
+        "http://purl.obolibrary.org/obo/GO_0006754",
+        "http://purl.obolibrary.org/obo/GO_0008283",
+        "http://purl.obolibrary.org/obo/GO_0017077",
+        "http://purl.obolibrary.org/obo/GO_0034440",
+        "http://purl.obolibrary.org/obo/GO_0040007",
+        "http://purl.obolibrary.org/obo/GO_0051881",
+        "http://purl.obolibrary.org/obo/GO_1901691",
+        "http://purl.obolibrary.org/obo/GO_1903409",
+        "http://purl.obolibrary.org/obo/MP_0003674",
+        "http://purl.obolibrary.org/obo/UBERON_0000062",
+        "http://purl.obolibrary.org/obo/UBERON_0000468"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0005623",
+            "http://purl.obolibrary.org/obo/GO_0005739",
+            "http://purl.obolibrary.org/obo/GO_0006754",
+            "http://purl.obolibrary.org/obo/GO_0008283",
+            "http://purl.obolibrary.org/obo/GO_0017077",
+            "http://purl.obolibrary.org/obo/GO_0034440",
+            "http://purl.obolibrary.org/obo/GO_0040007",
+            "http://purl.obolibrary.org/obo/GO_0051881",
+            "http://purl.obolibrary.org/obo/GO_1901691",
+            "http://purl.obolibrary.org/obo/GO_1903409"
+          ],
+          "MP": [
+            "http://purl.obolibrary.org/obo/MP_0003674"
+          ],
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000000"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000062",
+            "http://purl.obolibrary.org/obo/UBERON_0000468"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_15422",
+          "http://purl.obolibrary.org/obo/CHEBI_26208",
+          "http://purl.obolibrary.org/obo/CHEBI_26523"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/265",
+      "title": "Uncoupling of oxidative phosphorylation leading to growth inhibition via increased cytosolic calcium",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CL_0000000",
+        "http://purl.obolibrary.org/obo/CL_0000255",
+        "http://purl.obolibrary.org/obo/GO_0005739",
+        "http://purl.obolibrary.org/obo/GO_0008219",
+        "http://purl.obolibrary.org/obo/GO_0017077",
+        "http://purl.obolibrary.org/obo/GO_0040007",
+        "http://purl.obolibrary.org/obo/GO_0051881",
+        "http://purl.obolibrary.org/obo/GO_1901691",
+        "http://purl.obolibrary.org/obo/UBERON_0000468"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000000",
+            "http://purl.obolibrary.org/obo/CL_0000255"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0005739",
+            "http://purl.obolibrary.org/obo/GO_0008219",
+            "http://purl.obolibrary.org/obo/GO_0017077",
+            "http://purl.obolibrary.org/obo/GO_0040007",
+            "http://purl.obolibrary.org/obo/GO_0051881",
+            "http://purl.obolibrary.org/obo/GO_1901691"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000468"
+          ]
+        },
+        "unknown_ontology": []
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/388",
+      "title": "Deposition of ionising energy  leading to population decline via programmed cell death",
+      "category": "cl_unmapped",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_16991",
+        "http://purl.obolibrary.org/obo/CL_0000255",
+        "http://purl.obolibrary.org/obo/PCO_0000001",
+        "http://purl.obolibrary.org/obo/PCO_0000008",
+        "http://purl.obolibrary.org/obo/RBO_00015021"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000255"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_16991",
+          "http://purl.obolibrary.org/obo/PCO_0000001",
+          "http://purl.obolibrary.org/obo/PCO_0000008",
+          "http://purl.obolibrary.org/obo/RBO_00015021"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/266",
+      "title": "Uncoupling of oxidative phosphorylation leading to growth inhibition via decreased Na-K ATPase activity",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_15422",
+        "http://purl.obolibrary.org/obo/CL_0000000",
+        "http://purl.obolibrary.org/obo/CL_0000255",
+        "http://purl.obolibrary.org/obo/GO_0005391",
+        "http://purl.obolibrary.org/obo/GO_0005739",
+        "http://purl.obolibrary.org/obo/GO_0005890",
+        "http://purl.obolibrary.org/obo/GO_0006754",
+        "http://purl.obolibrary.org/obo/GO_0008219",
+        "http://purl.obolibrary.org/obo/GO_0017077",
+        "http://purl.obolibrary.org/obo/GO_0040007",
+        "http://purl.obolibrary.org/obo/GO_0051881",
+        "http://purl.obolibrary.org/obo/GO_1901691",
+        "http://purl.obolibrary.org/obo/UBERON_0000468"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0005391",
+            "http://purl.obolibrary.org/obo/GO_0005739",
+            "http://purl.obolibrary.org/obo/GO_0005890",
+            "http://purl.obolibrary.org/obo/GO_0006754",
+            "http://purl.obolibrary.org/obo/GO_0008219",
+            "http://purl.obolibrary.org/obo/GO_0017077",
+            "http://purl.obolibrary.org/obo/GO_0040007",
+            "http://purl.obolibrary.org/obo/GO_0051881",
+            "http://purl.obolibrary.org/obo/GO_1901691"
+          ],
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000000",
+            "http://purl.obolibrary.org/obo/CL_0000255"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000468"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_15422"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/340",
+      "title": "DNA methyltransferase inhibition leading to transgenerational effects (1)",
+      "category": "exotic_ontology",
+      "iris": [
+        "http://purl.obolibrary.org/obo/PCO_0000001",
+        "http://purl.obolibrary.org/obo/PCO_0000008"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {},
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/PCO_0000001",
+          "http://purl.obolibrary.org/obo/PCO_0000008"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/586",
+      "title": "The increasing accumulation of HMGB1 in the nucleus causes cardiomyocyte death via HMGB1/HSPB1/CCN2 pathway",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": [
+        "Cardiovascular"
+      ]
+    },
+    {
+      "aop": "https://identifiers.org/aop/242",
+      "title": "Inhibition of lysyl oxidase leading to enhanced chronic fish toxicity",
+      "category": "exotic_ontology",
+      "iris": [
+        "http://purl.obolibrary.org/obo/NBO_0000371",
+        "http://purl.obolibrary.org/obo/VT_0005372"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {},
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/NBO_0000371",
+          "http://purl.obolibrary.org/obo/VT_0005372"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/15",
+      "title": "Alkylation of DNA in male pre-meiotic germ cells leading to heritable mutations",
+      "category": "cl_unmapped",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_16991",
+        "http://purl.obolibrary.org/obo/CL_0000255",
+        "http://purl.obolibrary.org/obo/GO_0006281",
+        "http://purl.obolibrary.org/obo/GO_0006305",
+        "http://purl.org/commons/record/mesh/D009154"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000255"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0006281",
+            "http://purl.obolibrary.org/obo/GO_0006305"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_16991",
+          "http://purl.org/commons/record/mesh/D009154"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/269",
+      "title": "Elevated ATP demand for detoxification and repair mechanisms leading to impaired growth and development",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/590",
+      "title": "Increase of intracellular copper leading to cuproptosis via interference with energy metabolism ",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_15422",
+        "http://purl.obolibrary.org/obo/CHEBI_36080",
+        "http://purl.obolibrary.org/obo/CL_0000255",
+        "http://purl.obolibrary.org/obo/GO_0005746",
+        "http://purl.obolibrary.org/obo/GO_0006754",
+        "http://purl.obolibrary.org/obo/UBERON_0000062",
+        "http://purl.org/commons/record/mesh/D057165"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000255"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0005746",
+            "http://purl.obolibrary.org/obo/GO_0006754"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000062"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_15422",
+          "http://purl.obolibrary.org/obo/CHEBI_36080",
+          "http://purl.org/commons/record/mesh/D057165"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/205",
+      "title": "AOP from chemical insult to cell death",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CL_0000000",
+        "http://purl.obolibrary.org/obo/CL_0000255",
+        "http://purl.obolibrary.org/obo/GO_0005739",
+        "http://purl.obolibrary.org/obo/GO_0006915",
+        "http://purl.obolibrary.org/obo/GO_0007009",
+        "http://purl.obolibrary.org/obo/GO_0016043",
+        "http://purl.obolibrary.org/obo/GO_0070265",
+        "http://purl.obolibrary.org/obo/MI_MI:0613",
+        "http://purl.obolibrary.org/obo/UBERON_0000062"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0005739",
+            "http://purl.obolibrary.org/obo/GO_0006915",
+            "http://purl.obolibrary.org/obo/GO_0007009",
+            "http://purl.obolibrary.org/obo/GO_0016043",
+            "http://purl.obolibrary.org/obo/GO_0070265"
+          ],
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000000",
+            "http://purl.obolibrary.org/obo/CL_0000255"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000062"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/MI_MI:0613"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/286",
+      "title": "Mitochondrial complex III antagonism leading to growth inhibition (1)",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_15422",
+        "http://purl.obolibrary.org/obo/CL_0000000",
+        "http://purl.obolibrary.org/obo/CL_0000255",
+        "http://purl.obolibrary.org/obo/GO_0005623",
+        "http://purl.obolibrary.org/obo/GO_0005750",
+        "http://purl.obolibrary.org/obo/GO_0006754",
+        "http://purl.obolibrary.org/obo/GO_0008283",
+        "http://purl.obolibrary.org/obo/GO_0040007",
+        "http://purl.obolibrary.org/obo/HP_0011924",
+        "http://purl.obolibrary.org/obo/UBERON_0000062",
+        "http://purl.obolibrary.org/obo/UBERON_0000468"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000000",
+            "http://purl.obolibrary.org/obo/CL_0000255"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0005623",
+            "http://purl.obolibrary.org/obo/GO_0005750",
+            "http://purl.obolibrary.org/obo/GO_0006754",
+            "http://purl.obolibrary.org/obo/GO_0008283",
+            "http://purl.obolibrary.org/obo/GO_0040007"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000062",
+            "http://purl.obolibrary.org/obo/UBERON_0000468"
+          ],
+          "HP": [
+            "http://purl.obolibrary.org/obo/HP_0011924"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_15422"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/328",
+      "title": "Excessive reactive oxygen species production leading to mortality (2)",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_15422",
+        "http://purl.obolibrary.org/obo/CHEBI_26523",
+        "http://purl.obolibrary.org/obo/CL_0000000",
+        "http://purl.obolibrary.org/obo/GO_0006754",
+        "http://purl.obolibrary.org/obo/GO_1903409",
+        "http://purl.obolibrary.org/obo/UBERON_0000062",
+        "http://purl.org/commons/record/mesh/D009026"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0006754",
+            "http://purl.obolibrary.org/obo/GO_1903409"
+          ],
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000000"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000062"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_15422",
+          "http://purl.obolibrary.org/obo/CHEBI_26523",
+          "http://purl.org/commons/record/mesh/D009026"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/263",
+      "title": "Uncoupling of oxidative phosphorylation leading to  growth inhibition via decreased cell proliferation",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_15422",
+        "http://purl.obolibrary.org/obo/CL_0000000",
+        "http://purl.obolibrary.org/obo/GO_0005623",
+        "http://purl.obolibrary.org/obo/GO_0005739",
+        "http://purl.obolibrary.org/obo/GO_0006754",
+        "http://purl.obolibrary.org/obo/GO_0008283",
+        "http://purl.obolibrary.org/obo/GO_0017077",
+        "http://purl.obolibrary.org/obo/GO_0040007",
+        "http://purl.obolibrary.org/obo/GO_0051881",
+        "http://purl.obolibrary.org/obo/GO_1901691",
+        "http://purl.obolibrary.org/obo/UBERON_0000468"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0005623",
+            "http://purl.obolibrary.org/obo/GO_0005739",
+            "http://purl.obolibrary.org/obo/GO_0006754",
+            "http://purl.obolibrary.org/obo/GO_0008283",
+            "http://purl.obolibrary.org/obo/GO_0017077",
+            "http://purl.obolibrary.org/obo/GO_0040007",
+            "http://purl.obolibrary.org/obo/GO_0051881",
+            "http://purl.obolibrary.org/obo/GO_1901691"
+          ],
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000000"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000468"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_15422"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/91",
+      "title": "Sodium channel inhibition leading to reduced survival",
+      "category": "cl_unmapped",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CL_0000255",
+        "http://purl.obolibrary.org/obo/GO_0001508",
+        "http://purl.obolibrary.org/obo/GO_0002120",
+        "http://purl.obolibrary.org/obo/GO_0019871",
+        "http://purl.obolibrary.org/obo/GO_0023052",
+        "http://purl.obolibrary.org/obo/NBO_0000079",
+        "http://purl.obolibrary.org/obo/NBO_0000371",
+        "http://purl.obolibrary.org/obo/PR_000002095",
+        "http://purl.obolibrary.org/obo/VT_0005372"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0001508",
+            "http://purl.obolibrary.org/obo/GO_0002120",
+            "http://purl.obolibrary.org/obo/GO_0019871",
+            "http://purl.obolibrary.org/obo/GO_0023052"
+          ],
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000255"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/NBO_0000079",
+          "http://purl.obolibrary.org/obo/NBO_0000371",
+          "http://purl.obolibrary.org/obo/PR_000002095",
+          "http://purl.obolibrary.org/obo/VT_0005372"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/182",
+      "title": "Weather event contributes abnormal foraging leading to colony loss/failure",
+      "category": "go_no_ro_axiom",
+      "iris": [
+        "http://purl.obolibrary.org/obo/GO_0060756",
+        "http://purl.org/commons/record/mesh/D056631"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0060756"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.org/commons/record/mesh/D056631"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/217",
+      "title": "Gastric ulcer formation",
+      "category": "phenotype_no_anatomy_axiom",
+      "iris": [
+        "http://purl.obolibrary.org/obo/GO_1990150",
+        "http://purl.obolibrary.org/obo/HP_0003002"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "HP": [
+            "http://purl.obolibrary.org/obo/HP_0003002"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_1990150"
+          ]
+        },
+        "unknown_ontology": []
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/607",
+      "title": "Per and Polyfluoro Alkylating Substances and Microbiota-Gut-Brain Axis",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": [
+        "Digestive",
+        "Nervous"
+      ]
+    },
+    {
+      "aop": "https://identifiers.org/aop/514",
+      "title": "PLK1 Activation leading to hepatocyte apoptosis-associate liver injury via autophagy-mediated excessive COX6A1 degradation and impaired function of mitochondrial respiratory chain complex IV ",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": [
+        "Hepatobiliary",
+        "Respiratory"
+      ]
+    },
+    {
+      "aop": "https://identifiers.org/aop/412",
+      "title": "Endothelial cell dysfunction leading to thromboinflammation",
+      "category": "fma_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CL_0000255",
+        "http://purl.obolibrary.org/obo/FMA_84050",
+        "http://purl.obolibrary.org/obo/GO_0050663"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000255"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0050663"
+          ],
+          "FMA": [
+            "http://purl.obolibrary.org/obo/FMA_84050"
+          ]
+        },
+        "unknown_ontology": []
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/467",
+      "title": "Knickkopf leading to mortality",
+      "category": "go_no_ro_axiom",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_17029",
+        "http://purl.obolibrary.org/obo/GO_0006031",
+        "http://purl.org/commons/record/mesh/D009026"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0006031"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_17029",
+          "http://purl.org/commons/record/mesh/D009026"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/158",
+      "title": "Deiodinase 1 inhibition leading to increased mortality via reduced anterior swim bladder inflation",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_28774",
+        "http://purl.obolibrary.org/obo/GO_0003824",
+        "http://purl.obolibrary.org/obo/GO_0048798",
+        "http://purl.obolibrary.org/obo/MP_0005473",
+        "http://purl.obolibrary.org/obo/NBO_0000371",
+        "http://purl.obolibrary.org/obo/PCO_0000001",
+        "http://purl.obolibrary.org/obo/PCO_0000008",
+        "http://purl.obolibrary.org/obo/PR_000006480",
+        "http://purl.obolibrary.org/obo/UBERON_0006860",
+        "http://purl.obolibrary.org/obo/UBERON_2001277",
+        "http://purl.org/commons/record/mesh/D009026"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0003824",
+            "http://purl.obolibrary.org/obo/GO_0048798"
+          ],
+          "MP": [
+            "http://purl.obolibrary.org/obo/MP_0005473"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0006860",
+            "http://purl.obolibrary.org/obo/UBERON_2001277"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_28774",
+          "http://purl.obolibrary.org/obo/NBO_0000371",
+          "http://purl.obolibrary.org/obo/PCO_0000001",
+          "http://purl.obolibrary.org/obo/PCO_0000008",
+          "http://purl.obolibrary.org/obo/PR_000006480",
+          "http://purl.org/commons/record/mesh/D009026"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/245",
+      "title": "Reduction in photophosphorylation leading to growth inhibition in aquatic plants",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_15422",
+        "http://purl.obolibrary.org/obo/CL_0000000",
+        "http://purl.obolibrary.org/obo/CL_0000255",
+        "http://purl.obolibrary.org/obo/GO_0006754",
+        "http://purl.obolibrary.org/obo/GO_0040007",
+        "http://purl.obolibrary.org/obo/UBERON_0000468"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000000",
+            "http://purl.obolibrary.org/obo/CL_0000255"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000468"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0006754",
+            "http://purl.obolibrary.org/obo/GO_0040007"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_15422"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/327",
+      "title": "Excessive reactive oxygen species production leading to mortality (1)",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_26523",
+        "http://purl.obolibrary.org/obo/CL_0000000",
+        "http://purl.obolibrary.org/obo/GO_1903409",
+        "http://purl.obolibrary.org/obo/UBERON_0000062",
+        "http://purl.org/commons/record/mesh/D009026"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_1903409"
+          ],
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000000"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000062"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_26523",
+          "http://purl.org/commons/record/mesh/D009026"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/337",
+      "title": "DNA methyltransferase inhibition leading to population decline (2)",
+      "category": "exotic_ontology",
+      "iris": [
+        "http://purl.obolibrary.org/obo/PCO_0000001",
+        "http://purl.obolibrary.org/obo/PCO_0000008"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {},
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/PCO_0000001",
+          "http://purl.obolibrary.org/obo/PCO_0000008"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/197",
+      "title": "Sodium channel (Nav1.1) inhibition leading to population decline",
+      "category": "cl_unmapped",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_16865",
+        "http://purl.obolibrary.org/obo/CHEBI_29101",
+        "http://purl.obolibrary.org/obo/CL_0000255",
+        "http://purl.obolibrary.org/obo/GO_0006810",
+        "http://purl.obolibrary.org/obo/GO_0019871",
+        "http://purl.obolibrary.org/obo/GO_0023052",
+        "http://purl.obolibrary.org/obo/PR_000002095"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0006810",
+            "http://purl.obolibrary.org/obo/GO_0019871",
+            "http://purl.obolibrary.org/obo/GO_0023052"
+          ],
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000255"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_16865",
+          "http://purl.obolibrary.org/obo/CHEBI_29101",
+          "http://purl.obolibrary.org/obo/PR_000002095"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/439",
+      "title": "Activation of the AhR leading to metastatic breast cancer ",
+      "category": "uberon_missing_from_cache",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CL_0000000",
+        "http://purl.obolibrary.org/obo/CL_0000066",
+        "http://purl.obolibrary.org/obo/CL_0000115",
+        "http://purl.obolibrary.org/obo/CL_0000255",
+        "http://purl.obolibrary.org/obo/GO_0004874",
+        "http://purl.obolibrary.org/obo/GO_0006915",
+        "http://purl.obolibrary.org/obo/GO_0006954",
+        "http://purl.obolibrary.org/obo/GO_0017162",
+        "http://purl.obolibrary.org/obo/GO_0043542",
+        "http://purl.obolibrary.org/obo/GO_0048870",
+        "http://purl.obolibrary.org/obo/GO_0070531",
+        "http://purl.obolibrary.org/obo/GO_1990150",
+        "http://purl.obolibrary.org/obo/HP_0003002",
+        "http://purl.obolibrary.org/obo/PR_000003858",
+        "http://purl.obolibrary.org/obo/UBERON_0000062"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000000",
+            "http://purl.obolibrary.org/obo/CL_0000066",
+            "http://purl.obolibrary.org/obo/CL_0000115",
+            "http://purl.obolibrary.org/obo/CL_0000255"
+          ],
+          "HP": [
+            "http://purl.obolibrary.org/obo/HP_0003002"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0004874",
+            "http://purl.obolibrary.org/obo/GO_0006915",
+            "http://purl.obolibrary.org/obo/GO_0006954",
+            "http://purl.obolibrary.org/obo/GO_0017162",
+            "http://purl.obolibrary.org/obo/GO_0043542",
+            "http://purl.obolibrary.org/obo/GO_0048870",
+            "http://purl.obolibrary.org/obo/GO_0070531",
+            "http://purl.obolibrary.org/obo/GO_1990150"
+          ],
+          "UBERON": [
+            "http://purl.obolibrary.org/obo/UBERON_0000062"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/PR_000003858"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/338",
+      "title": "DNA methyltransferase inhibition leading to population decline (3)",
+      "category": "exotic_ontology",
+      "iris": [
+        "http://purl.obolibrary.org/obo/PCO_0000001",
+        "http://purl.obolibrary.org/obo/PCO_0000008"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {},
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/PCO_0000001",
+          "http://purl.obolibrary.org/obo/PCO_0000008"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/336",
+      "title": "DNA methyltransferase inhibition leading to population decline (1)",
+      "category": "exotic_ontology",
+      "iris": [
+        "http://purl.obolibrary.org/obo/PCO_0000001",
+        "http://purl.obolibrary.org/obo/PCO_0000008"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {},
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/PCO_0000001",
+          "http://purl.obolibrary.org/obo/PCO_0000008"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/81",
+      "title": "Increased metabolic stress contributes to abnormal foraging and leads to colony loss/failure",
+      "category": "phenotype_no_anatomy_axiom",
+      "iris": [
+        "http://purl.obolibrary.org/obo/GO_0060756",
+        "http://purl.obolibrary.org/obo/MP_0004889",
+        "http://purl.obolibrary.org/obo/PCO_0000001",
+        "http://purl.org/commons/record/mesh/D001066",
+        "http://purl.org/commons/record/mesh/D013312",
+        "http://purl.org/commons/record/mesh/D056631"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "MP": [
+            "http://purl.obolibrary.org/obo/MP_0004889"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0060756"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/PCO_0000001",
+          "http://purl.org/commons/record/mesh/D001066",
+          "http://purl.org/commons/record/mesh/D013312",
+          "http://purl.org/commons/record/mesh/D056631"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/191",
+      "title": "Type III iodotyrosine deiodinase (DIO3) inhibition leading to altered amphibian metamorphosis",
+      "category": "go_no_ro_axiom",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_18258",
+        "http://purl.obolibrary.org/obo/GO_0003824",
+        "http://purl.obolibrary.org/obo/GO_0007552",
+        "http://purl.obolibrary.org/obo/PR_000006482"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0003824",
+            "http://purl.obolibrary.org/obo/GO_0007552"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_18258",
+          "http://purl.obolibrary.org/obo/PR_000006482"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/240",
+      "title": "DNA Adducts Leading to Liver Hemangiosarcoma",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": [
+        "Hepatobiliary"
+      ]
+    },
+    {
+      "aop": "https://identifiers.org/aop/582",
+      "title": "Inhibition of EphA2 phosphorylation leads to liver damage via the ERK/ MDM2/p53 axis",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": [
+        "Hepatobiliary"
+      ]
+    },
+    {
+      "aop": "https://identifiers.org/aop/181",
+      "title": "Weather event contributes to colony loss/failure",
+      "category": "exotic_ontology",
+      "iris": [
+        "http://purl.org/commons/record/mesh/D056631"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {},
+        "unknown_ontology": [
+          "http://purl.org/commons/record/mesh/D056631"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/446",
+      "title": "PM-related Adverse outcome pathway frameworks on various systems",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/199",
+      "title": "ER mediated breast cancer AOP ",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/259",
+      "title": "Sensitization induction of the intestinal tract by food proteins",
+      "category": "genuinely_unannotated",
+      "iris": [],
+      "ontology_breakdown": {},
+      "title_signal_c": [
+        "Digestive"
+      ]
+    },
+    {
+      "aop": "https://identifiers.org/aop/185",
+      "title": "Queen egg-laying decrease leads to colony loss/failure",
+      "category": "exotic_ontology",
+      "iris": [
+        "http://purl.org/commons/record/mesh/D056631"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {},
+        "unknown_ontology": [
+          "http://purl.org/commons/record/mesh/D056631"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/202",
+      "title": " Inhibitor binding to topoisomerase II leading to infant leukaemia",
+      "category": "cl_unmapped",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CL_0000255",
+        "http://purl.obolibrary.org/obo/CL_0002321",
+        "http://purl.obolibrary.org/obo/GO_0061505",
+        "http://purl.org/commons/record/mesh/D014178"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "CL": [
+            "http://purl.obolibrary.org/obo/CL_0000255",
+            "http://purl.obolibrary.org/obo/CL_0002321"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0061505"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.org/commons/record/mesh/D014178"
+        ]
+      },
+      "title_signal_c": []
+    },
+    {
+      "aop": "https://identifiers.org/aop/223",
+      "title": "Serotonin transporter activation to seizure",
+      "category": "phenotype_no_anatomy_axiom",
+      "iris": [
+        "http://purl.obolibrary.org/obo/CHEBI_28790",
+        "http://purl.obolibrary.org/obo/GO_0005576",
+        "http://purl.obolibrary.org/obo/MP_0010069"
+      ],
+      "ontology_breakdown": {
+        "in_cache_empty": {},
+        "not_in_cache": {
+          "MP": [
+            "http://purl.obolibrary.org/obo/MP_0010069"
+          ],
+          "GO": [
+            "http://purl.obolibrary.org/obo/GO_0005576"
+          ]
+        },
+        "unknown_ontology": [
+          "http://purl.obolibrary.org/obo/CHEBI_28790"
+        ]
+      },
+      "title_signal_c": []
+    }
+  ]
+}
