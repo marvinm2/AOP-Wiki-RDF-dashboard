@@ -20,7 +20,6 @@
     // a "version range" doesn't apply.
     const EXCLUDED_PLOTS = new Set([
         'aops_created_over_time',
-        'aops_modified_over_time',
         'aop_creation_vs_modification_timeline'
     ]);
 

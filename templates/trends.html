@@ -646,29 +646,6 @@
         {{ data_table_toggle('aops_created_over_time') }}
     </div>
 
-    <!-- AOPs Modified -->
-    <div class="plot-box">
-        <div class="plot-header">
-            <h3>AOPs Modified Over Time</h3>
-            <div class="download-dropdown">
-                <button class="download-button dropdown-toggle">Download ▼</button>
-                <div class="dropdown-menu">
-                    <a href="/download/trend/aops_modified_over_time?format=csv" class="dropdown-item">📄 CSV</a>
-                    <a href="/download/trend/aops_modified_over_time?format=png" class="dropdown-item">🖼️ PNG</a>
-                    <a href="/download/trend/aops_modified_over_time?format=svg" class="dropdown-item">📐 SVG</a>
-                </div>
-            </div>
-        </div>
-        <p class="plot-description">
-            Tracks how many unique AOPs were last modified in each year.
-        </p>
-        {{ methodology_note(methodology_notes, 'aop_lifetime') }}
-        <div class="lazy-plot" data-plot-name="aops_modified_over_time">
-            <!-- Plot will be loaded here via JavaScript -->
-        </div>
-        {{ data_table_toggle('aops_modified_over_time') }}
-    </div>
-
     <!-- Scatter plot -->
     <div class="plot-box">
         <div class="plot-header">

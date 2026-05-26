@@ -370,9 +370,9 @@ graph_bio_processes_abs, graph_bio_processes_delta = plot_results.get('bio_proce
 graph_bio_objects_abs, graph_bio_objects_delta = plot_results.get('bio_objects', ("", ""))
 graph_authors_abs, graph_authors_delta = plot_results.get('author_counts', ("", ""))
 try:
-    graph_created, graph_modified, graph_scatter = plot_results.get('aop_lifetime', ("", "", ""))
+    graph_created, graph_scatter = plot_results.get('aop_lifetime', ("", ""))
 except (TypeError, ValueError):
-    graph_created = graph_modified = graph_scatter = ""
+    graph_created = graph_scatter = ""
 graph_prop_abs, graph_prop_pct = plot_results.get('aop_property_presence', ("", ""))
 graph_ke_prop_abs, graph_ke_prop_pct = plot_results.get('ke_property_presence', ("", ""))
 graph_ker_prop_abs, graph_ker_prop_pct = plot_results.get('ker_property_presence', ("", ""))
@@ -1486,14 +1486,14 @@ def download_bulk():
             # Trend plots (absolute views only to avoid duplication)
             'trends-all': [
                 'aop_entity_counts_absolute', 'entity_birth_death', 'entity_cumulative_removed', 'quarterly_growth_rate', 'average_components_per_aop_absolute', 'aop_network_density', 'aop_authors_absolute',
-                'aops_created_over_time', 'aops_modified_over_time', 'aop_creation_vs_modification_timeline',
+                'aops_created_over_time', 'aop_creation_vs_modification_timeline',
                 'ke_component_annotations_absolute', 'ke_components_percentage_absolute', 'unique_ke_components_absolute',
                 'biological_process_annotations_absolute', 'biological_object_annotations_absolute',
                 'aop_property_presence_absolute', 'aop_property_presence_unique_absolute', 'kes_by_kec_count_absolute'
             ],
             'trends-main': ['aop_entity_counts_absolute', 'aop_entity_counts_delta', 'entity_birth_death', 'entity_cumulative_removed', 'quarterly_growth_rate'],
             'trends-network': ['average_components_per_aop_absolute', 'average_components_per_aop_delta', 'aop_network_density'],
-            'trends-authors': ['aop_authors_absolute', 'aop_authors_delta', 'aops_created_over_time', 'aops_modified_over_time', 'aop_creation_vs_modification_timeline'],
+            'trends-authors': ['aop_authors_absolute', 'aop_authors_delta', 'aops_created_over_time', 'aop_creation_vs_modification_timeline'],
             'trends-components': [
                 'ke_component_annotations_absolute', 'ke_component_annotations_delta',
                 'ke_components_percentage_absolute', 'ke_components_percentage_delta',
@@ -1508,7 +1508,7 @@ def download_bulk():
                 'latest_avg_per_aop', 'latest_process_usage', 'latest_object_usage',
                 'latest_aop_completeness', 'latest_ke_annotation_depth',
                 'aop_entity_counts_absolute', 'entity_birth_death', 'entity_cumulative_removed', 'quarterly_growth_rate', 'average_components_per_aop_absolute', 'aop_network_density', 'aop_authors_absolute',
-                'aops_created_over_time', 'aops_modified_over_time', 'aop_creation_vs_modification_timeline',
+                'aops_created_over_time', 'aop_creation_vs_modification_timeline',
                 'ke_component_annotations_absolute', 'ke_components_percentage_absolute', 'unique_ke_components_absolute',
                 'biological_process_annotations_absolute', 'biological_object_annotations_absolute',
                 'aop_property_presence_absolute', 'aop_property_presence_unique_absolute', 'kes_by_kec_count_absolute'
@@ -1775,7 +1775,6 @@ def get_plot(plot_name):
         'aop_authors_absolute': graph_authors_abs,
         'aop_authors_delta': graph_authors_delta,
         'aops_created_over_time': graph_created,
-        'aops_modified_over_time': graph_modified,
         'aop_creation_vs_modification_timeline': graph_scatter,
         'aop_property_presence_absolute': graph_prop_abs,
         'aop_property_presence_percentage': graph_prop_pct,

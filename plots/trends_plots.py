@@ -1428,12 +1428,16 @@ def plot_author_counts() -> tuple[str, str]:
         )
 
 
-def plot_aop_lifetime() -> tuple[str, str, str]:
-    """Generate AOP lifetime analysis visualizations."""
+def plot_aop_lifetime() -> tuple[str, str]:
+    """Generate AOP lifetime analysis visualizations.
+
+    Returns (creation-year histogram, creation-vs-modification scatter).
+    The per-year modification histogram was dropped — its information is
+    captured by the y-axis of the scatter, which subsumes it.
+    """
     global _plot_data_cache, _plot_figure_cache
 
     fallback_created = create_fallback_plot("AOP Creation Timeline", "No data available")
-    fallback_modified = create_fallback_plot("AOP Modification Timeline", "No data available")
     fallback_scatter = create_fallback_plot("AOP Creation vs. Modification Timeline", "No data available")
 
     try:
@@ -1452,7 +1456,7 @@ def plot_aop_lifetime() -> tuple[str, str, str]:
 
         if not results_lifetime:
             logger.warning("AOP lifetime query returned no results")
-            return fallback_created, fallback_modified, fallback_scatter
+            return fallback_created, fallback_scatter
 
         df_lifetime = pd.DataFrame([{
             "aop": r["aop"]["value"],
@@ -1463,25 +1467,22 @@ def plot_aop_lifetime() -> tuple[str, str, str]:
 
         if df_lifetime.empty:
             logger.warning("AOP lifetime DataFrame is empty after parsing")
-            return fallback_created, fallback_modified, fallback_scatter
+            return fallback_created, fallback_scatter
 
         # Drop rows where date parsing failed
         df_lifetime = df_lifetime.dropna(subset=["created", "modified"])
         if df_lifetime.empty:
             logger.warning("AOP lifetime DataFrame is empty after dropping invalid dates")
-            return fallback_created, fallback_modified, fallback_scatter
+            return fallback_created, fallback_scatter
 
         df_lifetime["lifetime_days"] = (df_lifetime["modified"] - df_lifetime["created"]).dt.days
         df_lifetime["year_created"] = df_lifetime["created"].dt.year
-        df_lifetime["year_modified"] = df_lifetime["modified"].dt.year
 
-        # Deduplicate
+        # Deduplicate to one row per AOP (earliest creation wins for the histogram).
         df_created = df_lifetime.sort_values("created").drop_duplicates("aop", keep="first")
-        df_modified = df_lifetime.sort_values("modified").drop_duplicates("aop", keep="last")
 
         # Cache data for CSV export
         _plot_data_cache['aops_created_over_time'] = df_created.copy()
-        _plot_data_cache['aops_modified_over_time'] = df_modified.copy()
         _plot_data_cache['aop_creation_vs_modification_timeline'] = df_lifetime.copy()
 
         # --- Plot 1: AOPs Created ---
@@ -1496,36 +1497,24 @@ def plot_aop_lifetime() -> tuple[str, str, str]:
         except Exception as e:
             logger.error(f"Failed to generate AOP creation timeline plot: {str(e)}")
 
-        # --- Plot 2: AOPs Modified ---
-        html2 = fallback_modified
+        # --- Plot 2: Created vs. Modified scatter ---
+        html2 = fallback_scatter
         try:
-            fig2 = px.histogram(df_modified, x="year_modified",
-                                labels={"year_modified": "Year", "count": "AOP Count"},
-                                color_discrete_sequence=[BRAND_COLORS['blue']])
-            fig2.update_layout(height=400)
-            html2 = render_plot_html(fig2)
-            _plot_figure_cache['aops_modified_over_time'] = fig2
-        except Exception as e:
-            logger.error(f"Failed to generate AOP modification timeline plot: {str(e)}")
-
-        # --- Plot 3: Created vs. Modified Dates ---
-        html3 = fallback_scatter
-        try:
-            fig3 = px.scatter(df_lifetime, x="created", y="modified", hover_name="aop",
+            fig2 = px.scatter(df_lifetime, x="created", y="modified", hover_name="aop",
                               labels={"created": "Created", "modified": "Modified"},
                               color_discrete_sequence=[BRAND_COLORS['blue']],
                               render_mode='svg')
-            fig3.update_layout(height=500)
-            html3 = render_plot_html(fig3)
-            _plot_figure_cache['aop_creation_vs_modification_timeline'] = fig3
+            fig2.update_layout(height=500)
+            html2 = render_plot_html(fig2)
+            _plot_figure_cache['aop_creation_vs_modification_timeline'] = fig2
         except Exception as e:
             logger.error(f"Failed to generate AOP creation vs modification scatter plot: {str(e)}")
 
-        return html1, html2, html3
+        return html1, html2
 
     except Exception as e:
         logger.error(f"Failed to generate AOP lifetime plots: {str(e)}")
-        return fallback_created, fallback_modified, fallback_scatter
+        return fallback_created, fallback_scatter
 
 
 def _query_ke_components_version(version_info, use_distinct=False):
