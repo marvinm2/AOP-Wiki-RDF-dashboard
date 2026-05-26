@@ -68,8 +68,10 @@ SPARQL_HELPER_NAMES = frozenset({"run_sparql_query", "run_sparql_query_with_retr
 LINT_04_SEVERITY = "fail"
 
 # LINT-05: methodology JSON must not exceed this many entries per run.
-# Today the real file has 46 entries; the ceiling is "at most ~50 endpoint
-# requests per run" per the LINT-05 requirement.
+# As of 2026-05 the real file has 56 entries; the production ceiling is
+# "well under the 2-minute LINT-05 runtime target". The test-side canary
+# (test_lint05_real_methodology_under_budget) sits at 60 — a tighter
+# tripwire so we revisit batching well before this production budget bites.
 DEFAULT_CALL_BUDGET = 100
 
 
@@ -468,9 +470,9 @@ def enforce_call_budget(
     """Refuse to start when the entry count exceeds the endpoint-call budget.
 
     Each entry costs one wrapped round-trip for LINT-01/02, plus one shared
-    latest-graph resolution call per run. With ``budget=50`` and 46 real
-    entries today, a 30s per-call timeout keeps total run-time well under
-    the LINT-05 "<2 minutes" target.
+    latest-graph resolution call per run. With ``budget=60`` (canary value)
+    and 56 real entries as of 2026-05, a 30s per-call timeout keeps total
+    run-time well under the LINT-05 "<2 minutes" target.
 
     The guard is a no-op when ``no_network=True`` because the static-only
     path issues zero endpoint calls. Raises ``BudgetExceeded`` otherwise.

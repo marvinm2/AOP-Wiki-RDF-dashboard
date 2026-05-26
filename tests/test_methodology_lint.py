@@ -382,13 +382,22 @@ def test_lint05_call_budget_guard():
 
 
 def test_lint05_real_methodology_under_budget():
-    """Regression guard: when someone adds a 51st entry, this test fails."""
+    """Regression guard: when someone adds a 61st entry, this test fails.
+
+    Canary was originally pinned at 50 (file then had 46 entries). The
+    2026-05 plot expansion (organ-coverage variants, AOP-AOP overlap,
+    MMO coverage, stressor/OECD/quarterly-growth/birth-death/cumulative
+    -removed/KE-migration) pushed the file to 56 entries, so the canary
+    was raised to 60 with ~4 entries of headroom. If we keep growing,
+    the next move should be batching the per-entry round-trip in
+    ``lint_methodology.py`` rather than another bump.
+    """
     repo_root = pathlib.Path(__file__).resolve().parent.parent
     real_json = repo_root / "static" / "data" / "methodology_notes.json"
     with open(real_json) as fh:
         notes = json.load(fh)
-    # Should NOT raise at default budget=50:
-    lint_methodology.enforce_call_budget(notes, budget=50, no_network=False)
+    # Should NOT raise at canary budget=60:
+    lint_methodology.enforce_call_budget(notes, budget=60, no_network=False)
 
 
 # ---------------------------------------------------------------------------
