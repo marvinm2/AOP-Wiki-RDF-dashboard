@@ -1519,43 +1519,78 @@ def plot_latest_taxonomic_groups(version: str = None) -> str:
         target_graph = version_results[0]["graph"]["value"]
         latest_version = target_graph.split("/")[-1]
 
-    # Query taxonomic applicability on AOPs (and KEs as fallback context)
+    # Pull raw (aop, taxon) pairs so we can coalesce WCS_/NCBITAXON in
+    # Python — the historical SPARQL grouped on raw strings, which
+    # split a single species across multiple bars.
     query = f"""
-    SELECT ?taxon_label (COUNT(DISTINCT ?aop) AS ?aop_count)
+    SELECT ?aop ?taxon_obj
     WHERE {{
       GRAPH <{target_graph}> {{
         ?aop a aopo:AdverseOutcomePathway .
         ?aop <http://purl.bioontology.org/ontology/NCBITAXON/131567> ?taxon_obj .
-        BIND(STR(?taxon_obj) AS ?taxon_label)
       }}
     }}
-    GROUP BY ?taxon_label
-    ORDER BY DESC(?aop_count)
-    LIMIT 25
     """
 
     results = run_sparql_query(query)
     if not results:
-        return create_fallback_plot("Taxonomic Groups", "No taxonomic applicability data found. This annotation may not be present in the current RDF data.")
+        return create_fallback_plot(
+            "Taxonomic Groups",
+            "No taxonomic applicability data found. This annotation may not be present in the current RDF data.",
+        )
 
-    data = []
+    labels = _load_ncbi_taxon_labels()
+    counts: dict[str, set] = {}
+    wikiuser_aops: set = set()
+    unresolved_ids: set = set()
     for r in results:
-        label_raw = r["taxon_label"]["value"]
-        count = int(r["aop_count"]["value"])
-        # Extract readable name from URI
-        if label_raw.startswith("http"):
-            label = label_raw.split("/")[-1].replace("_", " ")
-        else:
-            label = label_raw
-        data.append({"Taxonomic Group": label, "AOP Count": count})
+        aop = r["aop"]["value"]
+        raw = r["taxon_obj"]["value"]
+        if raw.startswith("WikiUser_"):
+            wikiuser_aops.add(aop)
+            continue
+        m = _NCBI_ID_PATTERN.search(raw)
+        if not m:
+            continue
+        taxon_id = m.group(1)
+        counts.setdefault(taxon_id, set()).add(aop)
+        if taxon_id not in labels:
+            unresolved_ids.add(taxon_id)
 
-    if not data:
+    if not counts:
         return create_fallback_plot("Taxonomic Groups", "No taxonomic group data found")
 
-    df = pd.DataFrame(data).sort_values("AOP Count", ascending=True)
+    rows = []
+    for taxon_id, aops in counts.items():
+        meta = labels.get(taxon_id, {})
+        scientific = meta.get("scientific") if isinstance(meta, dict) else None
+        common = meta.get("common") if isinstance(meta, dict) else None
+        if scientific:
+            display = scientific
+            hover_extra = f"NCBI:{taxon_id}"
+            if common:
+                hover_extra = f"{common}; {hover_extra}"
+        else:
+            display = f"Taxon {taxon_id} (unresolved)"
+            hover_extra = f"NCBI:{taxon_id}"
+        rows.append({
+            "Taxonomic Group": display,
+            "AOP Count": len(aops),
+            "NCBI ID": taxon_id,
+            "Hover Detail": hover_extra,
+        })
+
+    df = pd.DataFrame(rows).sort_values("AOP Count", ascending=False).head(25)
+    df = df.sort_values("AOP Count", ascending=True)  # Plotly horizontal bars stack bottom-up
     version_key = version or "latest"
     df["Version"] = latest_version
     _plot_data_cache[f'latest_taxonomic_groups_{version_key}'] = df
+
+    if wikiuser_aops or unresolved_ids:
+        logger.info(
+            "Taxonomic plot: %d AOPs had WikiUser_ taxon strings (excluded); %d unresolved NCBI IDs",
+            len(wikiuser_aops), len(unresolved_ids),
+        )
 
     fig = px.bar(
         df,
@@ -1563,18 +1598,17 @@ def plot_latest_taxonomic_groups(version: str = None) -> str:
         y="Taxonomic Group",
         orientation='h',
         text="AOP Count",
+        custom_data=["Hover Detail"],
     )
 
-    fig.update_traces(marker_color=BRAND_COLORS['blue'], textposition='outside')
+    fig.update_traces(
+        marker_color=BRAND_COLORS['blue'],
+        textposition='outside',
+        hovertemplate="<b>%{y}</b><br>%{customdata[0]}<br>%{x} AOPs<extra></extra>",
+    )
     fig.update_layout(
-
-
-
-
-
         showlegend=False,
-
-        margin=dict(l=180, r=30, t=60, b=60),
+        margin=dict(l=220, r=30, t=60, b=60),
         yaxis=dict(title=""),
         xaxis=dict(title="Number of AOPs"),
     )

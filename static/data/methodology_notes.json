@@ -464,17 +464,17 @@
     },
     "latest_taxonomic_groups": {
         "title": "Taxonomic Group Distribution",
-        "description": "Shows which taxonomic groups (species or organisms) are most represented across AOPs via the Taxonomic Applicability annotation. Identifies the most commonly studied organisms in AOP-Wiki.",
-        "data_source": "SPARQL query counts distinct AOPs grouped by their Taxonomic Applicability annotation (NCBI Taxonomy property 131567). Only AOPs with explicit taxonomy annotations are included.",
-        "limitations": "Only AOPs with explicit taxonomic applicability annotations are shown. Many AOPs may lack this annotation entirely. Taxonomy labels are extracted from URIs and may appear as identifiers rather than common species names. A single AOP can have multiple taxonomic applicability annotations.",
+        "description": "Top 25 species annotated as taxonomically applicable to AOPs (via the `NCBITAXON/131567` predicate). Resolved from NCBI taxon IDs to scientific names using a curated label map (`static/data/ncbi_taxon_labels.json`, 133 species covering everything currently in AOP-Wiki). Both AOP-Wiki storage formats — modern `NCBITAXON/<id>` URIs and legacy `WCS_<id>` strings — are coalesced into a single bar per species. New species not yet in the label map render as `Taxon <id> (unresolved)` so they remain visible.",
+        "data_source": "SPARQL pulls raw (`?aop`, `?taxon_obj`) pairs filtered to AOPs and the `131567` predicate, then Python aggregates per NCBI taxon ID (regex `(\\d+)$` against the raw value handles both URI and `WCS_` formats). `WikiUser_<id>` strings — curator user IDs that historically leaked into the taxonomy field, not taxa — are filtered out; their count is logged for curation follow-up.",
+        "limitations": "Only AOPs with an explicit `131567` annotation are shown. A single AOP may carry multiple taxa (it will then contribute to multiple bars). The label map is curated, not live: new species in future snapshots will display as `Taxon NNNN (unresolved)` until the map is regenerated. `WikiUser_NN` entries are filtered out, masking a known data-quality issue — see the dashboard logs for the count.",
         "queries": [
             {
                 "caption": "Identify latest graph (AOP anchor)",
                 "query": "SELECT ?graph\nWHERE {\n  GRAPH ?graph { ?s a aopo:AdverseOutcomePathway . }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph\nORDER BY DESC(?graph)\nLIMIT 1"
             },
             {
-                "caption": "Count AOPs per taxonomic group",
-                "query": "SELECT ?taxon_label (COUNT(DISTINCT ?aop) AS ?aop_count)\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    ?aop a aopo:AdverseOutcomePathway .\n    OPTIONAL { ?aop <http://purl.bioontology.org/ontology/NCBITAXON/131567> ?taxon . }\n    BIND(IF(BOUND(?taxon), STR(?taxon), \"Not Annotated\") AS ?taxon_label)\n  }\n}\nGROUP BY ?taxon_label\nORDER BY DESC(?aop_count)"
+                "caption": "Pull raw (AOP, taxon) pairs for client-side aggregation",
+                "query": "SELECT ?aop ?taxon_obj\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    ?aop a aopo:AdverseOutcomePathway .\n    ?aop <http://purl.bioontology.org/ontology/NCBITAXON/131567> ?taxon_obj .\n  }\n}"
             }
         ]
     },
