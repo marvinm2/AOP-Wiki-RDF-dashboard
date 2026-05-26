@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% from "macros/methodology.html" import methodology_note with context %}
+
+{% block title %}Gene → AOP Enrichment | AOP-Wiki RDF Dashboard{% endblock %}
+
+{% block content %}
+<section class="section-block" id="enrichment-tool">
+    <h2 class="section-header">Gene List → AOP Enrichment</h2>
+
+    <div class="plot-grid">
+        <div class="plot-box full-width">
+            <div class="plot-header">
+                <h3>Paste an HGNC gene list</h3>
+            </div>
+            <p class="plot-description">
+                Find AOPs whose Key Events are enriched for a list of HGNC gene symbols
+                (e.g. RNA-seq differentially-expressed genes). Background is all HGNC
+                genes covered by AOP-Wiki KEs in the latest snapshot. Significance is
+                computed with a one-sided hypergeometric test; FDR is controlled with
+                Benjamini-Hochberg.
+            </p>
+
+            <form method="POST" action="/enrichment" style="margin-top: 1em;">
+                <label for="genes" style="display: block; margin-bottom: 0.5em; font-weight: 600;">
+                    HGNC gene symbols (one per line, or whitespace/comma-separated):
+                </label>
+                <textarea name="genes" id="genes" rows="8" cols="60"
+                          style="width: 100%; max-width: 700px; font-family: monospace; padding: 8px; border: 1px solid #ccc; border-radius: 4px;"
+                          placeholder="BDNF&#10;TP53&#10;MYC&#10;ESR1&#10;...">{{ raw_input or "" }}</textarea>
+                <br>
+                <button type="submit" class="download-button" style="margin-top: 1em;">
+                    Run enrichment
+                </button>
+                <span style="margin-left: 1em; color: #555;">
+                    Background size: {{ background_size if background_size else '~3,000' }} HGNC genes in AOP-Wiki KEs
+                </span>
+            </form>
+
+            {% if error %}
+                <div style="margin-top: 1em; padding: 1em; background: #fee; border: 1px solid #faa; border-radius: 4px; color: #800;">
+                    <strong>Error:</strong> {{ error }}
+                </div>
+            {% endif %}
+
+            {% if results is defined %}
+                <hr style="margin: 1.5em 0;">
+                <h4>Results</h4>
+                {% if results|length == 0 %}
+                    <p>No AOPs reference any of the genes you provided.</p>
+                    {% if unmatched %}
+                        <p><strong>Genes not found in AOP-Wiki:</strong> {{ unmatched|join(', ') }}</p>
+                    {% endif %}
+                {% else %}
+                    <p style="color: #555;">
+                        {{ matched_count }} of {{ input_count }} genes matched HGNC IDs in AOP-Wiki.
+                        {% if unmatched %}
+                            Unmatched: <code>{{ unmatched|join(', ') }}</code>
+                        {% endif %}
+                    </p>
+                    <div style="margin-top: 1em; overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 0.9em;">
+                            <thead>
+                                <tr style="background: #29235C; color: white;">
+                                    <th style="padding: 8px; text-align: left;">AOP</th>
+                                    <th style="padding: 8px; text-align: left;">Title</th>
+                                    <th style="padding: 8px; text-align: right;">KE hits</th>
+                                    <th style="padding: 8px; text-align: right;">Genes hit</th>
+                                    <th style="padding: 8px; text-align: right;">p-value</th>
+                                    <th style="padding: 8px; text-align: right;">FDR (BH)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in results %}
+                                <tr style="background: {{ '#f9f9f9' if loop.index0 % 2 == 0 else 'white' }};">
+                                    <td style="padding: 6px;"><a href="https://aopwiki.org/aops/{{ row.aop_id }}" target="_blank">AOP {{ row.aop_id }}</a></td>
+                                    <td style="padding: 6px;">{{ row.title }}</td>
+                                    <td style="padding: 6px; text-align: right;">{{ row.ke_hits }} / {{ row.total_kes }}</td>
+                                    <td style="padding: 6px; text-align: right;">{{ row.gene_hits }} / {{ row.total_aop_genes }}</td>
+                                    <td style="padding: 6px; text-align: right; font-family: monospace;">{{ row.pvalue_str }}</td>
+                                    <td style="padding: 6px; text-align: right; font-family: monospace;">{{ row.fdr_str }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}
