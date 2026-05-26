@@ -343,7 +343,17 @@
         </div>
         {{ data_table_toggle('oecd_status_distribution_absolute') }}
     </div>
+    </div>
+</section>
 
+<section class="section-block" id="coverage-growth">
+    <h2 class="section-header">Coverage Growth</h2>
+    <p class="section-description">
+        How the database's reach is broadening (more stressors, more KE annotations, more organ
+        systems) and where the gaps remain. Complements the completeness view above: completeness
+        asks "are existing records well-filled-in?", coverage asks "what does the corpus span?".
+    </p>
+    <div class="plot-grid">
 
     <!-- Stressor Coverage Growth (#75 part A) -->
     <div class="plot-box" id="stressor-coverage-growth">
@@ -505,6 +515,52 @@
         </div>
         {{ data_table_toggle('ke_migration_map') }}
     </div>
+
+    <!-- Organ-system coverage of AOPs over time (moved out of KE Components, 2026-05) -->
+    <div class="plot-box" id="organ-coverage">
+        <div class="plot-header">
+            <h3>Organ-System Coverage of AOPs over Time</h3>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download Absolute ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/organ_coverage_absolute?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/organ_coverage_absolute?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/organ_coverage_absolute?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download Percentage ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/organ_coverage_percentage?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/organ_coverage_percentage?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/organ_coverage_percentage?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+                <label><input type="checkbox" class="plot-toggle"> Show Percentage</label>
+            </div>
+        </div>
+        <p class="plot-description">
+            Number of AOPs classified into each of 13 organ-system buckets at every quarterly snapshot.
+            Toggle to switch to a percentage view — each line as a share of the total AOPs in that snapshot.
+            Combines Signals A (curated <code>aopo:OrganContext</code> / <code>aopo:CellTypeContext</code>),
+            A&prime; (<code>aopo:hasObject</code> UBERON/CL) and B (GO biological-process bridge).
+            Signal C (keywords) is excluded from the trend view.
+        </p>
+        {{ methodology_note(methodology_notes, 'organ_coverage') }}
+        <div class="abs">
+            <div class="lazy-plot" data-plot-name="organ_coverage_absolute">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+        <div class="delta" style="display:none;">
+            <div class="lazy-plot" data-plot-name="organ_coverage_percentage">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+        {{ data_table_toggle('organ_coverage_absolute') }}
+    </div>
+
     </div>
 </section>
 
@@ -673,7 +729,7 @@
 
 <section class="section-block" id="ke-components">
     <!-- KE Components and Biological Annotations -->
-    <h2 class="section-header">KE Component Annotations</h2>
+    <h2 class="section-header">KE Component &amp; Annotation Trends</h2>
     <div class="plot-grid">
     <div class="plot-box" id="ke-components">
         <div class="plot-header">
@@ -955,50 +1011,6 @@
             </div>
         </div>
         {{ data_table_toggle('ontology_term_growth_absolute') }}
-    </div>
-
-    <div class="plot-box" id="organ-coverage">
-        <div class="plot-header">
-            <h3>Organ-System Coverage of AOPs over Time</h3>
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <div class="download-dropdown">
-                    <button class="download-button dropdown-toggle">Download Absolute ▼</button>
-                    <div class="dropdown-menu">
-                        <a href="/download/trend/organ_coverage_absolute?format=csv" class="dropdown-item">📄 CSV</a>
-                        <a href="/download/trend/organ_coverage_absolute?format=png" class="dropdown-item">🖼️ PNG</a>
-                        <a href="/download/trend/organ_coverage_absolute?format=svg" class="dropdown-item">📐 SVG</a>
-                    </div>
-                </div>
-                <div class="download-dropdown">
-                    <button class="download-button dropdown-toggle">Download Percentage ▼</button>
-                    <div class="dropdown-menu">
-                        <a href="/download/trend/organ_coverage_percentage?format=csv" class="dropdown-item">📄 CSV</a>
-                        <a href="/download/trend/organ_coverage_percentage?format=png" class="dropdown-item">🖼️ PNG</a>
-                        <a href="/download/trend/organ_coverage_percentage?format=svg" class="dropdown-item">📐 SVG</a>
-                    </div>
-                </div>
-                <label><input type="checkbox" class="plot-toggle"> Show Percentage</label>
-            </div>
-        </div>
-        <p class="plot-description">
-            Number of AOPs classified into each of 13 organ-system buckets at every quarterly snapshot.
-            Toggle to switch to a percentage view — each line as a share of the total AOPs in that snapshot.
-            Combines Signals A (curated <code>aopo:OrganContext</code> / <code>aopo:CellTypeContext</code>),
-            A&prime; (<code>aopo:hasObject</code> UBERON/CL) and B (GO biological-process bridge).
-            Signal C (keywords) is excluded from the trend view.
-        </p>
-        {{ methodology_note(methodology_notes, 'organ_coverage') }}
-        <div class="abs">
-            <div class="lazy-plot" data-plot-name="organ_coverage_absolute">
-                <!-- Plot will be loaded here via JavaScript -->
-            </div>
-        </div>
-        <div class="delta" style="display:none;">
-            <div class="lazy-plot" data-plot-name="organ_coverage_percentage">
-                <!-- Plot will be loaded here via JavaScript -->
-            </div>
-        </div>
-        {{ data_table_toggle('organ_coverage_absolute') }}
     </div>
 
     </div>
