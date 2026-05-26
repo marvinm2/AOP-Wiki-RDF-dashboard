@@ -1109,30 +1109,39 @@ def fetch_entity_uris_by_version(
         return {v: cached[v].copy() for v in versions if v in cached}
 
     entity_class = ENTITY_TYPE_CLASSES[entity_type]
-    uris_by_version: Dict[str, set] = {}
-    with ThreadPoolExecutor(max_workers=max_workers) as pool:
-        futures = {
-            pool.submit(
-                fetch_entity_uris_in_graph,
-                f"http://aopwiki.org/graph/{v}",
-                entity_class,
-            ): v
-            for v in versions
-        }
-        for fut in as_completed(futures):
-            v = futures[fut]
-            try:
-                uris_by_version[v] = fut.result() or set()
-            except Exception as e:
-                logger.error(f"Failed to fetch {entity_type} URIs for {v}: {e}")
-                uris_by_version[v] = set()
+    # Single bulk SPARQL — returns (?graph, ?e) for ALL versions at once and
+    # group by graph in Python. Replaces the previous per-version fan-out
+    # (33 small queries per entity type) with one round-trip; on the live
+    # multi-endpoint that's ~50K rows for KERs, well under the 100K cap.
+    bulk_query = f"""
+        SELECT ?graph ?e WHERE {{
+            GRAPH ?graph {{ ?e a {entity_class} . }}
+            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }}
+    """
+    uris_by_version: Dict[str, set] = {v: set() for v in versions}
+    try:
+        results = run_sparql_query_with_retry(bulk_query)
+    except Exception as e:
+        logger.error(f"Bulk fetch failed for {entity_type}: {e}")
+        results = []
+
+    for r in results:
+        graph_uri = r.get('graph', {}).get('value', '')
+        e_uri = r.get('e', {}).get('value', '')
+        if not graph_uri or not e_uri:
+            continue
+        v = graph_uri.rsplit('/', 1)[-1]
+        if v in uris_by_version:
+            uris_by_version[v].add(e_uri)
+
     _entity_uris_cache[cache_key] = uris_by_version
     return {v: uris_by_version[v].copy() for v in versions if v in uris_by_version}
 
 
 # Module-level cache shared by diff_entities_between_versions (#71) and the
-# cumulative-removed plot (#72). Halves SPARQL load: the second plot to run
-# reuses the per-version URI sets the first plot already fetched.
+# cumulative-removed plot (#72). With the new bulk-query path above, the
+# cache means the second plot incurs zero SPARQL traffic.
 _entity_uris_cache: Dict[tuple, Dict[str, set]] = {}
 
 
