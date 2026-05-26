@@ -388,9 +388,9 @@ def plot_entity_birth_death() -> tuple[str, pd.DataFrame]:
                 hovertemplate=f'<b>{et}</b><br>%{{x}}<br>removed: %{{customdata}}<extra></extra>',
                 customdata=sub['removed_count'].fillna(0).astype(int).tolist(),
             )
-        fig.add_hline(y=0, line_dash='dot', line_color='#888', line_width=1)
         fig.update_xaxes(tickmode='array', tickvals=versions, ticktext=versions, tickangle=-45)
-        fig.update_yaxes(title='Entities (added above / removed below)')
+        fig.update_yaxes(title='Entities (added above / removed below)',
+                         zeroline=True, zerolinecolor='#888', zerolinewidth=1)
         fig.update_layout(
             barmode='relative',
             margin=dict(l=60, r=30, t=40, b=80),
@@ -590,9 +590,9 @@ def plot_quarterly_growth_rate() -> tuple[str, pd.DataFrame]:
                 marker_color=color,
                 hovertemplate=f'<b>{entity}</b><br>%{{x}}<br>Δ: %{{y:+d}}<extra></extra>',
             )
-        fig.add_hline(y=0, line_dash='dot', line_color='#888', line_width=1)
         fig.update_xaxes(tickmode='array', tickvals=versions, ticktext=versions, tickangle=-45)
-        fig.update_yaxes(title='Quarter-over-quarter Δ')
+        fig.update_yaxes(title='Quarter-over-quarter Δ',
+                         zeroline=True, zerolinecolor='#888', zerolinewidth=1)
         fig.update_layout(
             barmode='group',
             margin=dict(l=60, r=30, t=40, b=80),

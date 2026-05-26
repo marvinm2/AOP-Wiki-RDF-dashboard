@@ -107,13 +107,20 @@
 
         // When the lazy-loader replaces a placeholder with a real plot, the
         // current range needs to be re-applied to the new plotly div.
-        // Hook into a MutationObserver on each snapshot-keyed container.
+        // Hook into a MutationObserver on each snapshot-keyed container —
+        // ONE-SHOT: disconnect after the first relayout. Otherwise Plotly's
+        // own internal DOM mutations (notably for stacked / grouped bars with
+        // add_hline shapes) re-trigger the observer in a tight loop that
+        // freezes the main thread and leaves the chart blank.
         document.querySelectorAll('.lazy-plot').forEach((el) => {
             const name = el.dataset.plotName;
             if (!name || EXCLUDED_PLOTS.has(stripSuffix(name))) return;
             const obs = new MutationObserver(() => {
                 const plotly = el.querySelector('.plotly-graph-div');
-                if (plotly) relayoutPlot(plotly);
+                if (plotly) {
+                    obs.disconnect();
+                    relayoutPlot(plotly);
+                }
             });
             obs.observe(el, { childList: true, subtree: true });
         });
