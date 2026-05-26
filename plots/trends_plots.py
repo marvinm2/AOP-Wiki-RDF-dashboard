@@ -364,45 +364,37 @@ def plot_entity_birth_death() -> tuple[str, pd.DataFrame]:
         df['entity_type'] = pd.Categorical(df['entity_type'], categories=entity_order, ordered=True)
         df = df.sort_values(['entity_type', 'version']).reset_index(drop=True)
 
-        # Long-form frame for plotly: signed bars — additions positive, removals negative.
-        plot_df = pd.concat([
-            df.assign(
-                Direction='Added',
-                Count=df['added_count'].astype(int),
-            )[['version', 'entity_type', 'Direction', 'Count']],
-            df.assign(
-                Direction='Removed',
-                Count=-df['removed_count'].astype(int),
-            )[['version', 'entity_type', 'Direction', 'Count']],
-        ], ignore_index=True)
-
-        fig = px.bar(
-            plot_df,
-            x='version',
-            y='Count',
-            color='Direction',
-            facet_col='entity_type',
-            facet_col_wrap=2,
-            category_orders={
-                'entity_type': entity_order,
-                'Direction': ['Added', 'Removed'],
-            },
-            color_discrete_map={
-                'Added': BRAND_COLORS['magenta'],
-                'Removed': BRAND_COLORS['primary'],
-            },
-            labels={'version': 'Snapshot', 'Count': 'Entities (added / removed)'},
-        )
-        # Per-facet title cleanup: "entity_type=AOPs" → "AOPs".
-        fig.for_each_annotation(lambda a: a.update(text=a.text.split('=')[-1]))
-        # Free y-axes so KEs/KERs don't squash AOP/Stressor panels.
-        fig.update_yaxes(matches=None, showticklabels=True)
-        fig.update_xaxes(tickangle=-45)
+        # Single-panel diverging stacked bars: additions positive, removals negative,
+        # one colour per entity type. Avoids the multi-subplot rendering quirks of
+        # facet_col_wrap which caused the chart to render blank on /trends.
+        versions = sorted(df['version'].unique())
+        entity_colors = dict(zip(entity_order, [
+            BRAND_COLORS['primary'], BRAND_COLORS['magenta'],
+            BRAND_COLORS['blue'], BRAND_COLORS['orange'],
+        ]))
+        fig = go.Figure()
+        for et in entity_order:
+            sub = df[df['entity_type'] == et].set_index('version').reindex(versions)
+            color = entity_colors[et]
+            fig.add_bar(
+                x=versions, y=sub['added_count'].fillna(0).astype(int).tolist(),
+                name=f'{et} added', marker_color=color, legendgroup=et,
+                hovertemplate=f'<b>{et}</b><br>%{{x}}<br>added: %{{y}}<extra></extra>',
+            )
+            fig.add_bar(
+                x=versions, y=(-sub['removed_count'].fillna(0).astype(int)).tolist(),
+                name=f'{et} removed', marker_color=color, legendgroup=et,
+                opacity=0.55, showlegend=False,
+                hovertemplate=f'<b>{et}</b><br>%{{x}}<br>removed: %{{customdata}}<extra></extra>',
+                customdata=sub['removed_count'].fillna(0).astype(int).tolist(),
+            )
         fig.add_hline(y=0, line_dash='dot', line_color='#888', line_width=1)
+        fig.update_xaxes(tickmode='array', tickvals=versions, ticktext=versions, tickangle=-45)
+        fig.update_yaxes(title='Entities (added above / removed below)')
         fig.update_layout(
             barmode='relative',
-            margin=dict(l=60, r=30, t=50, b=80),
-            height=600,
+            margin=dict(l=60, r=30, t=40, b=80),
+            height=480,
             legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1.0),
         )
 
@@ -512,7 +504,7 @@ def plot_entity_cumulative_removed() -> tuple[str, pd.DataFrame]:
             ticktext=versions,
             tickangle=-45,
         )
-        fig.update_layout(margin=dict(l=60, r=30, t=50, b=80))
+        fig.update_layout(margin=dict(l=60, r=30, t=40, b=80), height=440)
 
         _plot_data_cache['entity_cumulative_removed'] = df
         _plot_figure_cache['entity_cumulative_removed'] = fig
@@ -581,26 +573,31 @@ def plot_quarterly_growth_rate() -> tuple[str, pd.DataFrame]:
                               var_name="Entity", value_name="delta")
         long_df["Entity"] = pd.Categorical(long_df["Entity"], categories=entity_order, ordered=True)
 
-        fig = px.bar(
-            long_df,
-            x="version",
-            y="delta",
-            color="Entity",
-            facet_col="Entity",
-            facet_col_wrap=2,
-            category_orders={"Entity": entity_order},
-            color_discrete_sequence=BRAND_COLORS['palette'],
-            labels={"version": "Snapshot", "delta": "Quarter-over-quarter Δ"},
-        )
-        fig.for_each_annotation(lambda a: a.update(text=a.text.split('=')[-1]))
-        fig.update_yaxes(matches=None, showticklabels=True, zeroline=True, zerolinecolor='#888', zerolinewidth=1)
-        fig.update_xaxes(tickangle=-45)
-
-        # Annotate the largest positive and largest negative Δ per entity type.
+        # Single-panel grouped bar — one coloured bar per entity per quarter.
+        # No facet_col_wrap (multi-subplot rendering was unreliable on /trends).
+        versions = list(df_all["version"])
+        fig = go.Figure()
+        entity_palette = [
+            BRAND_COLORS['primary'], BRAND_COLORS['magenta'],
+            BRAND_COLORS['blue'], BRAND_COLORS['orange'],
+        ]
+        for entity, color in zip(entity_order, entity_palette):
+            sub = long_df[long_df["Entity"] == entity]
+            fig.add_bar(
+                x=sub["version"].tolist(),
+                y=sub["delta"].astype(int).tolist(),
+                name=entity,
+                marker_color=color,
+                hovertemplate=f'<b>{entity}</b><br>%{{x}}<br>Δ: %{{y:+d}}<extra></extra>',
+            )
+        fig.add_hline(y=0, line_dash='dot', line_color='#888', line_width=1)
+        fig.update_xaxes(tickmode='array', tickvals=versions, ticktext=versions, tickangle=-45)
+        fig.update_yaxes(title='Quarter-over-quarter Δ')
         fig.update_layout(
-            margin=dict(l=60, r=30, t=50, b=80),
-            height=600,
-            showlegend=False,
+            barmode='group',
+            margin=dict(l=60, r=30, t=40, b=80),
+            height=440,
+            legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1.0),
         )
 
         _plot_data_cache['quarterly_growth_rate'] = long_df

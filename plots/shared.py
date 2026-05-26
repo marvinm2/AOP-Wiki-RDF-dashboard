@@ -1103,6 +1103,11 @@ def fetch_entity_uris_by_version(
             f"Unknown entity_type {entity_type!r}; expected one of "
             f"{sorted(ENTITY_TYPE_CLASSES)}"
         )
+    cache_key = (entity_type, tuple(sorted(set(versions))))
+    cached = _entity_uris_cache.get(cache_key)
+    if cached is not None:
+        return {v: cached[v].copy() for v in versions if v in cached}
+
     entity_class = ENTITY_TYPE_CLASSES[entity_type]
     uris_by_version: Dict[str, set] = {}
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
@@ -1121,7 +1126,14 @@ def fetch_entity_uris_by_version(
             except Exception as e:
                 logger.error(f"Failed to fetch {entity_type} URIs for {v}: {e}")
                 uris_by_version[v] = set()
-    return uris_by_version
+    _entity_uris_cache[cache_key] = uris_by_version
+    return {v: uris_by_version[v].copy() for v in versions if v in uris_by_version}
+
+
+# Module-level cache shared by diff_entities_between_versions (#71) and the
+# cumulative-removed plot (#72). Halves SPARQL load: the second plot to run
+# reuses the per-version URI sets the first plot already fetched.
+_entity_uris_cache: Dict[tuple, Dict[str, set]] = {}
 
 
 def diff_entities_between_versions(
