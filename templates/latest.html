@@ -320,25 +320,18 @@
 <section class="section-block" id="coverage-analysis">
     <h2 class="section-header">Coverage Analysis</h2>
     <div class="plot-grid">
-        <div class="plot-box full-width">
+        <div class="plot-box full-width coverage-pair">
             <div class="plot-header">
                 <h3>AOP Coverage of Organ Systems</h3>
-                <div class="download-dropdown">
-                    <button class="download-button dropdown-toggle">Download &#x25BC;</button>
-                    <div class="dropdown-menu">
-                        <a href="/download/latest/organ_coverage_unified?format=csv" class="dropdown-item">CSV (current view)</a>
-                        <a href="/download/latest/organ_coverage_unified?format=png" class="dropdown-item">PNG (current view)</a>
-                        <a href="/download/latest/organ_coverage_unified?format=svg" class="dropdown-item">SVG (current view)</a>
-                    </div>
-                </div>
             </div>
             <p class="plot-description">
                 AOP coverage of 13 high-level organ systems, classified per AOP via a hybrid of four signals:
                 <strong>A</strong> (curated UBERON/CL anatomy on Key Events),
                 <strong>A&prime;</strong> (UBERON/CL appearing as biological-event objects),
                 <strong>B</strong> (GO biological-process bridge, curated map), and
-                <strong>C</strong> (regex on AOP title — exploratory, grey).
-                Use the toggles to narrow which KEs contribute and to switch between absolute counts and share of the snapshot.
+                <strong>C</strong> (regex on AOP title — exploratory, grey). Bar and pie views share one
+                scope toggle so they stay in sync; the View toggle drives the bar only (pie slices are
+                inherently proportional).
             </p>
             <div class="coverage-toggle" data-scope="all" data-view="absolute">
                 <div class="coverage-toggle-row">
@@ -358,34 +351,42 @@
                 </div>
             </div>
             {{ methodology_note(methodology_notes, 'latest_organ_coverage_unified') }}
-            <div class="lazy-plot" data-plot-name="latest_organ_coverage_unified" data-scope="all" data-view="absolute">
-                <!-- Plot will be loaded here via JavaScript -->
-            </div>
-            {{ data_table_toggle('latest_organ_coverage_unified') }}
-        </div>
-        <div class="plot-box full-width">
-            <div class="plot-header">
-                <h3>Organ-system bucket distribution</h3>
-                <div class="download-dropdown">
-                    <button class="download-button dropdown-toggle">Download &#x25BC;</button>
-                    <div class="dropdown-menu">
-                        <a href="/download/latest/organ_coverage_pie?format=csv" class="dropdown-item">CSV (current scope)</a>
-                        <a href="/download/latest/organ_coverage_pie?format=png" class="dropdown-item">PNG (current scope)</a>
-                        <a href="/download/latest/organ_coverage_pie?format=svg" class="dropdown-item">SVG (current scope)</a>
+            <div class="coverage-pair-grid">
+                <div class="coverage-pair-cell">
+                    <div class="coverage-pair-cell-header">
+                        <h4>Bar view</h4>
+                        <div class="download-dropdown">
+                            <button class="download-button dropdown-toggle">Download &#x25BC;</button>
+                            <div class="dropdown-menu">
+                                <a href="/download/latest/organ_coverage_unified?format=csv" class="dropdown-item">CSV (current view)</a>
+                                <a href="/download/latest/organ_coverage_unified?format=png" class="dropdown-item">PNG (current view)</a>
+                                <a href="/download/latest/organ_coverage_unified?format=svg" class="dropdown-item">SVG (current view)</a>
+                            </div>
+                        </div>
                     </div>
+                    <div class="lazy-plot" data-plot-name="latest_organ_coverage_unified" data-scope="all" data-view="absolute">
+                        <!-- Plot will be loaded here via JavaScript -->
+                    </div>
+                    {{ data_table_toggle('latest_organ_coverage_unified') }}
+                </div>
+                <div class="coverage-pair-cell">
+                    <div class="coverage-pair-cell-header">
+                        <h4>Pie view</h4>
+                        <div class="download-dropdown">
+                            <button class="download-button dropdown-toggle">Download &#x25BC;</button>
+                            <div class="dropdown-menu">
+                                <a href="/download/latest/organ_coverage_pie?format=csv" class="dropdown-item">CSV (current scope)</a>
+                                <a href="/download/latest/organ_coverage_pie?format=png" class="dropdown-item">PNG (current scope)</a>
+                                <a href="/download/latest/organ_coverage_pie?format=svg" class="dropdown-item">SVG (current scope)</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="lazy-plot" data-plot-name="latest_organ_coverage_pie" data-scope="all">
+                        <!-- Plot will be loaded here via JavaScript -->
+                    </div>
+                    {{ data_table_toggle('latest_organ_coverage_pie') }}
                 </div>
             </div>
-            <p class="plot-description">
-                Pie view of the same data: how AOP classifications spread across the 13 buckets at the
-                <em>currently selected scope</em>. Each AOP is counted once per bucket it lands in, so the slices
-                sum to bucket-memberships rather than AOPs. The grey &ldquo;Unclassified&rdquo; slice surfaces
-                AOPs that the scope leaves without any signal — useful for spotting false negatives.
-            </p>
-            {{ methodology_note(methodology_notes, 'latest_organ_coverage_pie') }}
-            <div class="lazy-plot" data-plot-name="latest_organ_coverage_pie" data-scope="all">
-                <!-- Plot will be loaded here via JavaScript -->
-            </div>
-            {{ data_table_toggle('latest_organ_coverage_pie') }}
         </div>
         <div class="plot-box full-width">
             <div class="plot-header">
