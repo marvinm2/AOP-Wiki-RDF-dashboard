@@ -67,6 +67,7 @@ from .shared import (
 )
 from .organ_systems import (
     ORGAN_SYSTEM_BUCKETS,
+    NO_ANNOTATION_BUCKET,
     best_signal,
     classify_anatomy,
     classify_process,
@@ -1053,10 +1054,43 @@ def plot_ke_migration_map(top_n: int = 50) -> tuple[str, pd.DataFrame]:
                                     values='n_aops', aggfunc='max')
                  .reindex(top_kes).reindex(columns=versions))
 
+        # Fetch KE titles from the latest snapshot so the y-axis is readable.
+        latest_graph = f"http://aopwiki.org/graph/{versions[-1]}"
+        values_block = ' '.join(
+            f'<https://identifiers.org/aop.events/{kid}>' for kid in top_kes
+        )
+        title_q = f"""
+        SELECT ?ke ?title WHERE {{
+            GRAPH <{latest_graph}> {{
+                VALUES ?ke {{ {values_block} }}
+                OPTIONAL {{ ?ke <http://purl.org/dc/elements/1.1/title> ?title }}
+            }}
+        }}
+        """
+        titles: dict[str, str] = {}
+        try:
+            for r in run_sparql_query_with_retry(title_q) or []:
+                uri = r.get('ke', {}).get('value', '')
+                kid = uri.rsplit('/', 1)[-1] if uri else ''
+                if kid:
+                    titles[kid] = r.get('title', {}).get('value', '') or ''
+        except Exception as exc:
+            logger.warning(f"KE-title fetch failed for migration map: {exc}")
+
+        def _label(kid: str) -> str:
+            t = titles.get(kid, '').strip()
+            if not t:
+                return f"KE {kid}"
+            # Truncate long titles so the y-axis stays readable.
+            short = t if len(t) <= 60 else t[:57] + '…'
+            return f"KE {kid} — {short}"
+
+        y_labels = [_label(kid) for kid in pivot.index]
+
         fig = go.Figure(data=go.Heatmap(
             z=pivot.values,
             x=versions,
-            y=[f"KE {ke}" for ke in pivot.index],
+            y=y_labels,
             colorscale=[
                 [0.0, '#f2f2f7'],
                 [0.05, BRAND_COLORS['sky_blue']],
@@ -1065,7 +1099,7 @@ def plot_ke_migration_map(top_n: int = 50) -> tuple[str, pd.DataFrame]:
             ],
             zmin=0,
             colorbar=dict(title='#AOPs<br>referencing<br>this KE'),
-            hovertemplate='<b>KE %{y}</b><br>Snapshot %{x}<br>In %{z} AOPs<extra></extra>',
+            hovertemplate='<b>%{y}</b><br>Snapshot %{x}<br>In %{z} AOPs<extra></extra>',
         ))
         fig.update_layout(
             title={"text": f"KE migration map — top {len(top_kes)} most-mobile Key Events<br><sub>Cell colour = #AOPs the KE is in at that snapshot; empty cells = KE absent</sub>"},
@@ -4319,11 +4353,17 @@ def plot_organ_coverage_trends() -> tuple[str, str, pd.DataFrame]:
                 logger.warning(f"Organ-coverage query failed for {version}: {exc}")
                 return None
 
-            counts: dict[str, int] = {b: 0 for b in ORGAN_SYSTEM_BUCKETS}
             seen_per_bucket: dict[str, set] = {b: set() for b in ORGAN_SYSTEM_BUCKETS}
+            classified_aops: set = set()
             for aop, bucket in pairs:
                 seen_per_bucket.setdefault(bucket, set()).add(aop)
-            counts = {b: len(s) for b, s in seen_per_bucket.items()}
+                if bucket and bucket != NO_ANNOTATION_BUCKET:
+                    classified_aops.add(aop)
+            counts = {b: len(s) for b, s in seen_per_bucket.items() if b in ORGAN_SYSTEM_BUCKETS}
+            # Derive 'No annotation' from total AOPs minus AOPs with any
+            # classified bucket — matches the snapshot pie chart's
+            # 'Unclassified' slice (see plot_latest_organ_coverage_pie).
+            counts[NO_ANNOTATION_BUCKET] = max(0, total_aops - len(classified_aops))
             counts["version"] = version
             counts["__total_aops__"] = total_aops
             return counts
@@ -4345,6 +4385,8 @@ def plot_organ_coverage_trends() -> tuple[str, str, pd.DataFrame]:
         df = df.sort_values("version_dt").reset_index(drop=True)
 
         bucket_cols = [b for b in ORGAN_SYSTEM_BUCKETS if b in df.columns]
+        if NO_ANNOTATION_BUCKET in df.columns:
+            bucket_cols = bucket_cols + [NO_ANNOTATION_BUCKET]
 
         # Long form for the line chart
         long_df = df.melt(

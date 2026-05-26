@@ -3407,7 +3407,7 @@ def plot_latest_ke_mmo_coverage(version: str = None) -> str:
         return create_fallback_plot("KE MMO Coverage", str(e))
 
 
-def plot_latest_aop_aop_overlap(version: str = None, min_shared_kes: int = 5, max_pairs: int = 250) -> str:
+def plot_latest_aop_aop_overlap(version: str = None, min_shared_kes: int = 8, max_pairs: int = 200) -> str:
     """AOP-AOP overlap network: nodes=AOPs, edges=#shared KEs (#67).
 
     Renders a force-directed graph showing pairs of AOPs that share a
@@ -3506,21 +3506,36 @@ def plot_latest_aop_aop_overlap(version: str = None, min_shared_kes: int = 5, ma
         G.add_edge(e['aop1']['value'], e['aop2']['value'],
                    shared_kes=int(e['sharedKEs']['value']))
 
-    # Layout — spring is stable enough for sub-300-node graphs.
-    pos = nx.spring_layout(G, k=1.5 / math.sqrt(len(G.nodes())), iterations=80, seed=42)
+    # Detect connected components (each is a cluster of mutually-overlapping
+    # AOPs) and lay them out separately so the picture reads as discrete
+    # families rather than one entangled hairball.
+    components = sorted(nx.connected_components(G), key=len, reverse=True)
+    pos: dict = {}
+    n_cols = max(1, int(math.ceil(math.sqrt(len(components)))))
+    for i, comp in enumerate(components):
+        sub = G.subgraph(comp)
+        sub_pos = nx.spring_layout(
+            sub, k=1.5 / math.sqrt(max(1, len(sub))), iterations=80, seed=42,
+        )
+        # Tile components on a square grid; centre each on its grid cell.
+        col, row = i % n_cols, i // n_cols
+        for n, (x, y) in sub_pos.items():
+            pos[n] = (x + col * 3.0, y - row * 3.0)
 
-    oecd_colors = BRAND_COLORS.get('oecd_status', {})
-    default_color = BRAND_COLORS['palette'][0]
+    # Stable cluster-coloured palette (one colour per connected component).
+    palette = BRAND_COLORS['palette']
+    cluster_color: dict = {}
+    for i, comp in enumerate(components):
+        c = palette[i % len(palette)]
+        for n in comp:
+            cluster_color[n] = c
 
-    # Edge traces — one trace per width bucket so legend works cleanly.
-    edge_x, edge_y, edge_widths, edge_hover = [], [], [], []
-    for a, b, attrs in G.edges(data=True):
+    # Single edge trace.
+    edge_x, edge_y = [], []
+    for a, b, _ in G.edges(data=True):
         x0, y0 = pos[a]; x1, y1 = pos[b]
         edge_x += [x0, x1, None]
         edge_y += [y0, y1, None]
-        edge_widths.append(attrs['shared_kes'])
-        edge_hover.append(f"{meta_by_uri.get(a, {}).get('title', a)} ↔ {meta_by_uri.get(b, {}).get('title', b)}: {attrs['shared_kes']} shared KEs")
-
     edge_trace = go.Scatter(
         x=edge_x, y=edge_y,
         mode='lines',
@@ -3529,39 +3544,38 @@ def plot_latest_aop_aop_overlap(version: str = None, min_shared_kes: int = 5, ma
         showlegend=False,
     )
 
-    # Node traces grouped by OECD status.
-    statuses = sorted({d['status'] for _, d in G.nodes(data=True)})
-    node_traces = []
-    for status in statuses:
-        sub_nodes = [n for n, d in G.nodes(data=True) if d['status'] == status]
-        xs = [pos[n][0] for n in sub_nodes]
-        ys = [pos[n][1] for n in sub_nodes]
-        texts = []
-        sizes = []
-        for n in sub_nodes:
-            d = G.nodes[n]
-            short = n.rsplit('/', 1)[-1]
-            texts.append(f"<b>AOP {short}</b><br>{d['title']}<br>KEs: {d['ke_count']}<br>OECD: {d['status']}")
-            sizes.append(8 + math.sqrt(max(1, d['ke_count'])) * 2.5)
-        node_traces.append(go.Scatter(
-            x=xs, y=ys,
-            mode='markers',
-            marker=dict(size=sizes, color=oecd_colors.get(status, default_color),
-                        line=dict(color='white', width=1)),
-            name=status,
-            text=texts,
-            hoverinfo='text',
-        ))
+    # Single node trace with visible AOP-ID labels.
+    xs, ys, texts, hovers, sizes, colors = [], [], [], [], [], []
+    for n, d in G.nodes(data=True):
+        x, y = pos[n]
+        xs.append(x); ys.append(y)
+        short = n.rsplit('/', 1)[-1]
+        texts.append(short)
+        hovers.append(f"<b>AOP {short}</b><br>{d['title']}<br>KEs: {d['ke_count']}<br>OECD: {d['status']}")
+        sizes.append(10 + math.sqrt(max(1, d['ke_count'])) * 2.5)
+        colors.append(cluster_color.get(n, palette[0]))
+    node_trace = go.Scatter(
+        x=xs, y=ys,
+        mode='markers+text',
+        marker=dict(size=sizes, color=colors, line=dict(color='white', width=1)),
+        text=texts,
+        textposition='top center',
+        textfont=dict(size=9, color=BRAND_COLORS['primary']),
+        hovertext=hovers,
+        hoverinfo='text',
+        showlegend=False,
+    )
 
-    fig = go.Figure(data=[edge_trace, *node_traces])
+    fig = go.Figure(data=[edge_trace, node_trace])
     fig.update_layout(
-        title={"text": f"AOP-AOP overlap network<br><sub>{G.number_of_nodes()} AOPs sharing {min_shared_kes}+ KEs ({G.number_of_edges()} edges, v{version_str})</sub>"},
+        title={"text": f"AOP-AOP overlap network — {len(components)} cluster(s)<br><sub>"
+                       f"{G.number_of_nodes()} AOPs share ≥{min_shared_kes} KEs with at least one peer "
+                       f"({G.number_of_edges()} edges, v{version_str}). Same colour = same connected cluster; node label = AOP ID.</sub>"},
         xaxis=dict(visible=False),
         yaxis=dict(visible=False, scaleanchor='x', scaleratio=1),
         margin=dict(l=30, r=30, t=80, b=30),
         height=700,
         hovermode='closest',
-        legend=dict(orientation='v', x=1.02, y=1.0),
     )
 
     # Cache (per-edge data is the most useful CSV).
