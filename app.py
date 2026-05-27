@@ -1900,7 +1900,7 @@ def landing():
     Network Analysis. Shows latest version number and headline entity counts
     from cached startup data. Includes expandable AOP-Wiki introduction.
     """
-    latest_version = get_latest_version()
+    latest_version = _latest_version or "Unknown"
     entity_counts = None
     cached_df = _plot_data_cache.get('latest_entity_counts')
     if cached_df is not None and hasattr(cached_df, 'empty') and not cached_df.empty:
