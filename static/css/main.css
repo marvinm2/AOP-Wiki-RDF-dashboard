@@ -1173,7 +1173,7 @@ footer img {
 }
 
 .nav-brand-logo-full {
-    height: 44px;
+    height: 90px;
     width: auto;
     display: block;
 }
@@ -1323,9 +1323,17 @@ footer img {
     gap: 14px;
     font-size: var(--font-size-small);
     opacity: 0.95;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     justify-content: center;
     max-width: 460px;
+    flex: 1 1 320px;
+    min-width: 0;
+}
+
+.footer-branding,
+.footer-links {
+    flex: 0 1 auto;
+    min-width: 0;
 }
 
 .footer-funding-text {
@@ -1378,6 +1386,22 @@ footer img {
    Responsive: Navigation & Footer (tablet/mobile)
    ========================================================================== */
 
+@media (max-width: 1100px) {
+    .footer-container {
+        flex-direction: column;
+        gap: 14px;
+    }
+
+    .footer-funding {
+        max-width: 640px;
+        flex: 0 1 auto;
+    }
+
+    .footer-links {
+        gap: 16px;
+    }
+}
+
 @media (max-width: 900px) {
     .nav-container {
         flex-wrap: wrap;
@@ -1388,6 +1412,10 @@ footer img {
         flex: 1 1 100%;
         text-align: center;
         padding: 8px 0;
+    }
+
+    .nav-brand-logo-full {
+        height: 72px;
     }
 
     .main-nav .nav-links {
@@ -1406,15 +1434,6 @@ footer img {
 
     .page-content {
         padding: 0 10px;
-    }
-
-    .footer-container {
-        flex-direction: column;
-        gap: 14px;
-    }
-
-    .footer-links {
-        gap: 16px;
     }
 }
 
