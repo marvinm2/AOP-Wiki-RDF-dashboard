@@ -15,6 +15,10 @@ services:
     environment:
       - SPARQL_ENDPOINT=http://virtuoso:8890/sparql
       - SPARQL_PUBLIC_ENDPOINT=https://aopwiki-multirdf.vhp4safety.nl/sparql
+      # Persist usage analytics on gluster so counts survive redeploys (#91).
+      - USAGE_DB_PATH=/data/usage.sqlite
+    volumes:
+      - /mnt/gluster/docker/aopwiki-dashboard/usage:/data
     deploy:
       placement:
         constraints:
