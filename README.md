@@ -225,6 +225,15 @@ Use the built-in monitoring endpoints:
 - `/health` - System health check
 - `/status` - Real-time monitoring dashboard
 
+## Requesting a New Plot
+
+You don't need to write any code to ask for a new visualization. Pick whichever route suits you — both create an issue from the same **New Plot Proposal** template:
+
+- **From the web (one click):** open a [pre-filled plot-request form](https://github.com/marvinm2/AOP-Wiki-RDF-dashboard/issues/new?template=new-plot.md). The dashboard's [About page](https://aopwiki-dashboard.vhp4safety.nl/about) links to the same form.
+- **On GitHub:** go to the [issue tracker](https://github.com/marvinm2/AOP-Wiki-RDF-dashboard/issues), click **New issue**, and choose **New Plot Proposal**.
+
+A GitHub account is required to submit. Describe the question the plot should answer, whether it's a latest-snapshot or historical-trend view, the RDF properties involved, and the chart type you'd expect — the more concrete, the faster it can be built.
+
 ## Contributing
 
 ### **Development Setup**
