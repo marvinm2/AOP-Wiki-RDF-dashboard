@@ -1,0 +1,114 @@
+name: upload-plots-zenodo
+
+# Publishes a new version of the per-version plot-data Zenodo record: generates
+# the latest-version plot bundle + the trends bundle (CSV/PNG/SVG + manifest) and
+# uploads them as a new version of a dedicated deposition.
+#
+# Manual trigger only — run it after a new quarter has been loaded onto the live
+# endpoint. Requires two repo secrets (see ZENODO.md):
+#   ZENODO_ACCESS_TOKEN        — Zenodo personal access token (deposit:write)
+#   ZENODO_PLOTS_DEPOSITION_ID — the deposition ID of the plot-data record
+# If the deposition ID secret is absent the job exits cleanly (no-op) so the
+# workflow is safe to keep before activation.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      SPARQL_ENDPOINT: https://aopwiki-multirdf.vhp4safety.nl/sparql
+      SPARQL_PUBLIC_ENDPOINT: https://aopwiki-multirdf.vhp4safety.nl/sparql
+      ZENODO_ACCESS_TOKEN: ${{ secrets.ZENODO_ACCESS_TOKEN }}
+      ZENODO_PLOTS_DEPOSITION_ID: ${{ secrets.ZENODO_PLOTS_DEPOSITION_ID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Guard — is the record configured?
+        run: |
+          if [ -z "$ZENODO_PLOTS_DEPOSITION_ID" ] || [ -z "$ZENODO_ACCESS_TOKEN" ]; then
+            echo "Zenodo plot-data record not configured (missing secrets). See ZENODO.md."
+            echo "Exiting cleanly without uploading."
+            echo "configured=false" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          echo "configured=true" >> "$GITHUB_ENV"
+
+      - name: Set up Python
+        if: env.configured == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install dependencies
+        if: env.configured == 'true'
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Generate plot bundles (latest version + trends)
+        if: env.configured == 'true'
+        run: python scripts/export_all_versions.py --out exports --zip
+
+      - name: Install curl and jq
+        if: env.configured == 'true'
+        run: sudo apt-get install -y curl jq
+
+      - name: Create a new version of the deposition
+        if: env.configured == 'true'
+        run: |
+          set -euo pipefail
+          response=$(curl -s -X POST -H "Authorization: Bearer $ZENODO_ACCESS_TOKEN" \
+            "https://zenodo.org/api/deposit/depositions/$ZENODO_PLOTS_DEPOSITION_ID/actions/newversion")
+          new_draft_url=$(echo "$response" | jq -r '.links.latest_draft')
+          if [ "$new_draft_url" = "null" ] || [ -z "$new_draft_url" ]; then
+            echo "Failed to create new version. Response: $response"; exit 1
+          fi
+          draft=$(curl -s -H "Authorization: Bearer $ZENODO_ACCESS_TOKEN" "$new_draft_url")
+          echo "new_deposition_id=$(echo "$draft" | jq -r '.id')" >> "$GITHUB_ENV"
+          echo "new_bucket_url=$(echo "$draft" | jq -r '.links.bucket')" >> "$GITHUB_ENV"
+
+      - name: Upload bundles
+        if: env.configured == 'true'
+        run: |
+          set -euo pipefail
+          for file in exports/*.zip; do
+            echo "Uploading $file"
+            curl --progress-bar -H "Authorization: Bearer $ZENODO_ACCESS_TOKEN" \
+              --upload-file "$file" "$new_bucket_url/$(basename "$file")"
+          done
+
+      - name: Update metadata
+        if: env.configured == 'true'
+        run: |
+          set -euo pipefail
+          version=$(date +'%Y-%m-%d')
+          metadata=$(jq -n --arg title "AOP-Wiki RDF Dashboard — per-version plot exports" \
+            --arg version "$version" \
+            --arg date "$version" \
+            --arg description "<p>Per-version plot bundles exported from the AOP-Wiki RDF Dashboard (<a href=\"https://aopwiki-dashboard.vhp4safety.nl\">aopwiki-dashboard.vhp4safety.nl</a>). Each bundle contains every snapshot plot rendered at a given quarterly version (PNG + SVG), the underlying data (CSV), and a manifest with the SPARQL query for every plot, plus a trends bundle covering the full version history. Generated from the versioned endpoint <a href=\"https://aopwiki-multirdf.vhp4safety.nl/sparql\">aopwiki-multirdf.vhp4safety.nl/sparql</a>. Method: <a href=\"https://doi.org/10.1089/aivt.2021.0010\">doi.org/10.1089/aivt.2021.0010</a>.</p>" \
+            --argjson creators '[{"name": "Martens, Marvin", "affiliation": "Department of Translational Genomics, Maastricht University, Maastricht, the Netherlands", "orcid": "0000-0003-2230-0840"}, {"name": "Willighagen, Egon", "affiliation": "Department of Translational Genomics, Maastricht University, Maastricht, the Netherlands", "orcid": "0000-0001-7542-0286"}]' \
+            --argjson related_identifiers '[{"identifier": "10.1089/aivt.2021.0010", "relation": "isDocumentedBy", "resource_type": "publication-article", "scheme": "doi"}, {"identifier": "10.5281/zenodo.13353286", "relation": "isDerivedFrom", "scheme": "doi"}]' \
+            --argjson communities '[{"identifier": "vhp4safety"}]' \
+            --arg notes "Plots and data derived from the AOP-Wiki (CC-BY-SA 4.0). Funded in part by EU Horizon 2020 (NanoSolveIT 814572, RiskGONE 814425) and VHP4Safety (NWO NWA-ORC 1292.19.272)." \
+            '{ metadata: {
+                 title: $title, version: $version, publication_date: $date,
+                 description: $description, access_right: "open",
+                 creators: $creators, related_identifiers: $related_identifiers,
+                 language: "eng", license: "cc-by-sa-4.0",
+                 communities: $communities, notes: $notes, upload_type: "dataset"
+            }}')
+          curl -s -H "Authorization: Bearer $ZENODO_ACCESS_TOKEN" -H "Content-Type: application/json" \
+            -X PUT --data "$metadata" \
+            "https://zenodo.org/api/deposit/depositions/$new_deposition_id" > /dev/null
+
+      - name: Publish
+        if: env.configured == 'true'
+        run: |
+          curl -s -H "Authorization: Bearer $ZENODO_ACCESS_TOKEN" -H "Content-Type: application/json" \
+            -X POST "https://zenodo.org/api/deposit/depositions/$new_deposition_id/actions/publish" > /dev/null
+          echo "Published new version of the plot-data record."

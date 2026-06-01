@@ -1,0 +1,25 @@
+{
+  "upload_type": "software",
+  "title": "AOP-Wiki RDF Dashboard",
+  "description": "<p>Flask + Plotly dashboard for the multi-version AOP-Wiki RDF endpoint. It visualises how the AOP-Wiki has evolved across quarterly snapshots (entity counts, annotation completeness, ontology usage, network structure), with every plot exposing its SPARQL query and offering CSV/PNG/SVG export. Live: <a href=\"https://aopwiki-dashboard.vhp4safety.nl\">aopwiki-dashboard.vhp4safety.nl</a>. Backed by the versioned SPARQL endpoint <a href=\"https://aopwiki-multirdf.vhp4safety.nl/sparql\">aopwiki-multirdf.vhp4safety.nl/sparql</a>. Conversion method: <a href=\"https://doi.org/10.1089/aivt.2021.0010\">doi.org/10.1089/aivt.2021.0010</a>; dataset: <a href=\"https://doi.org/10.5281/zenodo.13353286\">10.5281/zenodo.13353286</a>.</p>",
+  "license": "MIT",
+  "access_right": "open",
+  "creators": [
+    {"name": "Martens, Marvin", "affiliation": "Department of Translational Genomics, Maastricht University, Maastricht, the Netherlands", "orcid": "0000-0003-2230-0840"},
+    {"name": "Willighagen, Egon", "affiliation": "Department of Translational Genomics, Maastricht University, Maastricht, the Netherlands", "orcid": "0000-0001-7542-0286"}
+  ],
+  "keywords": [
+    "adverse outcome pathway", "AOP-Wiki", "RDF", "SPARQL", "dashboard",
+    "Plotly", "data visualization", "toxicology", "FAIR"
+  ],
+  "related_identifiers": [
+    {"identifier": "10.1089/aivt.2021.0010", "relation": "isDocumentedBy", "resource_type": "publication-article", "scheme": "doi"},
+    {"identifier": "10.5281/zenodo.13353286", "relation": "isSupplementTo", "scheme": "doi"}
+  ],
+  "grants": [
+    {"id": "10.13039/501100000780::814572"},
+    {"id": "10.13039/501100000780::814425"},
+    {"id": "10.13039/501100003246::36952"}
+  ],
+  "notes": "Funded by the European Union's Horizon 2020 program (NanoSolveIT no. 814572, RiskGONE no. 814425) and VHP4Safety, funded by the Netherlands Research Council (NWO) NWA-ORC 1292.19.272."
+}
