@@ -2,6 +2,35 @@
 
 {% block title %}AOP-Wiki RDF Dashboard{% endblock %}
 
+{% block head_extra %}
+{# Bioschemas/schema.org Dataset markup for discoverability (Google Dataset Search, FAIR F2) #}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Dataset",
+  "name": "AOP-Wiki multi-version RDF",
+  "description": "Every quarterly release of the AOP-Wiki (Adverse Outcome Pathways, regulatory toxicology) in RDF, 2018-04-01 to 2026-04-01, served as dated named graphs via a public SPARQL endpoint with an interactive analytics dashboard.",
+  "url": "https://aopwiki-dashboard.vhp4safety.nl",
+  "sameAs": "https://aopwiki-multirdf.vhp4safety.nl/sparql",
+  "license": "https://creativecommons.org/licenses/by-sa/4.0/",
+  "isAccessibleForFree": true,
+  "keywords": ["adverse outcome pathway", "AOP-Wiki", "RDF", "SPARQL", "toxicology", "FAIR", "semantic web"],
+  "identifier": "https://doi.org/10.5281/zenodo.13353286",
+  "temporalCoverage": "2018-04-01/2026-04-01",
+  {% if version and version != 'Unknown' %}"version": "{{ version }}",{% endif %}
+  "creator": [
+    {"@type": "Person", "name": "Marvin Martens", "identifier": "https://orcid.org/0000-0003-2230-0840"},
+    {"@type": "Person", "name": "Egon Willighagen", "identifier": "https://orcid.org/0000-0001-7542-0286"}
+  ],
+  "citation": "https://doi.org/10.1089/aivt.2021.0010",
+  "distribution": [
+    {"@type": "DataDownload", "encodingFormat": "application/sparql-query", "contentUrl": "https://aopwiki-multirdf.vhp4safety.nl/sparql"}
+  ],
+  "publisher": {"@type": "Organization", "name": "VHP4Safety", "url": "https://vhp4safety.nl"}
+}
+</script>
+{% endblock %}
+
 {% block content %}
 {# Navigation Hub Hero #}
 <section class="landing-hero">

@@ -12,9 +12,12 @@
            for the Adverse Outcome Pathway (AOP) knowledge base. It monitors quarterly
            RDF snapshot releases, enabling researchers, curators, and regulators to
            explore how the AOP-Wiki database evolves over time.</p>
-        <p>The dashboard queries the AOP-Wiki SPARQL endpoint to generate real-time
+        <p>The dashboard queries the AOP-Wiki SPARQL endpoint to generate
            visualizations of entity counts, data quality metrics, network topology,
-           and historical trends across 30+ database versions since April 2018.</p>
+           and historical trends across <strong>33 quarterly snapshots
+           (2018-04-01 to 2026-04-01)</strong>. Every release is loaded as its own
+           dated named graph (<code>http://aopwiki.org/graph/YYYY-MM-DD</code>), so the
+           full history of the resource is queryable from a single endpoint.</p>
     </div>
 
     <div class="about-section">
@@ -27,17 +30,54 @@
             <li><strong>Network Analysis:</strong> Interactive Key Event network with
                 centrality metrics, PageRank, and community detection</li>
             <li><strong>Data Export:</strong> CSV, PNG, and SVG downloads for all
-                visualizations with version-tagged filenames</li>
+                visualizations with version-tagged filenames; every plot exposes the
+                SPARQL query behind it</li>
+            <li><strong>Usage statistics:</strong> aggregate, privacy-respecting page and
+                download counts at <a href="/stats" class="about-link">/stats</a>
+                (no cookies, no personal data)</li>
         </ul>
     </div>
 
     <div class="about-section">
-        <h2>Data Source</h2>
-        <p>All data is sourced from the AOP-Wiki RDF triplestore via SPARQL queries.</p>
-        <p><a href="#" title="Coming soon"
-              class="about-link">AOP-Wiki SPARQL Endpoint (coming soon)</a></p>
+        <h2>Data Source &amp; Access</h2>
+        <p>All data is sourced from the AOP-Wiki and served as RDF via a public
+           SPARQL endpoint.</p>
+        <p><a href="https://aopwiki-multirdf.vhp4safety.nl/sparql" target="_blank"
+              rel="noopener" class="about-link">AOP-Wiki multi-version SPARQL endpoint</a></p>
+        <p>The available versions are machine-discoverable: a DCAT version catalogue and
+           a SPARQL 1.1 service description live in the
+           <code>http://aopwiki-multirdf.vhp4safety.nl/metadata</code> graph. For example,
+           to list every version:</p>
+        <pre class="about-query">SELECT ?v WHERE {
+  GRAPH &lt;http://aopwiki-multirdf.vhp4safety.nl/metadata&gt; {
+    ?d &lt;http://www.w3.org/2002/07/owl#versionInfo&gt; ?v
+  }
+} ORDER BY DESC(?v)</pre>
         <p><a href="https://aopwiki.org" target="_blank" rel="noopener"
               class="about-link">AOP-Wiki Website</a></p>
+    </div>
+
+    <div class="about-section">
+        <h2>How to Cite</h2>
+        <p>If you use this resource, please cite the AOP-Wiki RDF paper:</p>
+        <p>Martens M., Evelo C.T., Willighagen E.L. (2022). Providing Adverse Outcome
+           Pathways from the AOP-Wiki in a Semantic Web Format to Increase Usability and
+           Accessibility of the Content. <em>Applied In Vitro Toxicology</em> 8(1):2&ndash;13.
+           <a href="https://doi.org/10.1089/aivt.2021.0010" target="_blank" rel="noopener"
+              class="about-link">doi:10.1089/aivt.2021.0010</a></p>
+        <p>Dataset (all versions, concept DOI):
+           <a href="https://doi.org/10.5281/zenodo.13353286" target="_blank" rel="noopener"
+              class="about-link">10.5281/zenodo.13353286</a></p>
+    </div>
+
+    <div class="about-section">
+        <h2>License &amp; FAIR</h2>
+        <p>Dashboard and pipeline code are released under the MIT license. The RDF data
+           served here is CC-BY-SA 4.0, inherited from the AOP-Wiki.</p>
+        <p>The resource is designed to be FAIR: each version is a dated named graph with
+           machine-readable DCAT/VoID metadata and a SPARQL&nbsp;1.1 service description,
+           every dashboard figure is reproducible from its published SPARQL query, and
+           releases are archived with persistent DOIs.</p>
     </div>
 
     <div class="about-section">
