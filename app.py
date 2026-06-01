@@ -145,14 +145,27 @@ from plots import (
 from usage_analytics import record_event, get_summary, init_db
 
 
-def _classify_request(path: str):
-    """Map a request path to a (event, plot) pair for usage analytics.
+# Pages worth counting as visits. Plot views are deliberately NOT tracked:
+# plots lazy-load top-to-bottom, so /api/plot/<name> fires automatically for the
+# top plots regardless of intent — that measures scroll position, not interest.
+PAGE_LABELS = {
+    '/': 'home',
+    '/snapshot': 'snapshot',
+    '/trends': 'trends',
+    '/network': 'network',
+    '/about': 'about',
+}
 
-    Returns (None, None) for paths we don't track. No PII is derived — only the
-    plot identifier already present in the URL.
+
+def _classify_request(path: str):
+    """Map a request path to an (event, target) pair for usage analytics.
+
+    Tracks page visits ('page', <page label>) and downloads ('download', <plot>).
+    Returns (None, None) for everything else. No PII is derived — only the page
+    or plot identifier already present in the URL.
     """
-    if path.startswith('/api/plot/'):
-        return 'view', path[len('/api/plot/'):] or None
+    if path in PAGE_LABELS:
+        return 'page', PAGE_LABELS[path]
     if path.startswith('/download/'):
         seg = path[len('/download/'):]
         if seg == 'bulk':
@@ -169,7 +182,7 @@ def _classify_request(path: str):
 
 @app.after_request
 def _track_usage(response):
-    """Record a usage event for successful plot views and downloads.
+    """Record a usage event for successful page visits and downloads.
 
     Centralised here so individual routes stay untouched. Swallows all errors
     so analytics can never affect the served response.

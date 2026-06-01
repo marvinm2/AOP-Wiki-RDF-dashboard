@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 _init_lock = threading.Lock()
 _initialized = False
 
-VALID_EVENTS = ("view", "download")
+VALID_EVENTS = ("page", "download")
 
 
 def _connect() -> sqlite3.Connection:
@@ -124,11 +124,11 @@ def get_summary(limit: int = 25) -> dict:
                     (limit,),
                 )
             ]
-            top_views = [
-                {"plot": r["plot"], "count": r["n"]}
+            page_views = [
+                {"page": r["plot"], "count": r["n"]}
                 for r in conn.execute(
                     "SELECT plot, COUNT(*) AS n FROM usage_events "
-                    "WHERE event='view' AND plot IS NOT NULL "
+                    "WHERE event='page' AND plot IS NOT NULL "
                     "GROUP BY plot ORDER BY n DESC LIMIT ?",
                     (limit,),
                 )
@@ -154,7 +154,7 @@ def get_summary(limit: int = 25) -> dict:
             "by_event": by_event,
             "by_format": by_format,
             "top_downloads": top_downloads,
-            "top_views": top_views,
+            "page_views": page_views,
             "by_version": by_version,
             "by_day": by_day,
         }

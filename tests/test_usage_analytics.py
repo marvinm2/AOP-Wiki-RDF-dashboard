@@ -28,7 +28,7 @@ def usage(tmp_path, monkeypatch):
 
 
 def test_records_and_aggregates(usage):
-    usage.record_event("view", plot="latest_entity_counts", version="2026-04-01", route="/api/plot/latest_entity_counts")
+    usage.record_event("page", plot="trends", route="/trends")
     usage.record_event("download", plot="latest_entity_counts", version="2026-04-01", fmt="csv", route="/download/latest_entity_counts")
     usage.record_event("download", plot="latest_entity_counts", version="2026-04-01", fmt="png", route="/download/latest_entity_counts")
     usage.record_event("download", plot="aop_network_density", version=None, fmt="csv", route="/download/trend/aop_network_density")
@@ -36,12 +36,14 @@ def test_records_and_aggregates(usage):
     s = usage.get_summary()
     assert s["enabled"] is True
     assert s["total_events"] == 4
-    assert s["by_event"] == {"view": 1, "download": 3}
+    assert s["by_event"] == {"page": 1, "download": 3}
     assert s["by_format"]["csv"] == 2
     assert s["by_format"]["png"] == 1
     top = {d["plot"]: d["count"] for d in s["top_downloads"]}
     assert top["latest_entity_counts"] == 2
     assert top["aop_network_density"] == 1
+    pages = {d["page"]: d["count"] for d in s["page_views"]}
+    assert pages["trends"] == 1
 
 
 def test_invalid_event_ignored(usage):
@@ -55,7 +57,7 @@ def test_disabled_flag_blocks_writes(tmp_path, monkeypatch):
     for mod in ("usage_analytics", "config"):
         sys.modules.pop(mod, None)
     mod = importlib.import_module("usage_analytics")
-    mod.record_event("view", plot="x")
+    mod.record_event("page", plot="x")
     assert mod.get_summary() == {"enabled": False}
 
 
@@ -63,4 +65,4 @@ def test_write_never_raises(usage, monkeypatch):
     # Point at an unwritable path mid-flight; record_event must swallow the error.
     monkeypatch.setattr(usage.Config, "USAGE_DB_PATH", "/proc/cannot/write/here.sqlite")
     usage._initialized = False
-    usage.record_event("view", plot="x")  # should not raise
+    usage.record_event("page", plot="x")  # should not raise
