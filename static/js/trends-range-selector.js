@@ -147,6 +147,7 @@
         updateStatus();
         updateURLState();
         updateDownloadLinks();
+        updateMethodologyQueries();
         if (!skipPlotRelayout) relayoutAllPlots();
     }
 
@@ -203,6 +204,72 @@
             // Preserve any path-only links (no host)
             const newHref = url.pathname + (url.search || '');
             a.setAttribute('href', newHref);
+        });
+    }
+
+    // Graph-IRI prefix shared by every snapshot named graph.
+    const GRAPH_PREFIX = 'http://aopwiki.org/graph/';
+
+    /**
+     * Keep the methodology "Run on Endpoint" / "Copy Query" panels in sync with
+     * the active range (#62). Only the multi-graph trend queries — those that
+     * iterate `GRAPH ?graph { ... } GROUP BY ?graph` — are rewritten; the
+     * single-snapshot illustrative queries (`GRAPH <.../YYYY-MM-DD>`) are left
+     * untouched because a range doesn't apply to them.
+     *
+     * Graph IRIs sort lexicographically (constant prefix + zero-padded ISO
+     * date), so a `STR(?graph) >= lo && STR(?graph) <= hi` bound selects exactly
+     * the snapshots in the window. The pristine query is cached on first touch
+     * so toggling back to the full range (or picking a different window) always
+     * rewrites from the original rather than compounding edits.
+     */
+    function updateMethodologyQueries() {
+        const rangeClause =
+            `STR(?graph) >= "${GRAPH_PREFIX}${startVersion}" && ` +
+            `STR(?graph) <= "${GRAPH_PREFIX}${endVersion}"`;
+        const multiGraph = /GRAPH\s+\?graph\b/;
+        const strStarts = `STRSTARTS(STR(?graph), "${GRAPH_PREFIX}")`;
+        const fullRange = isFullRange();
+
+        document.querySelectorAll('details.sparql-query').forEach((panel) => {
+            const code = panel.querySelector('code');
+            if (!code) return;
+
+            // Cache the pristine query once; skip non-multi-graph queries.
+            if (code.dataset.origQuery === undefined) {
+                if (!multiGraph.test(code.textContent)) return;
+                code.dataset.origQuery = code.textContent;
+            }
+            const original = code.dataset.origQuery;
+
+            let updated = original;
+            if (!fullRange) {
+                if (original.indexOf(strStarts) !== -1) {
+                    // Augment the existing graph-prefix filter.
+                    updated = original.replace(strStarts, `${strStarts} && ${rangeClause}`);
+                } else {
+                    // No prefix filter present — inject one inside the first
+                    // `GRAPH ?graph {` block, where ?graph is in scope.
+                    updated = original.replace(
+                        /(GRAPH\s+\?graph\s*\{)/,
+                        `$1\n    FILTER(${rangeClause})`
+                    );
+                }
+            }
+
+            if (updated === code.textContent) return;
+            code.textContent = updated;
+
+            const link = panel.querySelector('a.sparql-run-btn');
+            if (link && link.href) {
+                try {
+                    const url = new URL(link.href);
+                    url.searchParams.set('query', updated);
+                    link.href = url.toString();
+                } catch (e) {
+                    console.warn('trends-range-selector: could not rebuild Run-on-Endpoint href', e);
+                }
+            }
         });
     }
 
