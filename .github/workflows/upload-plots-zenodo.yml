@@ -25,7 +25,7 @@ jobs:
       ZENODO_PLOTS_DEPOSITION_ID: ${{ secrets.ZENODO_PLOTS_DEPOSITION_ID }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Guard — is the record configured?
         run: |
@@ -39,7 +39,7 @@ jobs:
 
       - name: Set up Python
         if: env.configured == 'true'
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
           cache: pip
