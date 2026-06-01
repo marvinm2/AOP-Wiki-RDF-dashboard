@@ -102,6 +102,15 @@ class Config:
     # Feature Flags
     ENABLE_HEALTH_CHECK = os.getenv("ENABLE_HEALTH_CHECK", "True").lower() == "true"
     ENABLE_PERFORMANCE_LOGGING = os.getenv("ENABLE_PERFORMANCE_LOGGING", "True").lower() == "true"
+
+    # Usage Analytics (privacy-respecting, server-side; no cookies, no IP/PII)
+    ENABLE_USAGE_ANALYTICS = os.getenv("ENABLE_USAGE_ANALYTICS", "True").lower() == "true"
+    # SQLite event store. On the cluster, point this at a gluster-backed path so
+    # counts survive redeploys, e.g. /mnt/gluster/docker/aopwiki-dashboard/usage/usage.sqlite
+    USAGE_DB_PATH = os.getenv(
+        "USAGE_DB_PATH",
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "usage.sqlite"),
+    )
     
     @classmethod
     def get_config_dict(cls) -> Dict[str, Any]:

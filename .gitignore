@@ -5,3 +5,9 @@ CLAUDE.md
 IMPROVEMENTS_SUMMARY.md
 app.log
 app_new.log
+
+# Usage analytics SQLite store (runtime data, not source)
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+/data/usage.sqlite*

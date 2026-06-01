@@ -142,6 +142,59 @@ from plots import (
     get_or_compute_network
 )
 
+from usage_analytics import record_event, get_summary, init_db
+
+
+def _classify_request(path: str):
+    """Map a request path to a (event, plot) pair for usage analytics.
+
+    Returns (None, None) for paths we don't track. No PII is derived — only the
+    plot identifier already present in the URL.
+    """
+    if path.startswith('/api/plot/'):
+        return 'view', path[len('/api/plot/'):] or None
+    if path.startswith('/download/'):
+        seg = path[len('/download/'):]
+        if seg == 'bulk':
+            return 'download', None
+        if seg.startswith('latest/'):
+            return 'download', 'latest_' + seg.split('/', 1)[1]
+        if seg.startswith('trend/'):
+            return 'download', seg.split('/', 1)[1]
+        if seg.startswith('network/'):
+            return 'download', 'network_' + seg.split('/', 1)[1]
+        return 'download', seg or None
+    return None, None
+
+
+@app.after_request
+def _track_usage(response):
+    """Record a usage event for successful plot views and downloads.
+
+    Centralised here so individual routes stay untouched. Swallows all errors
+    so analytics can never affect the served response.
+    """
+    try:
+        if response.status_code == 200:
+            event, plot = _classify_request(request.path)
+            if event:
+                record_event(
+                    event,
+                    plot=plot,
+                    version=request.args.get('version'),
+                    fmt=request.args.get('format') or request.args.get('formats'),
+                    route=request.path,
+                )
+    except Exception:
+        pass
+    return response
+
+
+try:
+    init_db()
+except Exception as _usage_exc:  # pragma: no cover - non-fatal
+    logger.warning(f"Usage analytics DB init failed: {_usage_exc}")
+
 def compute_plots_parallel() -> dict:
     """Compute all visualization plots in parallel for optimal startup performance.
     
@@ -2039,6 +2092,22 @@ def download_network_graph():
     except Exception as e:
         logger.error(f"Network graph download error: {e}")
         return jsonify({'error': str(e)}), 500
+
+
+@app.route("/api/usage")
+def api_usage():
+    """Aggregated, privacy-respecting usage statistics as JSON.
+
+    Counts of plot views and downloads by plot, format, version and day. No
+    personal data is collected or returned. Gated by ENABLE_USAGE_ANALYTICS.
+    """
+    return jsonify(get_summary())
+
+
+@app.route("/stats")
+def usage_stats_page():
+    """Human-readable usage statistics page (reads /api/usage)."""
+    return render_template("usage.html", active_page='stats')
 
 
 # Run the Flask app

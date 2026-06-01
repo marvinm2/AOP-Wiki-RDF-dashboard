@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}AOP-Wiki Dashboard — Usage Statistics{% endblock %}
+
+{% block head_extra %}
+<style>
+    .usage-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
+    .usage-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 1rem 1.25rem; }
+    .usage-card h3 { color: #29235C; margin-top: 0; font-size: 1rem; }
+    .usage-card table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    .usage-card td { padding: 0.2rem 0; border-bottom: 1px solid #f0f0f0; }
+    .usage-card td.count { text-align: right; font-variant-numeric: tabular-nums; color: #307BBF; font-weight: 600; }
+    .usage-total { font-size: 2rem; color: #E6007E; font-weight: 700; }
+    .usage-note { color: #666; font-size: 0.85rem; margin-top: 1.5rem; }
+</style>
+<script>
+    function row(label, count) {
+        return `<tr><td>${label ?? '—'}</td><td class="count">${count}</td></tr>`;
+    }
+    function fillList(id, items, key) {
+        const el = document.getElementById(id);
+        if (!items || !items.length) { el.innerHTML = '<tr><td>No data yet</td><td></td></tr>'; return; }
+        el.innerHTML = items.map(i => row(i[key], i.count)).join('');
+    }
+    function loadUsage() {
+        fetch('/api/usage').then(r => r.json()).then(d => {
+            if (d.enabled === false) {
+                document.getElementById('usage-body').innerHTML =
+                    '<p>Usage analytics are disabled on this deployment.</p>';
+                return;
+            }
+            document.getElementById('total').textContent = d.total_events ?? 0;
+            const ev = d.by_event || {};
+            document.getElementById('by-event').innerHTML =
+                row('Views', ev.view ?? 0) + row('Downloads', ev.download ?? 0);
+            const fmt = d.by_format || {};
+            document.getElementById('by-format').innerHTML =
+                Object.entries(fmt).map(([k, v]) => row(k, v)).join('') || row('—', 0);
+            fillList('top-downloads', d.top_downloads, 'plot');
+            fillList('top-views', d.top_views, 'plot');
+            fillList('by-version', d.by_version, 'version');
+            fillList('by-day', d.by_day, 'day');
+        }).catch(e => {
+            document.getElementById('usage-body').innerHTML =
+                '<p>Could not load usage data: ' + e + '</p>';
+        });
+    }
+    document.addEventListener('DOMContentLoaded', loadUsage);
+</script>
+{% endblock %}
+
+{% block page_header %}
+<div style="background:#29235C; color:#fff; padding:1.5rem 2rem;">
+    <h1 style="margin:0;">Usage Statistics</h1>
+    <p style="margin:0.25rem 0 0; opacity:0.85;">Which plots are viewed and downloaded. No cookies, no personal data.</p>
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="usage-body" style="padding:2rem;">
+    <p>Total tracked events: <span id="total" class="usage-total">…</span></p>
+    <div class="usage-grid">
+        <div class="usage-card"><h3>By event</h3><table><tbody id="by-event"></tbody></table></div>
+        <div class="usage-card"><h3>Downloads by format</h3><table><tbody id="by-format"></tbody></table></div>
+        <div class="usage-card"><h3>Most-downloaded plots</h3><table><tbody id="top-downloads"></tbody></table></div>
+        <div class="usage-card"><h3>Most-viewed plots</h3><table><tbody id="top-views"></tbody></table></div>
+        <div class="usage-card"><h3>By version</h3><table><tbody id="by-version"></tbody></table></div>
+        <div class="usage-card"><h3>By day (last 90)</h3><table><tbody id="by-day"></tbody></table></div>
+    </div>
+    <p class="usage-note">
+        Counts are aggregated server-side from successful plot-view and download
+        requests. The dashboard stores only the plot name, version, format and a
+        timestamp — never IP addresses, user agents, sessions or any personal data.
+        Raw JSON is available at <a href="/api/usage"><code>/api/usage</code></a>.
+    </p>
+</div>
+{% endblock %}
