@@ -1,0 +1,77 @@
+name: download-audit
+
+# Re-checks that every plot can actually be downloaded (CSV/PNG/SVG, latest +
+# historical versions, explicit + generic routes, bulk ZIP, network) by driving
+# the app in-process against the live multi-version SPARQL endpoint.
+#
+# The audit needs a populated endpoint, so it runs on a weekly cron and on manual
+# dispatch (mirroring the methodology-lint slow tests) rather than on every PR.
+# A PR trigger is kept but scoped to the download surface so it only fires when
+# the relevant code changes.
+
+on:
+  pull_request:
+    paths:
+      - 'app.py'
+      - 'plots/shared.py'
+      - 'plots/latest_plots.py'
+      - 'plots/trends_plots.py'
+      - 'tests/test_all_downloads.py'
+      - 'usage_analytics.py'
+      - 'tests/test_usage_analytics.py'
+      - '.github/workflows/download-audit.yml'
+      - 'requirements.txt'
+      - 'requirements-dev.txt'
+  schedule:
+    - cron: '30 9 * * SAT'  # Saturday 09:30 UTC, after the weekly RDF regeneration
+  workflow_dispatch:
+
+concurrency:
+  group: download-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    env:
+      SPARQL_ENDPOINT: https://aopwiki-multirdf.vhp4safety.nl/sparql
+      SPARQL_PUBLIC_ENDPOINT: https://aopwiki-multirdf.vhp4safety.nl/sparql
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Offline unit tests (usage analytics)
+        run: pytest tests/test_usage_analytics.py -q
+
+      - name: Full download audit (live endpoint)
+        id: audit
+        continue-on-error: true
+        run: pytest tests/test_all_downloads.py -m slow -q
+
+      - name: Open issue on cron failure
+        if: failure() && github.event_name == 'schedule' || (steps.audit.outcome == 'failure' && github.event_name == 'schedule')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create \
+            --title "Plot download audit failing on $(date -I)" \
+            --label bug \
+            --body "The scheduled download audit (\`tests/test_all_downloads.py\`) failed. One or more plot downloads are broken (404, empty at latest, or wrong version). Inspect the run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - name: Fail the job if the audit failed
+        if: steps.audit.outcome == 'failure'
+        run: exit 1
