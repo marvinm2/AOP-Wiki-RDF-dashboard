@@ -213,9 +213,18 @@
     "ke_migration_map": {
         "title": "KE Migration Map (top 50 most-mobile KEs)",
         "description": "Across all quarterly snapshots, tracks how each KE's AOP membership evolved. Rendered as a heatmap: Y-axis = top 50 most-mobile KEs (scored as `snapshots_present × peak_aop_count`), X-axis = snapshot date, cell colour = #AOPs the KE was in at that quarter, empty cells = KE absent. Surfaces KEs that were first introduced, removed, merged, or jumped between AOPs over time.",
-        "data_source": "One per-graph aggregation returning (graph, KE, #AOPs containing it). ~41K rows total across 32 snapshots. Mobility score is computed in Python; the top 50 KEs by score are rendered. The CSV download contains the full top-50 timeline (1591 rows: KEs × snapshots in which they appear).",
+        "data_source": "Two SPARQL calls: (1) a per-graph aggregation returning (graph, KE, #AOPs containing it) — ~41K rows across 32 snapshots — which drives the heatmap; (2) a latest-snapshot lookup of KE titles for the y-axis labels (production restricts it to the rendered top-50 KEs via a VALUES block). Mobility score is computed in Python; the top 50 KEs by score are rendered. The CSV download contains the full top-50 timeline (1591 rows: KEs × snapshots in which they appear).",
         "limitations": "The Sankey rendering the original issue proposed is unreadable at 50 KEs × 32 snapshots × ~500 AOPs (a true Sankey would have thousands of nodes); the heatmap conveys the same per-KE journey signal without the visual collapse. The mobility score is editorial — a single-AOP KE present in every snapshot ranks below a 2-AOP KE present in every snapshot. Empty cells encode either KE absence OR KE present but in zero AOPs (impossible by construction — every KE in the AOP-Wiki RDF is in at least one AOP), so empty = absent.",
-        "sparql": "SELECT ?graph ?ke (COUNT(DISTINCT ?aop) AS ?n_aops)\nWHERE {\n  GRAPH ?graph {\n    ?aop a aopo:AdverseOutcomePathway ;\n         aopo:has_key_event ?ke .\n  }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph ?ke"
+        "queries": [
+            {
+                "caption": "Per-snapshot KE → AOP membership (drives the heatmap)",
+                "query": "SELECT ?graph ?ke (COUNT(DISTINCT ?aop) AS ?n_aops)\nWHERE {\n  GRAPH ?graph {\n    ?aop a aopo:AdverseOutcomePathway ;\n         aopo:has_key_event ?ke .\n  }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph ?ke"
+            },
+            {
+                "caption": "KE titles for the y-axis labels (latest snapshot)",
+                "query": "SELECT ?ke ?title\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    ?ke a aopo:KeyEvent .\n    OPTIONAL { ?ke <http://purl.org/dc/elements/1.1/title> ?title }\n  }\n}"
+            }
+        ]
     },
     "ke_mmo_coverage": {
         "title": "KE Measurement-Method Coverage Over Time",
