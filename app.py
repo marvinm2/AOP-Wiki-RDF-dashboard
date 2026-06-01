@@ -1600,11 +1600,12 @@ def download_bulk():
         if not zip_bytes:
             return "Failed to create bulk download", 500
 
-        # Generate filename
+        # Generate filename, embedding the snapshot range when one is active (#59)
+        suffix = f"_{start or ''}_to_{end or ''}" if (start or end) else ""
         if category:
-            filename = f"aopwiki_{category}_plots.zip"
+            filename = f"aopwiki_{category}{suffix}_plots.zip"
         else:
-            filename = f"aopwiki_{len(plot_names)}_plots.zip"
+            filename = f"aopwiki_{len(plot_names)}{suffix}_plots.zip"
 
         return Response(
             zip_bytes,
