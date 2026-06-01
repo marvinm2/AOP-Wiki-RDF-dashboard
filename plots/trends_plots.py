@@ -281,7 +281,11 @@ def plot_main_graph() -> tuple[str, str, pd.DataFrame]:
         _plot_data_cache['aop_entity_counts_absolute'] = df_abs_melted
         _plot_data_cache['aop_entity_counts_delta'] = df_delta_melted
 
-        # Cache figures for image export
+        # Cache figures for image export. Mirror the data-cache aliases above so
+        # PNG/SVG export works on both the legacy main_graph_* routes and the
+        # current aop_entity_counts_* download URLs.
+        _plot_figure_cache['main_graph_absolute'] = fig_abs
+        _plot_figure_cache['main_graph_delta'] = fig_delta
         _plot_figure_cache['aop_entity_counts_absolute'] = fig_abs
         _plot_figure_cache['aop_entity_counts_delta'] = fig_delta
 

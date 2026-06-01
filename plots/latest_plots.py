@@ -1532,8 +1532,14 @@ def plot_latest_taxonomic_groups(version: str = None) -> str:
     }}
     """
 
+    # Empty columns used to cache an honest empty frame when a (usually older)
+    # snapshot carries no resolvable taxonomic annotation, so the download
+    # returns a valid empty CSV instead of a 404.
+    _empty_taxonomic_cols = ["Taxonomic Group", "AOP Count", "NCBI ID", "Hover Detail", "Version"]
+
     results = run_sparql_query(query)
     if not results:
+        _plot_data_cache[f'latest_taxonomic_groups_{version or "latest"}'] = pd.DataFrame(columns=_empty_taxonomic_cols)
         return create_fallback_plot(
             "Taxonomic Groups",
             "No taxonomic applicability data found. This annotation may not be present in the current RDF data.",
@@ -1558,6 +1564,7 @@ def plot_latest_taxonomic_groups(version: str = None) -> str:
             unresolved_ids.add(taxon_id)
 
     if not counts:
+        _plot_data_cache[f'latest_taxonomic_groups_{version or "latest"}'] = pd.DataFrame(columns=_empty_taxonomic_cols)
         return create_fallback_plot("Taxonomic Groups", "No taxonomic group data found")
 
     rows = []
