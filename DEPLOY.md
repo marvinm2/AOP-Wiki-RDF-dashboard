@@ -83,6 +83,43 @@ docker build -t aopwiki-dashboard:latest .
 docker service update --force aopwiki-dashboard_dashboard
 ```
 
+## Reloading RDF data
+
+After regenerating the per-version TTLs (via the AOP-Wiki-RDF Setup pipeline —
+`generate_all_rdf.py` + `copy_data_files.sh`), refresh the live endpoint:
+
+```bash
+# 1. Ship the regenerated TTLs to the Virtuoso data dir on TGX1. mmartens
+#    cannot write the bind-mounted data dir directly, so stage to home and
+#    docker cp into the container (writes through to the mount):
+rsync -az aopwikirdf/*.ttl tgx1:~/staging/
+ssh tgx1
+CN=$(docker ps --filter name=aopwiki-dashboard_virtuoso --format '{{.Names}}' | head -1)
+docker cp ~/staging/. "$CN:/database/data/"
+
+# 2. Reload (DESTRUCTIVE: clears all RDF, reloads version graphs + the
+#    metadata graph). Run from the repo clone (reads .env for DBA_PASSWORD):
+cd ~/aopwiki-dashboard
+./scripts/reload-virtuoso.sh          # prompts before deleting; add --yes to skip
+
+# 3. Refresh the dashboard's precomputed plots:
+docker service update --force aopwiki-dashboard_dashboard
+```
+
+`scripts/reload-virtuoso.sh` auto-detects the Virtuoso container (Swarm or
+local compose), loads every `AOPWikiRDF*-<date>.ttl` into
+`http://aopwiki.org/graph/<date>` and `ServiceDescription.ttl` +
+`AOPWikiRDF-Catalog.ttl` into the metadata graph
+`http://aopwiki-multirdf.vhp4safety.nl/metadata`, then prints a verification
+(version-graph count, metadata triple count, total). Loading the metadata
+graph is what keeps the version catalogue + service description live across a
+from-scratch reload — the legacy positional `load.sh` did not, which left the
+endpoint unable to advertise its versions after a reload.
+
+For a rollback point, back up first:
+`docker cp "$CN:/database/virtuoso.db" ~/virtuoso.db.bak` and copy the old
+`…/virtuoso-data/data` TTLs aside.
+
 ## Troubleshooting
 
 **Services not starting:**
