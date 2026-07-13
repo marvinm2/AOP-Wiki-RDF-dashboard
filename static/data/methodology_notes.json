@@ -10,8 +10,17 @@
         "title": "AOP Connectivity",
         "description": "Analyzes the connectivity of AOPs based on shared Key Events. Connected AOPs share at least one Key Event with other AOPs, while isolated AOPs have entirely unique Key Events. This reveals the degree of overlap and interconnection in the AOP knowledge base.",
         "data_source": "Two SPARQL queries: one counts total AOPs, the other counts AOPs that share at least one Key Event with another AOP (via aopo:has_key_event). The difference gives the isolated AOP count.",
-        "limitations": "Connectivity is determined solely by shared Key Events declared via aopo:has_key_event. Implicit relationships or shared stressors are not considered. Network density depends on explicitly declared KE-KER relationships in the RDF data.",
-        "sparql": "SELECT ?graph (COUNT(DISTINCT ?aop1) AS ?connected_aops)\nWHERE {\n  GRAPH ?graph {\n    ?aop1 aopo:has_key_event ?ke .\n    ?aop2 aopo:has_key_event ?ke .\n    FILTER(?aop1 != ?aop2)\n  }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph\nORDER BY DESC(?graph) LIMIT 1"
+        "limitations": "Connectivity is determined solely by shared Key Events declared via aopo:has_key_event. Implicit relationships or shared stressors are not considered.",
+        "queries": [
+            {
+                "caption": "Total AOPs in the latest snapshot (denominator)",
+                "query": "SELECT ?graph (COUNT(DISTINCT ?aop) AS ?total_aops)\nWHERE {\n  GRAPH ?graph {\n    ?aop a aopo:AdverseOutcomePathway .\n  }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph\nORDER BY DESC(?graph) LIMIT 1"
+            },
+            {
+                "caption": "AOPs sharing at least one Key Event with another AOP (connected); isolated = total - connected",
+                "query": "SELECT ?graph (COUNT(DISTINCT ?aop1) AS ?connected_aops)\nWHERE {\n  GRAPH ?graph {\n    ?aop1 aopo:has_key_event ?ke .\n    ?aop2 aopo:has_key_event ?ke .\n    FILTER(?aop1 != ?aop2)\n  }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph\nORDER BY DESC(?graph) LIMIT 1"
+            }
+        ]
     },
     "latest_avg_per_aop": {
         "title": "Average Components per AOP",
@@ -401,10 +410,10 @@
     },
     "aop_network_density": {
         "title": "AOP Network Density Over Time",
-        "description": "Measures how densely connected the KE-KER graph is over time. Network density is the ratio of actual edges (KERs) to the maximum possible edges between KE nodes, showing whether the knowledge base is becoming more interconnected.",
-        "data_source": "SPARQL queries count unique Key Events (nodes) and Key Event Relationships (edges) per version. Density = edges / (nodes * (nodes - 1) / 2) for an undirected graph interpretation.",
-        "limitations": "Network density depends on explicitly declared KE-KER relationships in the RDF data. Adding many new KEs without corresponding KERs will decrease density. The metric is sensitive to the number of isolated or poorly connected nodes. Trend data covers only the published RDF release versions available in the SPARQL endpoint; the AOP-Wiki knowledge base predates the earliest RDF release, so earlier activity is not captured.",
-        "sparql": "SELECT ?graph (COUNT(DISTINCT ?ke) AS ?nodes) (COUNT(?ker) AS ?edges)\nWHERE {\n  GRAPH ?graph {\n    ?aop a aopo:AdverseOutcomePathway ;\n         aopo:has_key_event ?ke ;\n         aopo:has_key_event_relationship ?ker .\n  }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph\nORDER BY ?graph"
+        "description": "Measures how densely connected each AOP's own Key Event graph is, averaged across AOPs, over time. For each AOP, density is the ratio of its actual Key Event Relationships (edges) to the maximum possible edges between its Key Events (nodes); the trend shows the mean per-AOP density per version.",
+        "data_source": "A single SPARQL query returns, per version and per AOP, the distinct Key Events (nodes) and distinct Key Event Relationships (edges). Per-AOP density = 2 * edges / (nodes * (nodes - 1)) for an undirected-graph interpretation. AOPs with fewer than 2 Key Events are excluded (density undefined); the chart shows the mean per-AOP density per version.",
+        "limitations": "Density is computed per AOP and then averaged, so it reflects typical within-AOP connectivity rather than one global graph over all Key Events. AOPs with fewer than 2 Key Events are excluded. Adding Key Events to an AOP without corresponding Key Event Relationships lowers its density. Trend data covers only the published RDF release versions available in the SPARQL endpoint; the AOP-Wiki knowledge base predates the earliest RDF release, so earlier activity is not captured.",
+        "sparql": "SELECT ?graph ?aop (COUNT(DISTINCT ?ke) AS ?nodes) (COUNT(DISTINCT ?ker) AS ?edges)\nWHERE {\n  GRAPH ?graph {\n    ?aop a aopo:AdverseOutcomePathway .\n    OPTIONAL { ?aop aopo:has_key_event ?ke . }\n    OPTIONAL { ?aop aopo:has_key_event_relationship ?ker . }\n  }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph ?aop"
     },
     "aop_authors": {
         "title": "Authors of AOPs Over Time",

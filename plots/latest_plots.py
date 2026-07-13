@@ -21,7 +21,7 @@ Latest Data Plot Functions:
         - plot_latest_ke_annotation_depth(): Annotation depth analysis
 
     Connectivity Analysis:
-        - plot_latest_network_density(): AOP connectivity assessment
+        - plot_latest_aop_connectivity(): AOP connectivity assessment
 
     Ontology Usage:
         - plot_latest_ontology_usage(): General ontology term usage
@@ -417,7 +417,7 @@ def plot_latest_ke_components(version: str = None) -> str:
     return render_plot_html(fig)
 
 
-def plot_latest_network_density(version: str = None) -> str:
+def plot_latest_aop_connectivity(version: str = None) -> str:
     """Analyze current AOP connectivity based on shared Key Events."""
     global _plot_data_cache
 
@@ -664,20 +664,20 @@ def plot_latest_ontology_usage(version: str = None) -> str:
     if not data:
         return create_fallback_plot("Ontology Usage", "No ontology terms found")
 
-    df = pd.DataFrame(data)
+    df = pd.DataFrame(data).sort_values("Terms", ascending=False)
     df["Version"] = latest_version
     _plot_data_cache['latest_ontology_usage'] = df
 
-    fig = px.pie(
-        df, values="Terms", names="Ontology",
-        color_discrete_sequence=BRAND_COLORS['palette']
+    fig = px.bar(
+        df, x="Ontology", y="Terms", text="Terms"
     )
 
-    fig.update_traces(textposition='inside', textinfo='percent+label')
+    fig.update_traces(marker_color=BRAND_COLORS['blue'], textposition='outside')
     fig.update_layout(
-
-
-        margin=dict(l=50, r=20, t=50, b=50)
+        showlegend=False,
+        margin=dict(l=50, r=20, t=50, b=50),
+        yaxis=dict(title="Number of Terms"),
+        xaxis=dict(title="Ontology Source")
     )
 
     # Cache the figure object for image export (PNG/SVG/PDF)
@@ -759,16 +759,16 @@ def plot_latest_process_usage(version: str = None) -> str:
     # Store in global cache for CSV download
     _plot_data_cache['latest_process_usage'] = df
 
-    fig = px.pie(
-        df, values="Count", names="Ontology",
-        color_discrete_sequence=BRAND_COLORS['palette']
+    fig = px.bar(
+        df, x="Ontology", y="Count", text="Count"
     )
 
-    fig.update_traces(textposition='inside', textinfo='percent+label')
+    fig.update_traces(marker_color=BRAND_COLORS['blue'], textposition='outside')
     fig.update_layout(
-
-
-        margin=dict(l=50, r=20, t=50, b=50)
+        showlegend=False,
+        margin=dict(l=50, r=20, t=50, b=50),
+        yaxis=dict(title="Number of Terms"),
+        xaxis=dict(title="Ontology Source")
     )
 
     # Cache the figure object for image export (PNG/SVG/PDF)
@@ -851,16 +851,16 @@ def plot_latest_object_usage(version: str = None) -> str:
     # Store in global cache for CSV download
     _plot_data_cache['latest_object_usage'] = df
 
-    fig = px.pie(
-        df, values="Count", names="Ontology",
-        color_discrete_sequence=BRAND_COLORS['palette']
+    fig = px.bar(
+        df, x="Ontology", y="Count", text="Count"
     )
 
-    fig.update_traces(textposition='inside', textinfo='percent+label')
+    fig.update_traces(marker_color=BRAND_COLORS['blue'], textposition='outside')
     fig.update_layout(
-
-
-        margin=dict(l=50, r=20, t=50, b=50)
+        showlegend=False,
+        margin=dict(l=50, r=20, t=50, b=50),
+        yaxis=dict(title="Number of Terms"),
+        xaxis=dict(title="Ontology Source")
     )
 
     # Cache the figure object for image export (PNG/SVG/PDF)
@@ -1169,16 +1169,18 @@ def plot_latest_ke_annotation_depth(version: str = None) -> str:
     # Store in global cache for CSV download
     _plot_data_cache['latest_ke_annotation_depth'] = df
 
-    fig = px.pie(
-        df, values="KE Count", names="Depth",
-        color_discrete_sequence=BRAND_COLORS['palette']
+    # Ordinal variable (annotation depth) — keep the depth order, not a pie.
+    fig = px.bar(
+        df, x="Depth", y="KE Count", text="KE Count",
+        category_orders={"Depth": df["Depth"].tolist()}
     )
 
-    fig.update_traces(textposition='inside', textinfo='percent+label')
+    fig.update_traces(marker_color=BRAND_COLORS['blue'], textposition='outside')
     fig.update_layout(
-
-
-        margin=dict(l=50, r=20, t=50, b=50)
+        showlegend=False,
+        margin=dict(l=50, r=20, t=50, b=50),
+        yaxis=dict(title="Number of Key Events"),
+        xaxis=dict(title="Annotation depth")
     )
 
     # Cache the figure object for image export (PNG/SVG/PDF)
@@ -3189,9 +3191,6 @@ def plot_latest_organ_coverage_pie(
     _plot_data_cache[cache_key] = df
     _plot_data_cache["latest_organ_coverage_pie"] = df
 
-    colour_map = dict(_BUCKET_PALETTE)
-    colour_map["Unclassified"] = "#cccccc"
-
     classified_aops = total_aops - unclassified
     memberships = int(df.loc[df["Organ System"] != "Unclassified", "AOPs"].sum())
     avg_buckets = (memberships / classified_aops) if classified_aops else 0.0
@@ -3202,30 +3201,31 @@ def plot_latest_organ_coverage_pie(
         f"({avg_buckets:.2f} buckets/AOP on average)"
     )
 
-    fig = px.pie(
-        df,
-        names="Organ System",
-        values="AOPs",
-        color="Organ System",
-        color_discrete_map=colour_map,
-        category_orders={
-            "Organ System": list(ORGAN_SYSTEM_BUCKETS) + ["Unclassified"]
-        },
+    # Bucket memberships are non-additive (an AOP can be in several buckets),
+    # so a pie's part-of-whole framing is misleading — use a sorted bar of the
+    # per-bucket AOP counts instead.
+    df_bar = df.sort_values("AOPs", ascending=True)
+    fig = px.bar(
+        df_bar,
+        x="AOPs",
+        y="Organ System",
+        orientation="h",
+        text="AOPs",
     )
     fig.update_traces(
-        textposition="inside",
-        textinfo="percent+label",
+        marker_color=BRAND_COLORS['blue'],
+        textposition="outside",
         hovertemplate=(
-            "<b>%{label}</b><br>"
-            "AOPs: %{value}<br>"
-            "Share of memberships: %{percent}<extra></extra>"
+            "<b>%{y}</b><br>"
+            "AOPs: %{x}<extra></extra>"
         ),
-        sort=False,
     )
     fig.update_layout(
         title={"text": f"Organ-system bucket distribution<br><sub>{subtitle}</sub>"},
-        margin=dict(l=30, r=30, t=80, b=30),
-        legend_title="Bucket",
+        showlegend=False,
+        margin=dict(l=160, r=40, t=80, b=40),
+        xaxis=dict(title="Number of AOPs"),
+        yaxis=dict(title=""),
     )
 
     _plot_figure_cache[cache_key] = fig

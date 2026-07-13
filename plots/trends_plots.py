@@ -1178,17 +1178,22 @@ def plot_network_density() -> str:
     global _plot_data_cache, _plot_figure_cache
 
     try:
+        # Per-AOP graph density: each AOP's own KE->KER graph, averaged across
+        # AOPs. Grouping by ?aop with COUNT(DISTINCT ...) yields correct per-AOP
+        # node/edge counts despite the OPTIONAL cross-product. The previous
+        # graph-wide query used non-distinct COUNT(?ker) under a KE x KER join,
+        # which inflated edges ~12x and treated all AOPs as one global graph.
         query_density = """
-        SELECT ?graph (COUNT(DISTINCT ?ke) AS ?nodes) (COUNT(?ker) AS ?edges)
+        SELECT ?graph ?aop (COUNT(DISTINCT ?ke) AS ?nodes) (COUNT(DISTINCT ?ker) AS ?edges)
         WHERE {
           GRAPH ?graph {
-            ?aop a aopo:AdverseOutcomePathway ;
-                 aopo:has_key_event ?ke ;
-                 aopo:has_key_event_relationship ?ker .
+            ?aop a aopo:AdverseOutcomePathway .
+            OPTIONAL { ?aop aopo:has_key_event ?ke . }
+            OPTIONAL { ?aop aopo:has_key_event_relationship ?ker . }
           }
           FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
         }
-        GROUP BY ?graph
+        GROUP BY ?graph ?aop
         """
 
         results = run_sparql_query(query_density)
@@ -1197,20 +1202,26 @@ def plot_network_density() -> str:
             logger.warning("Network density query returned no results")
             return create_fallback_plot("Network Density Evolution Over Time", "No data available")
 
-        df_density = pd.DataFrame([{
+        df_aop = pd.DataFrame([{
             "version": r["graph"]["value"].split("/")[-1],
             "nodes": int(r["nodes"]["value"]),
             "edges": int(r["edges"]["value"])
         } for r in results])
 
-        if df_density.empty:
+        # Density is undefined for AOPs with fewer than 2 KEs — exclude them.
+        df_aop = df_aop[df_aop["nodes"] >= 2].copy()
+
+        if df_aop.empty:
             logger.warning("Network density DataFrame is empty")
             return create_fallback_plot("Network Density Evolution Over Time", "No data available")
 
-        # Avoid division by zero
-        df_density["density"] = df_density.apply(
-            lambda row: 2 * row["edges"] / (row["nodes"] * (row["nodes"] - 1)) if row["nodes"] > 1 else 0,
-            axis=1
+        df_aop["density"] = (
+            2 * df_aop["edges"] / (df_aop["nodes"] * (df_aop["nodes"] - 1))
+        )
+
+        # Mean per-AOP density per version (with the count of contributing AOPs).
+        df_density = df_aop.groupby("version", as_index=False).agg(
+            density=("density", "mean"), aops=("density", "size")
         )
 
         # Sort and ensure tick labels
@@ -1222,11 +1233,12 @@ def plot_network_density() -> str:
             x="version",
             y="density",
             markers=True,
-            labels={"density": "Graph Density"},
+            labels={"density": "Mean per-AOP graph density"},
             color_discrete_sequence=[BRAND_COLORS['accent']]
         )
         fig.update_layout(
-            margin=dict(l=50, r=20, t=50, b=50)
+            margin=dict(l=50, r=20, t=50, b=50),
+            yaxis=dict(title="Mean per-AOP graph density")
         )
         fig.update_xaxes(
             tickmode='array',
@@ -2854,7 +2866,7 @@ def plot_entity_completeness_trends(label_file="property_labels.csv") -> str:
         },
         {
             "name": "Stressor",
-            "rdf_type": "aopo:Stressor",
+            "rdf_type": "nci:C54571",
             "variable": "?stressor",
             "label": "Stressors"
         }
@@ -2910,12 +2922,14 @@ def plot_entity_completeness_trends(label_file="property_labels.csv") -> str:
         ORDER BY ?graph ?p
         """
 
+        # True entity totals per version — used as the completeness denominator so
+        # entities with none of the counted properties count as 0% (not dropped).
+        totals_map = {}
         try:
             results_total = run_sparql_query(query_total)
             results_presence = run_sparql_query(query_presence)
 
             # Build totals map
-            totals_map = {}
             for r in results_total:
                 version = r["graph"]["value"].split("/")[-1]
                 totals_map[version] = int(r["total"]["value"])
@@ -2984,14 +2998,18 @@ def plot_entity_completeness_trends(label_file="property_labels.csv") -> str:
                     version_data[version] = []
                 version_data[version].append(completeness)
 
-            # Calculate average completeness per version
+            # Average completeness per version over ALL entities of the type:
+            # entities absent from `completeness_list` have none of the counted
+            # properties and must count as 0%, so divide by the true entity total
+            # (falls back to the observed count if the total query returned nothing).
             for version, completeness_list in version_data.items():
-                avg_completeness = sum(completeness_list) / len(completeness_list)
+                total_entities = totals_map.get(version) or len(completeness_list)
+                avg_completeness = sum(completeness_list) / total_entities
                 all_completeness_data.append({
                     "version": version,
                     "entity_type": display_label,
                     "avg_completeness": avg_completeness,
-                    "entity_count": len(completeness_list)
+                    "entity_count": total_entities
                 })
 
         except Exception as e:
