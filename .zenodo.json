@@ -17,9 +17,7 @@
     {"identifier": "10.5281/zenodo.13353286", "relation": "isSupplementTo", "scheme": "doi"}
   ],
   "grants": [
-    {"id": "10.13039/501100000780::814572"},
-    {"id": "10.13039/501100000780::814425"},
     {"id": "10.13039/501100003246::36952"}
   ],
-  "notes": "Funded by the European Union's Horizon 2020 program (NanoSolveIT no. 814572, RiskGONE no. 814425) and VHP4Safety, funded by the Netherlands Research Council (NWO) NWA-ORC 1292.19.272."
+  "notes": "Developed within VHP4Safety, funded by the Netherlands Research Council (NWO) NWA-ORC 1292.19.272."
 }
