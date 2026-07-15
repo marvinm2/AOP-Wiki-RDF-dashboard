@@ -270,19 +270,15 @@ _vhp4safety_template = go.layout.Template(
 pio.templates["vhp4safety"] = _vhp4safety_template
 pio.templates.default = "plotly_white+vhp4safety"
 
-# Standardized Plotly HTML config for all to_html() calls
+# Standardized Plotly HTML config for all to_html() calls.
+# The Plotly camera (toImage) is intentionally removed: image downloads go
+# through the HTML PNG/SVG/CSV export routes, which render each figure at its
+# own dimensions instead of a fixed, hard-coded size.
 PLOTLY_HTML_CONFIG = {
     "responsive": True,
     "displayModeBar": "hover",
     "displaylogo": False,
-    "modeBarButtonsToRemove": ["lasso2d", "select2d"],
-    "toImageButtonOptions": {
-        "format": "png",
-        "filename": "aopwiki_plot",
-        "height": 500,
-        "width": 800,
-        "scale": 4,
-    }
+    "modeBarButtonsToRemove": ["lasso2d", "select2d", "toImage"],
 }
 
 # Legacy alias for backward compatibility (old name: config)
@@ -822,7 +818,7 @@ def create_fallback_plot(title: str, error_message: str) -> str:
         autosize=True,
         margin=dict(l=50, r=20, t=50, b=50)
     )
-    return pio.to_html(fig, full_html=False, include_plotlyjs="cdn", config={"responsive": True})
+    return pio.to_html(fig, full_html=False, include_plotlyjs="cdn", config=PLOTLY_HTML_CONFIG)
 
 
 def safe_plot_execution(plot_func, *args, **kwargs) -> Any:
@@ -1247,8 +1243,8 @@ def build_export_filename(plot_name: str, format: str, version: str = None) -> s
 def export_figure_as_image(
     plot_name: str,
     format: str = 'png',
-    width: int = 1200,
-    height: int = 800,
+    width: Optional[int] = None,
+    height: Optional[int] = None,
     start: Optional[str] = None,
     end: Optional[str] = None,
 ) -> Optional[bytes]:
@@ -1257,8 +1253,12 @@ def export_figure_as_image(
     Args:
         plot_name: Name of the plot in _plot_figure_cache
         format: Image format ('png' or 'svg')
-        width: Image width in pixels
-        height: Image height in pixels
+        width: Image width in pixels. None (default) renders at the figure's own
+            layout width so the export matches the plot as designed rather than a
+            hard-coded size.
+        height: Image height in pixels. None (default) renders at the figure's own
+            layout height — important for the tall, dynamic-height plots that a
+            fixed height would otherwise squash.
         start: Optional YYYY-MM-DD lower bound for the snapshot range (#44).
             Applied as an x-axis clamp on snapshot-keyed trend plots.
         end: Optional YYYY-MM-DD upper bound for the snapshot range (#44).
