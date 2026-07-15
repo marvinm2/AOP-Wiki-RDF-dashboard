@@ -44,5 +44,8 @@ preferred-citation:
   url: https://doi.org/10.1089/aivt.2021.0010
 identifiers:
   - type: doi
+    value: "10.5281/zenodo.21384259"
+    description: "Concept DOI for this dashboard software (all versions)."
+  - type: doi
     value: "10.5281/zenodo.13353286"
     description: "Concept DOI for the AOP-Wiki RDF dataset visualised by this dashboard."
