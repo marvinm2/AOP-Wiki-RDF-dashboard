@@ -520,11 +520,14 @@ def plot_latest_avg_per_aop(version: str = None) -> str:
         GROUP BY ?graph
         {order_limit}
     """
+    # Count AOP-KE / AOP-KER MEMBERSHIPS (not distinct KE/KER entities): Key Events
+    # are reused across AOPs, so distinct-entity counts understate the per-AOP average.
     query_kes = f"""
         SELECT ?graph (COUNT(?ke) AS ?count)
         WHERE {{
             GRAPH ?graph {{
-                ?ke a aopo:KeyEvent .
+                ?aop a aopo:AdverseOutcomePathway ;
+                     aopo:has_key_event ?ke .
             }}
             FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
             {where_filter}
@@ -536,7 +539,8 @@ def plot_latest_avg_per_aop(version: str = None) -> str:
         SELECT ?graph (COUNT(?ker) AS ?count)
         WHERE {{
             GRAPH ?graph {{
-                ?ker a aopo:KeyEventRelationship .
+                ?aop a aopo:AdverseOutcomePathway ;
+                     aopo:has_key_event_relationship ?ker .
             }}
             FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
             {where_filter}

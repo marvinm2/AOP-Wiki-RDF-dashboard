@@ -1048,11 +1048,17 @@ def plot_avg_per_aop() -> tuple[str, str]:
             }
             GROUP BY ?graph
         """
+        # Count has_key_event / has_key_event_relationship MEMBERSHIPS (one row per
+        # AOP-KE / AOP-KER link), not distinct KE/KER entities. Averaging distinct
+        # entities graph-wide understates the metric because Key Events are reused
+        # across AOPs (e.g. 1583 distinct KEs / 588 AOPs = 2.7, whereas the average
+        # AOP actually contains ~6 KEs).
         query_kes = """
             SELECT ?graph (COUNT(?ke) AS ?count)
             WHERE {
                 GRAPH ?graph {
-                    ?ke a aopo:KeyEvent .
+                    ?aop a aopo:AdverseOutcomePathway ;
+                         aopo:has_key_event ?ke .
                 }
                 FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
             }
@@ -1062,7 +1068,8 @@ def plot_avg_per_aop() -> tuple[str, str]:
             SELECT ?graph (COUNT(?ker) AS ?count)
             WHERE {
                 GRAPH ?graph {
-                    ?ker a aopo:KeyEventRelationship .
+                    ?aop a aopo:AdverseOutcomePathway ;
+                         aopo:has_key_event_relationship ?ker .
                 }
                 FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
             }

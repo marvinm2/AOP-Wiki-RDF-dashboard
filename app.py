@@ -1300,6 +1300,10 @@ def download_latest_generic(plot_name):
     if cache_key not in _plot_data_cache:
         cache_key = plot_name
 
+    # Filename uses the clean base name (not the resolved cache key), so the
+    # version_key suffix doesn't leak in as a doubled "-latest".
+    filename_base = f'latest_{plot_name}'
+
     try:
         if export_format == 'csv':
             csv_data = get_csv_with_metadata(cache_key, include_metadata)
@@ -1309,7 +1313,7 @@ def download_latest_generic(plot_name):
             return Response(
                 csv_data,
                 mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(cache_key, "csv", version)}'}
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(filename_base, "csv", version)}'}
             )
 
         elif export_format in ['png', 'svg']:
@@ -1321,7 +1325,7 @@ def download_latest_generic(plot_name):
             return Response(
                 image_bytes,
                 mimetype=mimetype,
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(cache_key, export_format, version)}'}
+                headers={'Content-Disposition': f'attachment; filename={build_export_filename(filename_base, export_format, version)}'}
             )
 
         else:
