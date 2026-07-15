@@ -647,8 +647,9 @@
             </div>
         </div>
         <p class="plot-description">
-            Shows how densely connected the KE-KER graph is over time,
-            calculated as the ratio of edges to possible connections between nodes.
+            Mean per-AOP graph density over time — for each AOP, the ratio of its
+            Key Event Relationships to the maximum possible between its Key Events,
+            averaged across AOPs (those with fewer than 2 Key Events are excluded).
         </p>
         {{ methodology_note(methodology_notes, 'aop_network_density') }}
         <div class="lazy-plot" data-plot-name="aop_network_density">
