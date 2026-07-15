@@ -33,12 +33,12 @@
                 "query": "SELECT ?graph (COUNT(?aop) AS ?count)\nWHERE {\n  GRAPH ?graph { ?aop a aopo:AdverseOutcomePathway . }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph\nORDER BY DESC(?graph) LIMIT 1"
             },
             {
-                "caption": "Count Key Events in latest graph",
-                "query": "SELECT ?graph (COUNT(?ke) AS ?count)\nWHERE {\n  GRAPH ?graph { ?ke a aopo:KeyEvent . }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph\nORDER BY DESC(?graph) LIMIT 1"
+                "caption": "Count AOP-Key Event memberships in latest graph (numerator; Key Events reused across AOPs are counted once per AOP)",
+                "query": "SELECT ?graph (COUNT(?ke) AS ?count)\nWHERE {\n  GRAPH ?graph { ?aop a aopo:AdverseOutcomePathway ; aopo:has_key_event ?ke . }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph\nORDER BY DESC(?graph) LIMIT 1"
             },
             {
-                "caption": "Count Key Event Relationships in latest graph",
-                "query": "SELECT ?graph (COUNT(?ker) AS ?count)\nWHERE {\n  GRAPH ?graph { ?ker a aopo:KeyEventRelationship . }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph\nORDER BY DESC(?graph) LIMIT 1"
+                "caption": "Count AOP-Key Event Relationship memberships in latest graph",
+                "query": "SELECT ?graph (COUNT(?ker) AS ?count)\nWHERE {\n  GRAPH ?graph { ?aop a aopo:AdverseOutcomePathway ; aopo:has_key_event_relationship ?ker . }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph\nORDER BY DESC(?graph) LIMIT 1"
             }
         ]
     },
@@ -404,9 +404,22 @@
     "average_components_per_aop": {
         "title": "Average KEs and KERs per AOP Over Time",
         "description": "Tracks how densely connected each AOP is on average over time, measured by the number of Key Events and Key Event Relationships per AOP in each version. Indicates whether newer AOPs tend to be more or less complex.",
-        "data_source": "SPARQL queries count total AOP, KE-to-AOP, and KER-to-AOP relationships across all versions, then compute the ratio per version.",
+        "data_source": "Three SPARQL queries per version count AOPs, AOP-Key Event memberships, and AOP-Key Event Relationship memberships; the plot divides each membership count by the AOP count. Memberships (not distinct KE/KER entities) are counted so that Key Events reused across AOPs are counted once per AOP, giving the true per-AOP average.",
         "limitations": "Averages can be dominated by a few very large or very small AOPs. Does not distinguish between well-developed and stub AOPs. Only counts explicitly declared relationships. Trend data covers only the published RDF release versions available in the SPARQL endpoint; the AOP-Wiki knowledge base predates the earliest RDF release, so earlier activity is not captured.",
-        "sparql": "SELECT ?graph\n  (COUNT(DISTINCT ?aop) AS ?aop_count)\n  (COUNT(?ke) AS ?ke_count)\n  (COUNT(?ker) AS ?ker_count)\nWHERE {\n  GRAPH ?graph {\n    ?aop a aopo:AdverseOutcomePathway .\n    OPTIONAL { ?aop aopo:has_key_event ?ke . }\n    OPTIONAL { ?aop aopo:has_key_event_relationship ?ker . }\n  }\n}\nGROUP BY ?graph\nORDER BY ?graph"
+        "queries": [
+            {
+                "caption": "Count AOPs per version (denominator)",
+                "query": "SELECT ?graph (COUNT(?aop) AS ?count)\nWHERE {\n  GRAPH ?graph { ?aop a aopo:AdverseOutcomePathway . }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph"
+            },
+            {
+                "caption": "Count AOP-Key Event memberships per version (numerator for avg KEs/AOP)",
+                "query": "SELECT ?graph (COUNT(?ke) AS ?count)\nWHERE {\n  GRAPH ?graph { ?aop a aopo:AdverseOutcomePathway ; aopo:has_key_event ?ke . }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph"
+            },
+            {
+                "caption": "Count AOP-Key Event Relationship memberships per version (numerator for avg KERs/AOP)",
+                "query": "SELECT ?graph (COUNT(?ker) AS ?count)\nWHERE {\n  GRAPH ?graph { ?aop a aopo:AdverseOutcomePathway ; aopo:has_key_event_relationship ?ker . }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph"
+            }
+        ]
     },
     "aop_network_density": {
         "title": "AOP Network Density Over Time",
