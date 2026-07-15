@@ -51,7 +51,7 @@ Current Snapshots (latest_plots):
         - plot_latest_ke_annotation_depth(): Current annotation depth analysis
 
     Connectivity:
-        - plot_latest_network_density(): Current AOP connectivity
+        - plot_latest_aop_connectivity(): Current AOP connectivity
 
     Ontology Usage:
         - plot_latest_ontology_usage(): Current ontology term usage
@@ -200,7 +200,7 @@ from .latest_plots import (
     plot_latest_ke_annotation_depth,
 
     # Connectivity analysis
-    plot_latest_network_density,
+    plot_latest_aop_connectivity,
 
     # Ontology usage analysis
     plot_latest_ontology_usage,
@@ -301,7 +301,7 @@ __all__ = [
     'plot_latest_avg_per_aop',
     'plot_latest_ke_components',
     'plot_latest_ke_annotation_depth',
-    'plot_latest_network_density',
+    'plot_latest_aop_connectivity',
     'plot_latest_ontology_usage',
     'plot_latest_process_usage',
     'plot_latest_object_usage',
@@ -375,7 +375,7 @@ def get_available_functions():
             'plot_latest_avg_per_aop',
             'plot_latest_ke_components',
             'plot_latest_ke_annotation_depth',
-            'plot_latest_network_density',
+            'plot_latest_aop_connectivity',
             'plot_latest_ontology_usage',
             'plot_latest_process_usage',
             'plot_latest_object_usage',
