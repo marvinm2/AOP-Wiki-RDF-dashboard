@@ -58,19 +58,38 @@ jobs:
         if: env.configured == 'true'
         run: sudo apt-get install -y curl jq
 
-      - name: Create a new version of the deposition
+      - name: Resolve the target draft (new version, or first-activation draft)
         if: env.configured == 'true'
         run: |
           set -euo pipefail
+          # Normal path: the base record is already published, so mint a new version.
           response=$(curl -s -X POST -H "Authorization: Bearer $ZENODO_ACCESS_TOKEN" \
             "https://zenodo.org/api/deposit/depositions/$ZENODO_PLOTS_DEPOSITION_ID/actions/newversion")
-          new_draft_url=$(echo "$response" | jq -r '.links.latest_draft')
-          if [ "$new_draft_url" = "null" ] || [ -z "$new_draft_url" ]; then
-            echo "Failed to create new version. Response: $response"; exit 1
+          new_draft_url=$(echo "$response" | jq -r '.links.latest_draft // empty')
+
+          if [ -n "$new_draft_url" ]; then
+            draft=$(curl -s -H "Authorization: Bearer $ZENODO_ACCESS_TOKEN" "$new_draft_url")
+          else
+            # First activation: the base deposition has never been published, so
+            # newversion 404s ("persistent identifier is not registered"). Fall back
+            # to the existing draft and publish it directly as the initial version.
+            echo "newversion unavailable — treating as first activation. Response: $response"
+            draft=$(curl -s -H "Authorization: Bearer $ZENODO_ACCESS_TOKEN" \
+              "https://zenodo.org/api/deposit/depositions/$ZENODO_PLOTS_DEPOSITION_ID")
+            if [ "$(echo "$draft" | jq -r '.id // empty')" = "" ]; then
+              echo "Deposition $ZENODO_PLOTS_DEPOSITION_ID not found. Response: $draft"; exit 1
+            fi
+            if [ "$(echo "$draft" | jq -r '.state // empty')" = "done" ]; then
+              echo "Base deposition is published but newversion failed. Response: $response"; exit 1
+            fi
           fi
-          draft=$(curl -s -H "Authorization: Bearer $ZENODO_ACCESS_TOKEN" "$new_draft_url")
+
+          bucket=$(echo "$draft" | jq -r '.links.bucket // empty')
+          if [ -z "$bucket" ]; then
+            echo "No upload bucket on the draft. Response: $draft"; exit 1
+          fi
           echo "new_deposition_id=$(echo "$draft" | jq -r '.id')" >> "$GITHUB_ENV"
-          echo "new_bucket_url=$(echo "$draft" | jq -r '.links.bucket')" >> "$GITHUB_ENV"
+          echo "new_bucket_url=$bucket" >> "$GITHUB_ENV"
 
       - name: Upload bundles
         if: env.configured == 'true'
