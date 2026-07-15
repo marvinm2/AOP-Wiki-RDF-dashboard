@@ -37,7 +37,9 @@ it on manual dispatch.
 One-time activation:
 
 1. Create a new **empty** Zenodo upload (Type: Dataset), save the draft, and note
-   its **deposition ID** (the number in the URL). Don't publish it by hand.
+   its **deposition ID** (the number in the URL). Don't publish it by hand — the
+   first workflow run uploads the bundles and publishes it as the initial version
+   (subsequent runs mint new versions via `newversion`).
 2. Create a Zenodo **personal access token** with `deposit:write` +
    `deposit:actions`.
 3. Add two repo secrets to `AOP-Wiki-RDF-dashboard`:
