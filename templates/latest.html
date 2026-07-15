@@ -308,9 +308,9 @@
                 <strong>A</strong> (curated UBERON/CL anatomy on Key Events),
                 <strong>A&prime;</strong> (UBERON/CL appearing as biological-event objects),
                 <strong>B</strong> (GO biological-process bridge, curated map), and
-                <strong>C</strong> (regex on AOP title — exploratory, grey). Bar and pie views share one
-                scope toggle so they stay in sync; the View toggle drives the bar only (pie slices are
-                inherently proportional).
+                <strong>C</strong> (regex on AOP title — exploratory, grey). Both views share one
+                scope toggle so they stay in sync; the View toggle (absolute/percentage) drives the
+                stacked bar only, while the bucket-totals bar always shows the AOP count per organ system.
                 <strong>Tip:</strong> the CSV download below contains <em>one row per AOP × bucket</em>
                 (columns: <code>AOP, AOP Title, AO URI, Organ System, Signals, Best Signal, Version, Scope</code>) —
                 including the "No annotation" bucket, which lists every AOP that the classifier could not place
@@ -354,7 +354,7 @@
                 </div>
                 <div class="coverage-pair-cell">
                     <div class="coverage-pair-cell-header">
-                        <h4>Pie view</h4>
+                        <h4>Bucket totals</h4>
                         <div class="download-dropdown">
                             <button class="download-button dropdown-toggle">Download &#x25BC;</button>
                             <div class="dropdown-menu">

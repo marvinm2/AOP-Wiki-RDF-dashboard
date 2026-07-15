@@ -1,12 +1,12 @@
 /**
  * Coverage Analysis toggle controller.
  *
- * Drives the unified organ-coverage bar + pie via two segmented toggles:
+ * Drives the unified organ-coverage stacked bar + bucket-totals bar via two toggles:
  *   - scope: all | apical | ao
- *   - view:  absolute | percentage (bar only)
+ *   - view:  absolute | percentage (stacked bar only)
  *
- * Scope is shared between the bar and the pie so the user reads a single
- * coherent slice across the section. Version is read from the URL so the
+ * Scope is shared between both views so the user reads a single coherent
+ * slice across the section. Version is read from the URL so the
  * toggles play well with the version selector.
  */
 (function () {
@@ -122,7 +122,7 @@
                 currentScope = next;
                 toggleRoot.dataset.scope = next;
                 setActive(scopeButtons, currentScope, 'toggleScope');
-                // Bar and pie both follow scope.
+                // Both views follow scope.
                 fetchPlot(BAR_PLOT, currentScope, currentView);
                 fetchPlot(PIE_PLOT, currentScope, undefined);
             });
