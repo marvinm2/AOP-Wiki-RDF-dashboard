@@ -113,13 +113,14 @@ jobs:
             --argjson creators '[{"name": "Martens, Marvin", "affiliation": "Department of Translational Genomics, Maastricht University, Maastricht, the Netherlands", "orcid": "0000-0003-2230-0840"}, {"name": "Willighagen, Egon", "affiliation": "Department of Translational Genomics, Maastricht University, Maastricht, the Netherlands", "orcid": "0000-0001-7542-0286"}]' \
             --argjson related_identifiers '[{"identifier": "10.1089/aivt.2021.0010", "relation": "isDocumentedBy", "resource_type": "publication-article", "scheme": "doi"}, {"identifier": "10.5281/zenodo.13353286", "relation": "isDerivedFrom", "scheme": "doi"}]' \
             --argjson communities '[{"identifier": "vhp4safety"}]' \
+            --argjson grants '[{"id": "10.13039/501100003246::36952"}]' \
             --arg notes "Plots and data derived from the AOP-Wiki (CC-BY-SA 4.0). Developed within VHP4Safety, funded by the Netherlands Research Council (NWO) NWA-ORC 1292.19.272." \
             '{ metadata: {
                  title: $title, version: $version, publication_date: $date,
                  description: $description, access_right: "open",
                  creators: $creators, related_identifiers: $related_identifiers,
                  language: "eng", license: "cc-by-sa-4.0",
-                 communities: $communities, notes: $notes, upload_type: "dataset"
+                 communities: $communities, grants: $grants, notes: $notes, upload_type: "dataset"
             }}')
           curl -s -H "Authorization: Bearer $ZENODO_ACCESS_TOKEN" -H "Content-Type: application/json" \
             -X PUT --data "$metadata" \
