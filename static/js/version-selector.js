@@ -31,6 +31,7 @@
         'latest_ke_reuse_distribution',
         'latest_stressor_mie_coverage',
         'latest_top_ontology_terms',
+        'latest_author_contributions',
         'latest_ontology_diversity',
         'latest_organ_coverage_unified',
         'latest_organ_coverage_pie',

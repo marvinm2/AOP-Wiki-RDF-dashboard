@@ -53,10 +53,19 @@ if [[ -z "${DBA_PASSWORD:-}" ]]; then
 fi
 
 # --- Locate the Virtuoso container ------------------------------------------
+# The service is NOT node-pinned, so on the Swarm it may run on either node.
+# `docker ps` is per-node, so if it's not here, point the operator to the node
+# that currently hosts it rather than failing obscurely.
 CN=$(docker ps --filter name=aopwiki-dashboard_virtuoso --format '{{.Names}}' | head -1)
 [[ -z "$CN" ]] && CN=$(docker ps --filter name=aopwiki-virtuoso --format '{{.Names}}' | head -1)
 if [[ -z "$CN" ]]; then
-    echo "ERROR: no running Virtuoso container found (aopwiki-dashboard_virtuoso* or aopwiki-virtuoso)." >&2
+    NODE=$(docker service ps aopwiki-dashboard_virtuoso --filter desired-state=running --format '{{.Node}}' 2>/dev/null | head -1 || true)
+    if [[ -n "$NODE" && "$NODE" != "$(hostname)" ]]; then
+        echo "ERROR: aopwiki-dashboard_virtuoso is running on '${NODE}', not $(hostname)." >&2
+        echo "       Re-run this script on that node (ssh to it, then from ~/aopwiki-dashboard)." >&2
+    else
+        echo "ERROR: no running Virtuoso container found (aopwiki-dashboard_virtuoso* or aopwiki-virtuoso)." >&2
+    fi
     exit 1
 fi
 echo "Virtuoso container: $CN"

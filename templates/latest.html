@@ -93,6 +93,28 @@
             </div>
             {{ data_table_toggle('latest_entity_counts') }}
         </div>
+        <div class="plot-box">
+            <div class="plot-header">
+                <h3>Top AOP Contributors</h3>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download &#x25BC;</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/latest/author_contributions?format=csv" class="dropdown-item">CSV</a>
+                        <a href="/download/latest/author_contributions?format=png" class="dropdown-item">PNG</a>
+                        <a href="/download/latest/author_contributions?format=svg" class="dropdown-item">SVG</a>
+                    </div>
+                </div>
+            </div>
+            <p class="plot-description">
+                The 20 contributors credited on the most AOPs (by distinct-AOP count). Creator values are
+                free text, so counts are indicative of contribution volume rather than a normalised roster.
+            </p>
+            {{ methodology_note(methodology_notes, 'latest_author_contributions') }}
+            <div class="lazy-plot" data-plot-name="latest_author_contributions">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+            {{ data_table_toggle('latest_author_contributions') }}
+        </div>
     </div>
 </section>
 

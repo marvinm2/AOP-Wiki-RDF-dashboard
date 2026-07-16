@@ -55,6 +55,7 @@ Author:
     Marvin Martens
 """
 
+import html
 import json
 import os
 import re
@@ -2007,6 +2008,117 @@ def plot_latest_top_ontology_terms(version: str = None) -> str:
     )
 
     _plot_figure_cache[f'latest_top_ontology_terms_{version_key}'] = fig
+    return render_plot_html(fig)
+
+
+def _clean_author_label(raw: str) -> str:
+    """Best-effort tidy of a free-text dc:creator string for display.
+
+    Creator values in the AOP-Wiki are free text (names, workgroups, sometimes
+    with HTML entities or embedded affiliations), so strip tags/entities and
+    collapse whitespace.
+    """
+    s = html.unescape(raw or "")
+    s = re.sub(r"<[^>]+>", " ", s)     # strip HTML tags
+    s = s.replace("\xa0", " ")
+    s = re.sub(r"\s+", " ", s).strip()
+    return s
+
+
+def plot_latest_author_contributions(version: str = None) -> str:
+    """Show the most prolific AOP contributors (top 20 by AOP count).
+
+    Counts distinct AOPs per dc:creator. Creator strings are free text, so
+    labels are cleaned (HTML stripped, whitespace collapsed) and truncated.
+
+    Args:
+        version: Optional version string. If None, uses latest.
+
+    Returns:
+        str: Plotly HTML string for embedding.
+    """
+    global _plot_data_cache
+
+    # Determine target graph
+    if version:
+        target_graph = f"http://aopwiki.org/graph/{version}"
+        latest_version = version
+    else:
+        version_query = """
+        SELECT ?graph
+        WHERE {
+            GRAPH ?graph { ?s a aopo:AdverseOutcomePathway . }
+            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        GROUP BY ?graph
+        ORDER BY DESC(?graph)
+        LIMIT 1
+        """
+        version_results = run_sparql_query(version_query)
+        if not version_results:
+            return create_fallback_plot("Top AOP Contributors", "No graphs available")
+        target_graph = version_results[0]["graph"]["value"]
+        latest_version = target_graph.split("/")[-1]
+
+    query = f"""
+    SELECT ?creator (COUNT(DISTINCT ?aop) AS ?aop_count)
+    WHERE {{
+      GRAPH <{target_graph}> {{
+        ?aop a aopo:AdverseOutcomePathway ;
+             dc:creator ?creator .
+      }}
+    }}
+    GROUP BY ?creator
+    ORDER BY DESC(?aop_count)
+    LIMIT 20
+    """
+
+    results = run_sparql_query(query)
+    if not results:
+        return create_fallback_plot("Top AOP Contributors", "No author data found")
+
+    data = []
+    for r in results:
+        label = _clean_author_label(r["creator"]["value"])
+        if not label:
+            continue
+        aop_count = int(r["aop_count"]["value"])
+        display = label[:55] + "…" if len(label) > 55 else label
+        data.append({
+            "Contributor": display,
+            "Full name": label,
+            "AOP Count": aop_count,
+        })
+
+    if not data:
+        return create_fallback_plot("Top AOP Contributors", "No author data found")
+
+    df = pd.DataFrame(data)
+    # Disambiguate any duplicate truncated labels with a longer form
+    dup = df["Contributor"].duplicated(keep=False)
+    df.loc[dup, "Contributor"] = df.loc[dup, "Full name"].str[:70]
+    df = df.sort_values("AOP Count", ascending=True)
+    version_key = version or "latest"
+    df["Version"] = latest_version
+    _plot_data_cache[f'latest_author_contributions_{version_key}'] = df
+
+    fig = px.bar(
+        df,
+        x="AOP Count",
+        y="Contributor",
+        orientation='h',
+        text="AOP Count",
+    )
+    fig.update_traces(marker_color=BRAND_COLORS['blue'], textposition='outside')
+    fig.update_layout(
+        showlegend=False,
+        height=max(400, len(df) * 28 + 120),
+        margin=dict(l=340, r=40, t=60, b=60),
+        yaxis=dict(title="", categoryorder="total ascending"),
+        xaxis=dict(title="Number of AOPs authored"),
+    )
+
+    _plot_figure_cache[f'latest_author_contributions_{version_key}'] = fig
     return render_plot_html(fig)
 
 

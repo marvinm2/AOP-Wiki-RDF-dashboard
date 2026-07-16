@@ -220,6 +220,7 @@ from .latest_plots import (
     plot_latest_ke_reuse,
     plot_latest_stressor_mie_coverage,
     plot_latest_top_ontology_terms,
+    plot_latest_author_contributions,
     plot_latest_ke_reuse_distribution,
 
     # Data quality & diversity (Phase 04-03)
@@ -317,6 +318,7 @@ __all__ = [
     'plot_latest_ke_reuse',
     'plot_latest_stressor_mie_coverage',
     'plot_latest_top_ontology_terms',
+    'plot_latest_author_contributions',
     'plot_latest_ke_reuse_distribution',
     'plot_latest_ontology_diversity',
     'plot_latest_organ_coverage',
@@ -393,6 +395,7 @@ def get_available_functions():
             'plot_latest_ke_reuse',
             'plot_latest_stressor_mie_coverage',
             'plot_latest_top_ontology_terms',
+            'plot_latest_author_contributions',
             'plot_latest_ke_reuse_distribution',
             'plot_latest_ontology_diversity',
             'plot_latest_organ_coverage',
