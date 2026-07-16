@@ -520,6 +520,28 @@
         </div>
         <div class="plot-box">
             <div class="plot-header">
+                <h3>Most-Reused Ontology Terms</h3>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download &#x25BC;</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/latest/top_ontology_terms?format=csv" class="dropdown-item">CSV</a>
+                        <a href="/download/latest/top_ontology_terms?format=png" class="dropdown-item">PNG</a>
+                        <a href="/download/latest/top_ontology_terms?format=svg" class="dropdown-item">SVG</a>
+                    </div>
+                </div>
+            </div>
+            <p class="plot-description">
+                Top 30 individual ontology terms referenced by the most Key Events, across all biological-event
+                slots (process, object, action), coloured by ontology source (GO, CHEBI, PATO, MeSH, ...).
+            </p>
+            {{ methodology_note(methodology_notes, 'latest_top_ontology_terms') }}
+            <div class="lazy-plot" data-plot-name="latest_top_ontology_terms">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+            {{ data_table_toggle('latest_top_ontology_terms') }}
+        </div>
+        <div class="plot-box">
+            <div class="plot-header">
                 <h3>Ontology Usage</h3>
                 <div class="download-dropdown">
                     <button class="download-button dropdown-toggle">Download &#x25BC;</button>

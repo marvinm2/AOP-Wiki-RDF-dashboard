@@ -581,6 +581,22 @@
             }
         ]
     },
+    "latest_top_ontology_terms": {
+        "title": "Most-Reused Ontology Terms",
+        "description": "Top 30 individual ontology terms referenced by the most Key Events, across all biological-event slots (process, object, action). Bars are labelled by the term's dc:title and coloured by ontology source (GO, CHEBI, PATO, MeSH, ...), revealing which specific biological concepts recur across the AOP-Wiki.",
+        "data_source": "SPARQL query counts distinct Key Events per ontology term reached via aopo:hasBiologicalEvent and any of aopo:hasProcess / aopo:hasObject / aopo:hasAction. Human-readable labels come from dc:title and the ontology source from dc:source on each term.",
+        "limitations": "Limited to the top 30 terms. A term is counted once per Key Event regardless of slot. Terms lacking a dc:title are shown as a CURIE (e.g. GO:0023052); sources without dc:source are derived from the IRI prefix or labelled 'Other'. Counts reflect explicit biological-event annotations in the RDF data.",
+        "queries": [
+            {
+                "caption": "Identify latest graph (AOP anchor)",
+                "query": "SELECT ?graph\nWHERE {\n  GRAPH ?graph { ?s a aopo:AdverseOutcomePathway . }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph\nORDER BY DESC(?graph)\nLIMIT 1"
+            },
+            {
+                "caption": "Top 30 ontology terms by distinct-KE count (all biological-event slots)",
+                "query": "SELECT ?term (SAMPLE(?title_val) AS ?label) (SAMPLE(?source_val) AS ?source) (COUNT(DISTINCT ?ke) AS ?ke_count)\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    ?ke a aopo:KeyEvent ;\n        aopo:hasBiologicalEvent ?be .\n    ?be aopo:hasProcess|aopo:hasObject|aopo:hasAction ?term .\n    OPTIONAL { ?term dc:title ?title_val . }\n    OPTIONAL { ?term dc:source ?source_val . }\n  }\n  FILTER(isIRI(?term))\n}\nGROUP BY ?term\nORDER BY DESC(?ke_count)\nLIMIT 30"
+            }
+        ]
+    },
     "ontology_term_growth": {
         "title": "Ontology Term Growth Over Time",
         "description": "Tracks the number of unique ontology terms used in biological process and object annotations across database versions. Growth indicates expanding annotation vocabulary and richer biological characterization.",
