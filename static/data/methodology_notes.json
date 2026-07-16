@@ -597,6 +597,22 @@
             }
         ]
     },
+    "latest_author_contributions": {
+        "title": "Top AOP Contributors",
+        "description": "The 20 contributors credited on the most AOPs, by distinct-AOP count. Highlights who authors the bulk of the AOP-Wiki and the long tail of one-off contributors.",
+        "data_source": "SPARQL query counts distinct AOPs per dc:creator value. Creator values are free text in the AOP-Wiki (individual names, workgroups, sometimes with affiliations), cleaned in Python by stripping HTML and collapsing whitespace, then truncated for display.",
+        "limitations": "dc:creator is unstructured free text, so a single logical author may appear under several spellings (or bundled with co-authors/affiliations in one string), and workgroups count as one contributor. Counts are therefore indicative of contribution volume, not a normalised author roster. Limited to the top 20.",
+        "queries": [
+            {
+                "caption": "Identify latest graph (AOP anchor)",
+                "query": "SELECT ?graph\nWHERE {\n  GRAPH ?graph { ?s a aopo:AdverseOutcomePathway . }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph\nORDER BY DESC(?graph)\nLIMIT 1"
+            },
+            {
+                "caption": "Top 20 contributors by distinct-AOP count",
+                "query": "SELECT ?creator (COUNT(DISTINCT ?aop) AS ?aop_count)\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    ?aop a aopo:AdverseOutcomePathway ;\n         dc:creator ?creator .\n  }\n}\nGROUP BY ?creator\nORDER BY DESC(?aop_count)\nLIMIT 20"
+            }
+        ]
+    },
     "ontology_term_growth": {
         "title": "Ontology Term Growth Over Time",
         "description": "Tracks the number of unique ontology terms used in biological process and object annotations across database versions. Growth indicates expanding annotation vocabulary and richer biological characterization.",
