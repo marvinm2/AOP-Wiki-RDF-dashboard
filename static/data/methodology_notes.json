@@ -533,6 +533,26 @@
             }
         ]
     },
+    "latest_mie_ao_path_length": {
+        "title": "MIE→AO Path Length",
+        "description": "For each AOP with both a Molecular Initiating Event and an Adverse Outcome, the shortest number of KER steps from any MIE to any AO through that AOP's own Key Event Relationships. AOPs whose MIE and AO are not connected via their KERs fall in 'No path' (highlighted) — a structural-completeness signal.",
+        "data_source": "SPARQL retrieves each AOP's MIE(s) and AO(s), and separately its KER edges (upstream→downstream KE). Python builds each AOP's directed subgraph and BFS-computes the shortest MIE→AO distance, then bins (1..6, 7+, No path).",
+        "limitations": "Uses only KERs declared on the AOP (aopo:has_key_event_relationship); a KER shared across AOPs contributes to each. AOPs missing a MIE or an AO are excluded. Path length counts KER hops, not weight of evidence.",
+        "queries": [
+            {
+                "caption": "Identify latest graph (AOP anchor)",
+                "query": "SELECT ?graph\nWHERE {\n  GRAPH ?graph { ?s a aopo:AdverseOutcomePathway . }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph\nORDER BY DESC(?graph)\nLIMIT 1"
+            },
+            {
+                "caption": "AOP endpoints (MIE and AO)",
+                "query": "SELECT ?aop ?mie ?ao\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    ?aop a aopo:AdverseOutcomePathway ;\n         <http://aopkb.org/aop_ontology#has_molecular_initiating_event> ?mie ;\n         <http://aopkb.org/aop_ontology#has_adverse_outcome> ?ao .\n  }\n}"
+            },
+            {
+                "caption": "Per-AOP KER edges (upstream KE -> downstream KE)",
+                "query": "SELECT ?aop ?up ?down\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    ?aop a aopo:AdverseOutcomePathway ;\n         <http://aopkb.org/aop_ontology#has_key_event_relationship> ?ker .\n    ?ker <http://aopkb.org/aop_ontology#has_upstream_key_event> ?up ;\n         <http://aopkb.org/aop_ontology#has_downstream_key_event> ?down .\n  }\n}"
+            }
+        ]
+    },
     "latest_ke_reuse": {
         "title": "Most Reused Key Events",
         "description": "Shows the top 30 Key Events that appear in the most AOPs, revealing shared biology across adverse outcome pathways. Clicking a bar opens the corresponding KE page on AOP-Wiki.",

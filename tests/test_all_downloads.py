@@ -70,6 +70,7 @@ LATEST_PLOTS = [
     "latest_entity_by_oecd_status",
     "latest_ke_reuse",
     "latest_ke_reuse_distribution",
+    "latest_mie_ao_path_length",
     "latest_stressor_mie_coverage",
     "latest_top_ontology_terms",
     "latest_author_contributions",
@@ -274,7 +275,8 @@ def run_audit(client, *, latest: str, historical: str,
     for plot in ("latest_ke_by_bio_level", "latest_taxonomic_groups",
                  "latest_entity_by_oecd_status", "latest_ke_reuse",
                  "latest_ke_reuse_distribution", "latest_top_ontology_terms",
-                 "latest_stressor_mie_coverage", "latest_author_contributions"):
+                 "latest_stressor_mie_coverage", "latest_author_contributions",
+                 "latest_mie_ao_path_length"):
         suffix = plot[len("latest_"):]
         client.get(f"/api/plot/{plot}?version={latest}")
         report.add(_check(client,

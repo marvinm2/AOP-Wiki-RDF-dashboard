@@ -29,6 +29,7 @@
         'latest_entity_by_oecd_status',
         'latest_ke_reuse',
         'latest_ke_reuse_distribution',
+        'latest_mie_ao_path_length',
         'latest_stressor_mie_coverage',
         'latest_top_ontology_terms',
         'latest_author_contributions',

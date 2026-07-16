@@ -2333,6 +2333,139 @@ def plot_latest_stressor_mie_coverage(version: str = None) -> str:
     return render_plot_html(fig)
 
 
+def plot_latest_mie_ao_path_length(version: str = None) -> str:
+    """Distribution of the shortest MIE→AO path length within each AOP.
+
+    For every AOP that declares both a Molecular Initiating Event and an
+    Adverse Outcome, walks that AOP's own KER edges (upstream→downstream) and
+    finds the shortest number of KER steps from any MIE to any AO. AOPs whose
+    MIE and AO are not connected through their KERs fall in "No path" — a
+    structural-completeness signal.
+
+    Args:
+        version: Optional version string. If None, uses latest.
+
+    Returns:
+        str: Plotly HTML string for embedding.
+    """
+    from collections import defaultdict, deque
+    global _plot_data_cache
+
+    # Determine target graph
+    if version:
+        target_graph = f"http://aopwiki.org/graph/{version}"
+        latest_version = version
+    else:
+        version_query = """
+        SELECT ?graph
+        WHERE {
+            GRAPH ?graph { ?s a aopo:AdverseOutcomePathway . }
+            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        GROUP BY ?graph
+        ORDER BY DESC(?graph)
+        LIMIT 1
+        """
+        version_results = run_sparql_query(version_query)
+        if not version_results:
+            return create_fallback_plot("MIE→AO Path Length", "No graphs available")
+        target_graph = version_results[0]["graph"]["value"]
+        latest_version = target_graph.split("/")[-1]
+
+    endpoints_query = f"""
+    SELECT ?aop ?mie ?ao
+    WHERE {{
+      GRAPH <{target_graph}> {{
+        ?aop a aopo:AdverseOutcomePathway ;
+             <http://aopkb.org/aop_ontology#has_molecular_initiating_event> ?mie ;
+             <http://aopkb.org/aop_ontology#has_adverse_outcome> ?ao .
+      }}
+    }}
+    """
+    edges_query = f"""
+    SELECT ?aop ?up ?down
+    WHERE {{
+      GRAPH <{target_graph}> {{
+        ?aop a aopo:AdverseOutcomePathway ;
+             <http://aopkb.org/aop_ontology#has_key_event_relationship> ?ker .
+        ?ker <http://aopkb.org/aop_ontology#has_upstream_key_event> ?up ;
+             <http://aopkb.org/aop_ontology#has_downstream_key_event> ?down .
+      }}
+    }}
+    """
+    endpoints = run_sparql_query(endpoints_query)
+    if not endpoints:
+        return create_fallback_plot("MIE→AO Path Length", "No AOP MIE/AO data found")
+    edges = run_sparql_query(edges_query) or []
+
+    mies = defaultdict(set)
+    aos = defaultdict(set)
+    adj = defaultdict(lambda: defaultdict(set))
+    for r in endpoints:
+        mies[r["aop"]["value"]].add(r["mie"]["value"])
+        aos[r["aop"]["value"]].add(r["ao"]["value"])
+    for r in edges:
+        adj[r["aop"]["value"]][r["up"]["value"]].add(r["down"]["value"])
+
+    def shortest(graph, sources, targets):
+        targets = set(targets)
+        dist = {s: 0 for s in sources}
+        dq = deque(sources)
+        while dq:
+            n = dq.popleft()
+            if n in targets:
+                return dist[n]
+            for m in graph.get(n, ()):
+                if m not in dist:
+                    dist[m] = dist[n] + 1
+                    dq.append(m)
+        return None
+
+    bins = ["1", "2", "3", "4", "5", "6", "7+", "No path"]
+    counts = {b: 0 for b in bins}
+    aops_both = set(mies) & set(aos)
+    for aop in aops_both:
+        d = shortest(adj[aop], mies[aop], aos[aop])
+        if d is None:
+            counts["No path"] += 1
+        else:
+            d = max(1, d)          # MIE==AO degenerate → treat as 1
+            counts["7+" if d >= 7 else str(d)] += 1
+
+    if not aops_both:
+        return create_fallback_plot("MIE→AO Path Length", "No AOPs with both MIE and AO")
+
+    df = pd.DataFrame([{"Path length (KER steps)": b, "AOP Count": counts[b]} for b in bins])
+    version_key = version or "latest"
+    df["Version"] = latest_version
+    _plot_data_cache[f'latest_mie_ao_path_length_{version_key}'] = df
+
+    connected = sum(counts[b] for b in bins if b != "No path")
+    bar_colors = [BRAND_COLORS['magenta'] if b == "No path" else BRAND_COLORS['blue']
+                  for b in bins]
+
+    fig = px.bar(
+        df,
+        x="Path length (KER steps)",
+        y="AOP Count",
+        text="AOP Count",
+        category_orders={"Path length (KER steps)": bins},
+    )
+    fig.update_traces(marker_color=bar_colors, textposition='outside')
+    fig.update_layout(
+        showlegend=False,
+        height=460,
+        margin=dict(l=60, r=30, t=70, b=60),
+        xaxis=dict(title="Shortest MIE→AO path (number of KER steps)"),
+        yaxis=dict(title="Number of AOPs"),
+        title=dict(text=f"{connected} of {len(aops_both)} AOPs have a connected MIE→AO path",
+                   x=0.5, xanchor='center', font=dict(size=13)),
+    )
+
+    _plot_figure_cache[f'latest_mie_ao_path_length_{version_key}'] = fig
+    return render_plot_html(fig)
+
+
 def plot_latest_ke_completeness_by_status(version: str = None) -> str:
     """Create a grouped bar chart showing KE completeness scores grouped by OECD status.
 
