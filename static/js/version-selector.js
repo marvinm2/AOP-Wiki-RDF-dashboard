@@ -30,6 +30,7 @@
         'latest_ke_reuse',
         'latest_ke_reuse_distribution',
         'latest_stressor_mie_coverage',
+        'latest_ker_directionality',
         'latest_top_ontology_terms',
         'latest_author_contributions',
         'latest_ontology_diversity',
