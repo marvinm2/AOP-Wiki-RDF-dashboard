@@ -629,6 +629,22 @@
             }
         ]
     },
+    "latest_completeness_correlation": {
+        "title": "Cross-Property Completeness Correlation",
+        "description": "Pairwise phi correlation between the presence of nine variable AOP properties across all AOPs. A high positive value means AOPs that fill in one property tend to also fill in the other; near zero means the two are curated independently. The diagonal is self-correlation (1).",
+        "data_source": "SPARQL records, per AOP, which of nine curated properties (Key Events, KERs, MIE, Adverse Outcome, Creator, Description, Life Stage, Domain of Applicability, Stressor) are present. Python builds the 0/1 presence matrix over all AOPs and computes the Pearson (= phi, for binary) correlation matrix.",
+        "limitations": "Limited to nine properties chosen for partial presence (title/page are ~100% present and carry no signal, so excluded). Correlation reflects co-occurrence of property *presence*, not content quality. A property fully present or fully absent in a given snapshot yields undefined (blank) correlations.",
+        "queries": [
+            {
+                "caption": "Identify latest graph (AOP anchor)",
+                "query": "SELECT ?graph\nWHERE {\n  GRAPH ?graph { ?s a aopo:AdverseOutcomePathway . }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph\nORDER BY DESC(?graph)\nLIMIT 1"
+            },
+            {
+                "caption": "Per-AOP presence of the nine curated properties",
+                "query": "SELECT DISTINCT ?aop ?p\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    ?aop a aopo:AdverseOutcomePathway .\n    OPTIONAL { ?aop ?p ?o . FILTER(?p IN (\n      <http://aopkb.org/aop_ontology#has_key_event>,\n      <http://aopkb.org/aop_ontology#has_key_event_relationship>,\n      <http://aopkb.org/aop_ontology#has_molecular_initiating_event>,\n      <http://aopkb.org/aop_ontology#has_adverse_outcome>,\n      <http://purl.org/dc/elements/1.1/creator>,\n      <http://purl.org/dc/elements/1.1/description>,\n      <http://aopkb.org/aop_ontology#LifeStageContext>,\n      <http://aopkb.org/aop_ontology#AopContext>,\n      <http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C54571>)) }\n  }\n}"
+            }
+        ]
+    },
     "ontology_term_growth": {
         "title": "Ontology Term Growth Over Time",
         "description": "Tracks the number of unique ontology terms used in biological process and object annotations across database versions. Growth indicates expanding annotation vocabulary and richer biological characterization.",

@@ -2333,6 +2333,116 @@ def plot_latest_stressor_mie_coverage(version: str = None) -> str:
     return render_plot_html(fig)
 
 
+def plot_latest_completeness_correlation(version: str = None) -> str:
+    """Pairwise correlation between the presence of AOP properties.
+
+    For each AOP, records which of a curated set of variable properties are
+    present (1/0), then shows the pairwise phi correlation (Pearson on the 0/1
+    presence vectors) as a heatmap. High positive = AOPs that fill in one
+    property tend to fill in the other; near-zero = independently curated.
+
+    Args:
+        version: Optional version string. If None, uses latest.
+
+    Returns:
+        str: Plotly HTML string for embedding.
+    """
+    global _plot_data_cache
+
+    props = [
+        ("http://aopkb.org/aop_ontology#has_key_event", "Key Events"),
+        ("http://aopkb.org/aop_ontology#has_key_event_relationship", "KERs"),
+        ("http://aopkb.org/aop_ontology#has_molecular_initiating_event", "MIE"),
+        ("http://aopkb.org/aop_ontology#has_adverse_outcome", "Adverse Outcome"),
+        ("http://purl.org/dc/elements/1.1/creator", "Creator"),
+        ("http://purl.org/dc/elements/1.1/description", "Description"),
+        ("http://aopkb.org/aop_ontology#LifeStageContext", "Life Stage"),
+        ("http://aopkb.org/aop_ontology#AopContext", "Domain of Applicability"),
+        ("http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C54571", "Stressor"),
+    ]
+    uri_to_label = {u: lab for u, lab in props}
+    labels = [lab for _, lab in props]
+
+    # Determine target graph
+    if version:
+        target_graph = f"http://aopwiki.org/graph/{version}"
+        latest_version = version
+    else:
+        version_query = """
+        SELECT ?graph
+        WHERE {
+            GRAPH ?graph { ?s a aopo:AdverseOutcomePathway . }
+            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        GROUP BY ?graph
+        ORDER BY DESC(?graph)
+        LIMIT 1
+        """
+        version_results = run_sparql_query(version_query)
+        if not version_results:
+            return create_fallback_plot("Completeness Correlation", "No graphs available")
+        target_graph = version_results[0]["graph"]["value"]
+        latest_version = target_graph.split("/")[-1]
+
+    uri_list = ">, <".join(u for u, _ in props)
+    query = f"""
+    SELECT DISTINCT ?aop ?p
+    WHERE {{
+      GRAPH <{target_graph}> {{
+        ?aop a aopo:AdverseOutcomePathway .
+        OPTIONAL {{ ?aop ?p ?o . FILTER(?p IN (<{uri_list}>)) }}
+      }}
+    }}
+    """
+    results = run_sparql_query(query)
+    if not results:
+        return create_fallback_plot("Completeness Correlation", "No AOP data found")
+
+    present = {}
+    aops = set()
+    for r in results:
+        a = r["aop"]["value"]
+        aops.add(a)
+        p = r.get("p", {}).get("value")
+        if p in uri_to_label:
+            present.setdefault(a, set()).add(uri_to_label[p])
+
+    if not aops:
+        return create_fallback_plot("Completeness Correlation", "No AOP data found")
+
+    matrix = pd.DataFrame(
+        [{lab: (1 if lab in present.get(a, set()) else 0) for lab in labels} for a in aops]
+    )
+    corr = matrix.corr().reindex(index=labels, columns=labels)
+    version_key = version or "latest"
+    corr_out = corr.copy()
+    corr_out.insert(0, "Property", labels)
+    corr_out["Version"] = latest_version
+    _plot_data_cache[f'latest_completeness_correlation_{version_key}'] = corr_out
+
+    fig = px.imshow(
+        corr.values,
+        x=labels,
+        y=labels,
+        color_continuous_scale='RdBu_r',
+        zmin=-1,
+        zmax=1,
+        aspect='auto',
+        text_auto='.2f',
+    )
+    fig.update_layout(
+        height=560,
+        margin=dict(l=170, r=40, t=70, b=170),
+        xaxis=dict(tickangle=-40),
+        coloraxis_colorbar=dict(title="φ"),
+        title=dict(text=f"Property co-occurrence across {len(aops)} AOPs (φ correlation)",
+                   x=0.5, xanchor='center', font=dict(size=13)),
+    )
+
+    _plot_figure_cache[f'latest_completeness_correlation_{version_key}'] = fig
+    return render_plot_html(fig)
+
+
 def plot_latest_ke_completeness_by_status(version: str = None) -> str:
     """Create a grouped bar chart showing KE completeness scores grouped by OECD status.
 

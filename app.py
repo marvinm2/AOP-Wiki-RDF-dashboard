@@ -117,6 +117,7 @@ from plots import (
     plot_latest_stressor_mie_coverage,
     plot_latest_top_ontology_terms,
     plot_latest_author_contributions,
+    plot_latest_completeness_correlation,
     plot_latest_ontology_diversity,
     plot_latest_aop_completeness_unique_colors,
     plot_latest_organ_coverage,
@@ -1541,7 +1542,8 @@ def download_bulk():
                 'latest_ke_by_bio_level', 'latest_taxonomic_groups',
                 'latest_entity_by_oecd_status', 'latest_ke_reuse',
                 'latest_ke_reuse_distribution', 'latest_stressor_mie_coverage',
-                'latest_top_ontology_terms', 'latest_author_contributions'
+                'latest_top_ontology_terms', 'latest_author_contributions',
+                'latest_completeness_correlation'
             ],
             'database-state': ['latest_entity_counts'],
             'network-analysis': ['latest_aop_connectivity', 'latest_avg_per_aop'],
@@ -1883,6 +1885,7 @@ def get_plot(plot_name):
         'latest_stressor_mie_coverage': plot_latest_stressor_mie_coverage,
         'latest_top_ontology_terms': plot_latest_top_ontology_terms,
         'latest_author_contributions': plot_latest_author_contributions,
+        'latest_completeness_correlation': plot_latest_completeness_correlation,
         'latest_ontology_diversity': plot_latest_ontology_diversity,
         'latest_aop_completeness_unique': plot_latest_aop_completeness_unique_colors,
         'latest_organ_coverage': plot_latest_organ_coverage,
