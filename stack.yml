@@ -8,7 +8,7 @@ networks:
 
 services:
   dashboard:
-    image: aopwiki-dashboard:latest
+    image: ghcr.io/marvinm2/aopwiki-dashboard:latest
     networks:
       - core
       - internal
