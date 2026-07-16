@@ -581,6 +581,26 @@
             }
         ]
     },
+    "latest_ker_directionality": {
+        "title": "KER Directionality",
+        "description": "Classifies every Key Event by its position in the directed KER network (upstream KE → downstream KE): initiators (no upstream), terminals (no downstream), linear links, convergent/divergent branch points, two-way hubs, and KEs in no KER (isolated). The subtitle reports how many KEs and directed relationships form the network.",
+        "data_source": "SPARQL retrieves distinct upstream/downstream KE pairs from KeyEventRelationships; Python counts each KE's distinct upstream (in) and downstream (out) neighbours and bins by (in, out) degree. A separate count of all KeyEvents yields the isolated (no-KER) bucket.",
+        "limitations": "Degree uses distinct neighbours (parallel KERs between the same KE pair count once). Direction comes from aopo:has_upstream_key_event / has_downstream_key_event; KERs missing either endpoint are excluded. Roles are global across all AOPs, not per-AOP.",
+        "queries": [
+            {
+                "caption": "Identify latest graph (AOP anchor)",
+                "query": "SELECT ?graph\nWHERE {\n  GRAPH ?graph { ?s a aopo:AdverseOutcomePathway . }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph\nORDER BY DESC(?graph)\nLIMIT 1"
+            },
+            {
+                "caption": "Distinct directed KER edges (upstream KE -> downstream KE)",
+                "query": "SELECT DISTINCT ?up ?down\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    ?ker a aopo:KeyEventRelationship ;\n         <http://aopkb.org/aop_ontology#has_upstream_key_event> ?up ;\n         <http://aopkb.org/aop_ontology#has_downstream_key_event> ?down .\n  }\n}"
+            },
+            {
+                "caption": "Total Key Events (for the isolated bucket)",
+                "query": "SELECT (COUNT(DISTINCT ?ke) AS ?ke_count)\nWHERE { GRAPH __GRAPH_URI__ { ?ke a aopo:KeyEvent . } }"
+            }
+        ]
+    },
     "latest_ontology_diversity": {
         "title": "Ontology Term Diversity",
         "description": "Counts the number of unique ontology terms used per source ontology (GO, CHEBI, UBERON, NCBITAXON, etc.) in KE annotations. Shows the breadth of ontology vocabulary in use.",
