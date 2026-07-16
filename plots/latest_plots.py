@@ -1879,6 +1879,137 @@ def plot_latest_ke_reuse(version: str = None) -> str:
     return render_plot_html(fig)
 
 
+def _ontology_curie(iri: str):
+    """Best-effort compact CURIE + source prefix for an ontology term IRI.
+
+    Returns (curie, prefix), e.g. GO_0023052 -> ("GO:0023052", "GO"),
+    mesh/D006965 -> ("MeSH:D006965", "MESH"). Falls back to the IRI's last
+    segment when the pattern is unknown.
+    """
+    if "/obo/" in iri:
+        frag = iri.rsplit("/", 1)[-1]          # e.g. GO_0023052
+        if "_" in frag:
+            prefix, _, local = frag.partition("_")
+            return f"{prefix}:{local}", prefix.upper()
+        return frag, ""
+    if "/mesh/" in iri:
+        return f"MeSH:{iri.rsplit('/', 1)[-1]}", "MESH"
+    frag = iri.rsplit("#", 1)[-1].rsplit("/", 1)[-1]
+    return frag, ""
+
+
+def plot_latest_top_ontology_terms(version: str = None) -> str:
+    """Show the individual ontology terms most reused across Key Events (top 30).
+
+    Counts how many distinct Key Events reference each ontology term through any
+    biological-event slot (Process/Object/Action), labelled by dc:title and
+    coloured by ontology source (GO, CHEBI, PATO, MeSH, ...).
+
+    Args:
+        version: Optional version string. If None, uses latest.
+
+    Returns:
+        str: Plotly HTML string for embedding.
+    """
+    global _plot_data_cache
+
+    # Determine target graph
+    if version:
+        target_graph = f"http://aopwiki.org/graph/{version}"
+        latest_version = version
+    else:
+        version_query = """
+        SELECT ?graph
+        WHERE {
+            GRAPH ?graph { ?s a aopo:AdverseOutcomePathway . }
+            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        GROUP BY ?graph
+        ORDER BY DESC(?graph)
+        LIMIT 1
+        """
+        version_results = run_sparql_query(version_query)
+        if not version_results:
+            return create_fallback_plot("Most Reused Ontology Terms", "No graphs available")
+        target_graph = version_results[0]["graph"]["value"]
+        latest_version = target_graph.split("/")[-1]
+
+    query = f"""
+    SELECT ?term (SAMPLE(?title_val) AS ?label) (SAMPLE(?source_val) AS ?source) (COUNT(DISTINCT ?ke) AS ?ke_count)
+    WHERE {{
+      GRAPH <{target_graph}> {{
+        ?ke a aopo:KeyEvent ;
+            aopo:hasBiologicalEvent ?be .
+        ?be aopo:hasProcess|aopo:hasObject|aopo:hasAction ?term .
+        OPTIONAL {{ ?term dc:title ?title_val . }}
+        OPTIONAL {{ ?term dc:source ?source_val . }}
+      }}
+      FILTER(isIRI(?term))
+    }}
+    GROUP BY ?term
+    ORDER BY DESC(?ke_count)
+    LIMIT 30
+    """
+
+    results = run_sparql_query(query)
+    if not results:
+        return create_fallback_plot("Most Reused Ontology Terms", "No ontology terms found")
+
+    data = []
+    for r in results:
+        term_uri = r["term"]["value"]
+        curie, derived_source = _ontology_curie(term_uri)
+        source = r.get("source", {}).get("value") or derived_source or "Other"
+        title = r.get("label", {}).get("value", "").strip()
+        ke_count = int(r["ke_count"]["value"])
+        data.append({
+            "Term": title if title else curie,
+            "CURIE": curie,
+            "Source": source,
+            "KE Count": ke_count,
+            "term_url": term_uri,
+        })
+
+    if not data:
+        return create_fallback_plot("Most Reused Ontology Terms", "No ontology term reuse data found")
+
+    df = pd.DataFrame(data)
+    # Disambiguate any duplicate display labels by appending the CURIE
+    dup = df["Term"].duplicated(keep=False)
+    df.loc[dup, "Term"] = df.loc[dup, "Term"] + " (" + df.loc[dup, "CURIE"] + ")"
+    df = df.sort_values("KE Count", ascending=True)
+    version_key = version or "latest"
+    df["Version"] = latest_version
+    _plot_data_cache[f'latest_top_ontology_terms_{version_key}'] = df
+
+    # Stable colour per ontology source
+    sources = sorted(df["Source"].unique())
+    palette = BRAND_COLORS['palette']
+    color_map = {s: palette[i % len(palette)] for i, s in enumerate(sources)}
+
+    fig = px.bar(
+        df,
+        x="KE Count",
+        y="Term",
+        color="Source",
+        orientation='h',
+        text="KE Count",
+        custom_data=['term_url', 'CURIE'],
+        color_discrete_map=color_map,
+    )
+    fig.update_traces(textposition='outside')
+    fig.update_layout(
+        height=max(400, len(df) * 26 + 120),
+        margin=dict(l=320, r=30, t=60, b=60),
+        yaxis=dict(title="", categoryorder="total ascending"),
+        xaxis=dict(title="Number of Key Events"),
+        legend=dict(title="Ontology"),
+    )
+
+    _plot_figure_cache[f'latest_top_ontology_terms_{version_key}'] = fig
+    return render_plot_html(fig)
+
+
 def plot_latest_ke_reuse_distribution(version: str = None) -> str:
     """Show the distribution of how many AOPs each KE belongs to (reuse histogram).
 
