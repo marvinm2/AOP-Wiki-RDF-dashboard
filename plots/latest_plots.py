@@ -2222,6 +2222,117 @@ def plot_latest_ke_reuse_distribution(version: str = None) -> str:
     return render_plot_html(fig)
 
 
+def plot_latest_stressor_mie_coverage(version: str = None) -> str:
+    """Show stressor coverage of Molecular Initiating Events (the MIE gap).
+
+    For each MIE, counts the distinct stressors annotated on the AOPs that
+    contain it (stressors are AOP-level, nci:C54571), then bins MIEs by that
+    count. The "0 (no stressor)" bar is the curation gap — MIEs with no known
+    chemical/biological trigger.
+
+    Args:
+        version: Optional version string. If None, uses latest.
+
+    Returns:
+        str: Plotly HTML string for embedding.
+    """
+    global _plot_data_cache
+
+    # Determine target graph
+    if version:
+        target_graph = f"http://aopwiki.org/graph/{version}"
+        latest_version = version
+    else:
+        version_query = """
+        SELECT ?graph
+        WHERE {
+            GRAPH ?graph { ?s a aopo:AdverseOutcomePathway . }
+            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        GROUP BY ?graph
+        ORDER BY DESC(?graph)
+        LIMIT 1
+        """
+        version_results = run_sparql_query(version_query)
+        if not version_results:
+            return create_fallback_plot("MIE Stressor Coverage", "No graphs available")
+        target_graph = version_results[0]["graph"]["value"]
+        latest_version = target_graph.split("/")[-1]
+
+    query = f"""
+    SELECT ?mie (COUNT(DISTINCT ?stressor) AS ?stressor_count)
+    WHERE {{
+      GRAPH <{target_graph}> {{
+        ?aop a aopo:AdverseOutcomePathway ;
+             <http://aopkb.org/aop_ontology#has_molecular_initiating_event> ?mie .
+        OPTIONAL {{ ?aop <http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C54571> ?stressor . }}
+      }}
+    }}
+    GROUP BY ?mie
+    ORDER BY DESC(?stressor_count)
+    """
+
+    results = run_sparql_query(query)
+    if not results:
+        return create_fallback_plot("MIE Stressor Coverage", "No MIE data found")
+
+    bins = ["0 (no stressor)", "1", "2", "3–5", "6–10", "11+"]
+    counts = {b: 0 for b in bins}
+    total = 0
+    covered = 0
+    for r in results:
+        n = int(r["stressor_count"]["value"])
+        total += 1
+        if n > 0:
+            covered += 1
+        if n == 0:
+            b = "0 (no stressor)"
+        elif n == 1:
+            b = "1"
+        elif n == 2:
+            b = "2"
+        elif n <= 5:
+            b = "3–5"
+        elif n <= 10:
+            b = "6–10"
+        else:
+            b = "11+"
+        counts[b] += 1
+
+    if total == 0:
+        return create_fallback_plot("MIE Stressor Coverage", "No MIE data found")
+
+    df = pd.DataFrame([{"Stressors per MIE": b, "MIE Count": counts[b]} for b in bins])
+    version_key = version or "latest"
+    df["Version"] = latest_version
+    _plot_data_cache[f'latest_stressor_mie_coverage_{version_key}'] = df
+
+    pct = round(100 * covered / total)
+    bar_colors = [BRAND_COLORS['magenta'] if b == "0 (no stressor)" else BRAND_COLORS['blue']
+                  for b in bins]
+
+    fig = px.bar(
+        df,
+        x="Stressors per MIE",
+        y="MIE Count",
+        text="MIE Count",
+        category_orders={"Stressors per MIE": bins},
+    )
+    fig.update_traces(marker_color=bar_colors, textposition='outside')
+    fig.update_layout(
+        showlegend=False,
+        height=460,
+        margin=dict(l=60, r=30, t=70, b=60),
+        xaxis=dict(title="Distinct stressors linked (via shared AOPs)"),
+        yaxis=dict(title="Number of MIEs"),
+        title=dict(text=f"{covered} of {total} MIEs ({pct}%) have ≥1 associated stressor",
+                   x=0.5, xanchor='center', font=dict(size=13)),
+    )
+
+    _plot_figure_cache[f'latest_stressor_mie_coverage_{version_key}'] = fig
+    return render_plot_html(fig)
+
+
 def plot_latest_ke_completeness_by_status(version: str = None) -> str:
     """Create a grouped bar chart showing KE completeness scores grouped by OECD status.
 
