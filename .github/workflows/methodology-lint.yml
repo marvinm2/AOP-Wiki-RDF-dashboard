@@ -79,8 +79,10 @@ jobs:
             lint-report.md
             lint-report.json
 
-      - name: Comment on PR with lint report
-        if: always() && github.event_name == 'pull_request'
+      - name: Comment on PR only when the lint fails
+        # Only comment on failures — a passing lint already shows as a green
+        # check, so commenting on every run just generates notification noise.
+        if: steps.lint.outcome == 'failure' && github.event_name == 'pull_request'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
