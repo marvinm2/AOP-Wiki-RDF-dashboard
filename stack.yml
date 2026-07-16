@@ -20,9 +20,6 @@ services:
     volumes:
       - /mnt/gluster/docker/aopwiki-dashboard/usage:/data
     deploy:
-      placement:
-        constraints:
-          - node.hostname==h3068544.stratoserver.net
       restart_policy:
         condition: on-failure
       labels:
@@ -63,9 +60,6 @@ services:
       # the /database/data path inside the container unchanged. See issue #57.
       - /mnt/gluster/docker/aopwiki-dashboard/virtuoso-data:/database
     deploy:
-      placement:
-        constraints:
-          - node.hostname==h3068544.stratoserver.net
       restart_policy:
         condition: on-failure
       labels:
