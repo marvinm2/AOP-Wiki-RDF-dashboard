@@ -786,6 +786,28 @@
             </div>
             {{ data_table_toggle('latest_object_usage') }}
         </div>
+        <div class="plot-box full-width">
+            <div class="plot-header">
+                <h3>Cross-Property Completeness Correlation</h3>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download &#x25BC;</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/latest/completeness_correlation?format=csv" class="dropdown-item">CSV</a>
+                        <a href="/download/latest/completeness_correlation?format=png" class="dropdown-item">PNG</a>
+                        <a href="/download/latest/completeness_correlation?format=svg" class="dropdown-item">SVG</a>
+                    </div>
+                </div>
+            </div>
+            <p class="plot-description">
+                Pairwise φ correlation between the presence of nine variable AOP properties. High positive =
+                AOPs that fill in one property tend to fill in the other; near zero = independently curated.
+            </p>
+            {{ methodology_note(methodology_notes, 'latest_completeness_correlation') }}
+            <div class="lazy-plot" data-plot-name="latest_completeness_correlation">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+            {{ data_table_toggle('latest_completeness_correlation') }}
+        </div>
     </div>
 </section>
 
