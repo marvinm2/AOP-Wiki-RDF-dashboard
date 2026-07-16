@@ -565,6 +565,22 @@
             }
         ]
     },
+    "latest_stressor_mie_coverage": {
+        "title": "MIE Stressor Coverage",
+        "description": "Bins Molecular Initiating Events by how many distinct stressors are annotated on the AOPs that contain them. The '0 (no stressor)' bar (highlighted) is the curation gap — MIEs with no known chemical/biological trigger. The subtitle reports the overall share of MIEs with at least one associated stressor.",
+        "data_source": "SPARQL query, per MIE, counts distinct stressors (nci:C54571) on the AOPs referencing that MIE via aopo:has_molecular_initiating_event. MIEs are then binned in Python (0, 1, 2, 3-5, 6-10, 11+).",
+        "limitations": "Stressors are annotated at the AOP level, not directly on the MIE, so coverage is inferred through shared AOPs — an AOP's stressors are attributed to its MIE. An MIE shared by several AOPs aggregates all their stressors. Reflects annotation presence, not stressor-MIE causal specificity.",
+        "queries": [
+            {
+                "caption": "Identify latest graph (AOP anchor)",
+                "query": "SELECT ?graph\nWHERE {\n  GRAPH ?graph { ?s a aopo:AdverseOutcomePathway . }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph\nORDER BY DESC(?graph)\nLIMIT 1"
+            },
+            {
+                "caption": "Distinct stressors per MIE (via shared AOPs)",
+                "query": "SELECT ?mie (COUNT(DISTINCT ?stressor) AS ?stressor_count)\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    ?aop a aopo:AdverseOutcomePathway ;\n         <http://aopkb.org/aop_ontology#has_molecular_initiating_event> ?mie .\n    OPTIONAL { ?aop <http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C54571> ?stressor . }\n  }\n}\nGROUP BY ?mie\nORDER BY DESC(?stressor_count)"
+            }
+        ]
+    },
     "latest_ontology_diversity": {
         "title": "Ontology Term Diversity",
         "description": "Counts the number of unique ontology terms used per source ontology (GO, CHEBI, UBERON, NCBITAXON, etc.) in KE annotations. Shows the breadth of ontology vocabulary in use.",

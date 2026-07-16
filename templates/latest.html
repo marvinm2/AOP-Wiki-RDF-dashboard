@@ -416,6 +416,29 @@
             </div>
             {{ data_table_toggle('latest_life_stage') }}
         </div>
+        <div class="plot-box">
+            <div class="plot-header">
+                <h3>MIE Stressor Coverage</h3>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download &#x25BC;</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/latest/stressor_mie_coverage?format=csv" class="dropdown-item">CSV</a>
+                        <a href="/download/latest/stressor_mie_coverage?format=png" class="dropdown-item">PNG</a>
+                        <a href="/download/latest/stressor_mie_coverage?format=svg" class="dropdown-item">SVG</a>
+                    </div>
+                </div>
+            </div>
+            <p class="plot-description">
+                Molecular Initiating Events binned by how many distinct stressors are annotated on the AOPs
+                that contain them. The highlighted "0 (no stressor)" bar is the curation gap. Stressors are
+                AOP-level annotations attributed to the MIE via shared AOPs.
+            </p>
+            {{ methodology_note(methodology_notes, 'latest_stressor_mie_coverage') }}
+            <div class="lazy-plot" data-plot-name="latest_stressor_mie_coverage">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+            {{ data_table_toggle('latest_stressor_mie_coverage') }}
+        </div>
 
     </div>
 </section>
