@@ -63,6 +63,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import logging
+from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from .shared import (
     BRAND_COLORS, config, _plot_data_cache, _plot_figure_cache, run_sparql_query, safe_read_csv, create_fallback_plot,
@@ -2463,6 +2464,242 @@ def plot_latest_mie_ao_path_length(version: str = None) -> str:
     )
 
     _plot_figure_cache[f'latest_mie_ao_path_length_{version_key}'] = fig
+    return render_plot_html(fig)
+
+
+def plot_latest_completeness_correlation(version: str = None) -> str:
+    """Pairwise correlation between the presence of AOP properties.
+
+    For each AOP, records which of a curated set of variable properties are
+    present (1/0), then shows the pairwise phi correlation (Pearson on the 0/1
+    presence vectors) as a heatmap. High positive = AOPs that fill in one
+    property tend to fill in the other; near-zero = independently curated.
+
+    Args:
+        version: Optional version string. If None, uses latest.
+
+    Returns:
+        str: Plotly HTML string for embedding.
+    """
+    global _plot_data_cache
+
+    props = [
+        ("http://aopkb.org/aop_ontology#has_key_event", "Key Events"),
+        ("http://aopkb.org/aop_ontology#has_key_event_relationship", "KERs"),
+        ("http://aopkb.org/aop_ontology#has_molecular_initiating_event", "MIE"),
+        ("http://aopkb.org/aop_ontology#has_adverse_outcome", "Adverse Outcome"),
+        ("http://purl.org/dc/elements/1.1/creator", "Creator"),
+        ("http://purl.org/dc/elements/1.1/description", "Description"),
+        ("http://aopkb.org/aop_ontology#LifeStageContext", "Life Stage"),
+        ("http://aopkb.org/aop_ontology#AopContext", "Domain of Applicability"),
+        ("http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C54571", "Stressor"),
+    ]
+    uri_to_label = {u: lab for u, lab in props}
+    labels = [lab for _, lab in props]
+
+    # Determine target graph
+    if version:
+        target_graph = f"http://aopwiki.org/graph/{version}"
+        latest_version = version
+    else:
+        version_query = """
+        SELECT ?graph
+        WHERE {
+            GRAPH ?graph { ?s a aopo:AdverseOutcomePathway . }
+            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        GROUP BY ?graph
+        ORDER BY DESC(?graph)
+        LIMIT 1
+        """
+        version_results = run_sparql_query(version_query)
+        if not version_results:
+            return create_fallback_plot("Completeness Correlation", "No graphs available")
+        target_graph = version_results[0]["graph"]["value"]
+        latest_version = target_graph.split("/")[-1]
+
+    uri_list = ">, <".join(u for u, _ in props)
+    query = f"""
+    SELECT DISTINCT ?aop ?p
+    WHERE {{
+      GRAPH <{target_graph}> {{
+        ?aop a aopo:AdverseOutcomePathway .
+        OPTIONAL {{ ?aop ?p ?o . FILTER(?p IN (<{uri_list}>)) }}
+      }}
+    }}
+    """
+    results = run_sparql_query(query)
+    if not results:
+        return create_fallback_plot("Completeness Correlation", "No AOP data found")
+
+    present = {}
+    aops = set()
+    for r in results:
+        a = r["aop"]["value"]
+        aops.add(a)
+        p = r.get("p", {}).get("value")
+        if p in uri_to_label:
+            present.setdefault(a, set()).add(uri_to_label[p])
+
+    if not aops:
+        return create_fallback_plot("Completeness Correlation", "No AOP data found")
+
+    matrix = pd.DataFrame(
+        [{lab: (1 if lab in present.get(a, set()) else 0) for lab in labels} for a in aops]
+    )
+    corr = matrix.corr().reindex(index=labels, columns=labels)
+    version_key = version or "latest"
+    corr_out = corr.copy()
+    corr_out.insert(0, "Property", labels)
+    corr_out["Version"] = latest_version
+    _plot_data_cache[f'latest_completeness_correlation_{version_key}'] = corr_out
+
+    fig = px.imshow(
+        corr.values,
+        x=labels,
+        y=labels,
+        color_continuous_scale='RdBu_r',
+        zmin=-1,
+        zmax=1,
+        aspect='auto',
+        text_auto='.2f',
+    )
+    fig.update_layout(
+        height=560,
+        margin=dict(l=170, r=40, t=70, b=170),
+        xaxis=dict(tickangle=-40),
+        coloraxis_colorbar=dict(title="φ"),
+        title=dict(text=f"Property co-occurrence across {len(aops)} AOPs (φ correlation)",
+                   x=0.5, xanchor='center', font=dict(size=13)),
+    )
+
+    _plot_figure_cache[f'latest_completeness_correlation_{version_key}'] = fig
+    return render_plot_html(fig)
+
+
+def plot_latest_ker_directionality(version: str = None) -> str:
+    """Classify Key Events by their position in the directed KER network.
+
+    Builds the directed graph of Key Event Relationships (upstream KE ->
+    downstream KE) and buckets each KE by its in/out degree (distinct
+    neighbours): initiators (no upstream), terminals (no downstream), linear
+    links, convergent/divergent branch points, two-way hubs, and KEs that sit
+    in no KER at all (isolated).
+
+    Args:
+        version: Optional version string. If None, uses latest.
+
+    Returns:
+        str: Plotly HTML string for embedding.
+    """
+    global _plot_data_cache
+
+    # Determine target graph
+    if version:
+        target_graph = f"http://aopwiki.org/graph/{version}"
+        latest_version = version
+    else:
+        version_query = """
+        SELECT ?graph
+        WHERE {
+            GRAPH ?graph { ?s a aopo:AdverseOutcomePathway . }
+            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        GROUP BY ?graph
+        ORDER BY DESC(?graph)
+        LIMIT 1
+        """
+        version_results = run_sparql_query(version_query)
+        if not version_results:
+            return create_fallback_plot("KER Directionality", "No graphs available")
+        target_graph = version_results[0]["graph"]["value"]
+        latest_version = target_graph.split("/")[-1]
+
+    edges_query = f"""
+    SELECT DISTINCT ?up ?down
+    WHERE {{
+      GRAPH <{target_graph}> {{
+        ?ker a aopo:KeyEventRelationship ;
+             <http://aopkb.org/aop_ontology#has_upstream_key_event> ?up ;
+             <http://aopkb.org/aop_ontology#has_downstream_key_event> ?down .
+      }}
+    }}
+    """
+    edges = run_sparql_query(edges_query)
+    if not edges:
+        return create_fallback_plot("KER Directionality", "No KER edges found")
+
+    total_query = f"""
+    SELECT (COUNT(DISTINCT ?ke) AS ?ke_count)
+    WHERE {{ GRAPH <{target_graph}> {{ ?ke a aopo:KeyEvent . }} }}
+    """
+    total_results = run_sparql_query(total_query)
+    total_kes = int(total_results[0]["ke_count"]["value"]) if total_results else 0
+
+    succ = defaultdict(set)
+    pred = defaultdict(set)
+    nodes = set()
+    for e in edges:
+        up = e["up"]["value"]
+        down = e["down"]["value"]
+        succ[up].add(down)
+        pred[down].add(up)
+        nodes.add(up)
+        nodes.add(down)
+
+    categories = [
+        "Initiator (no upstream)",
+        "Linear (1 in, 1 out)",
+        "Convergent (≥2 upstream)",
+        "Divergent (≥2 downstream)",
+        "Hub (branches both ways)",
+        "Terminal (no downstream)",
+        "Isolated (no KER)",
+    ]
+    counts = {c: 0 for c in categories}
+    for ke in nodes:
+        out_d = len(succ[ke])
+        in_d = len(pred[ke])
+        if in_d == 0:
+            c = "Initiator (no upstream)"
+        elif out_d == 0:
+            c = "Terminal (no downstream)"
+        elif in_d == 1 and out_d == 1:
+            c = "Linear (1 in, 1 out)"
+        elif in_d >= 2 and out_d >= 2:
+            c = "Hub (branches both ways)"
+        elif in_d >= 2:
+            c = "Convergent (≥2 upstream)"
+        else:
+            c = "Divergent (≥2 downstream)"
+        counts[c] += 1
+    counts["Isolated (no KER)"] = max(0, total_kes - len(nodes))
+
+    df = pd.DataFrame([{"KE Role": c, "KE Count": counts[c]} for c in categories])
+    version_key = version or "latest"
+    df["Version"] = latest_version
+    _plot_data_cache[f'latest_ker_directionality_{version_key}'] = df
+
+    fig = px.bar(
+        df,
+        x="KE Role",
+        y="KE Count",
+        text="KE Count",
+        category_orders={"KE Role": categories},
+    )
+    fig.update_traces(marker_color=BRAND_COLORS['blue'], textposition='outside')
+    fig.update_layout(
+        showlegend=False,
+        height=480,
+        margin=dict(l=60, r=30, t=70, b=140),
+        xaxis=dict(title="", tickangle=-30),
+        yaxis=dict(title="Number of Key Events"),
+        title=dict(text=f"{len(nodes)} of {total_kes} KEs sit in the KER network "
+                        f"({len(edges)} directed relationships)",
+                   x=0.5, xanchor='center', font=dict(size=13)),
+    )
+
+    _plot_figure_cache[f'latest_ker_directionality_{version_key}'] = fig
     return render_plot_html(fig)
 
 

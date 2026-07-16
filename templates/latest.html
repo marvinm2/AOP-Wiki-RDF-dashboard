@@ -198,6 +198,28 @@
             </div>
             {{ data_table_toggle('latest_avg_per_aop') }}
         </div>
+        <div class="plot-box">
+            <div class="plot-header">
+                <h3>KER Directionality</h3>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download &#x25BC;</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/latest/ker_directionality?format=csv" class="dropdown-item">CSV</a>
+                        <a href="/download/latest/ker_directionality?format=png" class="dropdown-item">PNG</a>
+                        <a href="/download/latest/ker_directionality?format=svg" class="dropdown-item">SVG</a>
+                    </div>
+                </div>
+            </div>
+            <p class="plot-description">
+                Key Events classified by their position in the directed KER network — initiators, terminals,
+                linear links, convergent/divergent branch points, two-way hubs, and KEs in no KER (isolated).
+            </p>
+            {{ methodology_note(methodology_notes, 'latest_ker_directionality') }}
+            <div class="lazy-plot" data-plot-name="latest_ker_directionality">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+            {{ data_table_toggle('latest_ker_directionality') }}
+        </div>
     </div>
 </section>
 
@@ -785,6 +807,28 @@
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
             {{ data_table_toggle('latest_object_usage') }}
+        </div>
+        <div class="plot-box full-width">
+            <div class="plot-header">
+                <h3>Cross-Property Completeness Correlation</h3>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download &#x25BC;</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/latest/completeness_correlation?format=csv" class="dropdown-item">CSV</a>
+                        <a href="/download/latest/completeness_correlation?format=png" class="dropdown-item">PNG</a>
+                        <a href="/download/latest/completeness_correlation?format=svg" class="dropdown-item">SVG</a>
+                    </div>
+                </div>
+            </div>
+            <p class="plot-description">
+                Pairwise φ correlation between the presence of nine variable AOP properties. High positive =
+                AOPs that fill in one property tend to fill in the other; near zero = independently curated.
+            </p>
+            {{ methodology_note(methodology_notes, 'latest_completeness_correlation') }}
+            <div class="lazy-plot" data-plot-name="latest_completeness_correlation">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+            {{ data_table_toggle('latest_completeness_correlation') }}
         </div>
     </div>
 </section>

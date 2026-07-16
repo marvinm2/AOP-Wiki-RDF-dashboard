@@ -601,6 +601,26 @@
             }
         ]
     },
+    "latest_ker_directionality": {
+        "title": "KER Directionality",
+        "description": "Classifies every Key Event by its position in the directed KER network (upstream KE → downstream KE): initiators (no upstream), terminals (no downstream), linear links, convergent/divergent branch points, two-way hubs, and KEs in no KER (isolated). The subtitle reports how many KEs and directed relationships form the network.",
+        "data_source": "SPARQL retrieves distinct upstream/downstream KE pairs from KeyEventRelationships; Python counts each KE's distinct upstream (in) and downstream (out) neighbours and bins by (in, out) degree. A separate count of all KeyEvents yields the isolated (no-KER) bucket.",
+        "limitations": "Degree uses distinct neighbours (parallel KERs between the same KE pair count once). Direction comes from aopo:has_upstream_key_event / has_downstream_key_event; KERs missing either endpoint are excluded. Roles are global across all AOPs, not per-AOP.",
+        "queries": [
+            {
+                "caption": "Identify latest graph (AOP anchor)",
+                "query": "SELECT ?graph\nWHERE {\n  GRAPH ?graph { ?s a aopo:AdverseOutcomePathway . }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph\nORDER BY DESC(?graph)\nLIMIT 1"
+            },
+            {
+                "caption": "Distinct directed KER edges (upstream KE -> downstream KE)",
+                "query": "SELECT DISTINCT ?up ?down\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    ?ker a aopo:KeyEventRelationship ;\n         <http://aopkb.org/aop_ontology#has_upstream_key_event> ?up ;\n         <http://aopkb.org/aop_ontology#has_downstream_key_event> ?down .\n  }\n}"
+            },
+            {
+                "caption": "Total Key Events (for the isolated bucket)",
+                "query": "SELECT (COUNT(DISTINCT ?ke) AS ?ke_count)\nWHERE { GRAPH __GRAPH_URI__ { ?ke a aopo:KeyEvent . } }"
+            }
+        ]
+    },
     "latest_ontology_diversity": {
         "title": "Ontology Term Diversity",
         "description": "Counts the number of unique ontology terms used per source ontology (GO, CHEBI, UBERON, NCBITAXON, etc.) in KE annotations. Shows the breadth of ontology vocabulary in use.",
@@ -646,6 +666,22 @@
             {
                 "caption": "Top 20 contributors by distinct-AOP count",
                 "query": "SELECT ?creator (COUNT(DISTINCT ?aop) AS ?aop_count)\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    ?aop a aopo:AdverseOutcomePathway ;\n         dc:creator ?creator .\n  }\n}\nGROUP BY ?creator\nORDER BY DESC(?aop_count)\nLIMIT 20"
+            }
+        ]
+    },
+    "latest_completeness_correlation": {
+        "title": "Cross-Property Completeness Correlation",
+        "description": "Pairwise phi correlation between the presence of nine variable AOP properties across all AOPs. A high positive value means AOPs that fill in one property tend to also fill in the other; near zero means the two are curated independently. The diagonal is self-correlation (1).",
+        "data_source": "SPARQL records, per AOP, which of nine curated properties (Key Events, KERs, MIE, Adverse Outcome, Creator, Description, Life Stage, Domain of Applicability, Stressor) are present. Python builds the 0/1 presence matrix over all AOPs and computes the Pearson (= phi, for binary) correlation matrix.",
+        "limitations": "Limited to nine properties chosen for partial presence (title/page are ~100% present and carry no signal, so excluded). Correlation reflects co-occurrence of property *presence*, not content quality. A property fully present or fully absent in a given snapshot yields undefined (blank) correlations.",
+        "queries": [
+            {
+                "caption": "Identify latest graph (AOP anchor)",
+                "query": "SELECT ?graph\nWHERE {\n  GRAPH ?graph { ?s a aopo:AdverseOutcomePathway . }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph\nORDER BY DESC(?graph)\nLIMIT 1"
+            },
+            {
+                "caption": "Per-AOP presence of the nine curated properties",
+                "query": "SELECT DISTINCT ?aop ?p\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    ?aop a aopo:AdverseOutcomePathway .\n    OPTIONAL { ?aop ?p ?o . FILTER(?p IN (\n      <http://aopkb.org/aop_ontology#has_key_event>,\n      <http://aopkb.org/aop_ontology#has_key_event_relationship>,\n      <http://aopkb.org/aop_ontology#has_molecular_initiating_event>,\n      <http://aopkb.org/aop_ontology#has_adverse_outcome>,\n      <http://purl.org/dc/elements/1.1/creator>,\n      <http://purl.org/dc/elements/1.1/description>,\n      <http://aopkb.org/aop_ontology#LifeStageContext>,\n      <http://aopkb.org/aop_ontology#AopContext>,\n      <http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C54571>)) }\n  }\n}"
             }
         ]
     },
