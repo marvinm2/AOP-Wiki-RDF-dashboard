@@ -459,7 +459,7 @@ except (TypeError, ValueError):
 # Latest data plots
 latest_entity_counts = plot_results.get('latest_entity_counts') or ""
 latest_ke_components = plot_results.get('latest_ke_components') or ""
-latest_network_density = plot_results.get('latest_aop_connectivity') or ""
+latest_aop_connectivity = plot_results.get('latest_aop_connectivity') or ""
 latest_avg_per_aop = plot_results.get('latest_avg_per_aop') or ""
 latest_ontology_usage = plot_results.get('latest_ontology_usage') or ""
 latest_process_usage = plot_results.get('latest_process_usage') or ""
@@ -710,7 +710,7 @@ def download_latest_ke_components():
 
 @app.route("/download/latest_network_density")
 def download_latest_network_density():
-    """Download CSV data for Latest Network Density plot."""
+    """Download data for the AOP Connectivity plot (legacy URL; served as latest_aop_connectivity)."""
     plot_name = 'latest_aop_connectivity'
     export_format = request.args.get('format', 'csv').lower()
     include_metadata = request.args.get('metadata', 'true').lower() == 'true'

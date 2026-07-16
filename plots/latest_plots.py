@@ -691,7 +691,7 @@ def plot_latest_ontology_usage(version: str = None) -> str:
 
 
 def plot_latest_process_usage(version: str = None) -> str:
-    """Create a pie chart showing current ontology source distribution for biological processes."""
+    """Create a sorted bar chart showing current ontology source distribution for biological processes."""
     global _plot_data_cache
 
     # First, determine which graph to use
@@ -782,7 +782,7 @@ def plot_latest_process_usage(version: str = None) -> str:
 
 
 def plot_latest_object_usage(version: str = None) -> str:
-    """Create a pie chart showing current ontology source distribution for biological objects."""
+    """Create a sorted bar chart showing current ontology source distribution for biological objects."""
     global _plot_data_cache
 
     # First, determine which graph to use
@@ -3091,7 +3091,7 @@ _SCOPE_TITLE_SUFFIX: dict[str, str] = {
 }
 
 
-# Stable per-bucket colour palette for the pie chart. Plotly's Bold sequence
+# Stable per-bucket colour palette for the organ-coverage bar. Plotly's Bold sequence
 # is colour-blind tolerant and has 11 hues; we pad with greys for the two
 # residual buckets so every snapshot keeps the same colour per bucket.
 _BUCKET_PALETTE: dict[str, str] = {

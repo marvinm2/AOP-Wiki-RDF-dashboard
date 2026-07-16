@@ -56,7 +56,7 @@ All visualization data can be downloaded as CSV files through dedicated endpoint
 
 * ``GET /download/latest_entity_counts`` - Current entity counts
 * ``GET /download/latest_ke_components`` - KE component distribution  
-* ``GET /download/latest_network_density`` - Network connectivity data
+* ``GET /download/latest_aop_connectivity`` - AOP connectivity data
 * ``GET /download/latest_avg_per_aop`` - Average components per AOP
 * ``GET /download/latest_process_usage`` - Process ontology usage
 * ``GET /download/latest_object_usage`` - Object ontology usage
@@ -128,7 +128,7 @@ Latest Data Visualization Functions
 
 .. autofunction:: plots.plot_latest_ke_components
 
-.. autofunction:: plots.plot_latest_network_density
+.. autofunction:: plots.plot_latest_aop_connectivity
 
 .. autofunction:: plots.plot_latest_avg_per_aop
 
