@@ -52,6 +52,7 @@ Author:
 """
 
 import os
+import math
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -1356,6 +1357,120 @@ def apply_snapshot_xaxis(fig, title: str = "Snapshot date"):
             rather than the raw ``version`` column name.
     """
     fig.update_xaxes(title_text=title, tickangle=0)
+    return fig
+
+
+def humanize_predicate_uri(uri: str) -> str:
+    """Turn an unmapped predicate URI into a readable label as a last resort.
+
+    The property-presence charts label each series from property_labels.csv.
+    When a predicate is missing from that file the old code fell back to the
+    raw URI, so e.g. 'http://purl.org/dc/terms/license' showed up verbatim as a
+    legend entry among human labels (#130). This gives a graceful fallback —
+    'License' — for any predicate that slips through, so a future gap degrades
+    to an imperfect label rather than a URL. The real fix for a known predicate
+    is still to add a curated row to property_labels.csv (correct label + type).
+    """
+    if not isinstance(uri, str) or not uri:
+        return uri
+    tail = uri.rsplit("#", 1)[-1].rsplit("/", 1)[-1]
+    tail = tail.replace("_", " ").replace("-", " ").strip()
+    return tail.title() if tail else uri
+
+
+def mask_property_prefix_zeros(df, value_cols=("count", "percentage")):
+    """Blank each property's run of leading zeros before it first appears.
+
+    Property-presence data is reindexed to a complete (version × property) grid,
+    so a property absent from early snapshots is filled with 0. Drawn as a line,
+    that reads as a value sitting at zero and then jumping — instant adoption —
+    when really the property did not exist in the data yet (#130). Masking the
+    leading zeros to NaN (with connectgaps off) makes each series start at its
+    first real point. Interior zeros — a property that genuinely dropped back to
+    none mid-history — are left intact.
+
+    Operates on a copy; the input frame (used for the CSV/raw-data export, where
+    0 is the truthful value) is not modified.
+    """
+    df = df.sort_values(["property", "version"]).reset_index(drop=True).copy()
+    for _prop, g in df.groupby("property", sort=False):
+        counts = g["count"].values
+        nz = counts > 0
+        if not nz.any():
+            continue
+        first = int(nz.argmax())  # positional index of first non-zero
+        if first > 0:
+            rows = g.index[:first]
+            for c in value_cols:
+                if c in df.columns:
+                    df.loc[rows, c] = float("nan")
+    return df
+
+
+def build_property_presence_figure(df, y_col, y_title, entity_label, percentage=False):
+    """Small-multiples property-presence figure — one panel per property.
+
+    Replaces the former single line chart that stacked up to 17 series on one
+    categorical palette with a scrolling legend (#130): no palette distinguishes
+    that many series, and the legend hid some. Here each property gets its own
+    panel with a shared y-axis, and the facet title names it, so no colour
+    legend is needed and colour stops carrying load.
+
+    Facets are ordered by property type (Essential → … → Metadata) then label,
+    so related properties sit together. `df` is expected to carry `version`,
+    `display_label`, the `y_col`, and optionally `type`.
+    """
+    props = list(df["display_label"].drop_duplicates())
+    n = len(props)
+    if n == 0:
+        return create_fallback_plot(
+            f"{entity_label} Property Presence", "No properties to display"
+        )
+
+    wrap = min(4, n)
+    n_rows = math.ceil(n / wrap)
+
+    if "type" in df.columns:
+        order_df = df[["display_label", "type"]].drop_duplicates()
+        type_rank = {t: i for i, t in enumerate(PROPERTY_TYPE_ORDER)}
+        order_df = order_df.assign(
+            _k=order_df["type"].map(lambda t: type_rank.get(t, len(type_rank)))
+        )
+        ordered = order_df.sort_values(["_k", "display_label"])["display_label"].tolist()
+    else:
+        ordered = sorted(props)
+
+    fig = px.line(
+        df,
+        x="version",
+        y=y_col,
+        color="display_label",
+        facet_col="display_label",
+        facet_col_wrap=wrap,
+        markers=True,
+        category_orders={"display_label": ordered},
+        color_discrete_sequence=BRAND_COLORS['palette'],
+    )
+    fig.update_traces(marker=dict(size=5), line=dict(width=1.5), connectgaps=False)
+    # px names each facet "display_label=<name>"; keep just the property name.
+    fig.for_each_annotation(
+        lambda a: a.update(text=a.text.split("=", 1)[-1], font=dict(size=11))
+    )
+    fig.update_xaxes(title_text="", tickangle=0, tickfont=dict(size=9), nticks=4)
+    fig.update_yaxes(title_text="", matches="y", tickfont=dict(size=9))
+    if percentage:
+        fig.update_yaxes(range=[0, 105])
+
+    fig.update_layout(
+        height=90 + n_rows * 155,
+        showlegend=False,
+        margin=dict(l=55, r=15, t=45, b=55),
+    )
+    # One shared pair of axis titles for the whole grid.
+    fig.add_annotation(text="Snapshot date", xref="paper", yref="paper",
+                       x=0.5, y=-0.08, showarrow=False, font=dict(size=12))
+    fig.add_annotation(text=y_title, xref="paper", yref="paper", x=-0.045, y=0.5,
+                       textangle=-90, showarrow=False, font=dict(size=12))
     return fig
 
 

@@ -43,3 +43,4 @@ http://edamontology.org/data_2042,Empirical Support,Assessment,KER
 http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C71478,Uncertainty,Assessment,KER
 http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C80263,Biological Plausibility,Assessment,KER
 http://aopkb.org/aop_ontology#has_chemical_entity,Chemical Entity,Content,Stressor
+http://purl.org/dc/terms/license,License,Metadata,AOP
