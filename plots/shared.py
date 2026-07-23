@@ -179,6 +179,32 @@ class VersionedPlotCache:
 if not Config.validate_config():
     logger.error("Invalid configuration detected, using defaults")
 
+# OECD status is an *ordinal* scale — curation maturity, not an arbitrary set.
+# Pass this as a Plotly `category_orders` entry wherever status appears on an
+# axis or in a legend, so the axis order carries meaning and sibling charts stay
+# comparable. Without it, order falls out of DataFrame insertion order and two
+# charts of the same shape can disagree (issue #128).
+# Verified against the 2026-07-01 graph: these are the only four values.
+# Statuses absent from this list are appended by Plotly rather than dropped, so
+# a new OECD status will still render — just re-order this list when one appears.
+OECD_STATUS_ORDER = [
+    "No Status",
+    "Under Development",
+    "Under Review",
+    "WPHA/WNT Endorsed",
+]
+
+# Property types ordered core → peripheral, matching how the completeness charts
+# are read: is the entity identified at all, then described, then contextualised,
+# then assessed, then book-kept.
+PROPERTY_TYPE_ORDER = [
+    "Essential",
+    "Content",
+    "Context",
+    "Assessment",
+    "Metadata",
+]
+
 SPARQL_ENDPOINT = Config.SPARQL_ENDPOINT
 MAX_RETRIES = Config.SPARQL_MAX_RETRIES
 RETRY_DELAY = Config.SPARQL_RETRY_DELAY
@@ -218,6 +244,11 @@ BRAND_COLORS = {
     'light': '#93D5F6',
     'content': '#EB5B25',
     # Property type colors using house style palette
+    # NOTE: the 'oecd_status' map above is stale — the live data carries only
+    # 'Under Development', 'Under Review', 'WPHA/WNT Endorsed' and the synthetic
+    # 'No Status' (verified on 2026-07-01). Keys like 'EAGMST Under Review',
+    # 'TFHA/WNT Endorsed', 'Approved' and 'Not OECD' no longer occur, and the two
+    # statuses that do occur are missing. Tracked separately; see OECD_STATUS_ORDER.
     'type_colors': {
         'Essential': '#29235C',    # Primary Dark
         'Metadata': '#E6007E',     # Primary Magenta
