@@ -368,7 +368,11 @@ footer img {
     border: 1px solid #ddd;
 }
 
-.download-dropdown:hover .dropdown-menu {
+/* Click-toggled, not hover-opened: a :hover-only menu keeps its links inside a
+   display:none container, so they never enter the tab order and the whole
+   download path is unreachable by keyboard. download-dropdown.js owns .is-open
+   and the matching aria-expanded. */
+.download-dropdown .dropdown-menu.is-open {
     display: block;
 }
 
