@@ -5,6 +5,15 @@
  * from 28+ seconds to under 2 seconds by loading plots on-demand.
  */
 
+// Verbose per-plot tracing, off by default so a normal page load is quiet
+// (was ~52 console.log lines per /snapshot, #131). Enable from devtools with
+//   localStorage.setItem('plotDebug', '1')
+// then reload. Warnings and errors always log.
+const PLOT_DEBUG = (() => {
+    try { return localStorage.getItem('plotDebug') === '1'; } catch (e) { return false; }
+})();
+function dbg(...args) { if (PLOT_DEBUG) console.log(...args); }
+
 class PlotLazyLoader {
     constructor() {
         this.loadedPlots = new Set();
@@ -16,7 +25,7 @@ class PlotLazyLoader {
     }
 
     init() {
-        console.log("PlotLazyLoader: Initializing lazy loading system");
+        dbg("PlotLazyLoader: Initializing lazy loading system");
 
         // Set up Intersection Observer for lazy loading
         this.observer = new IntersectionObserver(
@@ -30,10 +39,10 @@ class PlotLazyLoader {
 
         // Observe all lazy plot containers
         const lazyPlots = document.querySelectorAll('.lazy-plot');
-        console.log(`PlotLazyLoader: Found ${lazyPlots.length} lazy-plot containers`);
+        dbg(`PlotLazyLoader: Found ${lazyPlots.length} lazy-plot containers`);
 
         lazyPlots.forEach(element => {
-            console.log(`PlotLazyLoader: Observing plot: ${element.dataset.plotName}`);
+            dbg(`PlotLazyLoader: Observing plot: ${element.dataset.plotName}`);
             this.observer.observe(element);
         });
 
@@ -80,10 +89,10 @@ class PlotLazyLoader {
      */
     loadPlot(element) {
         const plotName = element.dataset.plotName;
-        console.log(`PlotLazyLoader: Attempting to load plot: ${plotName}`);
+        dbg(`PlotLazyLoader: Attempting to load plot: ${plotName}`);
 
         if (this.loadedPlots.has(plotName) || this.loadingPlots.has(plotName)) {
-            console.log(`PlotLazyLoader: Plot ${plotName} already loaded or loading, skipping`);
+            dbg(`PlotLazyLoader: Plot ${plotName} already loaded or loading, skipping`);
             return;
         }
 
@@ -115,7 +124,7 @@ class PlotLazyLoader {
 
     async fetchPlot(element) {
         const plotName = element.dataset.plotName;
-        console.log(`PlotLazyLoader: Starting load for plot: ${plotName}`);
+        dbg(`PlotLazyLoader: Starting load for plot: ${plotName}`);
 
         // Without an abort signal a hung backend leaves the promise unsettled
         // forever: the spinner stays up, the catch below never runs, and the
@@ -133,12 +142,12 @@ class PlotLazyLoader {
             const url = qs ? `/api/plot/${plotName}?${qs}` : `/api/plot/${plotName}`;
 
             // Fetch plot data
-            console.log(`PlotLazyLoader: Fetching data for plot: ${plotName} (${url})`);
+            dbg(`PlotLazyLoader: Fetching data for plot: ${plotName} (${url})`);
             const response = await fetch(url, { signal: controller.signal });
-            console.log(`PlotLazyLoader: Response status for ${plotName}: ${response.status}`);
+            dbg(`PlotLazyLoader: Response status for ${plotName}: ${response.status}`);
 
             const data = await response.json();
-            console.log(`PlotLazyLoader: Response data for ${plotName}:`, {
+            dbg(`PlotLazyLoader: Response data for ${plotName}:`, {
                 success: data.success,
                 hasHtml: !!data.html,
                 htmlLength: data.html?.length || 0
@@ -146,42 +155,51 @@ class PlotLazyLoader {
 
             if (data.success) {
                 // Replace skeleton with actual plot
-                console.log(`PlotLazyLoader: Rendering plot ${plotName}`);
+                dbg(`PlotLazyLoader: Rendering plot ${plotName}`);
                 element.innerHTML = data.html;
                 this.loadedPlots.add(plotName);
 
-                // Execute any script tags in the inserted HTML
+                // Run the inline init scripts from the fetched HTML by
+                // re-injecting them as fresh <script> elements, rather than
+                // eval() (#131). innerHTML-inserted <script> tags don't execute
+                // on their own; a re-injected one runs normally in global scope,
+                // which is exactly what Plotly's `Plotly.newPlot(<id>, …)` init
+                // needs. (This removes the eval; it does not by itself enable a
+                // strict CSP — inline scripts still run. That's a separate task.)
                 const scripts = element.querySelectorAll('script');
-                scripts.forEach(script => {
-                    if (script.innerHTML) {
-                        try {
-                            console.log(`PlotLazyLoader: Executing script for ${plotName}`);
-                            eval(script.innerHTML);
-                        } catch (error) {
-                            console.error(`PlotLazyLoader: Script execution error for ${plotName}:`, error);
-                        }
+                scripts.forEach(oldScript => {
+                    if (!oldScript.textContent) return;
+                    try {
+                        dbg(`PlotLazyLoader: Executing script for ${plotName}`);
+                        const s = document.createElement('script');
+                        if (oldScript.type) s.type = oldScript.type;
+                        s.textContent = oldScript.textContent;
+                        document.body.appendChild(s);
+                        document.body.removeChild(s);
+                    } catch (error) {
+                        console.error(`PlotLazyLoader: Script execution error for ${plotName}:`, error);
                     }
                 });
 
                 // Check if Plotly is available
-                console.log(`PlotLazyLoader: Plotly available: ${!!window.Plotly}`);
+                dbg(`PlotLazyLoader: Plotly available: ${!!window.Plotly}`);
 
                 // Trigger Plotly resize if needed
                 if (window.Plotly) {
                     const plotDiv = element.querySelector('.plotly-graph-div');
                     if (plotDiv) {
-                        console.log(`PlotLazyLoader: Resizing Plotly plot: ${plotName}`);
+                        dbg(`PlotLazyLoader: Resizing Plotly plot: ${plotName}`);
                         setTimeout(() => {
                             window.Plotly.Plots.resize(plotDiv);
                         }, 100);
                     } else {
-                        console.log(`PlotLazyLoader: No plotly-graph-div found for: ${plotName}`);
+                        dbg(`PlotLazyLoader: No plotly-graph-div found for: ${plotName}`);
                     }
                 } else {
                     console.warn(`PlotLazyLoader: Plotly not available for plot: ${plotName}`);
                 }
 
-                console.log(`PlotLazyLoader: Successfully loaded plot: ${plotName}`);
+                dbg(`PlotLazyLoader: Successfully loaded plot: ${plotName}`);
             } else {
                 console.error(`PlotLazyLoader: Plot ${plotName} failed:`, data.error);
                 this.showErrorState(element, data.error);

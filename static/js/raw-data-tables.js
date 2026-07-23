@@ -16,6 +16,7 @@ async function toggleDataTable(plotName) {
     if (content.style.display === 'none' || content.style.display === '') {
         content.style.display = 'block';
         button.textContent = 'Hide Raw Data';
+        button.setAttribute('aria-expanded', 'true');
 
         if (!content.dataset.loaded) {
             content.innerHTML = '<div class="data-table-loading">Loading data...</div>';
@@ -45,6 +46,7 @@ async function toggleDataTable(plotName) {
     } else {
         content.style.display = 'none';
         button.textContent = 'Show Raw Data';
+        button.setAttribute('aria-expanded', 'false');
     }
 }
 
@@ -80,5 +82,6 @@ document.addEventListener('version-changed', function() {
     });
     document.querySelectorAll('.data-table-toggle').forEach(function(btn) {
         btn.textContent = 'Show Raw Data';
+        btn.setAttribute('aria-expanded', 'false');
     });
 });

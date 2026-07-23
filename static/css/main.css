@@ -67,6 +67,46 @@ body.site-body {
     min-height: 100vh;
 }
 
+/* Section-nav anchors scroll smoothly; disabled under reduced-motion below. */
+html {
+    scroll-behavior: smooth;
+}
+
+/* ==========================================================================
+   Accessibility: visible keyboard focus + reduced motion (#131)
+   ========================================================================== */
+
+/* One visible focus ring for keyboard users on every interactive element.
+   :focus-visible keeps it off pointer clicks. Before this, the only :focus
+   rules set outline:none with no replacement, so keyboard focus was invisible. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible {
+    outline: 3px solid var(--color-cta);
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
+/* Honour the OS "reduce motion" preference: near-instant transitions and
+   animations, and no smooth scroll. */
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+    }
+}
+
 header {
     background-color: var(--color-nav-bg);
     padding: 20px;
@@ -146,6 +186,10 @@ input[type="text"], input[type="file"] {
     cursor: pointer;
     font-size: 14px;
     transition: background-color 0.3s ease;
+    /* Section-nav uses <a> elements for these; keep them looking like buttons. */
+    display: inline-block;
+    text-decoration: none;
+    text-align: center;
 }
 
 .nav-button:hover {
@@ -1218,7 +1262,11 @@ footer img {
 }
 
 .main-nav .nav-links .nav-link:hover {
-    color: var(--color-nav-hover);
+    /* Stay white and underline instead of turning magenta: #E6007E on the navy
+       nav is only 3.13:1, i.e. hovering made the label harder to read (#131). */
+    color: var(--color-nav-text);
+    text-decoration: underline;
+    text-underline-offset: 4px;
     background: transparent;
     transform: none;
     box-shadow: none;
