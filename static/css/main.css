@@ -1359,8 +1359,16 @@ footer img {
    Page Content (base.html)
    ========================================================================== */
 
+/* body.site-body is a column flex container, so the auto inline margins here
+   suppress the default cross-axis stretch and the element would otherwise
+   shrink to fit its content — leaving /network, /about and / narrower than the
+   nav and footer. width + border-box restores the fill; the max-width includes
+   the 20px gutters so the content edge lands on the same x as .nav-container
+   and .footer-container. */
 .page-content {
-    max-width: var(--content-max-width);
+    width: 100%;
+    box-sizing: border-box;
+    max-width: calc(var(--content-max-width) + 40px);
     margin: 0 auto;
     padding: 0 20px;
     flex: 1;
