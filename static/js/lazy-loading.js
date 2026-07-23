@@ -9,6 +9,8 @@ class PlotLazyLoader {
     constructor() {
         this.loadedPlots = new Set();
         this.loadingPlots = new Set();
+        this.queue = [];
+        this.activeCount = 0;
         this.observer = null;
         this.init();
     }
@@ -72,7 +74,11 @@ class PlotLazyLoader {
         );
     }
 
-    async loadPlot(element) {
+    /**
+     * Queue a plot for loading. The skeleton appears immediately; the request
+     * itself waits for a free slot.
+     */
+    loadPlot(element) {
         const plotName = element.dataset.plotName;
         console.log(`PlotLazyLoader: Attempting to load plot: ${plotName}`);
 
@@ -82,12 +88,42 @@ class PlotLazyLoader {
         }
 
         this.loadingPlots.add(plotName);
+        this.showLoadingState(element);
+        this.queue.push(element);
+        this.pumpQueue();
+    }
+
+    /**
+     * Start queued fetches up to MAX_CONCURRENT.
+     *
+     * Every /api/plot/<name> call runs a SPARQL query server-side. Scrolling
+     * quickly used to fire all of them at once, so the browser's per-host
+     * connection cap queued them opaquely and the tail requests starved — which
+     * is what produced apparently-stuck plots. Bounding it here keeps the wait
+     * visible to the timeout in fetchPlot() instead.
+     */
+    pumpQueue() {
+        while (this.activeCount < PlotLazyLoader.MAX_CONCURRENT && this.queue.length > 0) {
+            const element = this.queue.shift();
+            this.activeCount++;
+            this.fetchPlot(element).finally(() => {
+                this.activeCount--;
+                this.pumpQueue();
+            });
+        }
+    }
+
+    async fetchPlot(element) {
+        const plotName = element.dataset.plotName;
         console.log(`PlotLazyLoader: Starting load for plot: ${plotName}`);
 
-        try {
-            // Show loading state
-            this.showLoadingState(element);
+        // Without an abort signal a hung backend leaves the promise unsettled
+        // forever: the spinner stays up, the catch below never runs, and the
+        // user gets no error and no Retry (issue #129).
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), PlotLazyLoader.LOAD_TIMEOUT_MS);
 
+        try {
             // Forward any data-* attributes that map to plot kwargs (scope, view).
             // Lets the coverage toggles drive the initial render via markup alone.
             const params = new URLSearchParams();
@@ -98,7 +134,7 @@ class PlotLazyLoader {
 
             // Fetch plot data
             console.log(`PlotLazyLoader: Fetching data for plot: ${plotName} (${url})`);
-            const response = await fetch(url);
+            const response = await fetch(url, { signal: controller.signal });
             console.log(`PlotLazyLoader: Response status for ${plotName}: ${response.status}`);
 
             const data = await response.json();
@@ -151,9 +187,17 @@ class PlotLazyLoader {
                 this.showErrorState(element, data.error);
             }
         } catch (error) {
-            console.error(`PlotLazyLoader: Exception loading plot ${plotName}:`, error);
-            this.showErrorState(element, 'Failed to load plot: ' + error.message);
+            if (error.name === 'AbortError') {
+                const seconds = Math.round(PlotLazyLoader.LOAD_TIMEOUT_MS / 1000);
+                console.error(`PlotLazyLoader: Timeout loading plot ${plotName} after ${seconds}s`);
+                // Phrased so showErrorState() picks its timeout branch.
+                this.showErrorState(element, `Request timeout after ${seconds}s`);
+            } else {
+                console.error(`PlotLazyLoader: Exception loading plot ${plotName}:`, error);
+                this.showErrorState(element, 'Failed to load plot: ' + error.message);
+            }
         } finally {
+            clearTimeout(timeoutId);
             this.loadingPlots.delete(plotName);
         }
     }
@@ -212,6 +256,12 @@ class PlotLazyLoader {
         }
     }
 }
+
+/** Cap on in-flight /api/plot requests; each one runs a SPARQL query. */
+PlotLazyLoader.MAX_CONCURRENT = 4;
+
+/** Give up on a plot request after this long and show the retryable error. */
+PlotLazyLoader.LOAD_TIMEOUT_MS = 45000;
 
 // Initialize lazy loader when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
