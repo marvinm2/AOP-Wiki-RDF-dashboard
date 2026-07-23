@@ -421,6 +421,9 @@ footer img {
 .section-block {
     width: 100%;
     margin: 40px auto;
+    /* Clears the sticky .snapshot-section-nav so a jumped-to heading isn't
+       hidden behind it. */
+    scroll-margin-top: 60px;
 }
 
 .section-header {
@@ -1580,12 +1583,21 @@ footer img {
     margin: -10px auto 14px;
 }
 
+/* Sticky on /snapshot and /trends: both pages run past 14,000px, so section
+   jumps have to stay reachable while scrolling. Negative inline margins let the
+   bar's background span the full content width behind the page gutters. */
 .snapshot-section-nav {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
     justify-content: center;
-    margin: 0 auto 14px;
+    position: sticky;
+    top: 0;
+    z-index: 90;
+    background-color: var(--color-bg);
+    margin: 0 -20px 14px;
+    padding: 8px 20px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
 .nav-button--compact {
