@@ -46,8 +46,17 @@
             });
     }
 
+    // event.target is normally an Element, but a synthetic event can target
+    // document/window, which have no .closest(). Guard so a stray event can't
+    // throw out of these global listeners.
+    function closestOn(target, selector) {
+        return target && typeof target.closest === 'function'
+            ? target.closest(selector)
+            : null;
+    }
+
     document.addEventListener('click', function (event) {
-        var toggle = event.target.closest('.download-dropdown .dropdown-toggle');
+        var toggle = closestOn(event.target, '.download-dropdown .dropdown-toggle');
 
         if (toggle) {
             event.preventDefault();
@@ -65,7 +74,7 @@
 
     document.addEventListener('keydown', function (event) {
         if (event.key !== 'Escape') return;
-        var wrapper = event.target.closest('.download-dropdown');
+        var wrapper = closestOn(event.target, '.download-dropdown');
         closeAll(null);
         if (wrapper) {
             var toggle = wrapper.querySelector('.dropdown-toggle');
