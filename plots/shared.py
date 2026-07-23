@@ -52,7 +52,6 @@ Author:
 """
 
 import os
-import math
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -1407,28 +1406,36 @@ def mask_property_prefix_zeros(df, value_cols=("count", "percentage")):
     return df
 
 
+# Enough distinct marker glyphs that, paired with the colour palette, every
+# series in a property-presence chart is uniquely identified: the palette has
+# 11 colours and this has 13 symbols, so the (colour, symbol) pair only repeats
+# after lcm(11,13)=143 series — far more than any entity's property count.
+_MARKER_SYMBOLS = [
+    'circle', 'square', 'diamond', 'triangle-up', 'cross', 'x', 'star',
+    'pentagon', 'hexagon', 'octagon', 'triangle-down', 'triangle-left',
+    'triangle-right',
+]
+
+
 def build_property_presence_figure(df, y_col, y_title, entity_label, percentage=False):
-    """Small-multiples property-presence figure — one panel per property.
+    """Single property-presence line chart, one series per property.
 
-    Replaces the former single line chart that stacked up to 17 series on one
-    categorical palette with a scrolling legend (#130): no palette distinguishes
-    that many series, and the legend hid some. Here each property gets its own
-    panel with a shared y-axis, and the facet title names it, so no colour
-    legend is needed and colour stops carrying load.
+    Every property is a line distinguished by BOTH colour and marker shape, so
+    the ~17 series stay tellable apart even where the 11-colour palette repeats
+    (#130). The legend sits below the plot and wraps, so no series is hidden
+    behind a scrollbar the way the old in-plot legend was.
 
-    Facets are ordered by property type (Essential → … → Metadata) then label,
-    so related properties sit together. `df` is expected to carry `version`,
-    `display_label`, the `y_col`, and optionally `type`.
+    Series are ordered by property type (Essential → … → Metadata) then label,
+    so related properties group in the legend. `df` is expected to carry
+    `version`, `display_label`, the `y_col`, and optionally `type`. Callers pass
+    a frame whose leading zeros are already masked (see
+    mask_property_prefix_zeros) so lines start when a property first appears.
     """
     props = list(df["display_label"].drop_duplicates())
-    n = len(props)
-    if n == 0:
+    if not props:
         return create_fallback_plot(
             f"{entity_label} Property Presence", "No properties to display"
         )
-
-    wrap = min(4, n)
-    n_rows = math.ceil(n / wrap)
 
     if "type" in df.columns:
         order_df = df[["display_label", "type"]].drop_duplicates()
@@ -1445,32 +1452,37 @@ def build_property_presence_figure(df, y_col, y_title, entity_label, percentage=
         x="version",
         y=y_col,
         color="display_label",
-        facet_col="display_label",
-        facet_col_wrap=wrap,
         markers=True,
         category_orders={"display_label": ordered},
         color_discrete_sequence=BRAND_COLORS['palette'],
+        labels={y_col: y_title, "display_label": "Property"},
     )
-    fig.update_traces(marker=dict(size=5), line=dict(width=1.5), connectgaps=False)
-    # px names each facet "display_label=<name>"; keep just the property name.
-    fig.for_each_annotation(
-        lambda a: a.update(text=a.text.split("=", 1)[-1], font=dict(size=11))
-    )
-    fig.update_xaxes(title_text="", tickangle=0, tickfont=dict(size=9), nticks=4)
-    fig.update_yaxes(title_text="", matches="y", tickfont=dict(size=9))
+    # Give each trace its own marker shape, in the legend's (type→label) order.
+    for i, trace in enumerate(fig.data):
+        trace.update(
+            marker=dict(symbol=_MARKER_SYMBOLS[i % len(_MARKER_SYMBOLS)], size=7),
+            line=dict(width=1.5),
+            connectgaps=False,
+        )
+
+    apply_snapshot_xaxis(fig)
+    fig.update_yaxes(title_text=y_title)
     if percentage:
         fig.update_yaxes(range=[0, 105])
 
     fig.update_layout(
-        height=90 + n_rows * 155,
-        showlegend=False,
-        margin=dict(l=55, r=15, t=45, b=55),
+        # Horizontal legend below the plot: it wraps to as many rows as needed,
+        # so all series stay visible instead of scrolling inside the plot.
+        legend=dict(
+            orientation="h",
+            yanchor="top", y=-0.25,
+            xanchor="left", x=0,
+            font=dict(size=10),
+            title_text="",
+        ),
+        margin=dict(l=55, r=20, t=40, b=140),
+        height=560,
     )
-    # One shared pair of axis titles for the whole grid.
-    fig.add_annotation(text="Snapshot date", xref="paper", yref="paper",
-                       x=0.5, y=-0.08, showarrow=False, font=dict(size=12))
-    fig.add_annotation(text=y_title, xref="paper", yref="paper", x=-0.045, y=0.5,
-                       textangle=-90, showarrow=False, font=dict(size=12))
     return fig
 
 
