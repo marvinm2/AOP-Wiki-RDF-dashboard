@@ -308,7 +308,7 @@
     },
     "ke_property_presence": {
         "title": "KE Property Presence Over Time",
-        "description": "Tracks which metadata properties are present in Key Events over time. Identifies completeness patterns and annotation trends. Each property is shown in its own small-multiple panel.",
+        "description": "Tracks which metadata properties are present in Key Events over time. Identifies completeness patterns and annotation trends. Each property is a line, distinguished by colour and marker shape.",
         "data_source": "Properties are defined in property_labels.csv filtered for KE entity type. SPARQL queries check property presence across all Key Events in each version using GROUP_CONCAT aggregation.",
         "limitations": "Properties always present (100%) are excluded for clarity. Measures presence of each property, not quality or accuracy of the values stored. Trend data covers only the published RDF release versions available in the SPARQL endpoint; the AOP-Wiki knowledge base predates the earliest RDF release, so earlier activity is not captured.",
         "queries": [
@@ -324,7 +324,7 @@
     },
     "ker_property_presence": {
         "title": "KER Property Presence Over Time",
-        "description": "Tracks which metadata properties are present in Key Event Relationships over time. Monitors evidence and annotation quality across versions. Each property is shown in its own small-multiple panel.",
+        "description": "Tracks which metadata properties are present in Key Event Relationships over time. Monitors evidence and annotation quality across versions. Each property is a line, distinguished by colour and marker shape.",
         "data_source": "Properties are defined in property_labels.csv filtered for KER entity type. SPARQL queries check property presence across all KERs in each version using GROUP_CONCAT aggregation.",
         "limitations": "Properties always present (100%) are excluded for clarity. Measures presence of each property, not the strength or quality of evidence recorded. Trend data covers only the published RDF release versions available in the SPARQL endpoint; the AOP-Wiki knowledge base predates the earliest RDF release, so earlier activity is not captured.",
         "queries": [
@@ -340,7 +340,7 @@
     },
     "stressor_property_presence": {
         "title": "Stressor Property Presence Over Time",
-        "description": "Tracks which metadata properties are present in Stressors over time. Identifies documentation patterns and completeness trends for stressor entities. Each property is shown in its own small-multiple panel.",
+        "description": "Tracks which metadata properties are present in Stressors over time. Identifies documentation patterns and completeness trends for stressor entities. Each property is a line, distinguished by colour and marker shape.",
         "data_source": "Properties are defined in property_labels.csv filtered for Stressor entity type. SPARQL queries check property presence across all Stressors in each version using GROUP_CONCAT aggregation.",
         "limitations": "Properties always present (100%) are excluded for clarity. Stressors are identified by the NCI Thesaurus type (nci:C54571), which may not capture all stressor-related entities in the knowledge base. Trend data covers only the published RDF release versions available in the SPARQL endpoint; the AOP-Wiki knowledge base predates the earliest RDF release, so earlier activity is not captured.",
         "queries": [
