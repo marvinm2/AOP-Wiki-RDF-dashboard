@@ -62,6 +62,8 @@ from .shared import (
     run_sparql_query, run_sparql_query_with_retry, extract_counts,
     safe_read_csv, create_fallback_plot, get_properties_for_entity,
     get_all_versions, render_plot_html, apply_snapshot_xaxis,
+    build_property_presence_figure, mask_property_prefix_zeros,
+    humanize_predicate_uri,
     ENTITY_TYPE_CLASSES, diff_entities_between_versions,
     fetch_entity_uris_by_version,
 )
@@ -2245,59 +2247,30 @@ def plot_aop_property_presence(label_file="property_labels.csv") -> tuple[str, s
 
         if not df_labels.empty:
             df = df.merge(df_labels, how="left", left_on="property", right_on="uri")
-            df["display_label"] = df["label"].fillna(df["property"])
+            # Curated label where property_labels.csv has one; otherwise a
+            # humanized last-resort label so an unmapped predicate never renders
+            # as a raw URI (#130).
+            df["display_label"] = df["label"].fillna(
+                df["property"].map(humanize_predicate_uri)
+            )
         else:
-            df["display_label"] = df["property"]
+            df["display_label"] = df["property"].map(humanize_predicate_uri)
 
         # Sort
         df["version_dt"] = pd.to_datetime(df["version"], errors="coerce")
         df = df.sort_values("version_dt")
 
-        # Cache data for CSV export
+        # Cache data for CSV export (raw 0s intact — the table's truthful value).
         _plot_data_cache['aop_property_presence_absolute'] = df.copy()
         _plot_data_cache['aop_property_presence_percentage'] = df.copy()
 
-        # Define marker shapes for visual distinction
-        marker_symbols = ['circle', 'square', 'diamond', 'triangle-up', 'cross', 'x', 'star',
-                          'pentagon', 'hexagon', 'octagon', 'triangle-down', 'triangle-left', 'triangle-right']
-
-        # Absolute presence
-        fig_abs = px.line(
-            df,
-            x="version",
-            y="count",
-            color="display_label",
-            markers=True,
-            labels={"count": "Number of AOPs", "display_label": "Property"},
-            color_discrete_sequence=BRAND_COLORS['palette']
-        )
-
-        # Apply marker shapes to traces
-        for i, trace in enumerate(fig_abs.data):
-            trace.update(marker=dict(symbol=marker_symbols[i % len(marker_symbols)], size=8))
-
-        fig_abs.update_layout(
-            margin=dict(l=50, r=20, t=50, b=50)
-        )
-
-        # Percentage presence
-        fig_delta = px.line(
-            df,
-            x="version",
-            y="percentage",
-            color="display_label",
-            markers=True,
-            labels={"percentage": "Percentage (%)", "display_label": "Property"},
-            color_discrete_sequence=BRAND_COLORS['palette']
-        )
-
-        # Apply marker shapes to traces
-        for i, trace in enumerate(fig_delta.data):
-            trace.update(marker=dict(symbol=marker_symbols[i % len(marker_symbols)], size=8))
-
-        fig_delta.update_layout(
-            margin=dict(l=50, r=20, t=50, b=50)
-        )
+        # Small multiples, one panel per property (#130). Mask leading zeros so a
+        # property's line starts when it first appears, not from a flat zero run.
+        plot_df = mask_property_prefix_zeros(df)
+        fig_abs = build_property_presence_figure(
+            plot_df, "count", "Number of AOPs", "AOP")
+        fig_delta = build_property_presence_figure(
+            plot_df, "percentage", "Percentage (%)", "AOP", percentage=True)
 
         # Cache figures for image export
         _plot_figure_cache['aop_property_presence_absolute'] = fig_abs
@@ -2419,32 +2392,28 @@ def plot_ke_property_presence(label_file="property_labels.csv") -> tuple[str, st
         df_labels = safe_read_csv(label_file, default_labels)
         if not df_labels.empty:
             df = df.merge(df_labels, how="left", left_on="property", right_on="uri")
-            df["display_label"] = df["label"].fillna(df["property"])
+            # Curated label where property_labels.csv has one; otherwise a
+            # humanized last-resort label so an unmapped predicate never renders
+            # as a raw URI (#130).
+            df["display_label"] = df["label"].fillna(
+                df["property"].map(humanize_predicate_uri)
+            )
         else:
-            df["display_label"] = df["property"]
+            df["display_label"] = df["property"].map(humanize_predicate_uri)
 
         df["version_dt"] = pd.to_datetime(df["version"], errors="coerce")
         df = df.sort_values("version_dt")
 
+        # Raw 0s intact for the CSV/raw-data export.
         _plot_data_cache['ke_property_presence_absolute'] = df.copy()
         _plot_data_cache['ke_property_presence_percentage'] = df.copy()
 
-        marker_symbols = ['circle', 'square', 'diamond', 'triangle-up', 'cross', 'x', 'star',
-                          'pentagon', 'hexagon', 'octagon', 'triangle-down', 'triangle-left', 'triangle-right']
-
-        fig_abs = px.line(df, x="version", y="count", color="display_label", markers=True,
-                          labels={"count": "Number of KEs", "display_label": "Property"},
-                          color_discrete_sequence=BRAND_COLORS['palette'])
-        for i, trace in enumerate(fig_abs.data):
-            trace.update(marker=dict(symbol=marker_symbols[i % len(marker_symbols)], size=8))
-        fig_abs.update_layout(margin=dict(l=50, r=20, t=50, b=50))
-
-        fig_delta = px.line(df, x="version", y="percentage", color="display_label", markers=True,
-                            labels={"percentage": "Percentage (%)", "display_label": "Property"},
-                            color_discrete_sequence=BRAND_COLORS['palette'])
-        for i, trace in enumerate(fig_delta.data):
-            trace.update(marker=dict(symbol=marker_symbols[i % len(marker_symbols)], size=8))
-        fig_delta.update_layout(margin=dict(l=50, r=20, t=50, b=50))
+        # Small multiples, one panel per property (#130).
+        plot_df = mask_property_prefix_zeros(df)
+        fig_abs = build_property_presence_figure(
+            plot_df, "count", "Number of KEs", "KE")
+        fig_delta = build_property_presence_figure(
+            plot_df, "percentage", "Percentage (%)", "KE", percentage=True)
 
         _plot_figure_cache['ke_property_presence_absolute'] = fig_abs
         _plot_figure_cache['ke_property_presence_percentage'] = fig_delta
@@ -2541,32 +2510,28 @@ def plot_ker_property_presence(label_file="property_labels.csv") -> tuple[str, s
         df_labels = safe_read_csv(label_file, default_labels)
         if not df_labels.empty:
             df = df.merge(df_labels, how="left", left_on="property", right_on="uri")
-            df["display_label"] = df["label"].fillna(df["property"])
+            # Curated label where property_labels.csv has one; otherwise a
+            # humanized last-resort label so an unmapped predicate never renders
+            # as a raw URI (#130).
+            df["display_label"] = df["label"].fillna(
+                df["property"].map(humanize_predicate_uri)
+            )
         else:
-            df["display_label"] = df["property"]
+            df["display_label"] = df["property"].map(humanize_predicate_uri)
 
         df["version_dt"] = pd.to_datetime(df["version"], errors="coerce")
         df = df.sort_values("version_dt")
 
+        # Raw 0s intact for the CSV/raw-data export.
         _plot_data_cache['ker_property_presence_absolute'] = df.copy()
         _plot_data_cache['ker_property_presence_percentage'] = df.copy()
 
-        marker_symbols = ['circle', 'square', 'diamond', 'triangle-up', 'cross', 'x', 'star',
-                          'pentagon', 'hexagon', 'octagon', 'triangle-down', 'triangle-left', 'triangle-right']
-
-        fig_abs = px.line(df, x="version", y="count", color="display_label", markers=True,
-                          labels={"count": "Number of KERs", "display_label": "Property"},
-                          color_discrete_sequence=BRAND_COLORS['palette'])
-        for i, trace in enumerate(fig_abs.data):
-            trace.update(marker=dict(symbol=marker_symbols[i % len(marker_symbols)], size=8))
-        fig_abs.update_layout(margin=dict(l=50, r=20, t=50, b=50))
-
-        fig_delta = px.line(df, x="version", y="percentage", color="display_label", markers=True,
-                            labels={"percentage": "Percentage (%)", "display_label": "Property"},
-                            color_discrete_sequence=BRAND_COLORS['palette'])
-        for i, trace in enumerate(fig_delta.data):
-            trace.update(marker=dict(symbol=marker_symbols[i % len(marker_symbols)], size=8))
-        fig_delta.update_layout(margin=dict(l=50, r=20, t=50, b=50))
+        # Small multiples, one panel per property (#130).
+        plot_df = mask_property_prefix_zeros(df)
+        fig_abs = build_property_presence_figure(
+            plot_df, "count", "Number of KERs", "KER")
+        fig_delta = build_property_presence_figure(
+            plot_df, "percentage", "Percentage (%)", "KER", percentage=True)
 
         _plot_figure_cache['ker_property_presence_absolute'] = fig_abs
         _plot_figure_cache['ker_property_presence_percentage'] = fig_delta
@@ -2663,32 +2628,28 @@ def plot_stressor_property_presence(label_file="property_labels.csv") -> tuple[s
         df_labels = safe_read_csv(label_file, default_labels)
         if not df_labels.empty:
             df = df.merge(df_labels, how="left", left_on="property", right_on="uri")
-            df["display_label"] = df["label"].fillna(df["property"])
+            # Curated label where property_labels.csv has one; otherwise a
+            # humanized last-resort label so an unmapped predicate never renders
+            # as a raw URI (#130).
+            df["display_label"] = df["label"].fillna(
+                df["property"].map(humanize_predicate_uri)
+            )
         else:
-            df["display_label"] = df["property"]
+            df["display_label"] = df["property"].map(humanize_predicate_uri)
 
         df["version_dt"] = pd.to_datetime(df["version"], errors="coerce")
         df = df.sort_values("version_dt")
 
+        # Raw 0s intact for the CSV/raw-data export.
         _plot_data_cache['stressor_property_presence_absolute'] = df.copy()
         _plot_data_cache['stressor_property_presence_percentage'] = df.copy()
 
-        marker_symbols = ['circle', 'square', 'diamond', 'triangle-up', 'cross', 'x', 'star',
-                          'pentagon', 'hexagon', 'octagon', 'triangle-down', 'triangle-left', 'triangle-right']
-
-        fig_abs = px.line(df, x="version", y="count", color="display_label", markers=True,
-                          labels={"count": "Number of Stressors", "display_label": "Property"},
-                          color_discrete_sequence=BRAND_COLORS['palette'])
-        for i, trace in enumerate(fig_abs.data):
-            trace.update(marker=dict(symbol=marker_symbols[i % len(marker_symbols)], size=8))
-        fig_abs.update_layout(margin=dict(l=50, r=20, t=50, b=50))
-
-        fig_delta = px.line(df, x="version", y="percentage", color="display_label", markers=True,
-                            labels={"percentage": "Percentage (%)", "display_label": "Property"},
-                            color_discrete_sequence=BRAND_COLORS['palette'])
-        for i, trace in enumerate(fig_delta.data):
-            trace.update(marker=dict(symbol=marker_symbols[i % len(marker_symbols)], size=8))
-        fig_delta.update_layout(margin=dict(l=50, r=20, t=50, b=50))
+        # Small multiples, one panel per property (#130).
+        plot_df = mask_property_prefix_zeros(df)
+        fig_abs = build_property_presence_figure(
+            plot_df, "count", "Number of Stressors", "Stressor")
+        fig_delta = build_property_presence_figure(
+            plot_df, "percentage", "Percentage (%)", "Stressor", percentage=True)
 
         _plot_figure_cache['stressor_property_presence_absolute'] = fig_abs
         _plot_figure_cache['stressor_property_presence_percentage'] = fig_delta
