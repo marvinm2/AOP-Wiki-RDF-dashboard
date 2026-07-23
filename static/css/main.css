@@ -9,6 +9,11 @@
     --color-magenta: #E6007E;
     --color-blue: #307BBF;
     --color-light-blue: #009FE3;
+    /* Interface blue. #307BBF is 4.46:1 on white and 4.09:1 on #f5f5f5, both
+       under the 4.5:1 WCAG AA floor, so chrome (links, labels, button fills)
+       uses this darker variant: 5.45:1 on white, 5.00:1 on #f5f5f5. Charts keep
+       --color-blue so plots stay in sync with plots/shared.py BRAND_COLORS. */
+    --color-blue-ui: #2A6DA8;
     --color-orange: #EB5B25;
     --color-sky-blue: #93D5F6;
     --color-deep-magenta: #9A1C57;
@@ -256,7 +261,7 @@ footer img {
 }
 
 #dropdown-table th {
-    background-color: var(--color-blue);
+    background-color: var(--color-blue-ui);
     color: white;
     font-weight: bold;
 }
@@ -299,7 +304,7 @@ footer img {
 }
 
 .download-button {
-    background-color: var(--color-blue);
+    background-color: var(--color-blue-ui);
     color: white;
     padding: 6px 12px;
     border: none;
@@ -331,14 +336,14 @@ footer img {
 }
 
 .aop-aop-threshold-control input[type="range"] {
-    accent-color: var(--color-blue);
+    accent-color: var(--color-blue-ui);
     width: 140px;
     cursor: pointer;
 }
 
 .aop-aop-threshold-control #aop-aop-threshold-value {
     font-weight: 600;
-    color: var(--color-blue);
+    color: var(--color-blue-ui);
     min-width: 1.4em;
     display: inline-block;
     text-align: right;
@@ -368,7 +373,11 @@ footer img {
     border: 1px solid #ddd;
 }
 
-.download-dropdown:hover .dropdown-menu {
+/* Click-toggled, not hover-opened: a :hover-only menu keeps its links inside a
+   display:none container, so they never enter the tab order and the whole
+   download path is unreachable by keyboard. download-dropdown.js owns .is-open
+   and the matching aria-expanded. */
+.download-dropdown .dropdown-menu.is-open {
     display: block;
 }
 
@@ -417,6 +426,9 @@ footer img {
 .section-block {
     width: 100%;
     margin: 40px auto;
+    /* Clears the sticky .snapshot-section-nav so a jumped-to heading isn't
+       hidden behind it. */
+    scroll-margin-top: 60px;
 }
 
 .section-header {
@@ -425,7 +437,7 @@ footer img {
     color: var(--color-primary);
     text-align: center;
     margin: 20px 0;
-    border-bottom: 2px solid var(--color-blue);
+    border-bottom: 2px solid var(--color-blue-ui);
     padding-bottom: 10px;
 }
 
@@ -469,7 +481,7 @@ footer img {
 
 .tab-button:hover {
     background-color: rgba(48, 123, 191, 0.1);
-    color: var(--color-blue);
+    color: var(--color-blue-ui);
 }
 
 .tab-button.active {
@@ -626,7 +638,7 @@ footer img {
 }
 
 .card-icon {
-    color: var(--color-blue);
+    color: var(--color-blue-ui);
     margin-bottom: 16px;
 }
 
@@ -666,7 +678,7 @@ footer img {
 .aopwiki-intro > summary {
     cursor: pointer;
     padding: 10px 14px;
-    color: var(--color-blue);
+    color: var(--color-blue-ui);
     font-weight: 500;
     user-select: none;
 }
@@ -687,7 +699,7 @@ footer img {
 }
 
 .intro-content a {
-    color: var(--color-blue);
+    color: var(--color-blue-ui);
     text-decoration: none;
 }
 
@@ -764,7 +776,7 @@ footer img {
 }
 
 .about-link {
-    color: var(--color-blue);
+    color: var(--color-blue-ui);
     text-decoration: none;
 }
 
@@ -773,7 +785,7 @@ footer img {
 }
 
 .about-section a:not(.about-link) {
-    color: var(--color-blue);
+    color: var(--color-blue-ui);
     text-decoration: none;
 }
 
@@ -848,7 +860,7 @@ footer img {
 
 /* Version Banner (Historical Version Indicator) */
 .version-banner {
-    background: linear-gradient(135deg, var(--color-blue) 0%, #4a94d4 100%);
+    background: linear-gradient(135deg, var(--color-blue-ui) 0%, #4a94d4 100%);
     color: white;
     padding: 15px 30px;
     margin: 0 auto 20px;
@@ -891,7 +903,7 @@ footer img {
 
 .version-banner-reset {
     background: white;
-    color: var(--color-blue);
+    color: var(--color-blue-ui);
     border: none;
     padding: 8px 16px;
     border-radius: 6px;
@@ -953,7 +965,7 @@ footer img {
 .methodology-note > summary {
     cursor: pointer;
     padding: 10px 14px;
-    color: var(--color-blue);
+    color: var(--color-blue-ui);
     font-weight: 600;
     font-size: 15px;
     user-select: none;
@@ -981,7 +993,7 @@ footer img {
 
 .sparql-query > summary {
     cursor: pointer;
-    color: var(--color-blue);
+    color: var(--color-blue-ui);
     font-size: 14px;
     font-weight: 500;
     margin-top: 8px;
@@ -1015,7 +1027,7 @@ footer img {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    background-color: var(--color-blue);
+    background-color: var(--color-blue-ui);
     color: #fff;
     padding: 8px 16px;
     border-radius: 4px;
@@ -1036,19 +1048,19 @@ footer img {
     align-items: center;
     gap: 4px;
     background-color: transparent;
-    color: var(--color-blue);
+    color: var(--color-blue-ui);
     padding: 8px 16px;
     border-radius: 4px;
     font-size: 12px;
     font-weight: 400;
-    border: 1px solid var(--color-blue);
+    border: 1px solid var(--color-blue-ui);
     cursor: pointer;
     transition: all 0.3s ease;
 }
 
 .sparql-copy-btn:hover {
     background-color: rgba(48, 123, 191, 0.1);
-    color: var(--color-blue);
+    color: var(--color-blue-ui);
 }
 
 /* ============================================
@@ -1061,8 +1073,8 @@ footer img {
 
 .data-table-toggle {
     background-color: transparent;
-    color: var(--color-blue);
-    border: 1px solid var(--color-blue);
+    color: var(--color-blue-ui);
+    border: 1px solid var(--color-blue-ui);
     padding: 6px 14px;
     border-radius: 4px;
     cursor: pointer;
@@ -1072,7 +1084,7 @@ footer img {
 }
 
 .data-table-toggle:hover {
-    background-color: var(--color-blue);
+    background-color: var(--color-blue-ui);
     color: white;
 }
 
@@ -1355,8 +1367,16 @@ footer img {
    Page Content (base.html)
    ========================================================================== */
 
+/* body.site-body is a column flex container, so the auto inline margins here
+   suppress the default cross-axis stretch and the element would otherwise
+   shrink to fit its content — leaving /network, /about and / narrower than the
+   nav and footer. width + border-box restores the fill; the max-width includes
+   the 20px gutters so the content edge lands on the same x as .nav-container
+   and .footer-container. */
 .page-content {
-    max-width: var(--content-max-width);
+    width: 100%;
+    box-sizing: border-box;
+    max-width: calc(var(--content-max-width) + 40px);
     margin: 0 auto;
     padding: 0 20px;
     flex: 1;
@@ -1568,12 +1588,21 @@ footer img {
     margin: -10px auto 14px;
 }
 
+/* Sticky on /snapshot and /trends: both pages run past 14,000px, so section
+   jumps have to stay reachable while scrolling. Negative inline margins let the
+   bar's background span the full content width behind the page gutters. */
 .snapshot-section-nav {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
     justify-content: center;
-    margin: 0 auto 14px;
+    position: sticky;
+    top: 0;
+    z-index: 90;
+    background-color: var(--color-bg);
+    margin: 0 -20px 14px;
+    padding: 8px 20px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
 .nav-button--compact {
@@ -1581,7 +1610,7 @@ footer img {
     margin: 0;
     font-size: 13px;
     border-radius: 4px;
-    background-color: var(--color-blue);
+    background-color: var(--color-blue-ui);
 }
 
 .nav-button--compact:hover {
@@ -1648,19 +1677,19 @@ footer img {
 
 .segmented-control {
     display: inline-flex;
-    border: 1px solid var(--color-blue);
+    border: 1px solid var(--color-blue-ui);
     border-radius: 6px;
     overflow: hidden;
 }
 
 .segmented-button {
     background-color: white;
-    color: var(--color-blue);
+    color: var(--color-blue-ui);
     border: none;
     padding: 6px 14px;
     font-size: 13px;
     cursor: pointer;
-    border-right: 1px solid var(--color-blue);
+    border-right: 1px solid var(--color-blue-ui);
     transition: background-color 0.15s ease, color 0.15s ease;
 }
 

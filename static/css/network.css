@@ -37,7 +37,7 @@
 
 .tab-btn:hover {
     background-color: rgba(48, 123, 191, 0.08);
-    color: #307BBF;
+    color: var(--color-blue-ui);
 }
 
 .tab-btn.active {
@@ -106,7 +106,7 @@
 
 .filter-select:focus {
     outline: none;
-    border-color: #307BBF;
+    border-color: var(--color-blue-ui);
 }
 
 .reset-btn {
@@ -144,7 +144,7 @@
 
 .search-input:focus {
     outline: none;
-    border-color: #307BBF;
+    border-color: var(--color-blue-ui);
     box-shadow: 0 0 0 2px rgba(48, 123, 191, 0.2);
 }
 
@@ -422,7 +422,7 @@
 .wiki-link {
     display: inline-block;
     padding: 8px 16px;
-    background: #307BBF;
+    background: var(--color-blue-ui);
     color: white;
     text-decoration: none;
     border-radius: 4px;

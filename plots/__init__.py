@@ -114,6 +114,7 @@ from .shared import (
     get_all_versions,
 
     # Utility functions
+    apply_snapshot_xaxis,
     safe_read_csv,
     get_properties_for_entity,
     safe_plot_execution,
@@ -258,6 +259,7 @@ __all__ = [
     'check_sparql_endpoint_health',
     'get_latest_version',
     'get_all_versions',
+    'apply_snapshot_xaxis',
     'safe_read_csv',
     'get_properties_for_entity',
     'safe_plot_execution',

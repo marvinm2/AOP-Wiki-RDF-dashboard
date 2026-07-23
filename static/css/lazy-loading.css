@@ -100,7 +100,7 @@
 }
 
 .plot-error .error-retry-btn {
-    background-color: #307BBF;
+    background-color: var(--color-blue-ui);
     color: white;
     border: none;
     padding: 8px 24px;

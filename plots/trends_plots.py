@@ -61,7 +61,7 @@ from .shared import (
     BRAND_COLORS, config, _plot_data_cache, _plot_figure_cache,
     run_sparql_query, run_sparql_query_with_retry, extract_counts,
     safe_read_csv, create_fallback_plot, get_properties_for_entity,
-    get_all_versions, render_plot_html,
+    get_all_versions, render_plot_html, apply_snapshot_xaxis,
     ENTITY_TYPE_CLASSES, diff_entities_between_versions,
     fetch_entity_uris_by_version,
 )
@@ -236,12 +236,7 @@ def plot_main_graph() -> tuple[str, str, pd.DataFrame]:
         fig_abs.update_layout(
             margin=dict(l=50, r=20, t=50, b=50)
         )
-        fig_abs.update_xaxes(
-            tickmode='array',
-            tickvals=df_all["version"],
-            ticktext=df_all["version"],
-            tickangle=-45
-        )
+        apply_snapshot_xaxis(fig_abs)
 
         # --- Delta plot ---
         df_delta = df_all.copy()
@@ -264,12 +259,7 @@ def plot_main_graph() -> tuple[str, str, pd.DataFrame]:
         fig_delta.update_layout(
             margin=dict(l=50, r=20, t=50, b=50)
         )
-        fig_delta.update_xaxes(
-            tickmode='array',
-            tickvals=df_all["version"],
-            ticktext=df_all["version"],
-            tickangle=-45
-        )
+        apply_snapshot_xaxis(fig_delta)
 
         # Store absolute and delta data in cache for CSV download.
         # Legacy `main_graph_*` keys kept for backwards-compat with old

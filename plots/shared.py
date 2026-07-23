@@ -1303,6 +1303,31 @@ def export_figure_as_image(
         return None
 
 
+def apply_snapshot_xaxis(fig, title: str = "Snapshot date"):
+    """Format the quarterly-snapshot x-axis of a trend figure.
+
+    Trend plots feed YYYY-MM-DD **strings** to Plotly, which auto-detects a
+    date axis and thins the tick labels to fit — one per year or two at the
+    ~500px card widths used on /trends.
+
+    Two things break that and should not be reintroduced:
+
+    * ``tickmode='array'`` with every snapshot as an explicit tickval. All 33
+      dates then render at -45° inside the card and collapse into an illegible
+      smear (#127). Let Plotly choose the ticks instead.
+    * Converting the x values to datetimes. ``_figure_x_categories`` only
+      collects ``str`` x-values, so the /trends date-range selector would
+      silently stop clamping the figure (see ``_clamp_figure_to_range``).
+
+    Args:
+        fig: Plotly figure whose x-axis carries YYYY-MM-DD strings.
+        title: Axis title. Defaults to the reader-facing "Snapshot date"
+            rather than the raw ``version`` column name.
+    """
+    fig.update_xaxes(title_text=title, tickangle=0)
+    return fig
+
+
 def _clamp_figure_to_range(fig, start: Optional[str], end: Optional[str]):
     """Return a deep-copied figure with its x-axis clamped to [start, end].
 
