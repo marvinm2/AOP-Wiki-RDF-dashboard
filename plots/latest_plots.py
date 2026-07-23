@@ -67,7 +67,7 @@ from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from .shared import (
     BRAND_COLORS, config, _plot_data_cache, _plot_figure_cache, run_sparql_query, safe_read_csv, create_fallback_plot,
-    render_plot_html
+    render_plot_html, OECD_STATUS_ORDER, PROPERTY_TYPE_ORDER
 )
 from .organ_systems import (
     ORGAN_SYSTEM_BUCKETS,
@@ -1363,7 +1363,13 @@ def plot_latest_aop_completeness_by_status(version: str = None) -> str:
         color="Property Type",
         text="Completeness",
         color_discrete_map=color_map,
-        barmode="group"
+        barmode="group",
+        # Ordinal status order + fixed property order, so this chart and its
+        # siblings can be read against each other (#128).
+        category_orders={
+            "OECD Status": OECD_STATUS_ORDER,
+            "Property Type": PROPERTY_TYPE_ORDER,
+        }
     )
 
     fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
@@ -1754,6 +1760,9 @@ def plot_latest_entity_by_oecd_status(version: str = None) -> str:
         barmode="group",
         text="Count",
         color_discrete_map=status_colors,
+        # Same ordinal status order as the completeness charts (#128), so the
+        # legend reads least → most mature everywhere status appears.
+        category_orders={"OECD Status": OECD_STATUS_ORDER},
     )
 
     fig.update_traces(textposition='outside')
@@ -2870,7 +2879,13 @@ def plot_latest_ke_completeness_by_status(version: str = None) -> str:
         color="Property Type",
         text="Completeness",
         color_discrete_map=color_map,
-        barmode="group"
+        barmode="group",
+        # Ordinal status order + fixed property order, so this chart and its
+        # siblings can be read against each other (#128).
+        category_orders={
+            "OECD Status": OECD_STATUS_ORDER,
+            "Property Type": PROPERTY_TYPE_ORDER,
+        }
     )
 
     fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
@@ -3056,7 +3071,13 @@ def plot_latest_ker_completeness_by_status(version: str = None) -> str:
         color="Property Type",
         text="Completeness",
         color_discrete_map=color_map,
-        barmode="group"
+        barmode="group",
+        # Ordinal status order + fixed property order, so this chart and its
+        # siblings can be read against each other (#128).
+        category_orders={
+            "OECD Status": OECD_STATUS_ORDER,
+            "Property Type": PROPERTY_TYPE_ORDER,
+        }
     )
 
     fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
