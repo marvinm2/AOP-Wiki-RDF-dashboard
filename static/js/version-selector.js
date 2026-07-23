@@ -8,6 +8,13 @@
 (function() {
     'use strict';
 
+    // Verbose init tracing, off by default so a normal load is quiet (#131).
+    // Enable with localStorage.setItem('plotDebug','1') then reload.
+    const DEBUG = (() => {
+        try { return localStorage.getItem('plotDebug') === '1'; } catch (e) { return false; }
+    })();
+    const dbg = (...args) => { if (DEBUG) console.log(...args); };
+
     let selectedVersion = null;  // null = latest version
     let availableVersions = [];
     let loadingPlots = new Set();
@@ -83,8 +90,8 @@
      * Initialize version selector on page load
      */
     async function initVersionSelector() {
-        console.log('Initializing version selector...');
-        console.log('Looking for version selector element...');
+        dbg('Initializing version selector...');
+        dbg('Looking for version selector element...');
 
         const selector = document.getElementById('version-selector');
         if (!selector) {
@@ -92,11 +99,11 @@
             return;
         }
 
-        console.log('Version selector element found:', selector);
+        dbg('Version selector element found:', selector);
 
         try {
             // Fetch available versions from API
-            console.log('Fetching versions from /api/versions...');
+            dbg('Fetching versions from /api/versions...');
             const response = await fetch('/api/versions');
             const data = await response.json();
 
@@ -106,7 +113,7 @@
             }
 
             availableVersions = data.versions;
-            console.log(`Loaded ${availableVersions.length} versions`);
+            dbg(`Loaded ${availableVersions.length} versions`);
 
             // Populate version selector dropdown
             populateVersionSelector();
@@ -117,7 +124,7 @@
             // Restore version from URL if present (must happen after options are populated)
             restoreVersionFromURL();
 
-            console.log('Version selector initialization complete!');
+            dbg('Version selector initialization complete!');
 
         } catch (error) {
             console.error('Error initializing version selector:', error);
@@ -151,7 +158,7 @@
             selector.appendChild(option);
         });
 
-        console.log('Version selector populated');
+        dbg('Version selector populated');
     }
 
     /**
@@ -162,7 +169,7 @@
         if (!selector) return;
 
         selector.addEventListener('change', handleVersionChange);
-        console.log('Event listeners set up');
+        dbg('Event listeners set up');
 
         setupAopAopThresholdSlider();
     }
@@ -197,34 +204,34 @@
             reloadPlot(plotName);
         });
 
-        console.log('AOP-AOP threshold slider wired');
+        dbg('AOP-AOP threshold slider wired');
     }
 
     /**
      * Handle version selection change
      */
     async function handleVersionChange(event) {
-        console.log('VERSION CHANGE EVENT FIRED!');
-        console.log('Event target:', event.target);
-        console.log('Event target value:', event.target.value);
+        dbg('VERSION CHANGE EVENT FIRED!');
+        dbg('Event target:', event.target);
+        dbg('Event target value:', event.target.value);
 
         const newVersion = event.target.value || null;  // Empty string = latest
 
-        console.log(`New version: "${newVersion}", Current version: "${selectedVersion}"`);
+        dbg(`New version: "${newVersion}", Current version: "${selectedVersion}"`);
 
         if (newVersion === selectedVersion) {
-            console.log('Version unchanged, skipping reload');
+            dbg('Version unchanged, skipping reload');
             return; // No change
         }
 
-        console.log(`Version changed: ${selectedVersion} → ${newVersion || 'latest'}`);
+        dbg(`Version changed: ${selectedVersion} → ${newVersion || 'latest'}`);
         selectedVersion = newVersion;
 
         // Update URL with version parameter
         updateURLState(selectedVersion || '');
 
         // Update UI to show selected version
-        console.log('Updating version banner...');
+        dbg('Updating version banner...');
         updateVersionBanner();
 
         // Dispatch version-changed event so data tables can reset
@@ -235,9 +242,9 @@
         updateMethodologyQueryUris(selectedVersion);
 
         // Reload all versioned plots
-        console.log('Starting plot reload...');
+        dbg('Starting plot reload...');
         await reloadVersionedPlots();
-        console.log('Plot reload complete!');
+        dbg('Plot reload complete!');
     }
 
     /**
@@ -298,13 +305,13 @@
      * Reload all versioned plots with the selected version
      */
     async function reloadVersionedPlots() {
-        console.log(`Reloading ${versionedPlots.length} plots for version: ${selectedVersion || 'latest'}`);
+        dbg(`Reloading ${versionedPlots.length} plots for version: ${selectedVersion || 'latest'}`);
 
         const reloadPromises = versionedPlots.map(plotName => reloadPlot(plotName));
 
         try {
             await Promise.all(reloadPromises);
-            console.log('All plots reloaded successfully');
+            dbg('All plots reloaded successfully');
         } catch (error) {
             console.error('Error reloading plots:', error);
         }
@@ -315,7 +322,7 @@
      */
     async function reloadPlot(plotName) {
         if (loadingPlots.has(plotName)) {
-            console.log(`Plot ${plotName} already loading, skipping...`);
+            dbg(`Plot ${plotName} already loading, skipping...`);
             return;
         }
 
@@ -331,7 +338,7 @@
         // Mark this plot as manually loaded so lazy-loader won't reload it
         if (window.plotLoader) {
             window.plotLoader.loadedPlots.add(plotName);
-            console.log(`Marked ${plotName} as loaded in lazy-loader cache`);
+            dbg(`Marked ${plotName} as loaded in lazy-loader cache`);
         }
 
         // Show loading spinner
@@ -348,7 +355,7 @@
             const qs = params.toString();
             const url = qs ? `/api/plot/${plotName}?${qs}` : `/api/plot/${plotName}`;
 
-            console.log(`Fetching plot from: ${url}`);
+            dbg(`Fetching plot from: ${url}`);
 
             const response = await fetch(url);
             const data = await response.json();
@@ -369,7 +376,7 @@
                     script.parentNode.replaceChild(newScript, script);
                 });
 
-                console.log(`Plot ${plotName} loaded successfully`);
+                dbg(`Plot ${plotName} loaded successfully`);
             } else {
                 throw new Error(data.error || 'Failed to load plot');
             }
