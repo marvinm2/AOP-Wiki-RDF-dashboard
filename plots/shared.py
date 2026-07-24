@@ -281,19 +281,19 @@ _vhp4safety_template = go.layout.Template(
             y=1.0,
             xanchor="left",
             x=1.02,
-            font=dict(size=11),
+            font=dict(size=12),
         ),
         xaxis=dict(
             gridcolor="#e0e0e0",
             linecolor="#cccccc",
             zeroline=False,
-            tickfont=dict(size=11),
+            tickfont=dict(size=12),
         ),
         yaxis=dict(
             gridcolor="#e0e0e0",
             linecolor="#cccccc",
             zeroline=False,
-            tickfont=dict(size=11),
+            tickfont=dict(size=12),
         ),
     )
 )

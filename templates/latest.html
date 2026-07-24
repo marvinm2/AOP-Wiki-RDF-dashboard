@@ -370,17 +370,10 @@
                 <h3>AOP Coverage of Organ Systems</h3>
             </div>
             <p class="plot-description">
-                AOP coverage of 13 high-level organ systems, classified per AOP via a hybrid of four signals:
-                <strong>A</strong> (curated UBERON/CL anatomy on Key Events),
-                <strong>A&prime;</strong> (UBERON/CL appearing as biological-event objects),
-                <strong>B</strong> (GO biological-process bridge, curated map), and
-                <strong>C</strong> (regex on AOP title — exploratory, grey). Both views share one
-                scope toggle so they stay in sync; the View toggle (absolute/percentage) drives the
-                stacked bar only, while the bucket-totals bar always shows the AOP count per organ system.
-                <strong>Tip:</strong> the CSV download below contains <em>one row per AOP × bucket</em>
-                (columns: <code>AOP, AOP Title, AO URI, Organ System, Signals, Best Signal, Version, Scope</code>) —
-                including the "No annotation" bucket, which lists every AOP that the classifier could not place
-                under the current scope.
+                AOP coverage of 13 high-level organ systems, classified per AOP from curated
+                anatomy, biological-process, and title signals. Use the toggles below to change
+                which Key Events count and to switch between absolute counts and share of AOPs.
+                See <strong>Methodology</strong> for how each signal is derived and what the CSV contains.
             </p>
             <div class="coverage-toggle" data-scope="all" data-view="absolute">
                 <div class="coverage-toggle-row">
