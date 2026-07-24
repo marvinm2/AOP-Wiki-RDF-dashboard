@@ -52,6 +52,7 @@ Author:
 """
 
 import os
+import re
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -78,6 +79,12 @@ class VersionedPlotCache:
     - Thread-safe for concurrent access from Gunicorn gthread workers
     - Supports dict-like [] access for backward compatibility
     """
+
+    # A key ending in _YYYY-MM-DD is a versioned historical snapshot subject to
+    # TTL + cap eviction. Everything else (startup trend figures like
+    # 'main_graph_absolute', default latest views like 'latest_entity_counts')
+    # is a singleton computed once and must never expire.
+    _VERSION_SUFFIX_RE = re.compile(r'_\d{4}-\d{2}-\d{2}$')
 
     def __init__(self, max_versions: int = 5, ttl_seconds: int = 1800):
         self._data = OrderedDict()          # key -> (value, timestamp)
@@ -151,6 +158,15 @@ class VersionedPlotCache:
             self._data.clear()
 
     def _is_pinned(self, key: str) -> bool:
+        # Singleton figures carry no version-date suffix: the startup-computed
+        # trend figures and the default (no-version) latest views. They are
+        # computed once and never change, so they must never expire — otherwise
+        # their PNG/SVG downloads 404 after the TTL, since trend plots serve
+        # pre-rendered HTML and never repopulate the figure cache on view (#146).
+        if not self._VERSION_SUFFIX_RE.search(key):
+            return True
+        # Versioned historical entries are pinned only while they match the
+        # current (latest) version; older versions follow TTL + cap eviction.
         return self._pinned_prefix is not None and self._pinned_prefix in key
 
     def _evict_if_needed(self):
