@@ -227,16 +227,24 @@ BRAND_COLORS = {
         '#29235C', '#E6007E', '#307BBF', '#009FE3', '#EB5B25',
         '#93D5F6', '#9A1C57', '#45A6B2', '#B81178', '#005A6C', '#64358C',
     ],
-    # OECD Status color mapping — consistent across all OECD-related plots
+    # OECD Status color mapping — consistent across all OECD-related plots.
+    # Covers every status present across the 2018–2026 snapshots (the version
+    # selector renders historical graphs, which use older EAGMST/TFHA vocabulary
+    # no longer in the current release) plus the synthetic 'No Status' the code
+    # assigns to AOPs with no status. Verified against all graphs (2026-07): the
+    # eight real statuses below are exactly those in the data. Keep in sync if
+    # the OECD vocabulary changes. Ordered by rough workflow maturity so the
+    # colour progression reads sensibly (#139).
     'oecd_status': {
-        'EAGMST Under Review': '#307BBF',      # blue
-        'Under Development': '#009FE3',         # light blue
-        'TFHA/WNT Endorsed': '#29235C',         # primary (deep purple)
-        'WNT Endorsed': '#E6007E',              # magenta
-        'Approved': '#EB5B25',                  # orange
-        'No Status': '#999999',                 # grey
-        'EAGMST Under Development': '#45A6B2',  # teal
-        'Not OECD': '#93D5F6',                  # sky blue
+        'No Status': '#999999',                    # grey — no status assigned
+        'Included in OECD Work Plan': '#93D5F6',   # sky blue — earliest stage
+        'Under Development': '#009FE3',            # light blue
+        'Under Review': '#307BBF',                 # blue
+        'EAGMST Under Review': '#45A6B2',          # teal — EAGMST review variant
+        'EAGMST Approved': '#EB5B25',              # orange — approved
+        'TFHA/WNT Endorsed': '#29235C',            # deep purple — endorsed (legacy label)
+        'WPHA/WNT Endorsed': '#E6007E',            # magenta — endorsed (current label)
+        'Archived': '#777777',                     # dark grey — retired
     },
     # Legacy aliases for backward compatibility
     'secondary': '#E6007E',
@@ -244,11 +252,6 @@ BRAND_COLORS = {
     'light': '#93D5F6',
     'content': '#EB5B25',
     # Property type colors using house style palette
-    # NOTE: the 'oecd_status' map above is stale — the live data carries only
-    # 'Under Development', 'Under Review', 'WPHA/WNT Endorsed' and the synthetic
-    # 'No Status' (verified on 2026-07-01). Keys like 'EAGMST Under Review',
-    # 'TFHA/WNT Endorsed', 'Approved' and 'Not OECD' no longer occur, and the two
-    # statuses that do occur are missing. Tracked separately; see OECD_STATUS_ORDER.
     'type_colors': {
         'Essential': '#29235C',    # Primary Dark
         'Metadata': '#E6007E',     # Primary Magenta
