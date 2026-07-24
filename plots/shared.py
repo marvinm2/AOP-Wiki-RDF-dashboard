@@ -223,28 +223,13 @@ BRAND_COLORS = {
     'dark_teal': '#005A6C',    # Dark teal
     'violet': '#64358C',       # Violet accent
     'warm_pink': '#B81178',    # Warm pink accent
-    # Categorical sequence. Ordered for MAXIMUM separation between consecutive
-    # colours and widened for colour-vision deficiency: the old sequence was 4
-    # blues + 3 magentas with no green/amber, so any chart past ~6 series became
-    # a wall of near-identical hues (the #1 finding of the 2026-07 plot review).
-    # This set interleaves hue families and adds green (#009E73) and amber
-    # (#E1A100) — both absent before — following Okabe-Ito colourblind-safe
-    # principles while keeping the VHP4Safety brand colours. First 8 are the most
-    # distinct; charts needing more than ~10 categories should reduce series
-    # (small multiples) rather than rely on colour alone.
+    # VHP4Safety brand categorical palette. Multi-series charts that outrun this
+    # palette must add marker-SHAPE differentiation (see _MARKER_SYMBOLS / the
+    # property-presence and organ-coverage charts) rather than swap in non-brand
+    # colours — brand consistency over hue separation is a deliberate house call.
     'palette': [
-        '#307BBF',  # blue (brand)
-        '#E6007E',  # magenta (brand)
-        '#009E73',  # green (Okabe-Ito — fills the missing-green gap)
-        '#EB5B25',  # orange (brand)
-        '#64358C',  # violet (brand)
-        '#E1A100',  # amber (fills the missing-yellow gap)
-        '#45A6B2',  # teal (brand)
-        '#9A1C57',  # maroon (brand deep magenta)
-        '#29235C',  # deep navy (brand primary)
-        '#93D5F6',  # sky blue (brand)
-        '#B81178',  # warm pink (brand)
-        '#005A6C',  # dark teal (brand)
+        '#29235C', '#E6007E', '#307BBF', '#009FE3', '#EB5B25',
+        '#93D5F6', '#9A1C57', '#45A6B2', '#B81178', '#005A6C', '#64358C',
     ],
     # OECD Status color mapping — consistent across all OECD-related plots.
     # Covers every status present across the 2018–2026 snapshots (the version
@@ -1507,48 +1492,29 @@ def build_property_presence_figure(df, y_col, y_title, entity_label, percentage=
     else:
         ordered = sorted(props)
 
-    # Small-multiples by property type. Plotting all ~24-26 properties as lines
-    # in one axes made every series overlap in a narrow band and forced the
-    # palette to repeat, so no line could be matched to the legend (the #1
-    # legibility finding of the 2026-07 plot review). Faceting by type puts only
-    # that type's 3-8 properties in each panel, where the 12-colour palette and
-    # per-trace marker shapes separate them cleanly. Falls back to a single panel
-    # when there is no type column.
-    facet = "type" in df.columns and df["type"].notna().any()
-    type_order = [t for t in PROPERTY_TYPE_ORDER if t in set(df["type"])] if facet else []
-    n_panels = max(1, len(type_order))
-    n_cols = 1 if n_panels == 1 else 2
-    n_rows = (n_panels + n_cols - 1) // n_cols
-
     fig = px.line(
         df,
         x="version",
         y=y_col,
         color="display_label",
         markers=True,
-        facet_col="type" if facet else None,
-        facet_col_wrap=n_cols if facet else None,
-        facet_col_spacing=0.06,
-        facet_row_spacing=0.09,
-        category_orders={"display_label": ordered, "type": type_order},
+        category_orders={"display_label": ordered},
         color_discrete_sequence=BRAND_COLORS['palette'],
         labels={y_col: y_title, "display_label": "Property"},
     )
-    # Give each trace its own marker shape, in the legend's (type→label) order.
+    # Single panel, but every series carries BOTH a brand-palette colour and its
+    # own marker SHAPE, so the ~17-26 properties stay tellable apart where the
+    # 11-colour brand palette repeats — shape differentiation is the deliberate
+    # alternative to adding non-brand colours or splitting into facets.
     for i, trace in enumerate(fig.data):
         trace.update(
-            marker=dict(symbol=_MARKER_SYMBOLS[i % len(_MARKER_SYMBOLS)], size=6),
+            marker=dict(symbol=_MARKER_SYMBOLS[i % len(_MARKER_SYMBOLS)], size=7),
             line=dict(width=1.5),
             connectgaps=False,
         )
 
-    # Facet titles come through as "type=Essential"; strip to just the type name.
-    fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
-
     apply_snapshot_xaxis(fig)
-    # Only the shared column/row axes carry titles under faceting; set them once.
-    fig.update_yaxes(title_text=y_title, col=1)
-    fig.update_xaxes(title_text="")
+    fig.update_yaxes(title_text=y_title)
     if percentage:
         fig.update_yaxes(range=[0, 105])
 
@@ -1557,13 +1523,13 @@ def build_property_presence_figure(df, y_col, y_title, entity_label, percentage=
         # so all series stay visible instead of scrolling inside the plot.
         legend=dict(
             orientation="h",
-            yanchor="top", y=-0.18 if facet else -0.25,
+            yanchor="top", y=-0.25,
             xanchor="left", x=0,
             font=dict(size=10),
             title_text="",
         ),
-        margin=dict(l=55, r=20, t=40, b=150),
-        height=300 * n_rows + 150,
+        margin=dict(l=55, r=20, t=40, b=140),
+        height=560,
     )
     return fig
 

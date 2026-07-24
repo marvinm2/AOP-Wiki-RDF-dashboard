@@ -972,9 +972,6 @@ def plot_latest_aop_completeness(version: str = None) -> str:
     color_map = BRAND_COLORS['type_colors'].copy()
     # Add fallback for any missing types
     color_map.update({"Structure": BRAND_COLORS['accent']})
-    # Move 'Assessment' off the blue family (navy Essential + sky Context) to a
-    # distinct colourblind-safe green so the property types separate cleanly (#plot-review)
-    color_map["Assessment"] = '#009E73'  # Okabe-Ito green
 
     # Horizontal bars so the ~30 long property names read left-to-right instead of
     # as a wall of angled x-axis ticks (#plot-review)
@@ -1363,9 +1360,6 @@ def plot_latest_aop_completeness_by_status(version: str = None) -> str:
     color_map = BRAND_COLORS['type_colors'].copy()
     # Add fallback for any missing types
     color_map.update({"Structure": BRAND_COLORS['accent']})
-    # Move 'Assessment' off the blue family (navy Essential + sky Context) to a
-    # distinct colourblind-safe green so the property types separate cleanly (#plot-review)
-    color_map["Assessment"] = '#009E73'  # Okabe-Ito green
 
     # Create grouped bar chart
     fig = px.bar(
@@ -2900,9 +2894,6 @@ def plot_latest_ke_completeness_by_status(version: str = None) -> str:
     color_map = BRAND_COLORS['type_colors'].copy()
     # Add fallback for any missing types
     color_map.update({"Structure": BRAND_COLORS['accent']})
-    # Move 'Assessment' off the blue family (navy Essential + sky Context) to a
-    # distinct colourblind-safe green so the property types separate cleanly (#plot-review)
-    color_map["Assessment"] = '#009E73'  # Okabe-Ito green
 
     # Create grouped bar chart
     fig = px.bar(
@@ -3095,9 +3086,6 @@ def plot_latest_ker_completeness_by_status(version: str = None) -> str:
     color_map = BRAND_COLORS['type_colors'].copy()
     # Add fallback for any missing types
     color_map.update({"Structure": BRAND_COLORS['accent']})
-    # Move 'Assessment' off the blue family (navy Essential + sky Context) to a
-    # distinct colourblind-safe green so the property types separate cleanly (#plot-review)
-    color_map["Assessment"] = '#009E73'  # Okabe-Ito green
 
     # Create grouped bar chart
     fig = px.bar(
@@ -3612,11 +3600,6 @@ def _render_coverage_bar(
 
     examples_per_pair = _build_examples_per_pair(per_pair, granular)
 
-    # Recolour Signal A' off the navy that reads as a shade of Signal A's blue,
-    # so adjacent A / A' stack segments are distinguishable (#plot-review).
-    signal_colours = dict(SIGNAL_COLOURS)
-    signal_colours["A'"] = "#E68310"  # orange — clearly distinct from A's blue
-
     fig = go.Figure()
     for signal in SIGNAL_ORDER:
         seg = grouped[grouped["Best Signal"] == signal]
@@ -3667,7 +3650,7 @@ def _render_coverage_bar(
                 # Thin white segment outline keeps sliver-thin Signal B contributions
                 # perceptible in the stack (#plot-review).
                 marker=dict(
-                    color=signal_colours.get(signal),
+                    color=SIGNAL_COLOURS.get(signal),
                     line=dict(width=0.5, color="white"),
                 ),
                 customdata=customdata,
