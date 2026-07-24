@@ -972,20 +972,29 @@ def plot_latest_aop_completeness(version: str = None) -> str:
     color_map = BRAND_COLORS['type_colors'].copy()
     # Add fallback for any missing types
     color_map.update({"Structure": BRAND_COLORS['accent']})
+    # Move 'Assessment' off the blue family (navy Essential + sky Context) to a
+    # distinct colourblind-safe green so the property types separate cleanly (#plot-review)
+    color_map["Assessment"] = '#009E73'  # Okabe-Ito green
 
+    # Horizontal bars so the ~30 long property names read left-to-right instead of
+    # as a wall of angled x-axis ticks (#plot-review)
     fig = px.bar(
-        df, x="Property", y="Completeness", color="Type",
+        df, x="Completeness", y="Property", color="Type",
+        orientation='h',
         text="Completeness",
         color_discrete_map=color_map
     )
-    fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
+    fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside', cliponaxis=False)
     fig.update_layout(
-
-
-        margin=dict(l=50, r=20, t=50, b=100),
-        yaxis=dict(title="Completeness (%)", range=[0, 105]),
-        xaxis=dict(title="AOP Properties", tickangle=45),
-        legend=dict(title="Property Type")
+        height=max(500, len(df) * 26 + 160),
+        margin=dict(l=300, r=60, t=50, b=90),
+        xaxis=dict(title="Completeness (%)", range=[0, 105]),
+        yaxis=dict(title="", categoryorder="total ascending"),
+        # Legend below the plot so the 100% bars' value labels don't collide with it (#plot-review)
+        legend=dict(
+            title="Property Type", orientation="h",
+            yanchor="top", y=-0.06, xanchor="left", x=0,
+        ),
     )
 
     # Cache the figure object for image export (PNG/SVG/PDF)
@@ -1354,6 +1363,9 @@ def plot_latest_aop_completeness_by_status(version: str = None) -> str:
     color_map = BRAND_COLORS['type_colors'].copy()
     # Add fallback for any missing types
     color_map.update({"Structure": BRAND_COLORS['accent']})
+    # Move 'Assessment' off the blue family (navy Essential + sky Context) to a
+    # distinct colourblind-safe green so the property types separate cleanly (#plot-review)
+    color_map["Assessment"] = '#009E73'  # Okabe-Ito green
 
     # Create grouped bar chart
     fig = px.bar(
@@ -1885,6 +1897,10 @@ def plot_latest_ke_reuse(version: str = None) -> str:
         yaxis=dict(title=""),
         xaxis=dict(title="Number of AOPs"),
     )
+    # Extend the value axis + disable clipping so the top bar's outside label
+    # isn't cut at the canvas edge (#plot-review)
+    fig.update_traces(cliponaxis=False)
+    fig.update_xaxes(range=[0, float(df["AOP Count"].max()) * 1.15])
 
     _plot_figure_cache[f'latest_ke_reuse_{version_key}'] = fig
     return render_plot_html(fig)
@@ -2008,13 +2024,18 @@ def plot_latest_top_ontology_terms(version: str = None) -> str:
         custom_data=['term_url', 'CURIE'],
         color_discrete_map=color_map,
     )
-    fig.update_traces(textposition='outside')
+    fig.update_traces(textposition='outside', cliponaxis=False)
     fig.update_layout(
-        height=max(400, len(df) * 26 + 120),
-        margin=dict(l=320, r=30, t=60, b=60),
+        height=max(400, len(df) * 26 + 160),
+        margin=dict(l=320, r=30, t=60, b=110),
         yaxis=dict(title="", categoryorder="total ascending"),
-        xaxis=dict(title="Number of Key Events"),
-        legend=dict(title="Ontology"),
+        # Extend x-range so outside value labels render in full (#plot-review)
+        xaxis=dict(title="Number of Key Events", range=[0, float(df["KE Count"].max()) * 1.15]),
+        # Move legend below the chart so it doesn't overlap the top bar's value label (#plot-review)
+        legend=dict(
+            title="Ontology", orientation="h",
+            yanchor="top", y=-0.12, xanchor="left", x=0,
+        ),
     )
 
     _plot_figure_cache[f'latest_top_ontology_terms_{version_key}'] = fig
@@ -2118,15 +2139,22 @@ def plot_latest_author_contributions(version: str = None) -> str:
         y="Contributor",
         orientation='h',
         text="AOP Count",
+        custom_data=['Full name'],
     )
-    fig.update_traces(marker_color=BRAND_COLORS['blue'], textposition='outside')
+    # Truncated y-labels stay recoverable via the full creator string on hover (#plot-review)
+    fig.update_traces(
+        marker_color=BRAND_COLORS['blue'], textposition='outside',
+        hovertemplate="%{customdata[0]}<br>AOPs authored: %{x}<extra></extra>",
+    )
     fig.update_layout(
         showlegend=False,
         height=max(400, len(df) * 28 + 120),
         margin=dict(l=340, r=40, t=60, b=60),
         yaxis=dict(title="", categoryorder="total ascending"),
-        xaxis=dict(title="Number of AOPs authored"),
+        # Extend the value axis so the top bar's outside label isn't clipped (#plot-review)
+        xaxis=dict(title="Number of AOPs authored", range=[0, float(df["AOP Count"].max()) * 1.15]),
     )
+    fig.update_traces(cliponaxis=False)
 
     _plot_figure_cache[f'latest_author_contributions_{version_key}'] = fig
     return render_plot_html(fig)
@@ -2563,12 +2591,14 @@ def plot_latest_completeness_correlation(version: str = None) -> str:
     corr_out["Version"] = latest_version
     _plot_data_cache[f'latest_completeness_correlation_{version_key}'] = corr_out
 
+    # All observed φ values are positive; a 0→1 sequential scale (not a −1..1
+    # diverging one) spends the full colour ramp on the real data range (#plot-review)
     fig = px.imshow(
         corr.values,
         x=labels,
         y=labels,
-        color_continuous_scale='RdBu_r',
-        zmin=-1,
+        color_continuous_scale='Blues',
+        zmin=0,
         zmax=1,
         aspect='auto',
         text_auto='.2f',
@@ -2870,6 +2900,9 @@ def plot_latest_ke_completeness_by_status(version: str = None) -> str:
     color_map = BRAND_COLORS['type_colors'].copy()
     # Add fallback for any missing types
     color_map.update({"Structure": BRAND_COLORS['accent']})
+    # Move 'Assessment' off the blue family (navy Essential + sky Context) to a
+    # distinct colourblind-safe green so the property types separate cleanly (#plot-review)
+    color_map["Assessment"] = '#009E73'  # Okabe-Ito green
 
     # Create grouped bar chart
     fig = px.bar(
@@ -3062,6 +3095,9 @@ def plot_latest_ker_completeness_by_status(version: str = None) -> str:
     color_map = BRAND_COLORS['type_colors'].copy()
     # Add fallback for any missing types
     color_map.update({"Structure": BRAND_COLORS['accent']})
+    # Move 'Assessment' off the blue family (navy Essential + sky Context) to a
+    # distinct colourblind-safe green so the property types separate cleanly (#plot-review)
+    color_map["Assessment"] = '#009E73'  # Okabe-Ito green
 
     # Create grouped bar chart
     fig = px.bar(
@@ -3080,7 +3116,12 @@ def plot_latest_ker_completeness_by_status(version: str = None) -> str:
         }
     )
 
-    fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
+    # Smaller data labels so neighbouring grouped-bar values don't run together
+    # (e.g. '99.8%' vs '100.0%' in the Endorsed group) (#plot-review)
+    fig.update_traces(
+        texttemplate='%{text:.1f}%', textposition='outside',
+        textfont=dict(size=9), cliponaxis=False,
+    )
     fig.update_layout(
 
 
@@ -3571,6 +3612,11 @@ def _render_coverage_bar(
 
     examples_per_pair = _build_examples_per_pair(per_pair, granular)
 
+    # Recolour Signal A' off the navy that reads as a shade of Signal A's blue,
+    # so adjacent A / A' stack segments are distinguishable (#plot-review).
+    signal_colours = dict(SIGNAL_COLOURS)
+    signal_colours["A'"] = "#E68310"  # orange — clearly distinct from A's blue
+
     fig = go.Figure()
     for signal in SIGNAL_ORDER:
         seg = grouped[grouped["Best Signal"] == signal]
@@ -3618,7 +3664,12 @@ def _render_coverage_bar(
                 y=seg["Organ System"],
                 name=f"Signal {signal}",
                 orientation="h",
-                marker_color=SIGNAL_COLOURS.get(signal),
+                # Thin white segment outline keeps sliver-thin Signal B contributions
+                # perceptible in the stack (#plot-review).
+                marker=dict(
+                    color=signal_colours.get(signal),
+                    line=dict(width=0.5, color="white"),
+                ),
                 customdata=customdata,
                 hovertemplate=hover,
             )
@@ -3802,14 +3853,15 @@ def plot_latest_life_stage(version: str = None) -> str:
         df, x="AOP count", y="Life stage", orientation="h", text="AOP count"
     )
     fig.update_traces(marker_color=BRAND_COLORS["blue"], textposition="outside")
+    # Wrap the note onto a second sub-line so it doesn't run off the ~700px canvas (#plot-review)
     subtitle = (
         f"AOPs annotated with at least one life-stage: "
-        f"{total_aops - label_counts.get(UNSPECIFIED, 0)}/{total_aops}. "
-        f"Sex applicability is not structured in the RDF — see methodology note."
+        f"{total_aops - label_counts.get(UNSPECIFIED, 0)}/{total_aops}."
+        f"<br>Sex applicability is not structured in the RDF — see methodology note."
     )
     fig.update_layout(
         title={"text": f"AOP Life-Stage Applicability<br><sub>{subtitle}</sub>"},
-        margin=dict(l=200, r=30, t=80, b=50),
+        margin=dict(l=200, r=30, t=100, b=50),
         xaxis_title="Number of AOPs",
         yaxis_title="",
     )
@@ -3973,9 +4025,11 @@ def plot_latest_organ_coverage_pie(
         title={"text": f"Organ-system bucket distribution<br><sub>{subtitle}</sub>"},
         showlegend=False,
         margin=dict(l=160, r=40, t=80, b=40),
-        xaxis=dict(title="Number of AOPs"),
+        xaxis=dict(title="Number of AOPs", range=[0, float(df_bar["AOPs"].max()) * 1.15]),
         yaxis=dict(title=""),
     )
+    # Disable clipping so the top bar's outside value label isn't cut (#plot-review)
+    fig.update_traces(cliponaxis=False)
 
     _plot_figure_cache[cache_key] = fig
     # Also cache under the bare stub so the generic /download/latest/<name>
@@ -4260,23 +4314,36 @@ def plot_latest_aop_aop_overlap(version: str = None, min_shared_kes: int = 5, ma
     # AOPs) and lay them out separately so the picture reads as discrete
     # families rather than one entangled hairball.
     components = sorted(nx.connected_components(G), key=len, reverse=True)
+    comp_size: dict = {n: len(comp) for comp in components for n in comp}
     pos: dict = {}
     n_cols = max(1, int(math.ceil(math.sqrt(len(components)))))
     for i, comp in enumerate(components):
         sub = G.subgraph(comp)
+        # Stronger repulsion (larger k) + more iterations so nodes inside the
+        # dense clusters spread out instead of piling on top of each other (#plot-review).
         sub_pos = nx.spring_layout(
-            sub, k=1.5 / math.sqrt(max(1, len(sub))), iterations=80, seed=42,
+            sub, k=2.6 / math.sqrt(max(1, len(sub))), iterations=120, seed=42,
         )
         # Tile components on a square grid; centre each on its grid cell.
         col, row = i % n_cols, i // n_cols
         for n, (x, y) in sub_pos.items():
-            pos[n] = (x + col * 3.0, y - row * 3.0)
+            pos[n] = (x + col * 3.6, y - row * 3.6)
 
-    # Stable cluster-coloured palette (one colour per connected component).
+    # Colour only carries meaning for the multi-AOP clusters: give clusters of
+    # 3+ AOPs a saturated palette colour (large clusters first, so the most
+    # distinct hues land on the biggest families) and grey out the many 2-AOP
+    # pairs. This avoids promising 45 distinguishable hues the palette can't
+    # deliver (#plot-review).
     palette = BRAND_COLORS['palette']
+    PAIR_GREY = '#B8B8B8'
     cluster_color: dict = {}
-    for i, comp in enumerate(components):
-        c = palette[i % len(palette)]
+    big_idx = 0
+    for comp in components:
+        if len(comp) >= 3:
+            c = palette[big_idx % len(palette)]
+            big_idx += 1
+        else:
+            c = PAIR_GREY
         for n in comp:
             cluster_color[n] = c
 
@@ -4294,13 +4361,16 @@ def plot_latest_aop_aop_overlap(version: str = None, min_shared_kes: int = 5, ma
         showlegend=False,
     )
 
-    # Single node trace with visible AOP-ID labels.
+    # Single node trace. Print AOP-ID labels only in the smaller clusters; in the
+    # dense clusters labels overprint into an unreadable smudge, so those surface
+    # their AOP ID on hover instead (#plot-review).
+    LABEL_MAX_CLUSTER = 5
     xs, ys, texts, hovers, sizes, colors = [], [], [], [], [], []
     for n, d in G.nodes(data=True):
         x, y = pos[n]
         xs.append(x); ys.append(y)
         short = n.rsplit('/', 1)[-1]
-        texts.append(short)
+        texts.append(short if comp_size.get(n, 1) <= LABEL_MAX_CLUSTER else "")
         hovers.append(f"<b>AOP {short}</b><br>{d['title']}<br>KEs: {d['ke_count']}<br>OECD: {d['status']}")
         sizes.append(10 + math.sqrt(max(1, d['ke_count'])) * 2.5)
         colors.append(cluster_color.get(n, palette[0]))
@@ -4318,12 +4388,16 @@ def plot_latest_aop_aop_overlap(version: str = None, min_shared_kes: int = 5, ma
 
     fig = go.Figure(data=[edge_trace, node_trace])
     fig.update_layout(
+        # Subtitle wrapped onto two <sub> lines so it doesn't run off the right
+        # canvas edge (#plot-review).
         title={"text": f"AOP-AOP overlap network — {len(components)} cluster(s)<br><sub>"
-                       f"{G.number_of_nodes()} AOPs share ≥{min_shared_kes} KEs with at least one peer "
-                       f"({G.number_of_edges()} edges, v{version_str}). Same colour = same connected cluster; node label = AOP ID.</sub>"},
+                       f"{G.number_of_nodes()} AOPs share ≥{min_shared_kes} KEs with a peer "
+                       f"({G.number_of_edges()} edges, v{version_str}).<br>"
+                       f"Saturated colour = a 3+ AOP cluster, grey = a 2-AOP pair; "
+                       f"labels shown for smaller clusters, hover any node for its AOP ID.</sub>"},
         xaxis=dict(visible=False),
         yaxis=dict(visible=False, scaleanchor='x', scaleratio=1),
-        margin=dict(l=30, r=30, t=80, b=30),
+        margin=dict(l=30, r=30, t=95, b=30),
         height=700,
         hovermode='closest',
     )

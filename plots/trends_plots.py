@@ -78,6 +78,27 @@ from .organ_systems import (
 
 logger = logging.getLogger(__name__)
 
+# Distinct marker glyphs to pair with colour when a trend has more series than
+# the palette has distinct hues, so repeated colours stay tellable apart
+# (#plot-review). Mirrors plots.shared._MARKER_SYMBOLS.
+_TREND_MARKERS = [
+    'circle', 'square', 'diamond', 'triangle-up', 'cross', 'x', 'star',
+    'pentagon', 'hexagon', 'triangle-down', 'triangle-left', 'triangle-right',
+    'octagon', 'star-diamond',
+]
+
+
+def _apply_marker_symbols(fig, size: int = 6, line_width: float = 1.6):
+    """Give each trace a distinct marker symbol (cycling _TREND_MARKERS) plus a
+    thinner line, so a high-cardinality line chart stays separable even where the
+    palette colours repeat (#plot-review)."""
+    for i, tr in enumerate(fig.data):
+        tr.update(
+            marker=dict(symbol=_TREND_MARKERS[i % len(_TREND_MARKERS)], size=size),
+            line=dict(width=line_width),
+        )
+    return fig
+
 
 def plot_main_graph() -> tuple[str, str, pd.DataFrame]:
     """Generate the main AOP entity evolution visualization with absolute and delta views.
@@ -365,10 +386,10 @@ def plot_entity_birth_death() -> tuple[str, pd.DataFrame]:
         # one colour per entity type. Avoids the multi-subplot rendering quirks of
         # facet_col_wrap which caused the chart to render blank on /trends.
         versions = sorted(df['version'].unique())
-        entity_colors = dict(zip(entity_order, [
-            BRAND_COLORS['primary'], BRAND_COLORS['magenta'],
-            BRAND_COLORS['blue'], BRAND_COLORS['orange'],
-        ]))
+        # Four maximally-separated, colourblind-safe hues (blue/magenta/green/
+        # orange) instead of two blue-family colours, so the entity types stay
+        # distinct at each stack (#plot-review).
+        entity_colors = dict(zip(entity_order, BRAND_COLORS['palette'][:4]))
         fig = go.Figure()
         for et in entity_order:
             sub = df[df['entity_type'] == et].set_index('version').reindex(versions)
@@ -390,9 +411,17 @@ def plot_entity_birth_death() -> tuple[str, pd.DataFrame]:
                          zeroline=True, zerolinecolor='#888', zerolinewidth=1)
         fig.update_layout(
             barmode='relative',
-            margin=dict(l=60, r=30, t=40, b=80),
+            margin=dict(l=60, r=30, t=60, b=80),
             height=480,
             legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1.0),
+        )
+        # The below-zero bars reuse each entity's colour at reduced opacity but
+        # carry no legend entry; spell out the encoding so the faded bars aren't
+        # a mystery family of colours (#plot-review).
+        fig.add_annotation(
+            text="Solid bars above 0 = entities added · faded bars below 0 = entities removed",
+            xref='paper', yref='paper', x=0.0, y=1.10, showarrow=False,
+            font=dict(size=11, color='#666'), align='left',
         )
 
         _plot_data_cache['entity_birth_death'] = df
@@ -495,12 +524,9 @@ def plot_entity_cumulative_removed() -> tuple[str, pd.DataFrame]:
                 'entity_type': 'Entity type',
             },
         )
-        fig.update_xaxes(
-            tickmode='array',
-            tickvals=versions,
-            ticktext=versions,
-            tickangle=-45,
-        )
+        # Let Plotly auto-thin the date ticks (one per year) instead of printing
+        # all ~33 rotated snapshot labels, which collapse into a smear (#plot-review).
+        apply_snapshot_xaxis(fig)
         fig.update_layout(margin=dict(l=60, r=30, t=40, b=80), height=440)
 
         _plot_data_cache['entity_cumulative_removed'] = df
@@ -775,16 +801,25 @@ def plot_aops_per_stressor_distribution() -> tuple[str, str, pd.DataFrame]:
         fig_abs.update_xaxes(tickangle=-45)
         fig_abs.update_layout(margin=dict(l=60, r=30, t=50, b=80))
 
+        # `percentage` already sums to 100 per snapshot (buckets are exhaustive
+        # and mutually exclusive), so stack it directly — an extra groupnorm here
+        # would be a redundant re-normalisation.
         fig_pct = px.area(
             df, x='version', y='percentage', color='bucket',
             category_orders={'bucket': bucket_order},
             color_discrete_map=color_map,
-            groupnorm='percent',
             labels={'version': 'Snapshot', 'percentage': '% of stressors', 'bucket': 'AOPs referencing this stressor'},
         )
         fig_pct.update_xaxes(tickangle=-45)
         fig_pct.update_yaxes(range=[0, 100])
         fig_pct.update_layout(margin=dict(l=60, r=30, t=50, b=80))
+        # The 3-5 / 6-10 / 11+ buckets compress into a thin sliver at the top of
+        # the 100% stack; a thin white border between bands delineates them so the
+        # minority categories are separable (#plot-review). The fill colour must
+        # be pinned explicitly first — plotly otherwise derives the stacked fill
+        # from the line colour, so a white line would blank the whole band.
+        for _tr in fig_pct.data:
+            _tr.update(fillcolor=color_map.get(_tr.name), line=dict(width=0.6, color='white'))
 
         _plot_data_cache['aops_per_stressor_distribution_absolute'] = df
         _plot_data_cache['aops_per_stressor_distribution_percentage'] = df
@@ -993,11 +1028,17 @@ def plot_ke_migration_map(top_n: int = 50) -> tuple[str, pd.DataFrame]:
             z=pivot.values,
             x=versions,
             y=y_labels,
+            # Single-hue blues ramp, monotonic in lightness (light→dark), so equal
+            # value steps read as equal colour steps and mid-range differences in
+            # the crowded 10-30 band separate cleanly — unlike the old
+            # light-blue→blue→magenta scale that was dominated by look-alike blues
+            # then jumped hue (#plot-review).
             colorscale=[
                 [0.0, '#f2f2f7'],
-                [0.05, BRAND_COLORS['sky_blue']],
-                [0.5, BRAND_COLORS['blue']],
-                [1.0, BRAND_COLORS['deep_magenta']],
+                [0.25, BRAND_COLORS['sky_blue']],
+                [0.5, BRAND_COLORS['light_blue']],
+                [0.75, BRAND_COLORS['blue']],
+                [1.0, BRAND_COLORS['primary']],
             ],
             zmin=0,
             colorbar=dict(title='#AOPs<br>referencing<br>this KE'),
@@ -1005,7 +1046,7 @@ def plot_ke_migration_map(top_n: int = 50) -> tuple[str, pd.DataFrame]:
         ))
         fig.update_layout(
             title={"text": f"KE migration map — top {len(top_kes)} most-mobile Key Events<br><sub>Cell colour = #AOPs the KE is in at that snapshot; empty cells = KE absent</sub>"},
-            xaxis=dict(tickangle=-45),
+            xaxis=dict(title='Snapshot date', tickangle=-45),
             yaxis=dict(autorange='reversed'),
             margin=dict(l=80, r=40, t=80, b=80),
             height=900,
@@ -1118,12 +1159,9 @@ def plot_avg_per_aop() -> tuple[str, str]:
         fig_abs.update_layout(
             margin=dict(l=50, r=20, t=50, b=50)
         )
-        fig_abs.update_xaxes(
-            tickmode='array',
-            tickvals=df_all["version"],
-            ticktext=df_all["version"],
-            tickangle=-45
-        )
+        # Auto-thin the date ticks (one per year) instead of all ~32 rotated
+        # snapshot labels crowding the axis (#plot-review).
+        apply_snapshot_xaxis(fig_abs)
 
         # Delta
         df_all["avg_KEs_per_AOP_Δ"] = df_all["avg_KEs_per_AOP"].diff().fillna(0)
@@ -1144,12 +1182,7 @@ def plot_avg_per_aop() -> tuple[str, str]:
         fig_delta.update_layout(
             margin=dict(l=50, r=20, t=50, b=50)
         )
-        fig_delta.update_xaxes(
-            tickmode='array',
-            tickvals=df_all["version"],
-            ticktext=df_all["version"],
-            tickangle=-45
-        )
+        apply_snapshot_xaxis(fig_delta)
 
         # Cache data for CSV export
         _plot_data_cache['average_components_per_aop_absolute'] = df_melted.copy()
@@ -1307,12 +1340,9 @@ def plot_author_counts() -> tuple[str, str]:
         fig_abs.update_layout(
             margin=dict(l=50, r=20, t=50, b=50)
         )
-        fig_abs.update_xaxes(
-            tickmode='array',
-            tickvals=df_authors["version"],
-            ticktext=df_authors["version"],
-            tickangle=-45
-        )
+        # Auto-thin the date ticks (one per year) rather than printing all ~32
+        # rotated snapshot labels, which crowd into a wall at -45° (#plot-review).
+        apply_snapshot_xaxis(fig_abs)
 
         # Delta
         df_authors["author_count_Δ"] = df_authors["author_count"].diff().fillna(0)
@@ -1321,12 +1351,7 @@ def plot_author_counts() -> tuple[str, str]:
         fig_delta.update_layout(
             margin=dict(l=50, r=20, t=50, b=50)
         )
-        fig_delta.update_xaxes(
-            tickmode='array',
-            tickvals=df_authors["version"],
-            ticktext=df_authors["version"],
-            tickangle=-45
-        )
+        apply_snapshot_xaxis(fig_delta)
 
         # Cache data for CSV export
         _plot_data_cache['aop_authors_absolute'] = df_authors.copy()
@@ -1412,7 +1437,15 @@ def plot_aop_lifetime() -> tuple[str, str]:
             fig1 = px.histogram(df_created, x="year_created",
                                 labels={"year_created": "Year", "count": "AOP Count"},
                                 color_discrete_sequence=[BRAND_COLORS['blue']])
-            fig1.update_layout(height=400)
+            # Anchor one bin per calendar year, centred on the integer year, so
+            # each bar maps cleanly to a single year instead of straddling the
+            # year tick (#plot-review).
+            yrs = df_created["year_created"].dropna()
+            if not yrs.empty:
+                fig1.update_traces(xbins=dict(start=int(yrs.min()) - 0.5,
+                                              end=int(yrs.max()) + 0.5, size=1))
+                fig1.update_xaxes(dtick=1, tick0=int(yrs.min()))
+            fig1.update_layout(height=400, bargap=0.05)
             html1 = render_plot_html(fig1)
             _plot_figure_cache['aops_created_over_time'] = fig1
         except Exception as e:
@@ -1425,6 +1458,10 @@ def plot_aop_lifetime() -> tuple[str, str]:
                               labels={"created": "Created", "modified": "Modified"},
                               color_discrete_sequence=[BRAND_COLORS['blue']],
                               render_mode='svg')
+            # Semi-transparent, slightly smaller markers so the dense batch-
+            # modification bands reveal point density instead of saturating to
+            # solid blobs (#plot-review).
+            fig2.update_traces(marker=dict(opacity=0.45, size=5))
             fig2.update_layout(height=500)
             html2 = render_plot_html(fig2)
             _plot_figure_cache['aop_creation_vs_modification_timeline'] = fig2
@@ -1975,34 +2012,38 @@ def plot_bio_processes() -> tuple[str, str]:
         df_ont["version_dt"] = pd.to_datetime(df_ont["version"], errors="coerce")
         df_ont = df_ont.sort_values("version_dt").drop(columns="version_dt")
 
-        # --- Absolute bar chart ---
-        fig_abs = px.bar(
+        # --- Absolute line chart ---
+        # An ordered time axis with 8 ontology series reads as lines, not a forest
+        # of ~256 thin grouped bars where the small-count ontologies vanished
+        # (#plot-review). Marker shapes back up colour so the low-count series stay
+        # tellable apart.
+        fig_abs = px.line(
             df_ont,
             x="version",
             y="count",
             color="ontology",
-            barmode="group",
+            markers=True,
             labels={"count": "Annotated KEs", "ontology": "Ontology"},
             color_discrete_sequence=BRAND_COLORS['palette']
         )
-        # Template defaults handle styling
-        fig_abs.update_xaxes(tickmode='array', tickvals=df_ont["version"], ticktext=df_ont["version"], tickangle=-45)
+        _apply_marker_symbols(fig_abs)
+        apply_snapshot_xaxis(fig_abs)
 
         # --- Delta calculation ---
         df_delta = df_ont.copy()
         df_delta["count"] = df_delta.groupby("ontology")["count"].diff().fillna(0)
 
-        fig_delta = px.bar(
+        fig_delta = px.line(
             df_delta,
             x="version",
             y="count",
             color="ontology",
-            barmode="group",
+            markers=True,
             labels={"count": "Change in Annotated KEs", "ontology": "Ontology"},
             color_discrete_sequence=BRAND_COLORS['palette']
         )
-        # Template defaults handle styling
-        fig_delta.update_xaxes(tickmode='array', tickvals=df_ont["version"], ticktext=df_ont["version"], tickangle=-45)
+        _apply_marker_symbols(fig_delta)
+        apply_snapshot_xaxis(fig_delta)
 
         # Cache data for CSV export
         _plot_data_cache['biological_process_annotations_absolute'] = df_ont.copy()
@@ -2082,34 +2123,38 @@ def plot_bio_objects() -> tuple[str, str]:
         df_obj["version_dt"] = pd.to_datetime(df_obj["version"], errors="coerce")
         df_obj = df_obj.sort_values("version_dt").drop(columns="version_dt")
 
-        # --- Absolute bar chart ---
-        fig_abs = px.bar(
+        # --- Absolute line chart ---
+        # One line per ontology over the ordered time axis, replacing the dense
+        # grouped-bar forest where CHEBI/GO's near-identical blues collided and
+        # the small ontologies collapsed to slivers (#plot-review). Marker shapes
+        # reinforce colour.
+        fig_abs = px.line(
             df_obj,
             x="version",
             y="count",
             color="ontology",
-            barmode="group",
+            markers=True,
             labels={"count": "Annotated KEs", "ontology": "Ontology"},
             color_discrete_sequence=BRAND_COLORS['palette']
         )
-        # Template defaults handle styling
-        fig_abs.update_xaxes(tickmode='array', tickvals=df_obj["version"], ticktext=df_obj["version"], tickangle=-45)
+        _apply_marker_symbols(fig_abs)
+        apply_snapshot_xaxis(fig_abs)
 
         # --- Delta calculation ---
         df_delta = df_obj.copy()
         df_delta["count"] = df_delta.groupby("ontology")["count"].diff().fillna(0)
 
-        fig_delta = px.bar(
+        fig_delta = px.line(
             df_delta,
             x="version",
             y="count",
             color="ontology",
-            barmode="group",
+            markers=True,
             labels={"count": "Change in Annotated KEs", "ontology": "Ontology"},
             color_discrete_sequence=BRAND_COLORS['palette']
         )
-        # Template defaults handle styling
-        fig_delta.update_xaxes(tickmode='array', tickvals=df_obj["version"], ticktext=df_obj["version"], tickangle=-45)
+        _apply_marker_symbols(fig_delta)
+        apply_snapshot_xaxis(fig_delta)
 
         # Cache data for CSV export
         _plot_data_cache['biological_object_annotations_absolute'] = df_obj.copy()
@@ -2748,8 +2793,13 @@ def plot_kes_by_kec_count() -> tuple[str, str]:
         df_delta = df_full.copy()
         df_delta["total_kes_delta"] = df_delta.groupby("bioevent_count_group")["total_kes"].diff().fillna(0)
 
-        fig_delta = px.area(
+        # The delta is signed (several snapshots dip below zero), which breaks the
+        # additive, non-negative assumption of a stacked area. Relative bars stack
+        # positive changes up and negative changes down from the baseline, so the
+        # composition reads honestly (#plot-review).
+        fig_delta = px.bar(
             df_delta, x="version", y="total_kes_delta", color="bioevent_count_group",
+            barmode="relative",
             labels={"total_kes_delta": "Change in KEs", "bioevent_count_group": "Number of Components"},
             color_discrete_sequence=BRAND_COLORS['palette']
         )
@@ -4282,6 +4332,10 @@ def plot_organ_coverage_trends() -> tuple[str, str, pd.DataFrame]:
             markers=True,
             color_discrete_sequence=BRAND_COLORS["palette"],
         )
+        # 14 organ-system series exceed the palette's distinct hues, so pair each
+        # with a marker glyph and thin the lines — the best feasible separation
+        # short of dropping series (#plot-review).
+        _apply_marker_symbols(fig_abs, size=6, line_width=1.4)
         fig_abs.update_layout(
             title="Organ-System Coverage of AOPs over Time",
             xaxis_title="Snapshot",
@@ -4310,6 +4364,7 @@ def plot_organ_coverage_trends() -> tuple[str, str, pd.DataFrame]:
             markers=True,
             color_discrete_sequence=BRAND_COLORS["palette"],
         )
+        _apply_marker_symbols(fig_pct, size=6, line_width=1.4)
         fig_pct.update_layout(
             title="Organ-System Coverage of AOPs over Time (% of snapshot)",
             xaxis_title="Snapshot",

@@ -223,9 +223,28 @@ BRAND_COLORS = {
     'dark_teal': '#005A6C',    # Dark teal
     'violet': '#64358C',       # Violet accent
     'warm_pink': '#B81178',    # Warm pink accent
+    # Categorical sequence. Ordered for MAXIMUM separation between consecutive
+    # colours and widened for colour-vision deficiency: the old sequence was 4
+    # blues + 3 magentas with no green/amber, so any chart past ~6 series became
+    # a wall of near-identical hues (the #1 finding of the 2026-07 plot review).
+    # This set interleaves hue families and adds green (#009E73) and amber
+    # (#E1A100) — both absent before — following Okabe-Ito colourblind-safe
+    # principles while keeping the VHP4Safety brand colours. First 8 are the most
+    # distinct; charts needing more than ~10 categories should reduce series
+    # (small multiples) rather than rely on colour alone.
     'palette': [
-        '#29235C', '#E6007E', '#307BBF', '#009FE3', '#EB5B25',
-        '#93D5F6', '#9A1C57', '#45A6B2', '#B81178', '#005A6C', '#64358C',
+        '#307BBF',  # blue (brand)
+        '#E6007E',  # magenta (brand)
+        '#009E73',  # green (Okabe-Ito — fills the missing-green gap)
+        '#EB5B25',  # orange (brand)
+        '#64358C',  # violet (brand)
+        '#E1A100',  # amber (fills the missing-yellow gap)
+        '#45A6B2',  # teal (brand)
+        '#9A1C57',  # maroon (brand deep magenta)
+        '#29235C',  # deep navy (brand primary)
+        '#93D5F6',  # sky blue (brand)
+        '#B81178',  # warm pink (brand)
+        '#005A6C',  # dark teal (brand)
     ],
     # OECD Status color mapping — consistent across all OECD-related plots.
     # Covers every status present across the 2018–2026 snapshots (the version
@@ -236,7 +255,7 @@ BRAND_COLORS = {
     # the OECD vocabulary changes. Ordered by rough workflow maturity so the
     # colour progression reads sensibly (#139).
     'oecd_status': {
-        'No Status': '#999999',                    # grey — no status assigned
+        'No Status': '#BFBFBF',                    # light grey — no status assigned
         'Included in OECD Work Plan': '#93D5F6',   # sky blue — earliest stage
         'Under Development': '#009FE3',            # light blue
         'Under Review': '#307BBF',                 # blue
@@ -244,7 +263,7 @@ BRAND_COLORS = {
         'EAGMST Approved': '#EB5B25',              # orange — approved
         'TFHA/WNT Endorsed': '#29235C',            # deep purple — endorsed (legacy label)
         'WPHA/WNT Endorsed': '#E6007E',            # magenta — endorsed (current label)
-        'Archived': '#777777',                     # dark grey — retired
+        'Archived': '#4D4D4D',                     # charcoal — retired (kept clearly darker than 'No Status' so the two greys don't merge in stacked areas, #plot-review)
     },
     # Legacy aliases for backward compatibility
     'secondary': '#E6007E',
@@ -1362,6 +1381,44 @@ def apply_snapshot_xaxis(fig, title: str = "Snapshot date"):
     return fig
 
 
+def pad_axis_for_outside_labels(fig, axis: str = "x", frac: float = 0.15):
+    """Give bar value-labels drawn ``textposition='outside'`` room so the top
+    bar's number isn't clipped at the plot/canvas edge (#plot-review).
+
+    Plotly draws outside text past the axis end and then clips it at the axis
+    line, so the single longest bar routinely loses its last digit while every
+    shorter bar renders fine. This extends the value axis range by ``frac`` and
+    sets ``cliponaxis=False`` so labels may spill into the (already present)
+    margin instead of being cut.
+
+    Args:
+        fig: the figure to adjust in place.
+        axis: value axis carrying the bar magnitudes — ``"x"`` for horizontal
+            bars, ``"y"`` for vertical bars.
+        frac: fraction of the data span to add as head-room (default 15%).
+    """
+    import numbers
+    vals = []
+    for tr in fig.data:
+        arr = getattr(tr, axis, None)
+        if arr is None:
+            continue
+        # numbers.Real (not bare int/float) so numpy.int64/float64 scalars —
+        # which pandas hands back — are counted rather than silently skipped.
+        vals += [v for v in arr if isinstance(v, numbers.Real) and not isinstance(v, bool)]
+    if not vals:
+        return fig
+    lo = min(0, min(vals))
+    hi = max(vals)
+    pad = (hi - lo or 1) * frac
+    if axis == "x":
+        fig.update_xaxes(range=[lo, hi + pad])
+    else:
+        fig.update_yaxes(range=[lo, hi + pad])
+    fig.update_traces(cliponaxis=False)
+    return fig
+
+
 def humanize_predicate_uri(uri: str) -> str:
     """Turn an unmapped predicate URI into a readable label as a last resort.
 
@@ -1450,26 +1507,48 @@ def build_property_presence_figure(df, y_col, y_title, entity_label, percentage=
     else:
         ordered = sorted(props)
 
+    # Small-multiples by property type. Plotting all ~24-26 properties as lines
+    # in one axes made every series overlap in a narrow band and forced the
+    # palette to repeat, so no line could be matched to the legend (the #1
+    # legibility finding of the 2026-07 plot review). Faceting by type puts only
+    # that type's 3-8 properties in each panel, where the 12-colour palette and
+    # per-trace marker shapes separate them cleanly. Falls back to a single panel
+    # when there is no type column.
+    facet = "type" in df.columns and df["type"].notna().any()
+    type_order = [t for t in PROPERTY_TYPE_ORDER if t in set(df["type"])] if facet else []
+    n_panels = max(1, len(type_order))
+    n_cols = 1 if n_panels == 1 else 2
+    n_rows = (n_panels + n_cols - 1) // n_cols
+
     fig = px.line(
         df,
         x="version",
         y=y_col,
         color="display_label",
         markers=True,
-        category_orders={"display_label": ordered},
+        facet_col="type" if facet else None,
+        facet_col_wrap=n_cols if facet else None,
+        facet_col_spacing=0.06,
+        facet_row_spacing=0.09,
+        category_orders={"display_label": ordered, "type": type_order},
         color_discrete_sequence=BRAND_COLORS['palette'],
         labels={y_col: y_title, "display_label": "Property"},
     )
     # Give each trace its own marker shape, in the legend's (type→label) order.
     for i, trace in enumerate(fig.data):
         trace.update(
-            marker=dict(symbol=_MARKER_SYMBOLS[i % len(_MARKER_SYMBOLS)], size=7),
+            marker=dict(symbol=_MARKER_SYMBOLS[i % len(_MARKER_SYMBOLS)], size=6),
             line=dict(width=1.5),
             connectgaps=False,
         )
 
+    # Facet titles come through as "type=Essential"; strip to just the type name.
+    fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
+
     apply_snapshot_xaxis(fig)
-    fig.update_yaxes(title_text=y_title)
+    # Only the shared column/row axes carry titles under faceting; set them once.
+    fig.update_yaxes(title_text=y_title, col=1)
+    fig.update_xaxes(title_text="")
     if percentage:
         fig.update_yaxes(range=[0, 105])
 
@@ -1478,13 +1557,13 @@ def build_property_presence_figure(df, y_col, y_title, entity_label, percentage=
         # so all series stay visible instead of scrolling inside the plot.
         legend=dict(
             orientation="h",
-            yanchor="top", y=-0.25,
+            yanchor="top", y=-0.18 if facet else -0.25,
             xanchor="left", x=0,
             font=dict(size=10),
             title_text="",
         ),
-        margin=dict(l=55, r=20, t=40, b=140),
-        height=560,
+        margin=dict(l=55, r=20, t=40, b=150),
+        height=300 * n_rows + 150,
     )
     return fig
 

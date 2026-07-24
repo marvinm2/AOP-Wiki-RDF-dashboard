@@ -115,6 +115,7 @@ from .shared import (
 
     # Utility functions
     apply_snapshot_xaxis,
+    pad_axis_for_outside_labels,
     safe_read_csv,
     get_properties_for_entity,
     safe_plot_execution,
@@ -260,6 +261,7 @@ __all__ = [
     'get_latest_version',
     'get_all_versions',
     'apply_snapshot_xaxis',
+    'pad_axis_for_outside_labels',
     'safe_read_csv',
     'get_properties_for_entity',
     'safe_plot_execution',
