@@ -321,7 +321,13 @@ footer img {
     flex-wrap: wrap;
     gap: 5px;
     padding: 20px;
-    justify-content: center;
+    /* flex-start (not center) so an odd trailing card sits under the left
+       column instead of floating centred at half width, which read as a
+       different hierarchy level (#132). align-items:flex-start lets each card
+       size to its own content, so a short chart no longer leaves a tall blank
+       area matching its taller row-mate. */
+    justify-content: flex-start;
+    align-items: flex-start;
 }
 
 .plot-box {
