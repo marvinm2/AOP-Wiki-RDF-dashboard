@@ -2050,6 +2050,77 @@ def _clean_author_label(raw: str) -> str:
     return s
 
 
+# Provenance framing that precedes the actual creator names in some AOP-Wiki
+# dc:creator strings, e.g. "Of the content populated in the AOP-Wiki: <names>".
+_AUTHOR_PROVENANCE_RE = re.compile(
+    r"^\s*of the (?:content populated in the aop-?wiki|originating work)\s*[:.\-]?\s*",
+    re.IGNORECASE,
+)
+
+# Institutional/workgroup authorship — display the group name rather than trying
+# to extract a person from an organisational byline. Non-greedy so it stops at
+# the first group keyword (e.g. "Cancer AOP Workgroup" out of a longer blurb).
+_AUTHOR_ORG_RE = re.compile(
+    r"^(.*?\b(?:work\s?group|group|consortium|committee|panel|task\s?force))\b",
+    re.IGNORECASE | re.DOTALL,
+)
+
+
+def _first_author_identity(raw: str) -> tuple[str, str]:
+    """Best-effort (display, dedup-key) for a free-text dc:creator string.
+
+    dc:creator is unstructured: a name, a co-author list, or a workgroup byline,
+    frequently trailed by an affiliation blurb, emails, provenance framing and
+    reference-number superscripts. This collapses each string to its first
+    author (or workgroup) so the many spellings of one contributor — e.g. the
+    ten+ "You Song ... NIVA ..." variants — merge into a single bar (#144).
+
+    Returns ("", "") when nothing name-like can be recovered.
+    """
+    s = html.unescape(raw or "")
+    s = re.sub(r"<[^>]+>", " ", s)                       # strip HTML tags
+    s = s.replace("\xa0", " ").replace("\u200b", "")
+    s = _AUTHOR_PROVENANCE_RE.sub("", s.lstrip())
+
+    # The author block is the first non-empty line; affiliations follow later
+    # (usually after a blank line).
+    first_line = ""
+    for line in s.splitlines():
+        if line.strip():
+            first_line = line.strip()
+            break
+    if not first_line:
+        return "", ""
+
+    org = _AUTHOR_ORG_RE.match(first_line)
+    if org:
+        name = org.group(1)
+    else:
+        # First author = text before the first co-author / affiliation delimiter.
+        name = re.split(r"[;,]", first_line, maxsplit=1)[0]
+        name = re.split(r"\s+and\s+|\s+&\s+", name, maxsplit=1)[0]
+        # Affiliation-superscript format "Namea, b, c, ...": the surname carries a
+        # trailing lower-case affiliation letter and the next comma-segment is
+        # itself a lone letter. Strip that marker so "You Songa" == "You Song".
+        tail = first_line.split(",", 1)
+        if (len(tail) == 2 and len(name) > 4
+                and re.match(r"^\s*[a-z]\s*(?:[,*]|$)", tail[1])
+                and re.search(r"[a-z]$", name)):
+            name = name[:-1]
+        # Drop trailing reference markers: (1), [1], *, superscript numerals.
+        name = re.sub(r"\s*[\[(][^\])]*[\])]\s*$", "", name)
+        name = re.sub(r"[\*\d]+$", "", name)
+
+    name = re.sub(r"\s+", " ", name).strip(" .,;*")
+    if not name:
+        return "", ""
+    if name.isupper():                                    # ALL-CAPS byline → Title Case
+        name = name.title()
+    key = re.sub(r"[^a-z0-9 ]", "", name.lower())         # case/punct-insensitive key
+    key = re.sub(r"\s+", " ", key).strip()
+    return name, key or name.lower()
+
+
 def plot_latest_author_contributions(version: str = None) -> str:
     """Show the most prolific AOP contributors (top 20 by AOP count).
 
@@ -2085,6 +2156,10 @@ def plot_latest_author_contributions(version: str = None) -> str:
         target_graph = version_results[0]["graph"]["value"]
         latest_version = target_graph.split("/")[-1]
 
+    # Fetch every creator (dedup happens in Python, so the top-20 is taken after
+    # merging first-author variants, not before). Each AOP carries exactly one
+    # dc:creator, so summing distinct-AOP counts across the variants of one
+    # author never double-counts an AOP (#144).
     query = f"""
     SELECT ?creator (COUNT(DISTINCT ?aop) AS ?aop_count)
     WHERE {{
@@ -2095,28 +2170,42 @@ def plot_latest_author_contributions(version: str = None) -> str:
     }}
     GROUP BY ?creator
     ORDER BY DESC(?aop_count)
-    LIMIT 20
     """
 
     results = run_sparql_query(query)
     if not results:
         return create_fallback_plot("Top AOP Contributors", "No author data found")
 
-    data = []
+    # Merge free-text creator strings into one first-author identity each.
+    merged: dict = {}
     for r in results:
-        label = _clean_author_label(r["creator"]["value"])
-        if not label:
+        display, key = _first_author_identity(r["creator"]["value"])
+        if not key:
             continue
         aop_count = int(r["aop_count"]["value"])
+        entry = merged.get(key)
+        if entry is None:
+            # Results are ordered DESC by count, so the first variant seen for a
+            # key is its highest-count spelling — the one worth displaying.
+            merged[key] = {"display": display, "count": aop_count, "variants": 1}
+        else:
+            entry["count"] += aop_count
+            entry["variants"] += 1
+
+    if not merged:
+        return create_fallback_plot("Top AOP Contributors", "No author data found")
+
+    top = sorted(merged.values(), key=lambda e: e["count"], reverse=True)[:20]
+    data = []
+    for e in top:
+        label = e["display"]
         display = label[:55] + "…" if len(label) > 55 else label
         data.append({
             "Contributor": display,
             "Full name": label,
-            "AOP Count": aop_count,
+            "AOP Count": e["count"],
+            "Variants merged": e["variants"],
         })
-
-    if not data:
-        return create_fallback_plot("Top AOP Contributors", "No author data found")
 
     df = pd.DataFrame(data)
     # Disambiguate any duplicate truncated labels with a longer form
@@ -2133,17 +2222,21 @@ def plot_latest_author_contributions(version: str = None) -> str:
         y="Contributor",
         orientation='h',
         text="AOP Count",
-        custom_data=['Full name'],
+        custom_data=['Full name', 'Variants merged'],
     )
-    # Truncated y-labels stay recoverable via the full creator string on hover (#plot-review)
+    # Hover shows the full first-author name plus how many raw creator strings
+    # were merged into this contributor (#144).
     fig.update_traces(
         marker_color=BRAND_COLORS['blue'], textposition='outside',
-        hovertemplate="%{customdata[0]}<br>AOPs authored: %{x}<extra></extra>",
+        hovertemplate=(
+            "%{customdata[0]}<br>AOPs authored: %{x}"
+            "<br>Creator strings merged: %{customdata[1]}<extra></extra>"
+        ),
     )
     fig.update_layout(
         showlegend=False,
         height=max(400, len(df) * 28 + 120),
-        margin=dict(l=340, r=40, t=60, b=60),
+        margin=dict(l=220, r=40, t=60, b=60),
         yaxis=dict(title="", categoryorder="total ascending"),
         # Extend the value axis so the top bar's outside label isn't clipped (#plot-review)
         xaxis=dict(title="Number of AOPs authored", range=[0, float(df["AOP Count"].max()) * 1.15]),
