@@ -1987,13 +1987,30 @@ def landing():
     from cached startup data. Includes expandable AOP-Wiki introduction.
     """
     latest_version = _latest_version or "Unknown"
-    entity_counts = None
-    cached_df = _plot_data_cache.get('latest_entity_counts')
-    if cached_df is not None and hasattr(cached_df, 'empty') and not cached_df.empty:
+
+    def _counts_from_cache():
+        cached_df = _plot_data_cache.get('latest_entity_counts')
+        if cached_df is not None and hasattr(cached_df, 'empty') and not cached_df.empty:
+            try:
+                return dict(zip(cached_df['Entity'], cached_df['Count']))
+            except (KeyError, TypeError):
+                return None
+        return None
+
+    entity_counts = _counts_from_cache()
+    if entity_counts is None:
+        # The counts come from the startup plot cache. If that computation failed
+        # during warmup (e.g. a SPARQL timeout), the cache stays empty and the
+        # landing badges would show nothing until the next restart. Recompute
+        # once on demand so the page self-heals (#140). safe_plot_execution
+        # swallows errors, so a still-down endpoint just leaves counts hidden
+        # rather than erroring the page.
         try:
-            entity_counts = dict(zip(cached_df['Entity'], cached_df['Count']))
-        except (KeyError, TypeError):
-            entity_counts = None
+            safe_plot_execution(plot_latest_entity_counts)
+            entity_counts = _counts_from_cache()
+        except Exception:
+            logger.warning("Landing: on-demand entity_counts recompute failed", exc_info=True)
+
     return render_template("landing.html", version=latest_version, entity_counts=entity_counts, active_page='home')
 
 
