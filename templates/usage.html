@@ -7,9 +7,13 @@
     .usage-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
     .usage-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 1rem 1.25rem; }
     .usage-card h3 { color: #29235C; margin-top: 0; font-size: 1rem; }
-    .usage-card table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-    .usage-card td { padding: 0.2rem 0; border-bottom: 1px solid #f0f0f0; }
-    .usage-card td.count { text-align: right; font-variant-numeric: tabular-nums; color: var(--color-blue-ui); font-weight: 600; }
+    /* table-layout:fixed so long plot/page/version labels wrap inside the cell
+       instead of stretching the table past a phone-width card (was ~440px on a
+       375px viewport). The count column is pinned narrow; the label column
+       takes the rest and breaks long tokens. */
+    .usage-card table { width: 100%; border-collapse: collapse; font-size: 0.9rem; table-layout: fixed; }
+    .usage-card td { padding: 0.2rem 0; border-bottom: 1px solid #f0f0f0; overflow-wrap: anywhere; }
+    .usage-card td.count { width: 4.5rem; text-align: right; font-variant-numeric: tabular-nums; color: var(--color-blue-ui); font-weight: 600; }
     .usage-total { font-size: 2rem; color: #E6007E; font-weight: 700; }
     .usage-note { color: #666; font-size: 0.85rem; margin-top: 1.5rem; }
 </style>

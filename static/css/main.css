@@ -348,9 +348,23 @@ footer img {
 
 .plot-header {
     display: flex;
+    /* wrap + gap so inline controls (download menu, AOP-AOP threshold slider)
+       drop to a new row on narrow screens instead of overflowing off the right
+       edge. Without this the header's flex children could not shrink or wrap and
+       pushed the whole page ~120px wider than a phone viewport (horizontal
+       scroll + off-screen, unreachable Download buttons). */
+    flex-wrap: wrap;
     justify-content: space-between;
     align-items: center;
+    gap: 8px;
     margin-bottom: 10px;
+}
+
+/* Let a long title shrink rather than force the header wider than its card. */
+.plot-header > h3,
+.plot-header > h4 {
+    min-width: 0;
+    overflow-wrap: break-word;
 }
 
 .download-button {
@@ -843,6 +857,27 @@ footer img {
     text-decoration: underline;
 }
 
+/* Inline code in About prose holds long IRIs; let them break so they never
+   widen the page on a phone. */
+.about-section code {
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+
+/* Block SPARQL example: scroll its long lines inside the box (as the plot
+   methodology panels do) instead of overflowing the page. A bare <pre> keeps
+   white-space:pre, so without this the widest line pushed the page ~105px
+   wider than a phone viewport. */
+.about-query {
+    overflow-x: auto;
+    max-width: 100%;
+    background-color: #f0f0f0;
+    padding: 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
 @media (max-width: 900px) {
     .about-page {
         padding: 20px 16px 30px;
@@ -1039,6 +1074,16 @@ footer img {
 
 .methodology-content p {
     margin: 6px 0;
+}
+
+/* Inline code in prose often holds long unbreakable tokens (URIs, prefixed
+   IRIs). Allow them to break so they wrap within the card instead of pushing
+   the page wider on narrow screens. Block SPARQL in `.sparql-query pre` keeps
+   its own overflow-x:auto scroll and is unaffected. */
+.methodology-content code,
+.plot-description code {
+    overflow-wrap: break-word;
+    word-break: break-word;
 }
 
 .sparql-query > summary {
@@ -1296,6 +1341,11 @@ footer img {
     padding: 30px 20px;
     text-align: center;
     width: 100%;
+    /* border-box so width:100% includes the 20px side padding. Under the
+       default content-box the padding sat outside the 100%, rendering the
+       footer 40px wider than the viewport — a permanent horizontal scrollbar
+       on every page, at every width. */
+    box-sizing: border-box;
     margin-top: auto;
 }
 
@@ -1781,6 +1831,26 @@ footer img {
 
     .segmented-control {
         flex-wrap: wrap;
+    }
+
+    /* The sticky section-nav uses negative side margins (0 -20px) to full-bleed
+       its background across the page gutters. On phones the gutter is narrower
+       than 20px, so that breakout pushed the bar past the viewport. Drop the
+       breakout here; the bar simply sits inside the content padding. */
+    .snapshot-section-nav {
+        margin-left: 0;
+        margin-right: 0;
+    }
+
+    /* AOP-AOP threshold slider: let the label + range input wrap and shrink so
+       the control fits a phone-width plot card. */
+    .aop-aop-threshold-control {
+        margin-left: 0;
+        flex-wrap: wrap;
+    }
+
+    .aop-aop-threshold-control input[type="range"] {
+        width: 120px;
     }
 }
 
