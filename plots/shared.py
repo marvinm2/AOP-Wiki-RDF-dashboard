@@ -357,6 +357,64 @@ _plot_data_cache = VersionedPlotCache(max_versions=5, ttl_seconds=1800)
 _plot_figure_cache = VersionedPlotCache(max_versions=5, ttl_seconds=1800)
 
 
+# --- Cache rewarming -------------------------------------------------------
+# These caches are per-process dicts. Gunicorn runs 2 workers with preload_app,
+# so only entries populated *before* the fork (the startup plot computation) are
+# shared via copy-on-write. Anything computed lazily afterwards — a plot first
+# rendered through /api/plot/<name>, or any ?version=YYYY-MM-DD render — lands in
+# exactly one worker's cache. A follow-up /download/... request is load-balanced
+# independently, so roughly half of them hit the worker that never rendered that
+# plot and used to 404 with "No data available".
+#
+# Rather than share state across processes, exports re-run the plot function on a
+# miss: the plot functions are idempotent and populate both caches as a side
+# effect, so one extra SPARQL round-trip makes the export self-healing in any
+# worker. This also covers TTL-evicted historical versions, which #146's pinning
+# deliberately does not protect.
+_cache_rewarm_hook = None
+_rewarm_locks: Dict[str, threading.Lock] = {}
+_rewarm_locks_guard = threading.Lock()
+
+
+def register_cache_rewarm(hook) -> None:
+    """Register the callable used to recompute a plot when an export misses.
+
+    Args:
+        hook: callable taking a cache key (e.g. 'latest_ke_reuse_2026-07-01')
+            and recomputing that plot so it repopulates the caches. It should
+            return True if it recognised and recomputed the key.
+    """
+    global _cache_rewarm_hook
+    _cache_rewarm_hook = hook
+
+
+def _rewarm_cache_key(cache: VersionedPlotCache, key: str) -> bool:
+    """Recompute `key` via the registered hook. Returns True if it is now cached.
+
+    Serialised per key so a burst of CSV/PNG/SVG clicks triggers one recompute
+    rather than three. Never raises — a failed rewarm degrades to the old
+    "not available" response.
+    """
+    if _cache_rewarm_hook is None:
+        return False
+
+    with _rewarm_locks_guard:
+        lock = _rewarm_locks.setdefault(key, threading.Lock())
+
+    with lock:
+        # Another thread may have rewarmed this key while we waited for the lock.
+        if key in cache:
+            return True
+        try:
+            logger.info(f"Export cache miss for {key} — recomputing")
+            _cache_rewarm_hook(key)
+        except Exception as e:
+            logger.error(f"Cache rewarm failed for {key}: {e}")
+            return False
+
+    return key in cache
+
+
 def safe_read_csv(filename: str, default_data: Optional[List[Dict]] = None) -> pd.DataFrame:
     """Safely read CSV file with comprehensive error handling and fallback data.
 
@@ -1328,8 +1386,10 @@ def export_figure_as_image(
     """
     try:
         if plot_name not in _plot_figure_cache:
-            logger.error(f"Plot {plot_name} not found in figure cache")
-            return None
+            # May simply be a plot this worker never rendered — recompute once.
+            if not _rewarm_cache_key(_plot_figure_cache, plot_name):
+                logger.error(f"Plot {plot_name} not found in figure cache")
+                return None
 
         fig = _plot_figure_cache[plot_name]
 
@@ -1648,8 +1708,10 @@ def get_csv_with_metadata(
     """
     try:
         if plot_name not in _plot_data_cache:
-            logger.error(f"Plot {plot_name} not found in data cache")
-            return None
+            # May simply be a plot this worker never rendered — recompute once.
+            if not _rewarm_cache_key(_plot_data_cache, plot_name):
+                logger.error(f"Plot {plot_name} not found in data cache")
+                return None
 
         df = _plot_data_cache[plot_name]
 

@@ -48,6 +48,7 @@ from flask_cors import CORS
 import pandas as pd
 import time
 import os
+import re
 import json
 import inspect
 import logging
@@ -142,6 +143,7 @@ from plots import (
     _plot_figure_cache,
     build_export_filename,
     export_figure_as_image,
+    register_cache_rewarm,
     get_csv_with_metadata,
     create_bulk_download,
     get_or_compute_network
@@ -347,6 +349,86 @@ _latest_precomputed_html: dict[str, str] = {
         'latest_ke_mmo_coverage',
     ) if isinstance(plot_results.get(k), str) and plot_results[k]
 }
+
+# Latest-snapshot plot functions, keyed by plot name. Module-level (rather than
+# local to /api/plot) so the export cache-rewarm hook can resolve a cache key
+# back to the function that produces it.
+LATEST_PLOT_FUNCTIONS = {
+    'latest_entity_counts': plot_latest_entity_counts,
+    'latest_ke_components': plot_latest_ke_components,
+    'latest_aop_connectivity': plot_latest_aop_connectivity,
+    'latest_avg_per_aop': plot_latest_avg_per_aop,
+    'latest_process_usage': plot_latest_process_usage,
+    'latest_object_usage': plot_latest_object_usage,
+    'latest_aop_completeness': plot_latest_aop_completeness,
+    'latest_aop_completeness_by_status': plot_latest_aop_completeness_by_status,
+    'latest_ke_completeness_by_status': plot_latest_ke_completeness_by_status,
+    'latest_ker_completeness_by_status': plot_latest_ker_completeness_by_status,
+    'latest_ontology_usage': plot_latest_ontology_usage,
+    'latest_ke_annotation_depth': plot_latest_ke_annotation_depth,
+    'latest_ke_by_bio_level': plot_latest_ke_by_bio_level,
+    'latest_taxonomic_groups': plot_latest_taxonomic_groups,
+    'latest_entity_by_oecd_status': plot_latest_entity_by_oecd_status,
+    'latest_ke_reuse': plot_latest_ke_reuse,
+    'latest_ke_reuse_distribution': plot_latest_ke_reuse_distribution,
+    'latest_mie_ao_path_length': plot_latest_mie_ao_path_length,
+    'latest_stressor_mie_coverage': plot_latest_stressor_mie_coverage,
+    'latest_ker_directionality': plot_latest_ker_directionality,
+    'latest_top_ontology_terms': plot_latest_top_ontology_terms,
+    'latest_completeness_correlation': plot_latest_completeness_correlation,
+    'latest_ontology_diversity': plot_latest_ontology_diversity,
+    'latest_aop_completeness_unique': plot_latest_aop_completeness_unique_colors,
+    'latest_organ_coverage': plot_latest_organ_coverage,
+    'latest_organ_coverage_percentage': plot_latest_organ_coverage_percentage,
+    'latest_organ_coverage_apical': plot_latest_organ_coverage_apical,
+    'latest_organ_coverage_ao_only': plot_latest_organ_coverage_ao_only,
+    'latest_organ_coverage_unified': plot_latest_organ_coverage_unified,
+    'latest_organ_coverage_pie': plot_latest_organ_coverage_pie,
+    'latest_multi_organ_aops': plot_latest_multi_organ_aops,
+    'latest_life_stage': plot_latest_life_stage,
+    'latest_ke_mmo_coverage': plot_latest_ke_mmo_coverage,
+    'latest_aop_aop_overlap': plot_latest_aop_aop_overlap,
+}
+
+
+_CACHE_KEY_VERSION_RE = re.compile(r'^(?P<name>.+)_(?P<version>\d{4}-\d{2}-\d{2}|latest)$')
+
+
+def _rewarm_plot_cache(cache_key: str) -> bool:
+    """Recompute the latest_* plot behind `cache_key` so its export can proceed.
+
+    Plot data/figure caches are per-process. With 2 gunicorn workers, a plot
+    rendered lazily in one worker is absent from the other, so its download used
+    to 404 about half the time; the same applies to any ?version= render, which
+    is never part of the startup precompute. Re-running the plot function
+    repopulates both caches as a side effect.
+
+    Args:
+        cache_key: e.g. 'latest_ke_reuse_2026-07-01', 'latest_ke_reuse_latest',
+            or a bare 'latest_ke_reuse'.
+
+    Returns:
+        bool: True if a plot function was found and executed.
+    """
+    name, version = cache_key, None
+    match = _CACHE_KEY_VERSION_RE.match(cache_key)
+    if match:
+        name = match.group('name')
+        raw_version = match.group('version')
+        version = None if raw_version == 'latest' else raw_version
+
+    plot_function = LATEST_PLOT_FUNCTIONS.get(name)
+    if plot_function is None:
+        # Trend plots are computed pre-fork and pinned, so they are shared by
+        # copy-on-write and never need this path.
+        logger.debug(f"No rewarm available for cache key {cache_key}")
+        return False
+
+    plot_function(version) if version else plot_function()
+    return True
+
+
+register_cache_rewarm(_rewarm_plot_cache)
 
 # Pin latest version in caches so it is never evicted
 _latest_version = get_latest_version()
@@ -1297,13 +1379,19 @@ def download_latest_generic(plot_name):
     include_metadata = request.args.get('metadata', 'true').lower() == 'true'
     version = request.args.get('version')
     version_key = version or "latest"
-    cache_key = f'latest_{plot_name}_{version_key}'
+    canonical_key = f'latest_{plot_name}_{version_key}'
+    cache_key = canonical_key
 
-    # Fallback: try without version suffix
+    # Fallback: try without version suffix. If nothing at all is cached, keep the
+    # canonical key rather than degrading to the bare plot name — a bare key
+    # carries no version and no `latest_` prefix, so the export's rewarm hook
+    # can't map it back to a plot function, which is precisely the cold-worker
+    # case this fallback chain is reached in (#148).
     if cache_key not in _plot_data_cache:
-        cache_key = f'latest_{plot_name}'
-    if cache_key not in _plot_data_cache:
-        cache_key = plot_name
+        cache_key = next(
+            (alt for alt in (f'latest_{plot_name}', plot_name) if alt in _plot_data_cache),
+            canonical_key,
+        )
 
     # Filename uses the clean base name (not the resolved cache key), so the
     # version_key suffix doesn't leak in as a doubled "-latest".
@@ -1865,43 +1953,7 @@ def get_plot(plot_name):
         'organ_coverage_percentage': graph_organ_cov_pct,
     }
 
-    # Handle latest_* plots dynamically with version support
-    latest_plots_with_version = {
-        'latest_entity_counts': plot_latest_entity_counts,
-        'latest_ke_components': plot_latest_ke_components,
-        'latest_aop_connectivity': plot_latest_aop_connectivity,
-        'latest_avg_per_aop': plot_latest_avg_per_aop,
-        'latest_process_usage': plot_latest_process_usage,
-        'latest_object_usage': plot_latest_object_usage,
-        'latest_aop_completeness': plot_latest_aop_completeness,
-        'latest_aop_completeness_by_status': plot_latest_aop_completeness_by_status,
-        'latest_ke_completeness_by_status': plot_latest_ke_completeness_by_status,
-        'latest_ker_completeness_by_status': plot_latest_ker_completeness_by_status,
-        'latest_ontology_usage': plot_latest_ontology_usage,
-        'latest_ke_annotation_depth': plot_latest_ke_annotation_depth,
-        'latest_ke_by_bio_level': plot_latest_ke_by_bio_level,
-        'latest_taxonomic_groups': plot_latest_taxonomic_groups,
-        'latest_entity_by_oecd_status': plot_latest_entity_by_oecd_status,
-        'latest_ke_reuse': plot_latest_ke_reuse,
-        'latest_ke_reuse_distribution': plot_latest_ke_reuse_distribution,
-        'latest_mie_ao_path_length': plot_latest_mie_ao_path_length,
-        'latest_stressor_mie_coverage': plot_latest_stressor_mie_coverage,
-        'latest_ker_directionality': plot_latest_ker_directionality,
-        'latest_top_ontology_terms': plot_latest_top_ontology_terms,
-        'latest_completeness_correlation': plot_latest_completeness_correlation,
-        'latest_ontology_diversity': plot_latest_ontology_diversity,
-        'latest_aop_completeness_unique': plot_latest_aop_completeness_unique_colors,
-        'latest_organ_coverage': plot_latest_organ_coverage,
-        'latest_organ_coverage_percentage': plot_latest_organ_coverage_percentage,
-        'latest_organ_coverage_apical': plot_latest_organ_coverage_apical,
-        'latest_organ_coverage_ao_only': plot_latest_organ_coverage_ao_only,
-        'latest_organ_coverage_unified': plot_latest_organ_coverage_unified,
-        'latest_organ_coverage_pie': plot_latest_organ_coverage_pie,
-        'latest_multi_organ_aops': plot_latest_multi_organ_aops,
-        'latest_life_stage': plot_latest_life_stage,
-        'latest_ke_mmo_coverage': plot_latest_ke_mmo_coverage,
-        'latest_aop_aop_overlap': plot_latest_aop_aop_overlap,
-    }
+    latest_plots_with_version = LATEST_PLOT_FUNCTIONS
 
     # Handle latest_* plots without version support yet (use pre-computed)
     latest_plots_precomputed = {}

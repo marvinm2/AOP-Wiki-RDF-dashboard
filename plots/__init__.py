@@ -123,6 +123,7 @@ from .shared import (
     build_export_filename,
     export_figure_as_image,
     get_csv_with_metadata,
+    register_cache_rewarm,
     create_bulk_download,
 
     # Cache class
@@ -268,6 +269,7 @@ __all__ = [
     'build_export_filename',
     'export_figure_as_image',
     'get_csv_with_metadata',
+    'register_cache_rewarm',
     'create_bulk_download',
     'BRAND_COLORS',
     'PLOTLY_HTML_CONFIG',
