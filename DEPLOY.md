@@ -10,9 +10,10 @@ Before deploying, ensure:
    - `aopwiki-dashboard.vhp4safety.nl`
    - `aopwiki-multirdf.vhp4safety.nl`
 
-2. **GlusterFS directory** exists on TGX1:
+2. **GlusterFS directories** exist on TGX1 (replica 2, so they survive node loss):
    ```bash
-   mkdir -p /mnt/gluster/aopwiki-dashboard/virtuoso-data
+   mkdir -p /mnt/gluster/docker/aopwiki-dashboard/virtuoso-data   # -> /database (versioned TTLs + DB)
+   mkdir -p /mnt/gluster/docker/aopwiki-dashboard/usage           # -> /data (usage sqlite)
    ```
 
 3. **RDF data** is loaded into the GlusterFS directory via the AOP-Wiki-RDF Setup pipeline.
@@ -23,22 +24,33 @@ Before deploying, ensure:
 
 ## Build
 
-Clone (first time) or pull (updates) from GitHub, then build the Docker image:
+**The image is built by CI, not on the server.** Pushing to `main` triggers
+`.github/workflows/docker.yml`, which publishes
+`ghcr.io/marvinm2/aopwiki-dashboard:latest` to GHCR.
+
+This matters for availability, not just convenience: neither service is pinned to
+a node, so Swarm may reschedule the dashboard onto TGX2. A locally-built image
+exists on one node only, and the task would be rejected there with `No such
+image`. Building on the server would silently break failover — don't.
+
+A clone on TGX1 is still needed, but only for `stack.yml`, `.env` and
+`scripts/reload-virtuoso.sh`:
 
 ```bash
-# SSH into TGX1
 ssh tgx1
 
 # First time: clone the repo
 git clone https://github.com/marvinm2/AOP-Wiki-RDF-dashboard.git ~/aopwiki-dashboard
 
-# Updates: pull latest
+# Later: refresh those files
 cd ~/aopwiki-dashboard
 git pull origin main
-
-# Build the dashboard image
-docker build -t aopwiki-dashboard:latest .
 ```
+
+Virtuoso is **not** built here — `stack.yml` pins it to a known-good
+`openlink/virtuoso-opensource-7@sha256:` digest, because the May 2026 `:latest`
+regresses a `GROUP BY ?graph` query (issue #58). That is a *version* pin, not a
+node pin; leave it in place.
 
 ## Deploy
 
@@ -73,15 +85,24 @@ curl 'https://aopwiki-multirdf.vhp4safety.nl/sparql?query=ASK+%7B%7D'
 
 ## Update
 
-To deploy a new version of the dashboard:
+Deploying a new version is two steps: push, then roll the service by hand.
+Deploys are deliberately **not** automated past the image build.
 
 ```bash
-ssh tgx1
-cd ~/aopwiki-dashboard
-git pull origin main
-docker build -t aopwiki-dashboard:latest .
-docker service update --force aopwiki-dashboard_dashboard
+# 1. Push to main and wait for the "Docker Build" workflow to go green:
+gh run watch "$(gh run list --workflow=docker.yml --limit 1 --json databaseId --jq '.[0].databaseId')"
+
+# 2. Roll the service (pulls the new :latest):
+ssh tgx1 'docker service update --force \
+  --image ghcr.io/marvinm2/aopwiki-dashboard:latest aopwiki-dashboard_dashboard'
+
+# 3. Verify — startup recomputes the eager plots, so allow ~65-75s:
+curl https://aopwiki-dashboard.vhp4safety.nl/health   # -> {"plots_loaded":"N/N","status":"healthy"}
 ```
+
+`--force` is what makes the pull happen even though the tag is unchanged. The
+package is public, so no `--with-registry-auth` is needed here (unlike private
+GHCR packages elsewhere on the cluster, e.g. `oppbk`).
 
 ## Reloading RDF data
 
@@ -133,12 +154,12 @@ Check the `ERROR` column for failure reasons.
 Verify A records are propagated: `dig aopwiki-dashboard.vhp4safety.nl`. If not resolved, the Traefik router will not match incoming requests.
 
 **Virtuoso not starting:**
-- Check that `/mnt/gluster/aopwiki-dashboard/virtuoso-data` exists and has correct permissions.
+- Check that `/mnt/gluster/docker/aopwiki-dashboard/virtuoso-data` exists and has correct permissions.
 - Virtuoso needs write access to its data directory. If the directory is owned by root, the container may fail.
 - The health check has 20 retries with 60s start_period, giving Virtuoso up to ~6 minutes to initialize.
 
 **Dashboard health check failing:**
-- The dashboard precomputes all plots at startup (~75 seconds). The `start_period: 120s` prevents premature restarts.
+- The dashboard precomputes its eager plots at startup (~65-75s). The `start_period: 120s` prevents premature restarts.
 - If it still fails, check logs for SPARQL connection errors -- the dashboard needs Virtuoso to be healthy first.
 - Virtuoso may need more time on first boot. Restart the dashboard service after Virtuoso is healthy:
   ```bash

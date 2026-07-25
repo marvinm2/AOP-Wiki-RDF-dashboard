@@ -4286,20 +4286,3 @@ def plot_latest_aop_aop_overlap(version: str = None, min_shared_kes: int = 5, ma
     _plot_figure_cache['latest_aop_aop_overlap'] = fig
 
     return render_plot_html(fig)
-
-
-def _resolve_latest_graph_for_aop_maturity(version: str = None) -> str:
-    if version:
-        return f"http://aopwiki.org/graph/{version}"
-    q = """
-    SELECT ?graph WHERE {
-        GRAPH ?graph { ?s a aopo:AdverseOutcomePathway . }
-        FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-    } GROUP BY ?graph ORDER BY DESC(?graph) LIMIT 1
-    """
-    res = run_sparql_query(q)
-    return res[0]['graph']['value'] if res else ""
-
-
-
-
