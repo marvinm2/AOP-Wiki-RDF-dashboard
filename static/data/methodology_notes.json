@@ -653,22 +653,6 @@
             }
         ]
     },
-    "latest_author_contributions": {
-        "title": "Top AOP Contributors",
-        "description": "The 20 contributors credited on the most AOPs, by distinct-AOP count, after merging the free-text dc:creator variants of each author. Highlights who authors the bulk of the AOP-Wiki and the long tail of one-off contributors.",
-        "data_source": "A SPARQL query counts distinct AOPs per raw dc:creator value. Because dc:creator is free text (individual names, co-author lists or workgroups, often with affiliations, emails and provenance framing), the raw strings are then normalised in Python to a single first-author (or workgroup) identity — HTML/entities stripped, provenance prefixes and affiliation blurbs removed, reference-number superscripts dropped — and the distinct-AOP counts of all variants of one identity are summed. Each AOP carries exactly one dc:creator, so summing never double-counts an AOP. The top 20 identities are shown; hover reveals how many raw creator strings were merged.",
-        "limitations": "First-author normalisation is best-effort over unstructured text: a rare byline may still be split under two spellings (e.g. a surname bearing a trailing affiliation letter), and only the first author of a multi-author string is credited, so co-authors are not counted. Workgroups count as one contributor. Counts are indicative of first-author volume, not a fully normalised author roster. Limited to the top 20.",
-        "queries": [
-            {
-                "caption": "Identify latest graph (AOP anchor)",
-                "query": "SELECT ?graph\nWHERE {\n  GRAPH ?graph { ?s a aopo:AdverseOutcomePathway . }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph\nORDER BY DESC(?graph)\nLIMIT 1"
-            },
-            {
-                "caption": "All contributors by distinct-AOP count (normalised + ranked in Python)",
-                "query": "SELECT ?creator (COUNT(DISTINCT ?aop) AS ?aop_count)\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    ?aop a aopo:AdverseOutcomePathway ;\n         dc:creator ?creator .\n  }\n}\nGROUP BY ?creator\nORDER BY DESC(?aop_count)"
-            }
-        ]
-    },
     "latest_completeness_correlation": {
         "title": "Cross-Property Completeness Correlation",
         "description": "Pairwise phi correlation between the presence of nine variable AOP properties across all AOPs. A high positive value means AOPs that fill in one property tend to also fill in the other; near zero means the two are curated independently. The diagonal is self-correlation (1).",

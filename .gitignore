@@ -1,7 +1,10 @@
 /.claude/
 /.planning/
-/__pycache__/
+__pycache__/
 CLAUDE.md
+PLOT-UI-REVIEW.md
+lint-report.json
+lint-report.md
 IMPROVEMENTS_SUMMARY.md
 app.log
 app_new.log

@@ -224,7 +224,6 @@ from .latest_plots import (
     plot_latest_stressor_mie_coverage,
     plot_latest_ker_directionality,
     plot_latest_top_ontology_terms,
-    plot_latest_author_contributions,
     plot_latest_completeness_correlation,
     plot_latest_ke_reuse_distribution,
 
@@ -327,7 +326,6 @@ __all__ = [
     'plot_latest_stressor_mie_coverage',
     'plot_latest_ker_directionality',
     'plot_latest_top_ontology_terms',
-    'plot_latest_author_contributions',
     'plot_latest_completeness_correlation',
     'plot_latest_ke_reuse_distribution',
     'plot_latest_ontology_diversity',
@@ -407,7 +405,6 @@ def get_available_functions():
             'plot_latest_stressor_mie_coverage',
             'plot_latest_ker_directionality',
             'plot_latest_top_ontology_terms',
-            'plot_latest_author_contributions',
             'plot_latest_completeness_correlation',
             'plot_latest_ke_reuse_distribution',
             'plot_latest_ontology_diversity',

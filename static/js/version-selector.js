@@ -40,7 +40,6 @@
         'latest_stressor_mie_coverage',
         'latest_ker_directionality',
         'latest_top_ontology_terms',
-        'latest_author_contributions',
         'latest_completeness_correlation',
         'latest_ontology_diversity',
         'latest_organ_coverage_unified',
