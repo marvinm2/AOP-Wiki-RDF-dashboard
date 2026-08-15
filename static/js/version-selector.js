@@ -174,7 +174,7 @@
     }
 
     /**
-     * Wire the AOP-AOP overlap threshold slider.
+     * Wire the AOP-AOP overlap Jaccard-similarity slider.
      * - input event updates the visible value label live (no reload)
      * - change event (slider released) updates the plot div dataset and
      *   reuses reloadPlot() to refetch with the new threshold
@@ -196,7 +196,7 @@
         });
 
         slider.addEventListener('change', () => {
-            plotDiv.dataset.minSharedKes = slider.value;
+            plotDiv.dataset.minJaccard = slider.value;
             if (window.plotLoader) {
                 window.plotLoader.loadedPlots.delete(plotName);
             }
@@ -350,7 +350,7 @@
             if (selectedVersion) params.set('version', selectedVersion);
             if (plotDiv.dataset.scope) params.set('scope', plotDiv.dataset.scope);
             if (plotDiv.dataset.view) params.set('view', plotDiv.dataset.view);
-            if (plotDiv.dataset.minSharedKes) params.set('min_shared_kes', plotDiv.dataset.minSharedKes);
+            if (plotDiv.dataset.minJaccard) params.set('min_jaccard', plotDiv.dataset.minJaccard);
             const qs = params.toString();
             const url = qs ? `/api/plot/${plotName}?${qs}` : `/api/plot/${plotName}`;
 

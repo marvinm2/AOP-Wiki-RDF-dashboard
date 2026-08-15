@@ -1962,7 +1962,7 @@ def get_plot(plot_name):
     # per-plot tuning args). Any of scope/view/min_shared_kes forces a
     # re-render so the plot reflects the user's choice instead of the
     # cached default.
-    _tuning_args = ('scope', 'view', 'min_shared_kes')
+    _tuning_args = ('scope', 'view', 'min_shared_kes', 'min_jaccard')
     _has_tuning = any(request.args.get(k) for k in _tuning_args)
     if not version and not _has_tuning and plot_name in _latest_precomputed_html:
         return jsonify({'html': _latest_precomputed_html[plot_name], 'success': True})
@@ -1977,7 +1977,7 @@ def get_plot(plot_name):
             extra_kwargs = {}
             try:
                 params = inspect.signature(plot_function).parameters
-                for key in ('scope', 'view', 'min_shared_kes'):
+                for key in ('scope', 'view', 'min_shared_kes', 'min_jaccard'):
                     if key in params:
                         value = request.args.get(key)
                         if value:
