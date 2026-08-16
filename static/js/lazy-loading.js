@@ -133,11 +133,15 @@ class PlotLazyLoader {
         const timeoutId = setTimeout(() => controller.abort(), PlotLazyLoader.LOAD_TIMEOUT_MS);
 
         try {
-            // Forward any data-* attributes that map to plot kwargs (scope, view).
-            // Lets the coverage toggles drive the initial render via markup alone.
+            // Forward any data-* attributes that map to plot kwargs (scope,
+            // view, branch, domain). Lets the coverage toggles and the branch /
+            // domain selectors drive the initial render via markup alone, and
+            // keeps a re-lazy-loaded plot on the selection the user made.
             const params = new URLSearchParams();
             if (element.dataset.scope) params.set('scope', element.dataset.scope);
             if (element.dataset.view) params.set('view', element.dataset.view);
+            if (element.dataset.branch) params.set('branch', element.dataset.branch);
+            if (element.dataset.domain) params.set('domain', element.dataset.domain);
             const qs = params.toString();
             const url = qs ? `/api/plot/${plotName}?${qs}` : `/api/plot/${plotName}`;
 

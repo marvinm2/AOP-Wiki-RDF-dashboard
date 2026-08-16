@@ -57,7 +57,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import plotly.io as pio
-from SPARQLWrapper import SPARQLWrapper, JSON, SPARQLExceptions
+from SPARQLWrapper import SPARQLWrapper, JSON, POST, SPARQLExceptions
 import time
 import logging
 import threading
@@ -513,9 +513,15 @@ def get_properties_for_entity(entity_type: str) -> Dict[str, List[Dict[str, str]
         logger.warning("property_labels.csv is empty or could not be read")
         return {}
 
-    # Filter properties that apply to this entity type
-    # applies_to is pipe-separated, e.g., "AOP|KE|KER"
-    filtered_df = df[df['applies_to'].str.contains(entity_type, case=False, na=False)]
+    # Filter properties that apply to this entity type. applies_to is
+    # pipe-separated ("AOP|KE|KER"), so it has to be split and matched whole:
+    # a substring test lets "KE" match "KER", which handed every KE view the two
+    # KER-only properties (has_upstream_key_event / has_downstream_key_event) as
+    # permanently-zero series.
+    applies_to = df['applies_to'].fillna('').astype(str)
+    filtered_df = df[applies_to.apply(
+        lambda cell: entity_type in {part.strip().upper() for part in cell.split('|')}
+    )]
 
     # Group by property type
     grouped = {}
@@ -606,7 +612,8 @@ def check_sparql_endpoint_health() -> bool:
         return False
 
 
-def run_sparql_query_with_retry(query: str, max_retries: int = MAX_RETRIES) -> List[Dict[str, Any]]:
+def run_sparql_query_with_retry(query: str, max_retries: int = MAX_RETRIES,
+                                use_post: bool = False) -> List[Dict[str, Any]]:
     """Execute SPARQL query with comprehensive retry logic and error handling.
 
     Provides robust SPARQL query execution with exponential backoff retry logic,
@@ -617,6 +624,11 @@ def run_sparql_query_with_retry(query: str, max_retries: int = MAX_RETRIES) -> L
         query (str): SPARQL query string to execute. Should be valid SPARQL syntax.
         max_retries (int, optional): Maximum number of retry attempts.
             Defaults to Config.SPARQL_MAX_RETRIES (typically 3).
+        use_post (bool, optional): Send the query as a POST body instead of in
+            the URL. Needed for queries with a long VALUES block: Virtuoso
+            truncates an over-long GET and answers with a syntax error, which
+            the retry logic correctly refuses to retry. Defaults to False so
+            every existing caller keeps its current transport.
 
     Returns:
         List[Dict[str, Any]]: List of result bindings from the SPARQL query.
@@ -690,6 +702,8 @@ def run_sparql_query_with_retry(query: str, max_retries: int = MAX_RETRIES) -> L
             sparql.setTimeout(TIMEOUT)
             sparql.setReturnFormat(JSON)
             sparql.setQuery(query)
+            if use_post:
+                sparql.setMethod(POST)
 
             result = sparql.query().convert()
             execution_time = time.time() - start_time
@@ -726,9 +740,9 @@ def run_sparql_query_with_retry(query: str, max_retries: int = MAX_RETRIES) -> L
     return []
 
 
-def run_sparql_query(query: str) -> List[Dict[str, Any]]:
+def run_sparql_query(query: str, use_post: bool = False) -> List[Dict[str, Any]]:
     """Legacy function for backward compatibility."""
-    return run_sparql_query_with_retry(query)
+    return run_sparql_query_with_retry(query, use_post=use_post)
 
 
 def extract_counts(results: List[Dict[str, Any]], var_name: str = "count") -> pd.DataFrame:

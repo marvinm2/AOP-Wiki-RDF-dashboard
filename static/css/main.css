@@ -532,6 +532,35 @@ footer img {
     padding-bottom: 10px;
 }
 
+/* Section-level lead paragraph — used where several plots share one framing
+   and one control, so the explanation belongs above them rather than in each
+   plot description (#149). */
+.section-intro {
+    max-width: 900px;
+    margin: 0 auto 16px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #444;
+    text-align: center;
+}
+
+/* Domain-lens selector (#149) — drives all three plots in the section, so it
+   sits above the grid rather than inside one plot header. */
+.domain-lens-control {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: 0 auto 20px;
+    font-size: 14px;
+    color: var(--color-primary);
+}
+
+.domain-lens-control label {
+    white-space: nowrap;
+    font-weight: 600;
+}
+
 /* Small screens */
 @media (max-width: 1000px) {
     .plot-box {

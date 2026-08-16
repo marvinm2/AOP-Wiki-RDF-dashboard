@@ -47,7 +47,17 @@
         'latest_multi_organ_aops',
         'latest_life_stage',
         'latest_aop_aop_overlap',
-        'latest_ontology_coverage_holes'
+        'latest_ontology_coverage_holes',
+        'latest_domain_coverage',
+        'latest_domain_completeness',
+        'latest_domain_status'
+    ];
+
+    // Plots driven by the domain-lens selector — one control, three charts.
+    const domainLensPlots = [
+        'latest_domain_coverage',
+        'latest_domain_completeness',
+        'latest_domain_status'
     ];
 
     /**
@@ -173,6 +183,7 @@
 
         setupAopAopThresholdSlider();
         setupOntologyBranchSelector();
+        setupDomainLensSelector();
     }
 
     /**
@@ -200,6 +211,30 @@
         });
 
         dbg('Ontology branch selector wired');
+    }
+
+    /**
+     * Wire the domain-lens selector. Unlike the branch selector it drives
+     * several plots at once, so the choice is written onto every one of them
+     * before they are dropped from the loaded set and refetched.
+     */
+    function setupDomainLensSelector() {
+        const select = document.getElementById('domain-lens-select');
+        if (!select) return;
+
+        select.addEventListener('change', () => {
+            domainLensPlots.forEach((plotName) => {
+                const plotDiv = document.querySelector(`[data-plot-name="${plotName}"]`);
+                if (!plotDiv) return;
+                plotDiv.dataset.domain = select.value;
+                if (window.plotLoader) {
+                    window.plotLoader.loadedPlots.delete(plotName);
+                }
+                reloadPlot(plotName);
+            });
+        });
+
+        dbg('Domain lens selector wired');
     }
 
     /**
@@ -381,6 +416,7 @@
             if (plotDiv.dataset.view) params.set('view', plotDiv.dataset.view);
             if (plotDiv.dataset.minJaccard) params.set('min_jaccard', plotDiv.dataset.minJaccard);
             if (plotDiv.dataset.branch) params.set('branch', plotDiv.dataset.branch);
+            if (plotDiv.dataset.domain) params.set('domain', plotDiv.dataset.domain);
             const qs = params.toString();
             const url = qs ? `/api/plot/${plotName}?${qs}` : `/api/plot/${plotName}`;
 

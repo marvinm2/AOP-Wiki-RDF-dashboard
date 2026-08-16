@@ -34,6 +34,7 @@
     <a class="nav-button nav-button--compact" href="#ke-analysis">Key Event Analysis</a>
     <a class="nav-button nav-button--compact" href="#breakdown-analysis">Breakdown Analysis</a>
     <a class="nav-button nav-button--compact" href="#coverage-analysis">Coverage Analysis</a>
+    <a class="nav-button nav-button--compact" href="#domain-lens">Domain Lens</a>
     <a class="nav-button nav-button--compact" href="#ke-reuse">KE Reuse</a>
     <a class="nav-button nav-button--compact" href="#data-quality">Data Quality</a>
 </nav>
@@ -479,6 +480,101 @@
             {{ data_table_toggle('latest_stressor_mie_coverage') }}
         </div>
 
+    </div>
+</section>
+
+<!-- Domain Lens (#149) -->
+<section class="section-block" id="domain-lens">
+    <h2 class="section-header">Domain Lens</h2>
+    <p class="section-intro">
+        How strong is AOP-Wiki in one biological field? A domain here is a handful of ontology
+        root terms &mdash; anatomy, physiological process, development, abnormal phenotype &mdash;
+        expanded to their descendants and intersected with the terms Key Events actually carry.
+        No keyword list and no per-AOP curation: changing the roots changes the domain. All three
+        charts below follow the selector.
+    </p>
+    <div class="domain-lens-control">
+        <label for="domain-lens-select">Domain:</label>
+        <select id="domain-lens-select" class="branch-selector">
+            {% for d in domains %}
+            <option value="{{ d }}"{% if d == 'Cardiovascular' %} selected{% endif %}>{{ d }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="plot-grid">
+        <div class="plot-box full-width">
+            <div class="plot-header">
+                <h3>AOP Coverage by Biological Domain</h3>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download &#x25BC;</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/latest/domain_coverage?format=csv" class="dropdown-item">CSV</a>
+                        <a href="/download/latest/domain_coverage?format=png" class="dropdown-item">PNG</a>
+                        <a href="/download/latest/domain_coverage?format=svg" class="dropdown-item">SVG</a>
+                    </div>
+                </div>
+            </div>
+            <p class="plot-description">
+                AOPs with at least one Key Event annotated with a term from each domain&rsquo;s ontology
+                closure, so a field can be read against its neighbours rather than against an absolute
+                number nobody can calibrate. Domains overlap &mdash; an AOP annotated in two of them counts
+                in both. An AOP that describes a domain only in free text is not counted, which is the same
+                blind spot the coverage-holes chart reports from the other side.
+            </p>
+            {{ methodology_note(methodology_notes, 'latest_domain_coverage') }}
+            <div class="lazy-plot" data-plot-name="latest_domain_coverage" data-domain="Cardiovascular">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+            {{ data_table_toggle('latest_domain_coverage') }}
+        </div>
+        <div class="plot-box full-width">
+            <div class="plot-header">
+                <h3>Curation Depth by Property Tier</h3>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download &#x25BC;</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/latest/domain_completeness?format=csv" class="dropdown-item">CSV</a>
+                        <a href="/download/latest/domain_completeness?format=png" class="dropdown-item">PNG</a>
+                        <a href="/download/latest/domain_completeness?format=svg" class="dropdown-item">SVG</a>
+                    </div>
+                </div>
+            </div>
+            <p class="plot-description">
+                The selected domain against all AOPs, scored with the same property tiers as the
+                property-presence charts (Essential, Content, Context, Assessment, Metadata; each scoped
+                to the entity types it can appear on). Placeholder values such as <code>&amp;nbsp;</code>,
+                <code>TBD</code> and <code>N/A</code> are stripped before counting. Presence is not quality:
+                a filled field can still be wrong or out of date.
+            </p>
+            {{ methodology_note(methodology_notes, 'latest_domain_completeness') }}
+            <div class="lazy-plot" data-plot-name="latest_domain_completeness" data-domain="Cardiovascular">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+            {{ data_table_toggle('latest_domain_completeness') }}
+        </div>
+        <div class="plot-box full-width">
+            <div class="plot-header">
+                <h3>OECD Status of Domain AOPs</h3>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download &#x25BC;</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/latest/domain_status?format=csv" class="dropdown-item">CSV</a>
+                        <a href="/download/latest/domain_status?format=png" class="dropdown-item">PNG</a>
+                        <a href="/download/latest/domain_status?format=svg" class="dropdown-item">SVG</a>
+                    </div>
+                </div>
+            </div>
+            <p class="plot-description">
+                How far the domain&rsquo;s AOPs have travelled through the OECD workflow, as a share of each
+                cohort so the two sizes stay comparable. No status means the AOP never entered the OECD
+                process &mdash; it is displayed, never scored.
+            </p>
+            {{ methodology_note(methodology_notes, 'latest_domain_status') }}
+            <div class="lazy-plot" data-plot-name="latest_domain_status" data-domain="Cardiovascular">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+            {{ data_table_toggle('latest_domain_status') }}
+        </div>
     </div>
 </section>
 

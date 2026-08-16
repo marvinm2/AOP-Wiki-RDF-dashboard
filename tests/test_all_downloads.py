@@ -88,6 +88,9 @@ LATEST_PLOTS = [
     "latest_ke_mmo_coverage",
     "latest_aop_aop_overlap",
     "latest_ontology_coverage_holes",
+    "latest_domain_coverage",
+    "latest_domain_completeness",
+    "latest_domain_status",
 ]
 
 # Bare data/figure cache keys written by the trend plots at startup. Downloaded
