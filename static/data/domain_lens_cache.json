@@ -1,0 +1,1740 @@
+{
+  "generated_at": "2026-08-16T09:53:16.561209+00:00",
+  "default_domain": "Cardiovascular",
+  "source": {
+    "aopwiki_sparql": "https://aopwiki-multirdf.vhp4safety.nl/sparql",
+    "ubergraph_sparql": "https://ubergraph.apps.renci.org/sparql",
+    "descendant_relation": "subClassOf | part_of, one hop against <reasoner.renci.org/redundant>",
+    "usage_predicates": [
+      "http://aopkb.org/aop_ontology#OrganContext",
+      "http://aopkb.org/aop_ontology#CellTypeContext",
+      "http://purl.obolibrary.org/obo/PATO_0001241",
+      "http://purl.obolibrary.org/obo/GO_0008150"
+    ],
+    "usage_scope": "every http://aopwiki.org/graph/* snapshot, not only the latest",
+    "namespace_families": {
+      "UBERON": [
+        "UBERON_",
+        "CL_"
+      ],
+      "CL": [
+        "UBERON_",
+        "CL_"
+      ],
+      "GO": [
+        "GO_"
+      ],
+      "MP": [
+        "MP_"
+      ],
+      "HP": [
+        "HP_"
+      ]
+    },
+    "excluded": "UBERON_6* (Drosophila-derived UBERON subset); MeSH (not in Ubergraph — 3 of the 70 in-use descriptors are under tree number C14 and every AOP carrying one is already reached through the OBO closure, measured 2026-08-16)"
+  },
+  "domains": {
+    "Cardiovascular": {
+      "roots": [
+        {
+          "id": "UBERON_0001009",
+          "label": "circulatory system",
+          "closure_size": 1779,
+          "terms_in_use": 10
+        },
+        {
+          "id": "GO_0003013",
+          "label": "circulatory system process",
+          "closure_size": 197,
+          "terms_in_use": 3
+        },
+        {
+          "id": "GO_0072359",
+          "label": "circulatory system development",
+          "closure_size": 400,
+          "terms_in_use": 1
+        },
+        {
+          "id": "MP_0005385",
+          "label": "cardiovascular system phenotype",
+          "closure_size": 1616,
+          "terms_in_use": 8
+        },
+        {
+          "id": "HP_0001626",
+          "label": "Abnormality of the cardiovascular system",
+          "closure_size": 1569,
+          "terms_in_use": 2
+        }
+      ],
+      "closure_size": 5561,
+      "terms": {
+        "CL_0000071": {
+          "label": "blood vessel endothelial cell",
+          "roots": [
+            "UBERON_0001009"
+          ],
+          "snapshots": 12
+        },
+        "CL_0000746": {
+          "label": "cardiac muscle cell",
+          "roots": [
+            "UBERON_0001009"
+          ],
+          "snapshots": 31
+        },
+        "GO_0001525": {
+          "label": "angiogenesis",
+          "roots": [
+            "GO_0072359"
+          ],
+          "snapshots": 34
+        },
+        "GO_0008015": {
+          "label": "blood circulation",
+          "roots": [
+            "GO_0003013"
+          ],
+          "snapshots": 34
+        },
+        "GO_0042311": {
+          "label": "vasodilation",
+          "roots": [
+            "GO_0003013"
+          ],
+          "snapshots": 34
+        },
+        "GO_0043114": {
+          "label": "regulation of vascular permeability",
+          "roots": [
+            "GO_0003013"
+          ],
+          "snapshots": 3
+        },
+        "HP_0001695": {
+          "label": "Cardiac arrest",
+          "roots": [
+            "HP_0001626"
+          ],
+          "snapshots": 8
+        },
+        "HP_0002621": {
+          "label": "Atherosclerosis",
+          "roots": [
+            "HP_0001626"
+          ],
+          "snapshots": 11
+        },
+        "MP_0000231": {
+          "label": "hypertension",
+          "roots": [
+            "MP_0005385"
+          ],
+          "snapshots": 34
+        },
+        "MP_0001544": {
+          "label": "abnormal cardiovascular system physiology",
+          "roots": [
+            "MP_0005385"
+          ],
+          "snapshots": 34
+        },
+        "MP_0001863": {
+          "label": "blood vessel inflammation",
+          "roots": [
+            "MP_0005385"
+          ],
+          "snapshots": 20
+        },
+        "MP_0001914": {
+          "label": "hemorrhage",
+          "roots": [
+            "MP_0005385"
+          ],
+          "snapshots": 34
+        },
+        "MP_0003070": {
+          "label": "increased vascular permeability",
+          "roots": [
+            "MP_0005385"
+          ],
+          "snapshots": 20
+        },
+        "MP_0004878": {
+          "label": "increased systemic vascular resistance",
+          "roots": [
+            "MP_0005385"
+          ],
+          "snapshots": 34
+        },
+        "MP_0010019": {
+          "label": "liver vascular congestion",
+          "roots": [
+            "MP_0005385"
+          ],
+          "snapshots": 34
+        },
+        "MP_0010128": {
+          "label": "hypovolemia",
+          "roots": [
+            "MP_0005385"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0000948": {
+          "label": "heart",
+          "roots": [
+            "UBERON_0001009"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0001009": {
+          "label": "circulatory system",
+          "roots": [
+            "UBERON_0001009"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0001981": {
+          "label": "blood vessel",
+          "roots": [
+            "UBERON_0001009"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0002049": {
+          "label": "vasculature",
+          "roots": [
+            "UBERON_0001009"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0004535": {
+          "label": "cardiovascular system",
+          "roots": [
+            "UBERON_0001009"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0004638": {
+          "label": "blood vessel endothelium",
+          "roots": [
+            "UBERON_0001009"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0007798": {
+          "label": "vascular system",
+          "roots": [
+            "UBERON_0001009"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0035753": {
+          "label": "capillary plexus",
+          "roots": [
+            "UBERON_0001009"
+          ],
+          "snapshots": 34
+        }
+      },
+      "terms_by_namespace": {
+        "CL": 2,
+        "GO": 4,
+        "HP": 2,
+        "MP": 8,
+        "UBERON": 8
+      }
+    },
+    "Hepatobiliary": {
+      "roots": [
+        {
+          "id": "UBERON_0002423",
+          "label": "hepatobiliary system",
+          "closure_size": 147,
+          "terms_in_use": 10
+        },
+        {
+          "id": "GO_0061007",
+          "label": "hepaticobiliary system process",
+          "closure_size": 1,
+          "terms_in_use": 0
+        },
+        {
+          "id": "GO_0001889",
+          "label": "liver development",
+          "closure_size": 8,
+          "terms_in_use": 0
+        },
+        {
+          "id": "MP_0005370",
+          "label": "liver/biliary system phenotype",
+          "closure_size": 235,
+          "terms_in_use": 4
+        },
+        {
+          "id": "HP_0001392",
+          "label": "Abnormality of the liver",
+          "closure_size": 215,
+          "terms_in_use": 4
+        }
+      ],
+      "closure_size": 606,
+      "terms": {
+        "CL_0000182": {
+          "label": "hepatocyte",
+          "roots": [
+            "UBERON_0002423"
+          ],
+          "snapshots": 34
+        },
+        "CL_0000632": {
+          "label": "hepatic stellate cell",
+          "roots": [
+            "UBERON_0002423"
+          ],
+          "snapshots": 34
+        },
+        "CL_0002196": {
+          "label": "hepatic oval stem cell",
+          "roots": [
+            "UBERON_0002423"
+          ],
+          "snapshots": 34
+        },
+        "CL_0002538": {
+          "label": "intrahepatic cholangiocyte",
+          "roots": [
+            "UBERON_0002423"
+          ],
+          "snapshots": 34
+        },
+        "CL_1000488": {
+          "label": "cholangiocyte",
+          "roots": [
+            "UBERON_0002423"
+          ],
+          "snapshots": 34
+        },
+        "HP_0001397": {
+          "label": "Hepatic steatosis",
+          "roots": [
+            "HP_0001392"
+          ],
+          "snapshots": 10
+        },
+        "HP_0001410": {
+          "label": "Decreased liver function",
+          "roots": [
+            "HP_0001392"
+          ],
+          "snapshots": 34
+        },
+        "HP_0001414": {
+          "label": "Microvesicular hepatic steatosis",
+          "roots": [
+            "HP_0001392"
+          ],
+          "snapshots": 34
+        },
+        "HP_0012852": {
+          "label": "Hepatic bridging fibrosis",
+          "roots": [
+            "HP_0001392"
+          ],
+          "snapshots": 1
+        },
+        "MP_0001860": {
+          "label": "liver inflammation",
+          "roots": [
+            "MP_0005370"
+          ],
+          "snapshots": 23
+        },
+        "MP_0003333": {
+          "label": "liver fibrosis",
+          "roots": [
+            "MP_0005370"
+          ],
+          "snapshots": 34
+        },
+        "MP_0010019": {
+          "label": "liver vascular congestion",
+          "roots": [
+            "MP_0005370"
+          ],
+          "snapshots": 34
+        },
+        "MP_0014045": {
+          "label": "Mallory bodies",
+          "roots": [
+            "MP_0005370"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0001280": {
+          "label": "liver parenchyma",
+          "roots": [
+            "UBERON_0002423"
+          ],
+          "snapshots": 13
+        },
+        "UBERON_0002107": {
+          "label": "liver",
+          "roots": [
+            "UBERON_0002423"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0002294": {
+          "label": "biliary system",
+          "roots": [
+            "UBERON_0002423"
+          ],
+          "snapshots": 14
+        },
+        "UBERON_0002394": {
+          "label": "bile duct",
+          "roots": [
+            "UBERON_0002423"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0002423": {
+          "label": "hepatobiliary system",
+          "roots": [
+            "UBERON_0002423"
+          ],
+          "snapshots": 34
+        }
+      },
+      "terms_by_namespace": {
+        "CL": 5,
+        "HP": 4,
+        "MP": 4,
+        "UBERON": 5
+      }
+    },
+    "Nervous": {
+      "roots": [
+        {
+          "id": "UBERON_0001016",
+          "label": "nervous system",
+          "closure_size": 4005,
+          "terms_in_use": 28
+        },
+        {
+          "id": "GO_0050877",
+          "label": "nervous system process",
+          "closure_size": 195,
+          "terms_in_use": 10
+        },
+        {
+          "id": "GO_0007399",
+          "label": "nervous system development",
+          "closure_size": 914,
+          "terms_in_use": 5
+        },
+        {
+          "id": "MP_0003631",
+          "label": "nervous system phenotype",
+          "closure_size": 2584,
+          "terms_in_use": 11
+        },
+        {
+          "id": "HP_0000707",
+          "label": "Abnormality of the nervous system",
+          "closure_size": 3260,
+          "terms_in_use": 4
+        }
+      ],
+      "closure_size": 10958,
+      "terms": {
+        "CL_0000100": {
+          "label": "motor neuron",
+          "roots": [
+            "UBERON_0001016"
+          ],
+          "snapshots": 34
+        },
+        "CL_0000117": {
+          "label": "CNS neuron (sensu Vertebrata)",
+          "roots": [
+            "UBERON_0001016"
+          ],
+          "snapshots": 6
+        },
+        "CL_0000127": {
+          "label": "astrocyte",
+          "roots": [
+            "UBERON_0001016"
+          ],
+          "snapshots": 34
+        },
+        "CL_0000128": {
+          "label": "oligodendrocyte",
+          "roots": [
+            "UBERON_0001016"
+          ],
+          "snapshots": 7
+        },
+        "CL_0000129": {
+          "label": "microglial cell",
+          "roots": [
+            "UBERON_0001016"
+          ],
+          "snapshots": 34
+        },
+        "CL_0000437": {
+          "label": "gonadtroph",
+          "roots": [
+            "UBERON_0001016"
+          ],
+          "snapshots": 34
+        },
+        "CL_0000540": {
+          "label": "neuron",
+          "roots": [
+            "UBERON_0001016"
+          ],
+          "snapshots": 34
+        },
+        "CL_0000700": {
+          "label": "dopaminergic neuron",
+          "roots": [
+            "UBERON_0001016"
+          ],
+          "snapshots": 34
+        },
+        "CL_0000847": {
+          "label": "ciliated olfactory receptor neuron",
+          "roots": [
+            "UBERON_0001016"
+          ],
+          "snapshots": 18
+        },
+        "CL_0002167": {
+          "label": "olfactory epithelial cell",
+          "roots": [
+            "UBERON_0001016"
+          ],
+          "snapshots": 6
+        },
+        "CL_0002319": {
+          "label": "neural cell",
+          "roots": [
+            "UBERON_0001016"
+          ],
+          "snapshots": 34
+        },
+        "CL_0011005": {
+          "label": "GABAergic interneuron",
+          "roots": [
+            "UBERON_0001016"
+          ],
+          "snapshots": 34
+        },
+        "CL_0011110": {
+          "label": "histaminergic neuron",
+          "roots": [
+            "UBERON_0001016"
+          ],
+          "snapshots": 34
+        },
+        "CL_0011111": {
+          "label": "hypothalamic gonadotropin-releasing hormone neuron",
+          "roots": [
+            "UBERON_0001016"
+          ],
+          "snapshots": 34
+        },
+        "CL_2000030": {
+          "label": "hypothalamus cell",
+          "roots": [
+            "UBERON_0001016"
+          ],
+          "snapshots": 34
+        },
+        "GO_0007416": {
+          "label": "synapse assembly",
+          "roots": [
+            "GO_0007399"
+          ],
+          "snapshots": 34
+        },
+        "GO_0007420": {
+          "label": "brain development",
+          "roots": [
+            "GO_0007399"
+          ],
+          "snapshots": 32
+        },
+        "GO_0007605": {
+          "label": "sensory perception of sound",
+          "roots": [
+            "GO_0050877"
+          ],
+          "snapshots": 28
+        },
+        "GO_0007611": {
+          "label": "learning or memory",
+          "roots": [
+            "GO_0050877"
+          ],
+          "snapshots": 34
+        },
+        "GO_0007612": {
+          "label": "learning",
+          "roots": [
+            "GO_0050877"
+          ],
+          "snapshots": 34
+        },
+        "GO_0007613": {
+          "label": "memory",
+          "roots": [
+            "GO_0050877"
+          ],
+          "snapshots": 34
+        },
+        "GO_0015464": {
+          "label": "acetylcholine receptor activity",
+          "roots": [
+            "GO_0050877"
+          ],
+          "snapshots": 34
+        },
+        "GO_0019226": {
+          "label": "transmission of nerve impulse",
+          "roots": [
+            "GO_0050877"
+          ],
+          "snapshots": 34
+        },
+        "GO_0022008": {
+          "label": "neurogenesis",
+          "roots": [
+            "GO_0007399"
+          ],
+          "snapshots": 8
+        },
+        "GO_0048813": {
+          "label": "dendrite morphogenesis",
+          "roots": [
+            "GO_0007399"
+          ],
+          "snapshots": 34
+        },
+        "GO_0050881": {
+          "label": "musculoskeletal movement",
+          "roots": [
+            "GO_0050877"
+          ],
+          "snapshots": 34
+        },
+        "GO_0050890": {
+          "label": "cognition",
+          "roots": [
+            "GO_0050877"
+          ],
+          "snapshots": 34
+        },
+        "GO_0060079": {
+          "label": "excitatory postsynaptic potential",
+          "roots": [
+            "GO_0050877"
+          ],
+          "snapshots": 34
+        },
+        "GO_0060080": {
+          "label": "inhibitory postsynaptic potential",
+          "roots": [
+            "GO_0050877"
+          ],
+          "snapshots": 34
+        },
+        "GO_0060997": {
+          "label": "dendritic spine morphogenesis",
+          "roots": [
+            "GO_0007399"
+          ],
+          "snapshots": 5
+        },
+        "HP_0000726": {
+          "label": "Dementia",
+          "roots": [
+            "HP_0000707"
+          ],
+          "snapshots": 5
+        },
+        "HP_0002893": {
+          "label": "Pituitary adenoma",
+          "roots": [
+            "HP_0000707"
+          ],
+          "snapshots": 34
+        },
+        "HP_0007305": {
+          "label": "CNS demyelination",
+          "roots": [
+            "HP_0000707"
+          ],
+          "snapshots": 7
+        },
+        "HP_0011185": {
+          "label": "EEG with focal epileptiform discharges",
+          "roots": [
+            "HP_0000707"
+          ],
+          "snapshots": 25
+        },
+        "MP_0000921": {
+          "label": "demyelination",
+          "roots": [
+            "MP_0003631"
+          ],
+          "snapshots": 8
+        },
+        "MP_0001399": {
+          "label": "hyperactivity",
+          "roots": [
+            "MP_0003631"
+          ],
+          "snapshots": 34
+        },
+        "MP_0001847": {
+          "label": "brain inflammation",
+          "roots": [
+            "MP_0003631"
+          ],
+          "snapshots": 34
+        },
+        "MP_0002207": {
+          "label": "abnormal long-term potentiation",
+          "roots": [
+            "MP_0003631"
+          ],
+          "snapshots": 5
+        },
+        "MP_0002229": {
+          "label": "neurodegeneration",
+          "roots": [
+            "MP_0003631"
+          ],
+          "snapshots": 34
+        },
+        "MP_0002882": {
+          "label": "abnormal neuron morphology",
+          "roots": [
+            "MP_0003631"
+          ],
+          "snapshots": 34
+        },
+        "MP_0002916": {
+          "label": "increased synaptic depression",
+          "roots": [
+            "MP_0003631"
+          ],
+          "snapshots": 4
+        },
+        "MP_0003244": {
+          "label": "loss of dopaminergic neurons",
+          "roots": [
+            "MP_0003631"
+          ],
+          "snapshots": 34
+        },
+        "MP_0003633": {
+          "label": "abnormal nervous system physiology",
+          "roots": [
+            "MP_0003631"
+          ],
+          "snapshots": 34
+        },
+        "MP_0003990": {
+          "label": "decreased neurotransmitter release",
+          "roots": [
+            "MP_0003631"
+          ],
+          "snapshots": 6
+        },
+        "MP_0011267": {
+          "label": "abnormal excitatory postsynaptic current amplitude",
+          "roots": [
+            "MP_0003631"
+          ],
+          "snapshots": 8
+        },
+        "UBERON_0000007": {
+          "label": "pituitary gland",
+          "roots": [
+            "UBERON_0001016"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0000369": {
+          "label": "corpus striatum",
+          "roots": [
+            "UBERON_0001016"
+          ],
+          "snapshots": 3
+        },
+        "UBERON_0000451": {
+          "label": "prefrontal cortex",
+          "roots": [
+            "UBERON_0001016"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0000955": {
+          "label": "brain",
+          "roots": [
+            "UBERON_0001016"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0000966": {
+          "label": "retina",
+          "roots": [
+            "UBERON_0001016"
+          ],
+          "snapshots": 21
+        },
+        "UBERON_0001016": {
+          "label": "nervous system",
+          "roots": [
+            "UBERON_0001016"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0001017": {
+          "label": "central nervous system",
+          "roots": [
+            "UBERON_0001016"
+          ],
+          "snapshots": 4
+        },
+        "UBERON_0001645": {
+          "label": "trigeminal nerve",
+          "roots": [
+            "UBERON_0001016"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0001759": {
+          "label": "vagus nerve",
+          "roots": [
+            "UBERON_0001016"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0001898": {
+          "label": "hypothalamus",
+          "roots": [
+            "UBERON_0001016"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0001997": {
+          "label": "olfactory epithelium",
+          "roots": [
+            "UBERON_0001016"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0002421": {
+          "label": "hippocampal formation",
+          "roots": [
+            "UBERON_0001016"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0026546": {
+          "label": "principal neuronal circuit",
+          "roots": [
+            "UBERON_0001016"
+          ],
+          "snapshots": 6
+        }
+      },
+      "terms_by_namespace": {
+        "CL": 15,
+        "GO": 15,
+        "HP": 4,
+        "MP": 11,
+        "UBERON": 13
+      }
+    },
+    "Renal/Urinary": {
+      "roots": [
+        {
+          "id": "UBERON_0001008",
+          "label": "renal system",
+          "closure_size": 625,
+          "terms_in_use": 12
+        },
+        {
+          "id": "GO_0003014",
+          "label": "renal system process",
+          "closure_size": 37,
+          "terms_in_use": 2
+        },
+        {
+          "id": "GO_0072001",
+          "label": "renal system development",
+          "closure_size": 401,
+          "terms_in_use": 0
+        },
+        {
+          "id": "MP_0005367",
+          "label": "renal/urinary system phenotype",
+          "closure_size": 708,
+          "terms_in_use": 5
+        },
+        {
+          "id": "HP_0000079",
+          "label": "Abnormality of the urinary system",
+          "closure_size": 1197,
+          "terms_in_use": 1
+        }
+      ],
+      "closure_size": 2968,
+      "terms": {
+        "CL_0000731": {
+          "label": "urothelial cell",
+          "roots": [
+            "UBERON_0001008"
+          ],
+          "snapshots": 34
+        },
+        "CL_1000494": {
+          "label": "nephron tubule epithelial cell",
+          "roots": [
+            "UBERON_0001008"
+          ],
+          "snapshots": 34
+        },
+        "CL_1000497": {
+          "label": "kidney cell",
+          "roots": [
+            "UBERON_0001008"
+          ],
+          "snapshots": 34
+        },
+        "CL_1000507": {
+          "label": "kidney tubule cell",
+          "roots": [
+            "UBERON_0001008"
+          ],
+          "snapshots": 34
+        },
+        "GO_0003094": {
+          "label": "glomerular filtration",
+          "roots": [
+            "GO_0003014"
+          ],
+          "snapshots": 34
+        },
+        "GO_0070293": {
+          "label": "renal absorption",
+          "roots": [
+            "GO_0003014"
+          ],
+          "snapshots": 34
+        },
+        "HP_0000112": {
+          "label": "Nephropathy",
+          "roots": [
+            "HP_0000079"
+          ],
+          "snapshots": 34
+        },
+        "MP_0003606": {
+          "label": "kidney failure",
+          "roots": [
+            "MP_0005367"
+          ],
+          "snapshots": 34
+        },
+        "MP_0004154": {
+          "label": "renal tubular necrosis",
+          "roots": [
+            "MP_0005367"
+          ],
+          "snapshots": 34
+        },
+        "MP_0004968": {
+          "label": "kidney epithelium hyperplasia",
+          "roots": [
+            "MP_0005367"
+          ],
+          "snapshots": 34
+        },
+        "MP_0011625": {
+          "label": "cystolithiasis",
+          "roots": [
+            "MP_0005367"
+          ],
+          "snapshots": 34
+        },
+        "MP_0011899": {
+          "label": "podocyte vacuoles",
+          "roots": [
+            "MP_0005367"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0000057": {
+          "label": "urethra",
+          "roots": [
+            "UBERON_0001008"
+          ],
+          "snapshots": 9
+        },
+        "UBERON_0000365": {
+          "label": "urothelium",
+          "roots": [
+            "UBERON_0001008"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0002113": {
+          "label": "kidney",
+          "roots": [
+            "UBERON_0001008"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0004134": {
+          "label": "proximal tubule",
+          "roots": [
+            "UBERON_0001008"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0005777": {
+          "label": "glomerular basement membrane",
+          "roots": [
+            "UBERON_0001008"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0008404": {
+          "label": "proximal tubular epithelium",
+          "roots": [
+            "UBERON_0001008"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0009773": {
+          "label": "renal tubule",
+          "roots": [
+            "UBERON_0001008"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0010418": {
+          "label": "urethral opening",
+          "roots": [
+            "UBERON_0001008"
+          ],
+          "snapshots": 3
+        }
+      },
+      "terms_by_namespace": {
+        "CL": 4,
+        "GO": 2,
+        "HP": 1,
+        "MP": 5,
+        "UBERON": 8
+      }
+    },
+    "Reproductive": {
+      "roots": [
+        {
+          "id": "UBERON_0000990",
+          "label": "reproductive system",
+          "closure_size": 643,
+          "terms_in_use": 33
+        },
+        {
+          "id": "GO_0003006",
+          "label": "developmental process involved in reproduction",
+          "closure_size": 483,
+          "terms_in_use": 9
+        },
+        {
+          "id": "GO_0061458",
+          "label": "reproductive system development",
+          "closure_size": 240,
+          "terms_in_use": 5
+        },
+        {
+          "id": "MP_0005389",
+          "label": "reproductive system phenotype",
+          "closure_size": 1070,
+          "terms_in_use": 12
+        },
+        {
+          "id": "HP_0000078",
+          "label": "Abnormality of the genital system",
+          "closure_size": 619,
+          "terms_in_use": 6
+        }
+      ],
+      "closure_size": 2816,
+      "terms": {
+        "CL_0000178": {
+          "label": "Leydig cell",
+          "roots": [
+            "UBERON_0000990"
+          ],
+          "snapshots": 34
+        },
+        "CL_0000437": {
+          "label": "gonadtroph",
+          "roots": [
+            "UBERON_0000990"
+          ],
+          "snapshots": 34
+        },
+        "CL_0000501": {
+          "label": "granulosa cell",
+          "roots": [
+            "UBERON_0000990"
+          ],
+          "snapshots": 34
+        },
+        "CL_0000503": {
+          "label": "theca cell",
+          "roots": [
+            "UBERON_0000990"
+          ],
+          "snapshots": 34
+        },
+        "CL_0002132": {
+          "label": "stromal cell of ovary",
+          "roots": [
+            "UBERON_0000990"
+          ],
+          "snapshots": 34
+        },
+        "CL_0002656": {
+          "label": "glandular endometrial unciliated epithelial cell",
+          "roots": [
+            "UBERON_0000990"
+          ],
+          "snapshots": 34
+        },
+        "GO_0001541": {
+          "label": "ovarian follicle development",
+          "roots": [
+            "GO_0003006",
+            "GO_0061458"
+          ],
+          "snapshots": 7
+        },
+        "GO_0001555": {
+          "label": "oocyte growth",
+          "roots": [
+            "GO_0003006"
+          ],
+          "snapshots": 34
+        },
+        "GO_0008584": {
+          "label": "male gonad development",
+          "roots": [
+            "GO_0003006",
+            "GO_0061458"
+          ],
+          "snapshots": 24
+        },
+        "GO_0008585": {
+          "label": "female gonad development",
+          "roots": [
+            "GO_0003006",
+            "GO_0061458"
+          ],
+          "snapshots": 1
+        },
+        "GO_0030237": {
+          "label": "female sex determination",
+          "roots": [
+            "GO_0003006"
+          ],
+          "snapshots": 1
+        },
+        "GO_0035261": {
+          "label": "external genitalia morphogenesis",
+          "roots": [
+            "GO_0003006",
+            "GO_0061458"
+          ],
+          "snapshots": 3
+        },
+        "GO_0042701": {
+          "label": "progesterone secretion",
+          "roots": [
+            "GO_0003006",
+            "GO_0061458"
+          ],
+          "snapshots": 34
+        },
+        "GO_0046661": {
+          "label": "male sex differentiation",
+          "roots": [
+            "GO_0003006"
+          ],
+          "snapshots": 24
+        },
+        "GO_0048599": {
+          "label": "oocyte development",
+          "roots": [
+            "GO_0003006"
+          ],
+          "snapshots": 34
+        },
+        "HP_0000029": {
+          "label": "Testicular atrophy",
+          "roots": [
+            "HP_0000078"
+          ],
+          "snapshots": 27
+        },
+        "HP_0000035": {
+          "label": "Abnormal testis morphology",
+          "roots": [
+            "HP_0000078"
+          ],
+          "snapshots": 9
+        },
+        "HP_0002893": {
+          "label": "Pituitary adenoma",
+          "roots": [
+            "HP_0000078"
+          ],
+          "snapshots": 34
+        },
+        "HP_0008209": {
+          "label": "Premature ovarian insufficiency",
+          "roots": [
+            "HP_0000078"
+          ],
+          "snapshots": 6
+        },
+        "HP_0008669": {
+          "label": "Abnormal spermatogenesis",
+          "roots": [
+            "HP_0000078"
+          ],
+          "snapshots": 25
+        },
+        "HP_0012114": {
+          "label": "Endometrial carcinoma",
+          "roots": [
+            "HP_0000078"
+          ],
+          "snapshots": 4
+        },
+        "MP_0001152": {
+          "label": "increased Leydig cell number",
+          "roots": [
+            "MP_0005389"
+          ],
+          "snapshots": 34
+        },
+        "MP_0001921": {
+          "label": "reduced fertility",
+          "roots": [
+            "MP_0005389"
+          ],
+          "snapshots": 34
+        },
+        "MP_0001928": {
+          "label": "abnormal ovulation",
+          "roots": [
+            "MP_0005389"
+          ],
+          "snapshots": 34
+        },
+        "MP_0003205": {
+          "label": "testicular atrophy",
+          "roots": [
+            "MP_0005389"
+          ],
+          "snapshots": 6
+        },
+        "MP_0003936": {
+          "label": "abnormal reproductive system development",
+          "roots": [
+            "MP_0005389"
+          ],
+          "snapshots": 2
+        },
+        "MP_0004904": {
+          "label": "increased uterus weight",
+          "roots": [
+            "MP_0005389"
+          ],
+          "snapshots": 2
+        },
+        "MP_0008940": {
+          "label": "delayed balanopreputial separation",
+          "roots": [
+            "MP_0005389"
+          ],
+          "snapshots": 3
+        },
+        "MP_0009006": {
+          "label": "prolonged estrous cycle",
+          "roots": [
+            "MP_0005389"
+          ],
+          "snapshots": 3
+        },
+        "MP_0009017": {
+          "label": "prolonged estrus",
+          "roots": [
+            "MP_0005389"
+          ],
+          "snapshots": 3
+        },
+        "MP_0009092": {
+          "label": "endometrium hyperplasia",
+          "roots": [
+            "MP_0005389"
+          ],
+          "snapshots": 34
+        },
+        "MP_0013603": {
+          "label": "abnormal fetal Leydig cell differentiation",
+          "roots": [
+            "MP_0005389"
+          ],
+          "snapshots": 34
+        },
+        "MP_0013604": {
+          "label": "abnormal adult Leydig cell differentiation",
+          "roots": [
+            "MP_0005389"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0000007": {
+          "label": "pituitary gland",
+          "roots": [
+            "UBERON_0000990"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0000079": {
+          "label": "male reproductive system",
+          "roots": [
+            "UBERON_0000990"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0000473": {
+          "label": "testis",
+          "roots": [
+            "UBERON_0000990"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0000989": {
+          "label": "penis",
+          "roots": [
+            "UBERON_0000990"
+          ],
+          "snapshots": 6
+        },
+        "UBERON_0000991": {
+          "label": "gonad",
+          "roots": [
+            "UBERON_0000990"
+          ],
+          "snapshots": 24
+        },
+        "UBERON_0000992": {
+          "label": "ovary",
+          "roots": [
+            "UBERON_0000990"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0000995": {
+          "label": "uterus",
+          "roots": [
+            "UBERON_0000990"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0001295": {
+          "label": "endometrium",
+          "roots": [
+            "UBERON_0000990"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0001301": {
+          "label": "epididymis",
+          "roots": [
+            "UBERON_0000990"
+          ],
+          "snapshots": 9
+        },
+        "UBERON_0001305": {
+          "label": "ovarian follicle",
+          "roots": [
+            "UBERON_0000990"
+          ],
+          "snapshots": 17
+        },
+        "UBERON_0001332": {
+          "label": "prepuce of penis",
+          "roots": [
+            "UBERON_0000990"
+          ],
+          "snapshots": 3
+        },
+        "UBERON_0001344": {
+          "label": "epithelium of vagina",
+          "roots": [
+            "UBERON_0000990"
+          ],
+          "snapshots": 6
+        },
+        "UBERON_0002451": {
+          "label": "endometrial gland",
+          "roots": [
+            "UBERON_0000990"
+          ],
+          "snapshots": 1
+        },
+        "UBERON_0002512": {
+          "label": "corpus luteum",
+          "roots": [
+            "UBERON_0000990"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0003133": {
+          "label": "reproductive organ",
+          "roots": [
+            "UBERON_0000990"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0003134": {
+          "label": "female reproductive organ",
+          "roots": [
+            "UBERON_0000990"
+          ],
+          "snapshots": 14
+        },
+        "UBERON_0003135": {
+          "label": "male reproductive organ",
+          "roots": [
+            "UBERON_0000990"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0004811": {
+          "label": "endometrium epithelium",
+          "roots": [
+            "UBERON_0000990"
+          ],
+          "snapshots": 8
+        },
+        "UBERON_0004911": {
+          "label": "epithelium of female gonad",
+          "roots": [
+            "UBERON_0000990"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0005296": {
+          "label": "ovary sex cord",
+          "roots": [
+            "UBERON_0000990"
+          ],
+          "snapshots": 19
+        },
+        "UBERON_0005876": {
+          "label": "undifferentiated genital tubercle",
+          "roots": [
+            "UBERON_0000990"
+          ],
+          "snapshots": 3
+        },
+        "UBERON_0008975": {
+          "label": "oviduct shell gland",
+          "roots": [
+            "UBERON_0000990"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0009853": {
+          "label": "body of uterus",
+          "roots": [
+            "UBERON_0000990"
+          ],
+          "snapshots": 2
+        },
+        "UBERON_0011374": {
+          "label": "prepuce",
+          "roots": [
+            "UBERON_0000990"
+          ],
+          "snapshots": 3
+        },
+        "UBERON_0012186": {
+          "label": "ovary growing follicle",
+          "roots": [
+            "UBERON_0000990"
+          ],
+          "snapshots": 13
+        },
+        "UBERON_0013191": {
+          "label": "ovarian cortex",
+          "roots": [
+            "UBERON_0000990"
+          ],
+          "snapshots": 6
+        },
+        "UBERON_2005272": {
+          "label": "immature gonad",
+          "roots": [
+            "UBERON_0000990"
+          ],
+          "snapshots": 24
+        }
+      },
+      "terms_by_namespace": {
+        "CL": 6,
+        "GO": 9,
+        "HP": 6,
+        "MP": 12,
+        "UBERON": 27
+      }
+    },
+    "Respiratory": {
+      "roots": [
+        {
+          "id": "UBERON_0001004",
+          "label": "respiratory system",
+          "closure_size": 654,
+          "terms_in_use": 19
+        },
+        {
+          "id": "GO_0003016",
+          "label": "respiratory system process",
+          "closure_size": 3,
+          "terms_in_use": 0
+        },
+        {
+          "id": "GO_0060541",
+          "label": "respiratory system development",
+          "closure_size": 95,
+          "terms_in_use": 0
+        },
+        {
+          "id": "MP_0005388",
+          "label": "respiratory system phenotype",
+          "closure_size": 586,
+          "terms_in_use": 2
+        },
+        {
+          "id": "HP_0002086",
+          "label": "Abnormality of the respiratory system",
+          "closure_size": 811,
+          "terms_in_use": 3
+        }
+      ],
+      "closure_size": 2149,
+      "terms": {
+        "CL_0000082": {
+          "label": "epithelial cell of lung",
+          "roots": [
+            "UBERON_0001004"
+          ],
+          "snapshots": 1
+        },
+        "CL_0000158": {
+          "label": "club cell",
+          "roots": [
+            "UBERON_0001004"
+          ],
+          "snapshots": 34
+        },
+        "CL_0002167": {
+          "label": "olfactory epithelial cell",
+          "roots": [
+            "UBERON_0001004"
+          ],
+          "snapshots": 6
+        },
+        "CL_0002328": {
+          "label": "bronchial epithelial cell",
+          "roots": [
+            "UBERON_0001004"
+          ],
+          "snapshots": 34
+        },
+        "CL_0002368": {
+          "label": "respiratory tract epithelial cell",
+          "roots": [
+            "UBERON_0001004"
+          ],
+          "snapshots": 12
+        },
+        "CL_1000143": {
+          "label": "lung goblet cell",
+          "roots": [
+            "UBERON_0001004"
+          ],
+          "snapshots": 6
+        },
+        "HP_0012262": {
+          "label": "Abnormal ciliary motility",
+          "roots": [
+            "HP_0002086"
+          ],
+          "snapshots": 20
+        },
+        "HP_0100526": {
+          "label": "Neoplasm of the lung",
+          "roots": [
+            "HP_0002086"
+          ],
+          "snapshots": 17
+        },
+        "HP_0100598": {
+          "label": "Pulmonary edema",
+          "roots": [
+            "HP_0002086"
+          ],
+          "snapshots": 6
+        },
+        "MP_0001954": {
+          "label": "respiratory distress",
+          "roots": [
+            "MP_0005388"
+          ],
+          "snapshots": 34
+        },
+        "MP_0008014": {
+          "label": "increased lung tumor incidence",
+          "roots": [
+            "MP_0005388"
+          ],
+          "snapshots": 17
+        },
+        "UBERON_0000065": {
+          "label": "respiratory tract",
+          "roots": [
+            "UBERON_0001004"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0000115": {
+          "label": "lung epithelium",
+          "roots": [
+            "UBERON_0001004"
+          ],
+          "snapshots": 20
+        },
+        "UBERON_0000171": {
+          "label": "respiration organ",
+          "roots": [
+            "UBERON_0001004"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0000977": {
+          "label": "pleura",
+          "roots": [
+            "UBERON_0001004"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0001004": {
+          "label": "respiratory system",
+          "roots": [
+            "UBERON_0001004"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0001958": {
+          "label": "terminal bronchiole epithelium",
+          "roots": [
+            "UBERON_0001004"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0001997": {
+          "label": "olfactory epithelium",
+          "roots": [
+            "UBERON_0001004"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0002048": {
+          "label": "lung",
+          "roots": [
+            "UBERON_0001004"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0002535": {
+          "label": "gill",
+          "roots": [
+            "UBERON_0001004"
+          ],
+          "snapshots": 8
+        },
+        "UBERON_0004802": {
+          "label": "respiratory tract epithelium",
+          "roots": [
+            "UBERON_0001004"
+          ],
+          "snapshots": 12
+        },
+        "UBERON_0005385": {
+          "label": "nasal cavity respiratory epithelium",
+          "roots": [
+            "UBERON_0001004"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0005386": {
+          "label": "olfactory segment of nasal mucosa",
+          "roots": [
+            "UBERON_0001004"
+          ],
+          "snapshots": 34
+        },
+        "UBERON_0035963": {
+          "label": "epithelial lining fluid",
+          "roots": [
+            "UBERON_0001004"
+          ],
+          "snapshots": 20
+        }
+      },
+      "terms_by_namespace": {
+        "CL": 6,
+        "HP": 3,
+        "MP": 2,
+        "UBERON": 13
+      }
+    }
+  },
+  "stats": {
+    "domains": 6,
+    "roots": 30,
+    "used_terms_ever": 1133,
+    "terms_in_any_domain": 198,
+    "elapsed_s": 41.6
+  }
+}

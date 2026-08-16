@@ -134,6 +134,10 @@ from plots import (
     plot_latest_aop_aop_overlap,
     plot_latest_ontology_coverage_holes,
     available_ontology_branches,
+    plot_latest_domain_coverage,
+    plot_latest_domain_completeness,
+    plot_latest_domain_status,
+    available_domains,
     plot_ontology_term_growth,
     plot_organ_coverage_trends,
     check_sparql_endpoint_health,
@@ -391,6 +395,9 @@ LATEST_PLOT_FUNCTIONS = {
     'latest_ke_mmo_coverage': plot_latest_ke_mmo_coverage,
     'latest_aop_aop_overlap': plot_latest_aop_aop_overlap,
     'latest_ontology_coverage_holes': plot_latest_ontology_coverage_holes,
+    'latest_domain_coverage': plot_latest_domain_coverage,
+    'latest_domain_completeness': plot_latest_domain_completeness,
+    'latest_domain_status': plot_latest_domain_status,
 }
 
 
@@ -1637,7 +1644,9 @@ def download_bulk():
                 'latest_stressor_mie_coverage', 'latest_ker_directionality',
                 'latest_top_ontology_terms',
                 'latest_completeness_correlation',
-                'latest_ontology_coverage_holes'
+                'latest_ontology_coverage_holes',
+                'latest_domain_coverage', 'latest_domain_completeness',
+                'latest_domain_status'
             ],
             'database-state': ['latest_entity_counts'],
             'network-analysis': ['latest_aop_connectivity', 'latest_avg_per_aop'],
@@ -1759,6 +1768,19 @@ def api_ontology_branches():
     """
     from plots.latest_plots import _load_ontology_branch_cache
     return jsonify(_load_ontology_branch_cache())
+
+
+@app.route("/api/domain-lens")
+def api_domain_lens():
+    """Serve the offline domain vocabulary behind the domain-lens plots (#149).
+
+    Returns provenance, the ontology roots per domain and every in-use term
+    with its label and originating root — so a reviewer can audit exactly which
+    terms put an AOP in a domain, without re-running the Ubergraph build.
+    Linked from the methodology notes.
+    """
+    from plots.domain_plots import serialise_domain_lens
+    return jsonify(serialise_domain_lens())
 
 
 @app.route("/api/versions")
@@ -1981,7 +2003,7 @@ def get_plot(plot_name):
     # per-plot tuning args). Any of scope/view/min_shared_kes forces a
     # re-render so the plot reflects the user's choice instead of the
     # cached default.
-    _tuning_args = ('scope', 'view', 'min_shared_kes', 'min_jaccard', 'branch')
+    _tuning_args = ('scope', 'view', 'min_shared_kes', 'min_jaccard', 'branch', 'domain')
     _has_tuning = any(request.args.get(k) for k in _tuning_args)
     if not version and not _has_tuning and plot_name in _latest_precomputed_html:
         return jsonify({'html': _latest_precomputed_html[plot_name], 'success': True})
@@ -1996,7 +2018,7 @@ def get_plot(plot_name):
             extra_kwargs = {}
             try:
                 params = inspect.signature(plot_function).parameters
-                for key in ('scope', 'view', 'min_shared_kes', 'min_jaccard', 'branch'):
+                for key in ('scope', 'view', 'min_shared_kes', 'min_jaccard', 'branch', 'domain'):
                     if key in params:
                         value = request.args.get(key)
                         if value:
@@ -2090,7 +2112,7 @@ def database_snapshot():
     Displays key metrics and visualizations from any version of the AOP-Wiki
     database, allowing users to explore current and historical snapshots.
     """
-    return render_template("latest.html", methodology_notes=methodology_notes, sparql_endpoint=Config.SPARQL_PUBLIC_ENDPOINT, latest_graph_uri=f"http://aopwiki.org/graph/{_latest_version}" if _latest_version else "", ontology_branches=available_ontology_branches(), active_page='snapshot')
+    return render_template("latest.html", methodology_notes=methodology_notes, sparql_endpoint=Config.SPARQL_PUBLIC_ENDPOINT, latest_graph_uri=f"http://aopwiki.org/graph/{_latest_version}" if _latest_version else "", ontology_branches=available_ontology_branches(), domains=available_domains(), active_page='snapshot')
 
 
 @app.route("/latest")

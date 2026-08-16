@@ -251,6 +251,17 @@ from .latest_plots import (
     available_ontology_branches,
 )
 
+# Domain lens (#149) — AOPs scoped to a biological domain by ontology closure
+from .domain_plots import (
+    plot_latest_domain_coverage,
+    plot_latest_domain_completeness,
+    plot_latest_domain_status,
+    available_domains,
+    domain_term_iris,
+    is_placeholder,
+    serialise_domain_lens,
+)
+
 # Define module version and metadata
 __version__ = "2.0.0"
 __author__ = "Marvin Martens"
@@ -350,6 +361,15 @@ __all__ = [
     'find_ontology_coverage_holes',
     'available_ontology_branches',
 
+    # Domain lens functions
+    'plot_latest_domain_coverage',
+    'plot_latest_domain_completeness',
+    'plot_latest_domain_status',
+    'available_domains',
+    'domain_term_iris',
+    'is_placeholder',
+    'serialise_domain_lens',
+
     # Network analysis functions
     'build_aop_network',
     'compute_network_metrics',
@@ -429,6 +449,9 @@ def get_available_functions():
             'plot_latest_ke_mmo_coverage',
             'plot_latest_aop_aop_overlap',
             'plot_latest_ontology_coverage_holes',
+            'plot_latest_domain_coverage',
+            'plot_latest_domain_completeness',
+            'plot_latest_domain_status',
         ],
         'network_analysis': [
             'build_aop_network',
