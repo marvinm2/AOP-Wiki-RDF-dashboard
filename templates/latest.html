@@ -580,6 +580,43 @@
             </div>
             {{ data_table_toggle('latest_ontology_diversity') }}
         </div>
+        <!-- Ontology Coverage Holes (#151) -->
+        <div class="plot-box full-width" id="latest-ontology-coverage-holes">
+            <div class="plot-header">
+                <h3>Ontology Coverage Holes</h3>
+                <div class="ontology-branch-control">
+                    <label for="ontology-branch-select">Organ system:</label>
+                    <select id="ontology-branch-select" class="branch-selector"
+                            data-target-plot="latest_ontology_coverage_holes">
+                        {% for b in ontology_branches %}
+                        <option value="{{ b }}"{% if b == 'Cardiovascular' %} selected{% endif %}>{{ b }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download &#x25BC;</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/latest/ontology_coverage_holes?format=csv" class="dropdown-item">CSV</a>
+                        <a href="/download/latest/ontology_coverage_holes?format=png" class="dropdown-item">PNG</a>
+                        <a href="/download/latest/ontology_coverage_holes?format=svg" class="dropdown-item">SVG</a>
+                    </div>
+                </div>
+            </div>
+            <p class="plot-description">
+                The inverse of the chart above: parts of an anatomy branch that AOP-Wiki never annotates
+                against. Each bar is a sub-branch in which not one term carries an annotation, sized by how
+                many ontology terms sit beneath it. Cardiac valve is one such hole, which is how
+                &ldquo;no coherent valvulopathy AOP exists&rdquo; falls out of a query rather than an expert
+                reading 80 pathways. Read a bar as <em>AOP-Wiki carries no machine-readable statement about
+                this part of the ontology</em> &mdash; not as absent biology, since a pathway can describe an
+                organ in free text and annotate nothing.
+            </p>
+            {{ methodology_note(methodology_notes, 'latest_ontology_coverage_holes') }}
+            <div class="lazy-plot" data-plot-name="latest_ontology_coverage_holes" data-branch="Cardiovascular">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+            {{ data_table_toggle('latest_ontology_coverage_holes') }}
+        </div>
         <div class="plot-box">
             <div class="plot-header">
                 <h3>Most-Reused Ontology Terms</h3>
