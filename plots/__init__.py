@@ -245,6 +245,7 @@ from .latest_plots import (
     plot_latest_life_stage,
     plot_latest_ke_mmo_coverage,
     plot_latest_aop_aop_overlap,
+    score_ke_set_similarity,
 )
 
 # Define module version and metadata
@@ -341,6 +342,7 @@ __all__ = [
     'plot_latest_life_stage',
     'plot_latest_ke_mmo_coverage',
     'plot_latest_aop_aop_overlap',
+    'score_ke_set_similarity',
 
     # Network analysis functions
     'build_aop_network',
