@@ -46,7 +46,8 @@
         'latest_organ_coverage_pie',
         'latest_multi_organ_aops',
         'latest_life_stage',
-        'latest_aop_aop_overlap'
+        'latest_aop_aop_overlap',
+        'latest_ontology_coverage_holes'
     ];
 
     /**
@@ -171,6 +172,34 @@
         dbg('Event listeners set up');
 
         setupAopAopThresholdSlider();
+        setupOntologyBranchSelector();
+    }
+
+    /**
+     * Wire the ontology coverage-holes branch selector.
+     * Same contract as the threshold slider: write the choice onto the plot
+     * div's dataset, drop it from the loaded set, and let reloadPlot() refetch.
+     */
+    function setupOntologyBranchSelector() {
+        const select = document.getElementById('ontology-branch-select');
+        if (!select) return;
+
+        const plotName = select.dataset.targetPlot || 'latest_ontology_coverage_holes';
+        const plotDiv = document.querySelector(`[data-plot-name="${plotName}"]`);
+        if (!plotDiv) {
+            console.warn(`Branch selector target plot div not found: ${plotName}`);
+            return;
+        }
+
+        select.addEventListener('change', () => {
+            plotDiv.dataset.branch = select.value;
+            if (window.plotLoader) {
+                window.plotLoader.loadedPlots.delete(plotName);
+            }
+            reloadPlot(plotName);
+        });
+
+        dbg('Ontology branch selector wired');
     }
 
     /**
@@ -351,6 +380,7 @@
             if (plotDiv.dataset.scope) params.set('scope', plotDiv.dataset.scope);
             if (plotDiv.dataset.view) params.set('view', plotDiv.dataset.view);
             if (plotDiv.dataset.minJaccard) params.set('min_jaccard', plotDiv.dataset.minJaccard);
+            if (plotDiv.dataset.branch) params.set('branch', plotDiv.dataset.branch);
             const qs = params.toString();
             const url = qs ? `/api/plot/${plotName}?${qs}` : `/api/plot/${plotName}`;
 

@@ -67,7 +67,7 @@ from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from .shared import (
     BRAND_COLORS, config, _plot_data_cache, _plot_figure_cache, run_sparql_query, safe_read_csv, create_fallback_plot,
-    render_plot_html, OECD_STATUS_ORDER, PROPERTY_TYPE_ORDER
+    render_plot_html, OECD_STATUS_ORDER, PROPERTY_TYPE_ORDER, pad_axis_for_outside_labels
 )
 from .organ_systems import (
     ORGAN_SYSTEM_BUCKETS,
@@ -4423,5 +4423,236 @@ def plot_latest_aop_aop_overlap(version: str = None, min_jaccard: float = 0.34,
     _plot_data_cache['latest_aop_aop_overlap'] = edge_df
     _plot_figure_cache[cache_key] = fig
     _plot_figure_cache['latest_aop_aop_overlap'] = fig
+
+    return render_plot_html(fig)
+
+
+# ---------------------------------------------------------------------------
+# Ontology coverage holes (#151)
+# ---------------------------------------------------------------------------
+
+_ONTOLOGY_BRANCH_CACHE: dict | None = None
+
+# Predicates that carry an ontology term on a Key Event. This is deliberately
+# the set used by scripts/build_organ_system_cache.py and NOT the one the
+# ontology-usage plots query: those go through hasBiologicalEvent only, missing
+# OrganContext / CellTypeContext, which is where the anatomy lives. Four of the
+# ten in-use circulatory-system terms are reachable only via those two.
+_ONTOLOGY_USAGE_PREDICATES = (
+    "http://aopkb.org/aop_ontology#OrganContext",
+    "http://aopkb.org/aop_ontology#CellTypeContext",
+    "http://purl.obolibrary.org/obo/PATO_0001241",
+    "http://purl.obolibrary.org/obo/GO_0008150",
+)
+
+DEFAULT_ONTOLOGY_BRANCH = "Cardiovascular"
+
+
+def _load_ontology_branch_cache() -> dict:
+    """Lazy-load the offline ontology-branch cache (issue #151).
+
+    Written by `scripts/build_ontology_branch_cache.py` from Ubergraph. Loaded
+    lazily and defensively: a missing or corrupt file degrades this one plot to
+    a fallback instead of taking the app down at import (which is what the
+    eager loader in plots/organ_systems.py would do).
+    """
+    global _ONTOLOGY_BRANCH_CACHE
+    if _ONTOLOGY_BRANCH_CACHE is None:
+        path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "static", "data", "ontology_branch_cache.json",
+        )
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                _ONTOLOGY_BRANCH_CACHE = json.load(f)
+        except (OSError, json.JSONDecodeError) as e:
+            logger.warning("Could not load ontology branch cache (%s): %s", path, e)
+            _ONTOLOGY_BRANCH_CACHE = {}
+    return _ONTOLOGY_BRANCH_CACHE
+
+
+def available_ontology_branches() -> list:
+    """Branch names the cache can serve, for the selector and validation."""
+    return sorted(_load_ontology_branch_cache().get("branches", {}))
+
+
+def find_ontology_coverage_holes(branch_data: dict, used_short_ids) -> list:
+    """Entirely-unannotated sub-branches, largest subtree first (issue #151).
+
+    A candidate is a *hole* when nothing in its subtree is annotated but its
+    parent's subtree is — i.e. it is the topmost untouched node on that path,
+    so the report names the largest actionable branch rather than every leaf
+    beneath it.
+
+    Args:
+        branch_data: one entry from the cache's ``branches`` map.
+        used_short_ids: short ontology IDs (``UBERON_0000948``) used in the
+            snapshot under inspection.
+
+    Returns:
+        List of dicts with iri/label/subtree_size/depth, ranked by subtree size.
+    """
+    candidates = branch_data.get("candidates", {})
+    ancestors_of = branch_data.get("used_term_ancestors", {})
+    used = set(used_short_ids)
+
+    # "Touched" = annotated itself, or an ancestor of something annotated.
+    touched = {c for c in candidates if c in used}
+    for term in used:
+        touched.update(ancestors_of.get(term, ()))
+
+    # A candidate with no parent inside the branch hangs directly off a root,
+    # whose subtree is the whole branch — treat the root as touched when
+    # anything at all is annotated, so those surface too.
+    branch_touched = bool(touched)
+
+    holes = []
+    for short_id, meta in candidates.items():
+        if short_id in touched:
+            continue
+        parents = meta.get("parents", [])
+        parent_touched = (
+            any(p in touched for p in parents) if parents else branch_touched
+        )
+        if not parent_touched:
+            continue
+        holes.append({
+            "Term": meta.get("label", short_id),
+            "Ontology ID": short_id.replace("_", ":"),
+            "Unused Terms": meta.get("subtree_size", 1),
+            "Depth": meta.get("depth", 0),
+        })
+
+    holes.sort(key=lambda h: (-h["Unused Terms"], h["Term"]))
+    return holes
+
+
+def plot_latest_ontology_coverage_holes(version: str = None,
+                                        branch: str = DEFAULT_ONTOLOGY_BRANCH,
+                                        top_n: int = 15) -> str:
+    """Branches of an ontology that AOP-Wiki never annotates against (#151).
+
+    The inverse of the ontology-usage views. For a chosen organ-system branch,
+    reports the sub-branches in which not one term carries an annotation,
+    ranked by how much of the ontology each covers.
+
+    The worked case is valvulopathy: `UBERON:0000946` (cardiac valve) and
+    `HP:0001654` (abnormal heart valve morphology) are used zero times, which
+    is how "no coherent valvulopathy AOP exists" falls out of two queries
+    rather than an expert reading of 80 AOPs.
+
+    Read it as "AOP-Wiki carries no machine-readable statement about this part
+    of the ontology" — never as "this biology is missing". An AOP can describe
+    valve damage in free text and annotate nothing.
+
+    Args:
+        version: Optional snapshot date string. Defaults to latest.
+        branch: Organ-system branch name; validated against the cache and
+            falling back to Cardiovascular.
+        top_n: Bars to draw. The full list always reaches the CSV.
+    """
+    cache = _load_ontology_branch_cache()
+    branches = cache.get("branches", {})
+    if not branches:
+        return create_fallback_plot(
+            "Ontology Coverage Holes",
+            "Ontology branch cache missing — run scripts/build_ontology_branch_cache.py",
+        )
+
+    if branch not in branches:
+        branch = DEFAULT_ONTOLOGY_BRANCH if DEFAULT_ONTOLOGY_BRANCH in branches \
+            else sorted(branches)[0]
+    branch_data = branches[branch]
+
+    if version:
+        target_graph = f"http://aopwiki.org/graph/{version}"
+        version_str = version
+    else:
+        version_results = run_sparql_query("""
+        SELECT ?graph WHERE {
+            GRAPH ?graph { ?s a aopo:AdverseOutcomePathway . }
+            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        } GROUP BY ?graph ORDER BY DESC(?graph) LIMIT 1
+        """)
+        if not version_results:
+            return create_fallback_plot("Ontology Coverage Holes", "No graphs available")
+        target_graph = version_results[0]["graph"]["value"]
+        version_str = target_graph.rsplit("/", 1)[-1]
+
+    predicate_list = ", ".join(f"<{p}>" for p in _ONTOLOGY_USAGE_PREDICATES)
+    used_query = f"""
+    SELECT DISTINCT ?term
+    WHERE {{
+        GRAPH <{target_graph}> {{
+            ?ke a aopo:KeyEvent ; ?p ?term .
+            FILTER(?p IN ({predicate_list}))
+        }}
+        FILTER(isIRI(?term))
+    }}
+    """
+    used_rows = run_sparql_query(used_query)
+    if not used_rows:
+        return create_fallback_plot(
+            "Ontology Coverage Holes",
+            f"No ontology annotations found in snapshot {version_str}",
+        )
+    used_short = {r["term"]["value"].rsplit("/", 1)[-1] for r in used_rows}
+
+    holes = find_ontology_coverage_holes(branch_data, used_short)
+    branch_size = branch_data.get("branch_size", 0)
+    used_in_branch = len(set(branch_data.get("used_terms_in_branch", [])) & used_short)
+    pct_used = (100.0 * used_in_branch / branch_size) if branch_size else 0.0
+    root_labels = ", ".join(branch_data.get("root_labels", [])) or branch
+
+    if not holes:
+        return create_fallback_plot(
+            "Ontology Coverage Holes",
+            f"Every sub-branch of {branch} carries at least one annotation.",
+        )
+
+    df = pd.DataFrame(holes)
+    df["Branch"] = branch
+    df["Version"] = version_str
+
+    shown = df.head(top_n).iloc[::-1]  # reverse so the largest sits on top
+    fig = px.bar(
+        shown,
+        x="Unused Terms",
+        y="Term",
+        orientation="h",
+        text="Unused Terms",
+        custom_data=["Ontology ID", "Depth"],
+    )
+    fig.update_traces(
+        marker_color=BRAND_COLORS["blue"],
+        textposition="outside",
+        hovertemplate=(
+            "<b>%{y}</b><br>%{customdata[0]}<br>"
+            "%{x} unused terms<br>depth %{customdata[1]}<extra></extra>"
+        ),
+    )
+    shown_note = (f"Showing the {len(shown)} largest of {len(df)}."
+                  if len(df) > len(shown) else f"All {len(df)} shown.")
+    fig.update_layout(
+        title={"text": f"Ontology coverage holes — {branch}<br><sub>"
+                       f"Sub-branches of {root_labels} in which no term is annotated, "
+                       f"by subtree size. {shown_note}<br>"
+                       f"{used_in_branch} of {branch_size} terms in this branch are used "
+                       f"({pct_used:.1f}%), v{version_str}. Unused here means no "
+                       f"machine-readable annotation — not absent biology.</sub>"},
+        xaxis_title="Terms in the unused sub-branch",
+        yaxis_title=None,
+        showlegend=False,
+        height=max(420, 40 * len(shown) + 190),
+        margin=dict(l=60, r=40, t=130, b=60),
+    )
+    pad_axis_for_outside_labels(fig, axis="x")
+
+    version_key = version or "latest"
+    cache_key = f"latest_ontology_coverage_holes_{version_key}"
+    _plot_data_cache[cache_key] = df
+    _plot_data_cache["latest_ontology_coverage_holes"] = df
+    _plot_figure_cache[cache_key] = fig
+    _plot_figure_cache["latest_ontology_coverage_holes"] = fig
 
     return render_plot_html(fig)

@@ -132,6 +132,8 @@ from plots import (
     plot_latest_life_stage,
     plot_latest_ke_mmo_coverage,
     plot_latest_aop_aop_overlap,
+    plot_latest_ontology_coverage_holes,
+    available_ontology_branches,
     plot_ontology_term_growth,
     plot_organ_coverage_trends,
     check_sparql_endpoint_health,
@@ -388,6 +390,7 @@ LATEST_PLOT_FUNCTIONS = {
     'latest_life_stage': plot_latest_life_stage,
     'latest_ke_mmo_coverage': plot_latest_ke_mmo_coverage,
     'latest_aop_aop_overlap': plot_latest_aop_aop_overlap,
+    'latest_ontology_coverage_holes': plot_latest_ontology_coverage_holes,
 }
 
 
@@ -1633,12 +1636,14 @@ def download_bulk():
                 'latest_ke_reuse_distribution', 'latest_mie_ao_path_length',
                 'latest_stressor_mie_coverage', 'latest_ker_directionality',
                 'latest_top_ontology_terms',
-                'latest_completeness_correlation'
+                'latest_completeness_correlation',
+                'latest_ontology_coverage_holes'
             ],
             'database-state': ['latest_entity_counts'],
             'network-analysis': ['latest_aop_connectivity', 'latest_avg_per_aop'],
             'ke-analysis': ['latest_ke_components', 'latest_ke_annotation_depth'],
-            'data-quality': ['latest_aop_completeness', 'latest_process_usage', 'latest_object_usage'],
+            'data-quality': ['latest_aop_completeness', 'latest_process_usage', 'latest_object_usage',
+                             'latest_ontology_coverage_holes'],
 
             # Trend plots (absolute views only to avoid duplication)
             'trends-all': [
@@ -1741,6 +1746,20 @@ def api_organ_system_buckets():
     """
     from plots.organ_systems import serialise_for_methodology
     return jsonify(serialise_for_methodology())
+
+
+@app.route("/api/ontology-branches")
+def api_ontology_branches():
+    """Serve the offline ontology-branch cache behind the coverage-holes plot.
+
+    Returns provenance plus, per organ system, every candidate sub-branch with
+    its label, subtree size and depth — so a reviewer can audit which parts of
+    the ontology the plot considers, and how the used/unused split was reached,
+    without re-running the Ubergraph build. Linked from the methodology note.
+    """
+    from plots.latest_plots import _load_ontology_branch_cache
+    return jsonify(_load_ontology_branch_cache())
+
 
 @app.route("/api/versions")
 def api_get_all_versions():
@@ -1962,7 +1981,7 @@ def get_plot(plot_name):
     # per-plot tuning args). Any of scope/view/min_shared_kes forces a
     # re-render so the plot reflects the user's choice instead of the
     # cached default.
-    _tuning_args = ('scope', 'view', 'min_shared_kes', 'min_jaccard')
+    _tuning_args = ('scope', 'view', 'min_shared_kes', 'min_jaccard', 'branch')
     _has_tuning = any(request.args.get(k) for k in _tuning_args)
     if not version and not _has_tuning and plot_name in _latest_precomputed_html:
         return jsonify({'html': _latest_precomputed_html[plot_name], 'success': True})
@@ -1977,7 +1996,7 @@ def get_plot(plot_name):
             extra_kwargs = {}
             try:
                 params = inspect.signature(plot_function).parameters
-                for key in ('scope', 'view', 'min_shared_kes', 'min_jaccard'):
+                for key in ('scope', 'view', 'min_shared_kes', 'min_jaccard', 'branch'):
                     if key in params:
                         value = request.args.get(key)
                         if value:
@@ -2071,7 +2090,7 @@ def database_snapshot():
     Displays key metrics and visualizations from any version of the AOP-Wiki
     database, allowing users to explore current and historical snapshots.
     """
-    return render_template("latest.html", methodology_notes=methodology_notes, sparql_endpoint=Config.SPARQL_PUBLIC_ENDPOINT, latest_graph_uri=f"http://aopwiki.org/graph/{_latest_version}" if _latest_version else "", active_page='snapshot')
+    return render_template("latest.html", methodology_notes=methodology_notes, sparql_endpoint=Config.SPARQL_PUBLIC_ENDPOINT, latest_graph_uri=f"http://aopwiki.org/graph/{_latest_version}" if _latest_version else "", ontology_branches=available_ontology_branches(), active_page='snapshot')
 
 
 @app.route("/latest")
