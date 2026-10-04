@@ -9,8 +9,11 @@ minimal and privacy-preserving:
 * Only: a timestamp, the UTC day, the event kind, and the (plot, version,
   format, route) that was requested.
 
-Events are written to a small SQLite database (WAL mode, short-lived connections)
-so it tolerates the multi-worker gunicorn deployment. Writes never raise into the
+Events are written to a small SQLite database (rollback-journal mode, short-lived
+connections) so it tolerates the multi-worker gunicorn deployment. Not WAL: in
+production the file lives on GlusterFS, and WAL's shared-memory index (the -shm
+file) is not safe on a network filesystem; it corrupted the database in 2026-08
+(#159). Writes never raise into the
 request path — analytics failures are logged and swallowed. The whole feature is
 gated behind ``Config.ENABLE_USAGE_ANALYTICS``.
 
@@ -37,8 +40,10 @@ VALID_EVENTS = ("page", "download")
 
 def _connect() -> sqlite3.Connection:
     conn = sqlite3.connect(Config.USAGE_DB_PATH, timeout=5.0)
-    conn.execute("PRAGMA journal_mode=WAL")
-    conn.execute("PRAGMA synchronous=NORMAL")
+    # DELETE (rollback journal) relies only on file locks, which GlusterFS
+    # supports. Setting it also converts a database left in WAL mode.
+    conn.execute("PRAGMA journal_mode=DELETE")
+    conn.execute("PRAGMA synchronous=FULL")
     return conn
 
 
