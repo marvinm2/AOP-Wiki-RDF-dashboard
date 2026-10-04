@@ -66,3 +66,24 @@ def test_write_never_raises(usage, monkeypatch):
     monkeypatch.setattr(usage.Config, "USAGE_DB_PATH", "/proc/cannot/write/here.sqlite")
     usage._initialized = False
     usage.record_event("page", plot="x")  # should not raise
+
+
+def test_uses_rollback_journal_not_wal(usage):
+    # WAL's -shm index is unsafe on GlusterFS, where production keeps this file (#159).
+    import sqlite3
+    usage.record_event("page", plot="x")
+    conn = sqlite3.connect(usage.Config.USAGE_DB_PATH)
+    assert conn.execute("PRAGMA journal_mode").fetchone()[0] == "delete"
+    assert not Path(usage.Config.USAGE_DB_PATH + "-shm").exists()
+
+
+def test_converts_a_database_left_in_wal_mode(usage):
+    import sqlite3
+    usage.init_db()
+    conn = sqlite3.connect(usage.Config.USAGE_DB_PATH)
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.close()
+    usage.record_event("page", plot="x")
+    conn = sqlite3.connect(usage.Config.USAGE_DB_PATH)
+    assert conn.execute("PRAGMA journal_mode").fetchone()[0] == "delete"
+    assert usage.get_summary()["total_events"] == 1
