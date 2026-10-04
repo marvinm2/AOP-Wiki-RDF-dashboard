@@ -1,0 +1,66 @@
+name: live-trends
+
+# Checks that every Historical Trends plot renders on the *deployed* dashboard
+# (#157). The download audit runs its own in-process copy of the app, so it
+# cannot see a production process that cached failed plots at startup; this
+# asks the live site instead. Opens one issue per outage, not one per day.
+
+on:
+  schedule:
+    - cron: '15 6 * * *'  # daily 06:15 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: live-trends
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: python -m pip install requests
+
+      - name: Check trend plots on the live dashboard
+        id: check
+        continue-on-error: true
+        shell: bash  # explicit shell → -o pipefail, so tee does not mask the exit code
+        run: python scripts/check_live_trends.py | tee report.txt
+
+      - name: Open issue on scheduled failure
+        if: steps.check.outcome == 'failure' && github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          title="Live trend plots failing"
+          if gh issue list --state open --search "in:title \"$title\"" --json number --jq '.[0].number' | grep -q .; then
+            echo "An open issue already tracks this outage."
+            exit 0
+          fi
+          {
+            echo "The daily live check found Historical Trends plots that do not render on https://aopwiki-dashboard.vhp4safety.nl."
+            echo
+            echo '```'
+            cat report.txt
+            echo '```'
+            echo
+            echo "Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo
+            echo "If the endpoint has data, restarting only the app usually clears it: \`docker service update --force aopwiki-dashboard_dashboard\` (see #157)."
+          } > body.md
+          gh issue create --title "$title ($(date -I))" --label bug --body-file body.md
+
+      - name: Fail the job if the check failed
+        if: steps.check.outcome == 'failure'
+        run: exit 1

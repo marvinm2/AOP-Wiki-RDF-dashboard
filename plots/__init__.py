@@ -110,6 +110,8 @@ from .shared import (
     run_sparql_query_with_retry,
     extract_counts,
     check_sparql_endpoint_health,
+    wait_for_sparql_ready,
+    add_missing_prefixes,
     get_latest_version,
     get_all_versions,
 
@@ -273,6 +275,8 @@ __all__ = [
     'run_sparql_query_with_retry',
     'extract_counts',
     'check_sparql_endpoint_health',
+    'wait_for_sparql_ready',
+    'add_missing_prefixes',
     'get_latest_version',
     'get_all_versions',
     'apply_snapshot_xaxis',

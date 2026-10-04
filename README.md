@@ -196,6 +196,9 @@ FLASK_PORT=5000
 LOG_LEVEL=INFO
 PARALLEL_WORKERS=5
 PLOT_TIMEOUT=60
+STARTUP_READY_TIMEOUT=300   # wait this long for the endpoint to serve AOP-Wiki data before precomputing plots
+STARTUP_READY_INTERVAL=5    # seconds between those readiness checks
+PLOT_RECOVERY_COOLDOWN=60   # minimum seconds between recomputes of a trend plot that failed
 ```
 
 ### **Property Configuration**
@@ -210,6 +213,7 @@ http://purl.org/dc/elements/1.1/title,Title,Essential
 
 ### **Common Issues**
 - **Plots not loading**: Check SPARQL endpoint connectivity
+- **Trend plots show "data unavailable" after a redeploy**: the startup run probably hit the endpoint before it was ready. Each failed plot is recomputed on its next request (at most once per `PLOT_RECOVERY_COOLDOWN`). `python scripts/check_live_trends.py [BASE_URL]` checks every trend plot on a deployed instance.
 - **Slow performance**: Adjust `PARALLEL_WORKERS` and `PLOT_TIMEOUT`
 - **CSV downloads failing**: Verify data caching is working correctly
 - **Memory issues**: Reduce concurrent workers or increase system resources

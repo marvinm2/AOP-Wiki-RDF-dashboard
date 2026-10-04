@@ -40,7 +40,10 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 120s
+      # Covers the startup readiness wait for Virtuoso (STARTUP_READY_TIMEOUT,
+      # 300s) plus ~75s of plot precompute, so a slow Virtuoso start does not
+      # get the dashboard killed mid-wait (#157).
+      start_period: 420s
 
   virtuoso:
     # Pinned to the last known-good digest. The May 7 2026 :latest (Virtuoso

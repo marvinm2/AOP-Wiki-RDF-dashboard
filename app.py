@@ -141,6 +141,7 @@ from plots import (
     plot_ontology_term_growth,
     plot_organ_coverage_trends,
     check_sparql_endpoint_health,
+    wait_for_sparql_ready,
     safe_plot_execution,
     get_latest_version,
     get_all_versions,
@@ -154,6 +155,7 @@ from plots import (
     create_bulk_download,
     get_or_compute_network
 )
+from plots.recovery import TrendPlotRecovery
 
 from usage_analytics import record_event, get_summary, init_db
 
@@ -221,6 +223,55 @@ try:
 except Exception as _usage_exc:  # pragma: no cover - non-fatal
     logger.warning(f"Usage analytics DB init failed: {_usage_exc}")
 
+# Plots precomputed at startup, keyed by task name. Module-level so a trend
+# plot whose startup computation failed can be recomputed on demand (#157).
+STARTUP_PLOT_FUNCTIONS = {
+    'main_graph': plot_main_graph,
+    'entity_birth_death': plot_entity_birth_death,
+    'entity_cumulative_removed': plot_entity_cumulative_removed,
+    'oecd_status_distribution': plot_oecd_status_distribution,
+    'stressor_coverage_growth': plot_stressor_coverage_growth,
+    'aops_per_stressor_distribution': plot_aops_per_stressor_distribution,
+    'ke_mmo_coverage': plot_ke_mmo_coverage_trends,
+    'ke_migration_map': plot_ke_migration_map,
+    'avg_per_aop': plot_avg_per_aop,
+    'network_density': plot_network_density,
+    'ke_components': plot_ke_components,
+    'unique_ke_components': plot_unique_ke_components,
+    'ke_components_percentage': plot_ke_components_percentage,
+    'bio_processes': plot_bio_processes,
+    'bio_objects': plot_bio_objects,
+    'author_counts': plot_author_counts,
+    'aop_lifetime': plot_aop_lifetime,
+    'aop_property_presence': plot_aop_property_presence,
+    'ke_property_presence': plot_ke_property_presence,
+    'ker_property_presence': plot_ker_property_presence,
+    'stressor_property_presence': plot_stressor_property_presence,
+    'entity_completeness_trends': plot_entity_completeness_trends,
+    # Re-enabled after SPARQL optimization (reduced from 10 queries to 4, 410K rows to ~20K)
+    'aop_completeness_boxplot': plot_aop_completeness_boxplot,
+    'oecd_completeness_trend': plot_oecd_completeness_trend,
+    'kes_by_kec_count': plot_kes_by_kec_count,
+    'latest_entity_counts': plot_latest_entity_counts,
+    'latest_ke_components': plot_latest_ke_components,
+    'latest_aop_connectivity': plot_latest_aop_connectivity,
+    'latest_avg_per_aop': plot_latest_avg_per_aop,
+    'latest_ontology_usage': plot_latest_ontology_usage,
+    'latest_process_usage': plot_latest_process_usage,
+    'latest_object_usage': plot_latest_object_usage,
+    'latest_aop_completeness': plot_latest_aop_completeness,
+    'latest_aop_completeness_by_status': plot_latest_aop_completeness_by_status,
+    'latest_ke_completeness_by_status': plot_latest_ke_completeness_by_status,
+    'latest_ker_completeness_by_status': plot_latest_ker_completeness_by_status,
+    'latest_ke_annotation_depth': plot_latest_ke_annotation_depth,
+    'ontology_term_growth': plot_ontology_term_growth,
+    'organ_coverage': plot_organ_coverage_trends,
+    # New latest-snapshot plots — pre-rendered at startup so first hit is instant (#67, #68, #70)
+    'latest_aop_aop_overlap': plot_latest_aop_aop_overlap,
+    'latest_ke_mmo_coverage': plot_latest_ke_mmo_coverage,
+}
+
+
 def compute_plots_parallel() -> dict:
     """Compute all visualization plots in parallel for optimal startup performance.
     
@@ -265,55 +316,15 @@ def compute_plots_parallel() -> dict:
     logger.info("Starting parallel plot computation...")
     start_time = time.time()
     
-    # Check SPARQL endpoint health first
-    if not check_sparql_endpoint_health():
-        logger.error("SPARQL endpoint is not healthy, proceeding with degraded service")
+    # Wait for the endpoint to serve real data, not just HTTP (#157). A Virtuoso
+    # started alongside us can answer while still empty, and whatever we compute
+    # now is served for the life of the process.
+    if not wait_for_sparql_ready():
+        logger.error("SPARQL endpoint is not ready, proceeding with degraded service")
     
-    # Define plot functions and their expected results
     plot_tasks = [
-        ('main_graph', lambda: safe_plot_execution(plot_main_graph)),
-        ('entity_birth_death', lambda: safe_plot_execution(plot_entity_birth_death)),
-        ('entity_cumulative_removed', lambda: safe_plot_execution(plot_entity_cumulative_removed)),
-        ('oecd_status_distribution', lambda: safe_plot_execution(plot_oecd_status_distribution)),
-        ('stressor_coverage_growth', lambda: safe_plot_execution(plot_stressor_coverage_growth)),
-        ('aops_per_stressor_distribution', lambda: safe_plot_execution(plot_aops_per_stressor_distribution)),
-        ('ke_mmo_coverage', lambda: safe_plot_execution(plot_ke_mmo_coverage_trends)),
-        ('ke_migration_map', lambda: safe_plot_execution(plot_ke_migration_map)),
-        ('avg_per_aop', lambda: safe_plot_execution(plot_avg_per_aop)),
-        ('network_density', lambda: safe_plot_execution(plot_network_density)),
-        ('ke_components', lambda: safe_plot_execution(plot_ke_components)),
-        ('unique_ke_components', lambda: safe_plot_execution(plot_unique_ke_components)),
-        ('ke_components_percentage', lambda: safe_plot_execution(plot_ke_components_percentage)),
-        ('bio_processes', lambda: safe_plot_execution(plot_bio_processes)),
-        ('bio_objects', lambda: safe_plot_execution(plot_bio_objects)),
-        ('author_counts', lambda: safe_plot_execution(plot_author_counts)),
-        ('aop_lifetime', lambda: safe_plot_execution(plot_aop_lifetime)),
-        ('aop_property_presence', lambda: safe_plot_execution(plot_aop_property_presence)),
-        ('ke_property_presence', lambda: safe_plot_execution(plot_ke_property_presence)),
-        ('ker_property_presence', lambda: safe_plot_execution(plot_ker_property_presence)),
-        ('stressor_property_presence', lambda: safe_plot_execution(plot_stressor_property_presence)),
-        ('entity_completeness_trends', lambda: safe_plot_execution(plot_entity_completeness_trends)),
-        # Re-enabled after SPARQL optimization (reduced from 10 queries to 4, 410K rows to ~20K)
-        ('aop_completeness_boxplot', lambda: safe_plot_execution(plot_aop_completeness_boxplot)),
-        ('oecd_completeness_trend', lambda: safe_plot_execution(plot_oecd_completeness_trend)),
-        ('kes_by_kec_count', lambda: safe_plot_execution(plot_kes_by_kec_count)),
-        ('latest_entity_counts', lambda: safe_plot_execution(plot_latest_entity_counts)),
-        ('latest_ke_components', lambda: safe_plot_execution(plot_latest_ke_components)),
-        ('latest_aop_connectivity', lambda: safe_plot_execution(plot_latest_aop_connectivity)),
-        ('latest_avg_per_aop', lambda: safe_plot_execution(plot_latest_avg_per_aop)),
-        ('latest_ontology_usage', lambda: safe_plot_execution(plot_latest_ontology_usage)),
-        ('latest_process_usage', lambda: safe_plot_execution(plot_latest_process_usage)),
-        ('latest_object_usage', lambda: safe_plot_execution(plot_latest_object_usage)),
-        ('latest_aop_completeness', lambda: safe_plot_execution(plot_latest_aop_completeness)),
-        ('latest_aop_completeness_by_status', lambda: safe_plot_execution(plot_latest_aop_completeness_by_status)),
-        ('latest_ke_completeness_by_status', lambda: safe_plot_execution(plot_latest_ke_completeness_by_status)),
-        ('latest_ker_completeness_by_status', lambda: safe_plot_execution(plot_latest_ker_completeness_by_status)),
-        ('latest_ke_annotation_depth', lambda: safe_plot_execution(plot_latest_ke_annotation_depth)),
-        ('ontology_term_growth', lambda: safe_plot_execution(plot_ontology_term_growth)),
-        ('organ_coverage', lambda: safe_plot_execution(plot_organ_coverage_trends)),
-        # New latest-snapshot plots — pre-rendered at startup so first hit is instant (#67, #68, #70)
-        ('latest_aop_aop_overlap', lambda: safe_plot_execution(plot_latest_aop_aop_overlap)),
-        ('latest_ke_mmo_coverage', lambda: safe_plot_execution(plot_latest_ke_mmo_coverage)),
+        (name, lambda func=func: safe_plot_execution(func))
+        for name, func in STARTUP_PLOT_FUNCTIONS.items()
     ]
     
     results = {}
@@ -430,7 +441,9 @@ def _rewarm_plot_cache(cache_key: str) -> bool:
     plot_function = LATEST_PLOT_FUNCTIONS.get(name)
     if plot_function is None:
         # Trend plots are computed pre-fork and pinned, so they are shared by
-        # copy-on-write and never need this path.
+        # copy-on-write. They only miss when their startup run failed (#157).
+        if cache_key in trend_recovery:
+            return trend_recovery.recover(cache_key) is not None
         logger.debug(f"No rewarm available for cache key {cache_key}")
         return False
 
@@ -552,6 +565,67 @@ try:
         graph_organ_cov_abs = graph_organ_cov_pct = ""
 except (TypeError, ValueError):
     graph_organ_cov_abs = graph_organ_cov_pct = ""
+
+# Trend plots served by /api/plot, mapped to the startup task that produces
+# them and the position of their HTML in that task's result tuple (None when
+# the task returns a single HTML string). Mirrors the extraction above.
+TREND_PLOT_OUTPUTS = {
+    'aop_entity_counts_absolute': ('main_graph', 0),
+    'aop_entity_counts_delta': ('main_graph', 1),
+    'entity_birth_death': ('entity_birth_death', 0),
+    'entity_cumulative_removed': ('entity_cumulative_removed', 0),
+    'oecd_status_distribution_absolute': ('oecd_status_distribution', 0),
+    'oecd_status_distribution_percentage': ('oecd_status_distribution', 1),
+    'stressor_coverage_growth_absolute': ('stressor_coverage_growth', 0),
+    'stressor_coverage_growth_delta': ('stressor_coverage_growth', 1),
+    'aops_per_stressor_distribution_absolute': ('aops_per_stressor_distribution', 0),
+    'aops_per_stressor_distribution_percentage': ('aops_per_stressor_distribution', 1),
+    'ke_mmo_coverage_absolute': ('ke_mmo_coverage', 0),
+    'ke_mmo_coverage_percentage': ('ke_mmo_coverage', 1),
+    'ke_migration_map': ('ke_migration_map', 0),
+    'average_components_per_aop_absolute': ('avg_per_aop', 0),
+    'average_components_per_aop_delta': ('avg_per_aop', 1),
+    'aop_network_density': ('network_density', None),
+    'ke_component_annotations_absolute': ('ke_components', 0),
+    'ke_component_annotations_delta': ('ke_components', 1),
+    'ke_components_percentage_absolute': ('ke_components_percentage', 0),
+    'ke_components_percentage_delta': ('ke_components_percentage', 1),
+    'unique_ke_components_absolute': ('unique_ke_components', 0),
+    'unique_ke_components_delta': ('unique_ke_components', 1),
+    'biological_process_annotations_absolute': ('bio_processes', 0),
+    'biological_process_annotations_delta': ('bio_processes', 1),
+    'biological_object_annotations_absolute': ('bio_objects', 0),
+    'biological_object_annotations_delta': ('bio_objects', 1),
+    'aop_authors_absolute': ('author_counts', 0),
+    'aop_authors_delta': ('author_counts', 1),
+    'aops_created_over_time': ('aop_lifetime', 0),
+    'aop_creation_vs_modification_timeline': ('aop_lifetime', 1),
+    'aop_property_presence_absolute': ('aop_property_presence', 0),
+    'aop_property_presence_percentage': ('aop_property_presence', 1),
+    'ke_property_presence_absolute': ('ke_property_presence', 0),
+    'ke_property_presence_percentage': ('ke_property_presence', 1),
+    'ker_property_presence_absolute': ('ker_property_presence', 0),
+    'ker_property_presence_percentage': ('ker_property_presence', 1),
+    'stressor_property_presence_absolute': ('stressor_property_presence', 0),
+    'stressor_property_presence_percentage': ('stressor_property_presence', 1),
+    'entity_completeness_trends': ('entity_completeness_trends', None),
+    'aop_completeness_boxplot': ('aop_completeness_boxplot', 0),
+    'aop_completeness_boxplot_all': ('aop_completeness_boxplot', 1),
+    'oecd_completeness_trend': ('oecd_completeness_trend', None),
+    'kes_by_kec_count_absolute': ('kes_by_kec_count', 0),
+    'kes_by_kec_count_delta': ('kes_by_kec_count', 1),
+    'ontology_term_growth_absolute': ('ontology_term_growth', 0),
+    'ontology_term_growth_delta': ('ontology_term_growth', 1),
+    'organ_coverage_absolute': ('organ_coverage', 0),
+    'organ_coverage_percentage': ('organ_coverage', 1),
+}
+
+# Re-runs the startup task behind a trend plot whose startup run failed (#157).
+trend_recovery = TrendPlotRecovery(
+    STARTUP_PLOT_FUNCTIONS, TREND_PLOT_OUTPUTS,
+    run=safe_plot_execution, cooldown=Config.PLOT_RECOVERY_COOLDOWN,
+)
+
 
 # Latest data plots
 latest_entity_counts = plot_results.get('latest_entity_counts') or ""
@@ -2040,7 +2114,7 @@ def get_plot(plot_name):
 
     # Check historical trend plots
     elif plot_name in plot_map:
-        plot_html = plot_map[plot_name]
+        plot_html = trend_recovery.html(plot_name, plot_map[plot_name])
         # If it's a callable (lambda function), execute it to generate the plot on-demand
         if callable(plot_html):
             try:
