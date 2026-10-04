@@ -612,6 +612,95 @@ def check_sparql_endpoint_health() -> bool:
         return False
 
 
+# Exercises the data itself rather than just HTTP: a Virtuoso that has only
+# just come online can answer `?s ?p ?o` while still returning nothing (or
+# SP030 prefix errors) for real queries (#157). Full IRI, so it does not
+# depend on any prefix being registered server-side.
+READINESS_QUERY = """
+ASK {
+    GRAPH ?graph { ?aop a <http://aopkb.org/aop_ontology#AdverseOutcomePathway> . }
+    FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+}
+"""
+
+
+def wait_for_sparql_ready(timeout: int = None, interval: int = None) -> bool:
+    """Block until the endpoint returns AOP-Wiki data, or until `timeout` passes.
+
+    Args:
+        timeout: seconds to keep trying (default Config.STARTUP_READY_TIMEOUT).
+        interval: seconds between attempts (default Config.STARTUP_READY_INTERVAL).
+
+    Returns:
+        bool: True once the readiness query answers true; False on timeout.
+    """
+    timeout = Config.STARTUP_READY_TIMEOUT if timeout is None else timeout
+    interval = Config.STARTUP_READY_INTERVAL if interval is None else interval
+    deadline = time.time() + timeout
+    attempt = 0
+
+    while True:
+        attempt += 1
+        try:
+            sparql = SPARQLWrapper(SPARQL_ENDPOINT)
+            sparql.setTimeout(10)
+            sparql.setReturnFormat(JSON)
+            sparql.setQuery(READINESS_QUERY)
+            if sparql.query().convert().get("boolean") is True:
+                logger.info(f"SPARQL endpoint ready after {attempt} attempt(s)")
+                return True
+            reason = "no AOP-Wiki graphs yet"
+        except Exception as e:
+            reason = str(e).splitlines()[0][:200]
+
+        if time.time() + interval > deadline:
+            logger.error(f"SPARQL endpoint not ready after {timeout}s ({reason}); continuing degraded")
+            return False
+        logger.warning(f"SPARQL endpoint not ready (attempt {attempt}: {reason}); retrying in {interval}s")
+        time.sleep(interval)
+
+
+# Namespaces the plot queries use. Declared client-side so queries do not
+# depend on Virtuoso's persistent namespace table, which is not guaranteed
+# to be in place the instant the server starts answering (#157). IRIs match
+# the @prefix block of AOPWikiRDF.ttl.
+SPARQL_PREFIXES = {
+    "aopo": "http://aopkb.org/aop_ontology#",
+    "nci": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#",
+    "dc": "http://purl.org/dc/elements/1.1/",
+    "dcterms": "http://purl.org/dc/terms/",
+    "foaf": "http://xmlns.com/foaf/0.1/",
+    "obo": "http://purl.obolibrary.org/obo/",
+    "edam": "http://edamontology.org/",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+}
+_PREFIX_DECL_RE = re.compile(r'PREFIX\s+([A-Za-z][\w-]*)\s*:', re.IGNORECASE)
+_IRI_RE = re.compile(r'<[^<>\s]*>')
+
+
+def add_missing_prefixes(query: str) -> str:
+    """Prepend PREFIX declarations for known namespaces the query uses but does not declare.
+
+    Prefixes the query already declares are left alone, so an explicit
+    declaration always wins and nothing is declared twice.
+    """
+    declared = {p.lower() for p in _PREFIX_DECL_RE.findall(query)}
+    # Ignore full IRIs so e.g. <http://purl.org/dc/...> cannot look like a use of `dc:`.
+    body = _IRI_RE.sub(' ', query)
+    missing = [
+        prefix for prefix in SPARQL_PREFIXES
+        if prefix not in declared and re.search(rf'(?<![\w:/#?]){prefix}:', body)
+    ]
+    if not missing:
+        return query
+    block = "\n".join(f"PREFIX {p}: <{SPARQL_PREFIXES[p]}>" for p in missing)
+    return f"{block}\n{query}"
+
+
 def run_sparql_query_with_retry(query: str, max_retries: int = MAX_RETRIES,
                                 use_post: bool = False) -> List[Dict[str, Any]]:
     """Execute SPARQL query with comprehensive retry logic and error handling.
@@ -694,6 +783,7 @@ def run_sparql_query_with_retry(query: str, max_retries: int = MAX_RETRIES,
         failing fast for permanent errors like syntax problems.
     """
     last_exception = None
+    query = add_missing_prefixes(query)
 
     for attempt in range(max_retries):
         try:

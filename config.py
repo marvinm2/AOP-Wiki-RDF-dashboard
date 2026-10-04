@@ -90,7 +90,15 @@ class Config:
     PARALLEL_WORKERS = int(os.getenv("PARALLEL_WORKERS", "5"))
     PLOT_TIMEOUT = int(os.getenv("PLOT_TIMEOUT", "120"))
     SPARQL_SLOW_TIMEOUT = int(os.getenv("SPARQL_SLOW_TIMEOUT", "60"))
-    
+
+    # Startup readiness (#157): wait until the endpoint answers a query against
+    # real AOP-Wiki data before precomputing plots, so a Virtuoso that is still
+    # coming up does not get its half-ready answers cached for the process life.
+    STARTUP_READY_TIMEOUT = int(os.getenv("STARTUP_READY_TIMEOUT", "300"))
+    STARTUP_READY_INTERVAL = int(os.getenv("STARTUP_READY_INTERVAL", "5"))
+    # Minimum seconds between on-demand recomputes of a trend plot that failed.
+    PLOT_RECOVERY_COOLDOWN = int(os.getenv("PLOT_RECOVERY_COOLDOWN", "60"))
+
     # Logging Configuration
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
     
