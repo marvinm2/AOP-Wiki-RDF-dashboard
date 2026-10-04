@@ -99,8 +99,9 @@ ssh tgx1 'docker service update --force \
 # 3. Verify — startup recomputes the eager plots, so allow ~65-75s:
 curl https://aopwiki-dashboard.vhp4safety.nl/health   # -> {"plots_loaded":"N/N","status":"healthy"}
 
-# 4. Check that every trend plot actually renders. /health counts fallback
-#    plots as loaded, so it stays green when the Trends page is broken (#157):
+# 4. Check that every trend plot actually renders. /health reports
+#    "degraded" with plots_failed when startup plots are stuck on a fallback,
+#    but this check exercises every trend plot and its recovery directly:
 python scripts/check_live_trends.py                    # -> 48/48 trend plots render
 ```
 

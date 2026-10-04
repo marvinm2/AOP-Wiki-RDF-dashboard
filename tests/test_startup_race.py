@@ -243,3 +243,19 @@ def test_concurrent_requests_trigger_one_recompute():
 ])
 def test_is_usable_plot_html(html, usable):
     assert is_usable_plot_html(html) is usable
+
+
+# --- result_has_usable_html (feeds /health, #157) ------------------------------
+
+@pytest.mark.parametrize('result, usable', [
+    ('<div>plot</div>', True),
+    (('<div>abs</div>', '<div>delta</div>', object()), True),
+    (('<div>abs</div>', FALLBACK, None), False),
+    (FALLBACK, False),
+    (None, False),
+    ((None, None), False),
+    ((object(),), False),
+])
+def test_result_has_usable_html(result, usable):
+    from plots.recovery import result_has_usable_html
+    assert result_has_usable_html(result) is usable
