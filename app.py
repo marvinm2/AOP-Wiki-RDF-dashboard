@@ -155,7 +155,7 @@ from plots import (
     create_bulk_download,
     get_or_compute_network
 )
-from plots.recovery import TrendPlotRecovery
+from plots.recovery import TrendPlotRecovery, result_has_usable_html
 
 from usage_analytics import record_event, get_summary, init_db
 
@@ -346,7 +346,8 @@ def compute_plots_parallel() -> dict:
                 results[plot_name] = None
     
     total_time = time.time() - start_time
-    successful_plots = sum(1 for v in results.values() if v is not None)
+    # Fallback HTML is not None, so count real HTML only (#157).
+    successful_plots = sum(1 for v in results.values() if result_has_usable_html(v))
     logger.info(f"Plot computation completed in {total_time:.2f}s. {successful_plots}/{len(plot_tasks)} plots successful")
     
     return results
@@ -364,7 +365,9 @@ _latest_precomputed_html: dict[str, str] = {
     k: plot_results[k] for k in (
         'latest_aop_aop_overlap',
         'latest_ke_mmo_coverage',
-    ) if isinstance(plot_results.get(k), str) and plot_results[k]
+    # A fallback from a failed startup run must not be pinned here (#157);
+    # leaving it out makes /api/plot render the plot per request instead.
+    ) if result_has_usable_html(plot_results.get(k))
 }
 
 # Latest-snapshot plot functions, keyed by plot name. Module-level (rather than
@@ -627,6 +630,27 @@ trend_recovery = TrendPlotRecovery(
 )
 
 
+
+
+def failed_startup_plots() -> list:
+    """Startup tasks whose failed result is still being served.
+
+    Only trend plots are served from their startup result. latest_* plots are
+    rendered per request (startup is just a warm-up, and a failed one is never
+    pinned in _latest_precomputed_html), so they cannot be stuck. A trend task
+    stops counting as failed once every plot it produces has been recovered.
+    """
+    failed = []
+    for task, result in plot_results.items():
+        if task in LATEST_PLOT_FUNCTIONS or result_has_usable_html(result):
+            continue
+        outputs = [name for name, (t, _) in TREND_PLOT_OUTPUTS.items() if t == task]
+        if outputs and all(trend_recovery.is_recovered(name) for name in outputs):
+            continue
+        failed.append(task)
+    return sorted(failed)
+
+
 # Latest data plots
 latest_entity_counts = plot_results.get('latest_entity_counts') or ""
 latest_ke_components = plot_results.get('latest_ke_components') or ""
@@ -660,31 +684,39 @@ def health_check():
     Returns:
         tuple: (dict, int) containing:
             - dict: JSON response with health status information including:
-                - status: "healthy", "degraded", or "error"
+                - status: "healthy", "degraded", "unhealthy", or "error"
                 - sparql_endpoint: "up" or "down"
-                - plots_loaded: "X/Y" format showing successful plot ratio
+                - plots_loaded: "X/Y" startup plots not stuck on a fallback
+                  (trend plots recovered on demand count as loaded; latest_*
+                  plots render per request and are never stuck)
+                - plots_failed: names of the failed startup plots (only when
+                  there are any)
                 - timestamp: Unix timestamp of health check
-            - int: HTTP status code (200 for healthy, 503 for degraded, 500 for error)
-    
+            - int: HTTP status code
+
     HTTP Status Codes:
-        200: Application is fully healthy (endpoint up, plots loaded)
-        503: Application is degraded (endpoint down or no plots loaded)
+        200: Endpoint up. "healthy" if every startup plot is usable, otherwise
+             "degraded" with plots_failed. Degraded stays 200 on purpose: failed
+             trend plots recover on demand, and a 503 would make swarm replace
+             the task (#157).
+        503: Still starting, or the SPARQL endpoint is down ("unhealthy").
         500: Health check itself failed (unexpected error)
-    
+
     Example Response:
         >>> # Healthy response
         {
             "status": "healthy",
-            "sparql_endpoint": "up", 
-            "plots_loaded": "22/22",
+            "sparql_endpoint": "up",
+            "plots_loaded": "41/41",
             "timestamp": 1640995200.0
         }
-        
-        >>> # Degraded response  
+
+        >>> # Degraded response: some startup plots are fallbacks
         {
             "status": "degraded",
-            "sparql_endpoint": "down",
-            "plots_loaded": "0/22", 
+            "sparql_endpoint": "up",
+            "plots_loaded": "39/41",
+            "plots_failed": ["main_graph", "network_density"],
             "timestamp": 1640995200.0
         }
     
@@ -707,16 +739,21 @@ def health_check():
             }, 503
 
         endpoint_healthy = check_sparql_endpoint_health()
-        successful_plots = sum(1 for v in plot_results.values() if v is not None)
+        failed_plots = failed_startup_plots()
         total_plots = len(plot_results)
+        successful_plots = total_plots - len(failed_plots)
 
         if endpoint_healthy:
+            # Still 200 when plots failed: they recover on demand, and a 503
+            # would make swarm replace the task (and race Virtuoso again).
             health_status = {
-                "status": "healthy",
+                "status": "degraded" if failed_plots else "healthy",
                 "sparql_endpoint": "up",
                 "plots_loaded": f"{successful_plots}/{total_plots}",
                 "timestamp": time.time()
             }
+            if failed_plots:
+                health_status["plots_failed"] = failed_plots
             return health_status, 200
         else:
             health_status = {

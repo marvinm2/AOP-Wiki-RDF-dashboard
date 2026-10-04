@@ -26,6 +26,21 @@ def is_usable_plot_html(html: Any) -> bool:
     return isinstance(html, str) and bool(html.strip()) and 'Data Unavailable' not in html
 
 
+def result_has_usable_html(result: Any) -> bool:
+    """True if a plot function's result carries real plot HTML.
+
+    A result is a single HTML string or a tuple that mixes HTML strings with
+    data (e.g. ``(abs_html, delta_html, df)``); every HTML string in it must be
+    usable. None, fallbacks, and results without any HTML count as failures.
+    """
+    if isinstance(result, str):
+        return is_usable_plot_html(result)
+    if isinstance(result, (tuple, list)):
+        html = [item for item in result if isinstance(item, str)]
+        return bool(html) and all(is_usable_plot_html(item) for item in html)
+    return False
+
+
 class TrendPlotRecovery:
     """Recompute failed trend plots on demand.
 
@@ -52,6 +67,10 @@ class TrendPlotRecovery:
 
     def __contains__(self, plot_name: str) -> bool:
         return plot_name in self._outputs
+
+    def is_recovered(self, plot_name: str) -> bool:
+        """True once `plot_name` has been successfully recomputed."""
+        return plot_name in self._recovered
 
     def html(self, plot_name: str, startup_html: Any) -> Any:
         """Return the best HTML for `plot_name`, recovering it if the startup copy is unusable."""
