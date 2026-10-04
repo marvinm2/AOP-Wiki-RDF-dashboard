@@ -98,6 +98,10 @@ ssh tgx1 'docker service update --force \
 
 # 3. Verify — startup recomputes the eager plots, so allow ~65-75s:
 curl https://aopwiki-dashboard.vhp4safety.nl/health   # -> {"plots_loaded":"N/N","status":"healthy"}
+
+# 4. Check that every trend plot actually renders. /health counts fallback
+#    plots as loaded, so it stays green when the Trends page is broken (#157):
+python scripts/check_live_trends.py                    # -> 48/48 trend plots render
 ```
 
 `--force` is what makes the pull happen even though the tag is unchanged. The
@@ -159,12 +163,15 @@ Verify A records are propagated: `dig aopwiki-dashboard.vhp4safety.nl`. If not r
 - The health check has 20 retries with 60s start_period, giving Virtuoso up to ~6 minutes to initialize.
 
 **Dashboard health check failing:**
-- The dashboard precomputes its eager plots at startup (~65-75s). The `start_period: 120s` prevents premature restarts.
+- The dashboard first waits for Virtuoso to serve AOP-Wiki data (up to `STARTUP_READY_TIMEOUT`, 300s), then precomputes its eager plots (~65-75s). The `start_period: 420s` covers both.
 - If it still fails, check logs for SPARQL connection errors -- the dashboard needs Virtuoso to be healthy first.
 - Virtuoso may need more time on first boot. Restart the dashboard service after Virtuoso is healthy:
   ```bash
   docker service update --force aopwiki-dashboard_dashboard
   ```
+
+**Trend plots show "data unavailable" after a redeploy:**
+If Virtuoso was still starting when the dashboard precomputed, some trend plots were cached as failed. Each one is recomputed on its next request or download, at most once per `PLOT_RECOVERY_COOLDOWN` (60s), so reloading the page after a minute usually clears it. If plots keep failing, check that Virtuoso actually has data (the SPARQL test above) before restarting the dashboard alone; do not restart Virtuoso along with it.
 
 **TLS certificate not issued:**
 Traefik's `letsencrypt` resolver needs port 443 accessible from the internet and correct DNS. Check Traefik logs for ACME errors.
