@@ -1771,7 +1771,7 @@ def download_bulk():
                 'aops_created_over_time', 'aop_creation_vs_modification_timeline',
                 'ke_component_annotations_absolute', 'ke_components_percentage_absolute', 'unique_ke_components_absolute',
                 'biological_process_annotations_absolute', 'biological_object_annotations_absolute',
-                'aop_property_presence_absolute', 'aop_property_presence_unique_absolute', 'kes_by_kec_count_absolute'
+                'aop_property_presence_absolute', 'kes_by_kec_count_absolute'
             ],
             'trends-main': ['aop_entity_counts_absolute', 'aop_entity_counts_delta', 'entity_birth_death', 'entity_cumulative_removed'],
             'trends-network': ['average_components_per_aop_absolute', 'average_components_per_aop_delta', 'aop_network_density'],
@@ -1782,7 +1782,7 @@ def download_bulk():
                 'unique_ke_components_absolute', 'unique_ke_components_delta'
             ],
             'trends-ontology': ['biological_process_annotations_absolute', 'biological_process_annotations_delta', 'biological_object_annotations_absolute', 'biological_object_annotations_delta'],
-            'trends-properties': ['aop_property_presence_absolute', 'aop_property_presence_percentage', 'aop_property_presence_unique_absolute', 'aop_property_presence_unique_percentage'],
+            'trends-properties': ['aop_property_presence_absolute', 'aop_property_presence_percentage'],
 
             # Combined: all plots from both pages
             'all': [
@@ -1793,7 +1793,7 @@ def download_bulk():
                 'aops_created_over_time', 'aop_creation_vs_modification_timeline',
                 'ke_component_annotations_absolute', 'ke_components_percentage_absolute', 'unique_ke_components_absolute',
                 'biological_process_annotations_absolute', 'biological_object_annotations_absolute',
-                'aop_property_presence_absolute', 'aop_property_presence_unique_absolute', 'kes_by_kec_count_absolute'
+                'aop_property_presence_absolute', 'kes_by_kec_count_absolute'
             ]
         }
 
