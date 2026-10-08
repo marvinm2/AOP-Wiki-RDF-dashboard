@@ -20,8 +20,13 @@ services:
     volumes:
       - /mnt/gluster/docker/aopwiki-dashboard/usage:/data
     deploy:
+      # `any`, not `on-failure`: a clean SIGINT stop exits 0, which on-failure
+      # never restarts.
       restart_policy:
-        condition: on-failure
+        condition: any
+      # Never two containers on the same gluster-backed files.
+      update_config:
+        order: stop-first
       labels:
         - traefik.enable=true
         - traefik.http.routers.aopwiki-dashboard.rule=Host(`aopwiki-dashboard.vhp4safety.nl`)
@@ -54,17 +59,30 @@ services:
     networks:
       - core
       - internal
+    # DBA_PASSWORD and every VIRT_* setting below are read only when the image
+    # creates a new, empty database. On the existing store they change nothing:
+    # the live values are in /database/virtuoso.ini (edit there and restart), and
+    # the real dba password is in the swarm secret virtuoso_dba_password.
     environment:
       - DBA_PASSWORD=${DBA_PASSWORD}
       - VIRT_Parameters_DirsAllowed=., ../vad, /usr/share/proj, /database/data
+      - VIRT_Parameters_NumberOfBuffers=60000
+      - VIRT_Parameters_MaxDirtyBuffers=45000
+      - VIRT_SPARQL_ResultSetMaxRows=200000
+      - VIRT_SPARQL_MaxQueryExecutionTime=120
     volumes:
       # Mount the whole /database directory so virtuoso.db and friends survive
       # container recreates. TTL inputs live in the data/ subdirectory, keeping
       # the /database/data path inside the container unchanged. See issue #57.
       - /mnt/gluster/docker/aopwiki-dashboard/virtuoso-data:/database
     deploy:
+      # `any`, not `on-failure`: a clean SIGINT stop exits 0, which on-failure
+      # never restarts.
       restart_policy:
-        condition: on-failure
+        condition: any
+      # Never two containers on the same gluster-backed files.
+      update_config:
+        order: stop-first
       labels:
         - traefik.enable=true
         - traefik.http.routers.aopwiki-multirdf.rule=Host(`aopwiki-multirdf.vhp4safety.nl`)

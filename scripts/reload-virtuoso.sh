@@ -36,19 +36,28 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 YES=false
 [[ "${1:-}" == "--yes" ]] && YES=true
 
-# --- DBA password (from .env next to the repo root or this script) ----------
-ENV_FILE=""
-for cand in "${SCRIPT_DIR}/../.env" "${SCRIPT_DIR}/.env" "${HOME}/aopwiki-dashboard/.env"; do
-    [[ -f "$cand" ]] && { ENV_FILE="$cand"; break; }
-done
-if [[ -z "$ENV_FILE" ]]; then
-    echo "ERROR: .env with DBA_PASSWORD not found (looked next to repo root and ~/aopwiki-dashboard)." >&2
-    exit 1
+# --- DBA password -----------------------------------------------------------
+# Taken from, in order: DBA_PASSWORD in the environment, the file named by
+# DBA_PASSWORD_FILE, or a .env next to the repo root or this script. On the
+# cluster the real password is in the swarm secret virtuoso_dba_password; the
+# DBA_PASSWORD in the stack env is only used when a new store is created.
+if [[ -z "${DBA_PASSWORD:-}" && -n "${DBA_PASSWORD_FILE:-}" ]]; then
+    DBA_PASSWORD=$(<"$DBA_PASSWORD_FILE")
 fi
-# shellcheck disable=SC1090
-source "$ENV_FILE"
 if [[ -z "${DBA_PASSWORD:-}" ]]; then
-    echo "ERROR: DBA_PASSWORD not set in ${ENV_FILE}." >&2
+    ENV_FILE=""
+    for cand in "${SCRIPT_DIR}/../.env" "${SCRIPT_DIR}/.env" "${HOME}/aopwiki-dashboard/.env"; do
+        [[ -f "$cand" ]] && { ENV_FILE="$cand"; break; }
+    done
+    if [[ -z "$ENV_FILE" ]]; then
+        echo "ERROR: no DBA password (set DBA_PASSWORD or DBA_PASSWORD_FILE, or provide a .env)." >&2
+        exit 1
+    fi
+    # shellcheck disable=SC1090
+    source "$ENV_FILE"
+fi
+if [[ -z "${DBA_PASSWORD:-}" ]]; then
+    echo "ERROR: DBA_PASSWORD is empty." >&2
     exit 1
 fi
 
@@ -72,6 +81,57 @@ echo "Virtuoso container: $CN"
 
 isql() { docker exec -i "$CN" /opt/virtuoso-opensource/bin/isql localhost:1111 dba "$DBA_PASSWORD" "$@"; }
 
+# Per-graph AOP counts as "<date> <count>" lines, sorted. Each row is tagged so
+# it can be picked out of isql's table output.
+aop_counts() {
+    # `|| true`: no rows is reported by the caller, not fatal under pipefail.
+    isql <<EOF 2>&1 | { grep -oE 'CNT\|[0-9-]+\|[0-9]+' || true; } | awk -F'|' '{print $2, $3}' | sort
+SPARQL SELECT (CONCAT("CNT|", REPLACE(STR(?g), "^.*/", ""), "|", STR(COUNT(DISTINCT ?a))) AS ?row) WHERE { GRAPH ?g { ?a a <http://aopkb.org/aop_ontology#AdverseOutcomePathway> } FILTER(STRSTARTS(STR(?g), "${GRAPH_BASE}/")) } GROUP BY ?g;
+EOF
+}
+
+# --- Preflight (read-only) --------------------------------------------------
+# The reload rebuilds the store from ${CONTAINER_DATA_DIR} alone, so anything
+# missing there is silently lost. Refuse unless every quarter has all four
+# files, both metadata files are present, and every graph now in the store has
+# its files on disk (#163).
+mapfile -t TTLS < <(docker exec "$CN" sh -c "ls ${CONTAINER_DATA_DIR}/*.ttl" 2>/dev/null | xargs -n1 basename | sort)
+if [[ ${#TTLS[@]} -eq 0 ]]; then
+    echo "ERROR: no .ttl files in ${CONTAINER_DATA_DIR} inside $CN — nothing to load." >&2
+    exit 1
+fi
+
+preflight_ok=true
+mapfile -t DATES < <(printf '%s\n' "${TTLS[@]}" | grep -oE '^AOPWikiRDF-.*[0-9]{4}-[0-9]{2}-[0-9]{2}\.ttl$' | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}' | sort -u)
+for d in "${DATES[@]}"; do
+    for kind in "" "Genes-" "Enriched-" "Void-"; do
+        f="AOPWikiRDF-${kind}${d}.ttl"
+        if ! printf '%s\n' "${TTLS[@]}" | grep -qx "$f"; then
+            echo "PREFLIGHT: missing ${f}" >&2
+            preflight_ok=false
+        fi
+    done
+done
+for f in ServiceDescription.ttl AOPWikiRDF-Catalog.ttl; do
+    printf '%s\n' "${TTLS[@]}" | grep -qx "$f" || { echo "PREFLIGHT: missing ${f}" >&2; preflight_ok=false; }
+done
+
+BEFORE=$(aop_counts)
+if [[ -z "$BEFORE" ]]; then
+    echo "PREFLIGHT: could not read per-graph AOP counts from the store (wrong DBA_PASSWORD?)." >&2
+    preflight_ok=false
+fi
+while read -r d _; do
+    [[ -z "$d" ]] && continue
+    printf '%s\n' "${DATES[@]}" | grep -qx "$d" || { echo "PREFLIGHT: graph ${d} is loaded but has no files in ${CONTAINER_DATA_DIR}; a reload would drop it." >&2; preflight_ok=false; }
+done <<< "$BEFORE"
+
+if [[ "$preflight_ok" != "true" ]]; then
+    echo "ERROR: preflight failed; nothing was changed. Stage the missing files and re-run." >&2
+    exit 1
+fi
+echo "Preflight OK: ${#DATES[@]} quarters with all 4 files; $(grep -c . <<< "$BEFORE") graphs in the store."
+
 # --- Confirm (destructive) --------------------------------------------------
 if [[ "$YES" != "true" ]]; then
     echo "WARNING: this DELETES all RDF data in $CN and reloads from ${CONTAINER_DATA_DIR}."
@@ -80,11 +140,6 @@ if [[ "$YES" != "true" ]]; then
 fi
 
 # --- Build the TTLP load script from the files in the container -------------
-mapfile -t TTLS < <(docker exec "$CN" sh -c "ls ${CONTAINER_DATA_DIR}/*.ttl" 2>/dev/null | xargs -n1 basename | sort)
-if [[ ${#TTLS[@]} -eq 0 ]]; then
-    echo "ERROR: no .ttl files in ${CONTAINER_DATA_DIR} inside $CN — nothing to load." >&2
-    exit 1
-fi
 
 SQL=$'DELETE FROM DB.DBA.load_list;\nRDF_GLOBAL_RESET();\nlog_enable(2);\n'
 n_ver=0; n_meta=0
@@ -103,19 +158,23 @@ for b in "${TTLS[@]}"; do
 done
 SQL+=$'checkpoint;\n'
 
-echo "Loading ${n_ver} version-graph files + ${n_meta} metadata files (expect 2: ServiceDescription + Catalog)..."
-if [[ "$n_meta" -ne 2 ]]; then
-    echo "WARNING: expected 2 metadata files (ServiceDescription.ttl + AOPWikiRDF-Catalog.ttl); found ${n_meta}." >&2
-fi
+echo "Loading ${n_ver} version-graph files + ${n_meta} metadata files..."
 
 printf '%s' "$SQL" | isql >/tmp/reload-virtuoso.isql.log 2>&1 || { echo "ERROR: isql load failed; see /tmp/reload-virtuoso.isql.log"; tail -20 /tmp/reload-virtuoso.isql.log; exit 1; }
 
 # --- Verify -----------------------------------------------------------------
 echo "=== verification ==="
-isql <<EOF 2>&1 | grep -E 'graphs|metadata_triples|total|[0-9]{4,}' | grep -vE 'msec|Rows'
+isql <<EOF 2>&1 | grep -E 'graphs|metadata_triples|total|[0-9]{4,}' | grep -vE 'msec|Rows' || true
 SPARQL SELECT (COUNT(DISTINCT ?g) AS ?version_graphs) WHERE { GRAPH ?g {?s ?p ?o} FILTER(STRSTARTS(STR(?g),"${GRAPH_BASE}/")) };
 SPARQL SELECT (COUNT(*) AS ?metadata_triples) WHERE { GRAPH <${META_GRAPH}> {?s ?p ?o} };
 SPARQL SELECT (COUNT(*) AS ?total) WHERE { GRAPH ?g {?s ?p ?o} };
 EOF
 
+AFTER=$(aop_counts)
+if [[ "$AFTER" != "$BEFORE" ]]; then
+    echo "ERROR: per-graph AOP counts changed across the reload (before < > after):" >&2
+    diff <(echo "$BEFORE") <(echo "$AFTER") >&2 || true
+    exit 1
+fi
+echo "Per-graph AOP counts identical before and after ($(grep -c . <<< "$AFTER") graphs)."
 echo "Done. If metadata_triples is 0 the catalogue/service description failed to load."
