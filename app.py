@@ -458,6 +458,19 @@ register_cache_rewarm(_rewarm_plot_cache)
 
 # Pin latest version in caches so it is never evicted
 _latest_version = get_latest_version()
+
+
+def _current_latest_graph_uri() -> str:
+    """Graph URI for the methodology "Run on Endpoint" links (#169).
+
+    Snapshot plots pick the newest graph per request, so the disclosed query
+    should too. This comes from the memoized version registry, unlike
+    ``_latest_version``, which is fixed at startup to match the startup caches.
+    """
+    version = get_latest_version()
+    return f"http://aopwiki.org/graph/{version}" if version != "Unknown" else ""
+
+
 if _latest_version and _latest_version != "Unknown":
     _plot_data_cache.pin_version(_latest_version)
     _plot_figure_cache.pin_version(_latest_version)
@@ -2188,6 +2201,8 @@ def landing():
     Network Analysis. Shows latest version number and headline entity counts
     from cached startup data. Includes expandable AOP-Wiki introduction.
     """
+    # The startup value, deliberately: the headline counts below come from the
+    # startup caches and have to describe the same version.
     latest_version = _latest_version or "Unknown"
 
     def _counts_from_cache():
@@ -2223,7 +2238,7 @@ def database_snapshot():
     Displays key metrics and visualizations from any version of the AOP-Wiki
     database, allowing users to explore current and historical snapshots.
     """
-    return render_template("latest.html", methodology_notes=methodology_notes, sparql_endpoint=Config.SPARQL_PUBLIC_ENDPOINT, latest_graph_uri=f"http://aopwiki.org/graph/{_latest_version}" if _latest_version else "", ontology_branches=available_ontology_branches(), domains=available_domains(), active_page='snapshot')
+    return render_template("latest.html", methodology_notes=methodology_notes, sparql_endpoint=Config.SPARQL_PUBLIC_ENDPOINT, latest_graph_uri=_current_latest_graph_uri(), ontology_branches=available_ontology_branches(), domains=available_domains(), active_page='snapshot')
 
 
 @app.route("/latest")
@@ -2239,7 +2254,7 @@ def historical_trends():
     Displays evolution and growth patterns of the AOP-Wiki database
     over time using quarterly releases.
     """
-    return render_template("trends_page.html", methodology_notes=methodology_notes, sparql_endpoint=Config.SPARQL_PUBLIC_ENDPOINT, latest_graph_uri=f"http://aopwiki.org/graph/{_latest_version}" if _latest_version else "", active_page='trends')
+    return render_template("trends_page.html", methodology_notes=methodology_notes, sparql_endpoint=Config.SPARQL_PUBLIC_ENDPOINT, latest_graph_uri=_current_latest_graph_uri(), active_page='trends')
 
 
 @app.route("/dashboard")

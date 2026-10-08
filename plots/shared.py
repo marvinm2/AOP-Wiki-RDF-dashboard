@@ -1160,46 +1160,36 @@ def safe_plot_execution(plot_func, *args, **kwargs) -> Any:
         # Default fallback
         return create_fallback_plot(plot_func.__name__, str(e))
 
+_version_registry = None
+
+
+def get_version_registry():
+    """The process-wide :class:`plots.versions.VersionRegistry` (#169)."""
+    global _version_registry
+    if _version_registry is None:
+        from .versions import VersionRegistry
+        _version_registry = VersionRegistry(run_sparql_query_with_retry)
+    return _version_registry
+
+
 def get_latest_version() -> str:
     """Get the latest AOP-Wiki RDF database version.
 
-    Pushes the prefix filter and ordering into SPARQL so Virtuoso returns
-    only the latest AOP-Wiki graph URI directly, without a Python-side
-    filter pass. Removes the previous LIMIT 100 ceiling so this still
-    works if the triplestore ever holds more than 100 named graphs (#52).
+    Served from the memoized version registry (one typed query, ~0.65 s, cached
+    for 10 minutes) instead of a full-triple scan per call (~11 s) (#169).
 
     Returns:
-        str: Latest version string (e.g., "2026-04-01"), or "Unknown" on failure.
+        str: Latest version string (e.g., "2026-10-01"), or "Unknown" if the
+        endpoint has never answered.
     """
-    query = """
-    SELECT ?g
-    WHERE {
-        GRAPH ?g { ?s ?p ?o }
-        FILTER(STRSTARTS(STR(?g), "http://aopwiki.org/graph/"))
-    }
-    GROUP BY ?g
-    ORDER BY DESC(?g)
-    LIMIT 1
-    """
-
-    try:
-        results = run_sparql_query_with_retry(query)
-        if results:
-            graph_uri = results[0].get('g', {}).get('value', '')
-            if graph_uri:
-                # Extract version from URI like http://aopwiki.org/graph/2026-04-01
-                return graph_uri.rsplit('/', 1)[-1]
-        return "Unknown"
-    except Exception as e:
-        logger.error(f"Error getting latest version: {e}")
-        return "Unknown"
+    return get_version_registry().latest() or "Unknown"
 
 
 def get_all_versions() -> list[dict]:
-    """Get all available AOP-Wiki RDF database versions with metadata.
+    """Get all available AOP-Wiki RDF database versions, newest first.
 
-    Queries the SPARQL endpoint to retrieve all historical versions of the
-    AOP-Wiki RDF database, sorted from newest to oldest.
+    Served from the memoized version registry (#169). Only graphs that contain
+    AOPs count as versions, and there is no upper limit on how many.
 
     Returns:
         list[dict]: List of version dictionaries with keys:
@@ -1209,49 +1199,14 @@ def get_all_versions() -> list[dict]:
 
     Example:
         >>> versions = get_all_versions()
-        >>> print(f"Found {len(versions)} versions")
         >>> print(f"Latest: {versions[0]['version']}")
-        Found 15 versions
-        Latest: 2025-07-01
+        Latest: 2026-10-01
     """
-    query = """
-    SELECT DISTINCT ?g
-    WHERE {
-        GRAPH ?g { ?s ?p ?o }
-    }
-    LIMIT 100
-    """
-
-    try:
-        results = run_sparql_query_with_retry(query)
-        if results and len(results) > 0:
-            # Filter for AOP-Wiki graphs
-            aop_graphs = [
-                r.get('g', {}).get('value', '')
-                for r in results
-                if 'aopwiki.org/graph' in r.get('g', {}).get('value', '')
-            ]
-
-            if aop_graphs:
-                # Sort in descending order (newest first)
-                aop_graphs.sort(reverse=True)
-
-                # Build list of version dictionaries
-                versions = []
-                for graph_uri in aop_graphs:
-                    version = graph_uri.split('/')[-1]
-                    versions.append({
-                        'version': version,
-                        'graph_uri': graph_uri,
-                        'date': version  # Can be formatted differently if needed
-                    })
-
-                return versions
-
-        return []
-    except Exception as e:
-        logger.error(f"Error getting all versions: {e}")
-        return []
+    from .versions import GRAPH_PREFIX
+    return [
+        {'version': v, 'graph_uri': f"{GRAPH_PREFIX}{v}", 'date': v}
+        for v in get_version_registry().versions()
+    ]
 
 
 # SPARQL class URIs for the four headline entity types tracked across versions
