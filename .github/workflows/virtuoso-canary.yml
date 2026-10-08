@@ -1,0 +1,63 @@
+name: virtuoso-canary
+
+# Checks that the multi-version endpoint still answers the query shapes the
+# trend plots depend on (#173): GROUP BY ?graph keeps the right labels (the
+# regression behind the Virtuoso digest pin, #58), and per-(graph, KE) OPTIONAL
+# counts are not folded across graphs (#168). Run it by hand against a
+# candidate image before moving the digest pin.
+
+on:
+  schedule:
+    - cron: '0 7 * * MON'  # weekly, Monday 07:00 UTC
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'tests/test_virtuoso_canary.py'
+      - '.github/workflows/virtuoso-canary.yml'
+
+jobs:
+  canary:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Run the canary against the live endpoint
+        id: canary
+        continue-on-error: true
+        shell: bash
+        run: pytest tests/test_virtuoso_canary.py -m slow -q | tee report.txt
+
+      - name: Open issue on scheduled failure
+        if: steps.canary.outcome == 'failure' && github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          {
+            echo "The weekly Virtuoso canary failed: the endpoint gave a wrong answer to a query shape the trend plots rely on. Trend plots may be showing wrong numbers."
+            echo
+            echo '```'
+            tail -40 report.txt
+            echo '```'
+            echo
+            echo "Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          } > body.md
+          gh issue create --title "Virtuoso canary failed ($(date -I))" --label bug --body-file body.md
+
+      - name: Fail the job if the canary failed
+        if: steps.canary.outcome == 'failure'
+        run: exit 1

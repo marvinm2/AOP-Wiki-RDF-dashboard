@@ -803,6 +803,13 @@ def run_sparql_query_with_retry(query: str, max_retries: int = MAX_RETRIES,
 
             bindings = result.get("results", {}).get("bindings", [])
             logger.info(f"Query executed successfully, returned {len(bindings)} results")
+            if len(bindings) >= Config.SPARQL_RESULT_ROW_CAP:
+                # Virtuoso truncates silently at ResultSetMaxRows (#173).
+                logger.error(
+                    f"Query returned {len(bindings)} rows, at the endpoint's row cap "
+                    f"({Config.SPARQL_RESULT_ROW_CAP}); the result is probably "
+                    f"truncated. Query starts: {query.strip()[:120]!r}"
+                )
             return bindings
 
         except SPARQLExceptions.QueryBadFormed as e:
