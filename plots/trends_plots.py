@@ -2717,39 +2717,33 @@ def plot_kes_by_kec_count() -> tuple[str, str]:
     global _plot_data_cache, _plot_figure_cache
 
     try:
+        # Count per (graph, KE) first and bucket afterwards. The previous form
+        # nested an ungrouped sub-SELECT inside GRAPH ?graph, so each KE's count
+        # was taken across every version at once and leaked between graphs
+        # (#168). SUM(IF(BOUND(...))) rather than COUNT(DISTINCT ?bioevent):
+        # over several graphs Virtuoso counts an unmatched OPTIONAL as 1, which
+        # folds the 0 bucket into 1. Checked against per-graph COUNTs for all 35
+        # graphs.
         query_kec_count = """
         PREFIX aopo: <http://aopkb.org/aop_ontology#>
-        PREFIX dc: <http://purl.org/dc/elements/1.1/>
-        PREFIX dcterms: <http://purl.org/dc/terms/>
 
-        SELECT ?graph ?bioevent_count_group
-               (COUNT(DISTINCT ?ke) AS ?total_kes)
+        SELECT ?graph ?bioevent_count_group (COUNT(?ke) AS ?total_kes)
         WHERE {
-          GRAPH ?graph {
-            ?ke a aopo:KeyEvent .
-            OPTIONAL { ?ke aopo:hasBiologicalEvent ?bioevent . }
-            {
-              SELECT ?ke (COUNT(DISTINCT ?bioevent2) AS ?bioevent_count)
-              WHERE {
+          {
+            SELECT ?graph ?ke (SUM(IF(BOUND(?bioevent), 1, 0)) AS ?bioevent_count)
+            WHERE {
+              GRAPH ?graph {
                 ?ke a aopo:KeyEvent .
-                OPTIONAL { ?ke aopo:hasBiologicalEvent ?bioevent2 . }
+                OPTIONAL { ?ke aopo:hasBiologicalEvent ?bioevent . }
               }
-              GROUP BY ?ke
+              FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
             }
-            BIND(
-              IF(?bioevent_count = 0, "0",
-                IF(?bioevent_count = 1, "1",
-                   IF(?bioevent_count = 2, "2",
-                      IF(?bioevent_count = 3, "3",
-                         IF(?bioevent_count = 4, "4",
-                            IF(?bioevent_count = 5, "5",
-                               IF(?bioevent_count >= 6, "6+", ">1"))))))) AS ?bioevent_count_group
-            )
+            GROUP BY ?graph ?ke
           }
-          FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+          BIND(IF(?bioevent_count >= 6, "6+", STR(?bioevent_count)) AS ?bioevent_count_group)
         }
         GROUP BY ?graph ?bioevent_count_group
-        ORDER BY ?graph xsd:integer(?bioevent_count_group)
+        ORDER BY ?graph ?bioevent_count_group
         """
 
         results = run_sparql_query(query_kec_count)
