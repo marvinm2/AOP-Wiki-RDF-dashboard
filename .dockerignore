@@ -1,0 +1,17 @@
+# Keep the build context and image to what the app needs at runtime.
+.git
+.github
+.planning
+.claude
+.pytest_cache
+**/__pycache__
+**/*.pyc
+.env
+*.sqlite
+*.sqlite-*
+tests
+docs
+CLAUDE.md
+CODE_REVIEW.md
+PLOT-UI-REVIEW.md
+CURATION-TAB-PLAN.md

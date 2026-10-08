@@ -8,7 +8,32 @@ on:
     branches: [main]
 
 jobs:
+  # The offline suite (live-endpoint tests are marked `slow` and deselected by
+  # pyproject.toml). No image is built or pushed unless it passes.
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: '.python-version'
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Run tests
+        run: pytest -q
+
   docker-build:
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read

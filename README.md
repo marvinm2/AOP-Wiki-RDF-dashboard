@@ -54,12 +54,27 @@ A comprehensive web dashboard for monitoring and analyzing the AOP-Wiki RDF know
 
 ### Prerequisites
 ```bash
-# Python 3.8+ required
+# Python 3.11 (the version in .python-version and the Docker base image)
 python3 --version
 
-# Install dependencies
-pip install -r requirements.txt
+# Install the pinned dependencies (+ test tools)
+pip install -r requirements.txt -r requirements-dev.txt
+pytest -q                     # offline suite; live-endpoint tests are marked `slow`
 ```
+
+Direct dependencies are declared in `requirements.in`; `requirements.txt` is the
+pip-compile lock built for Python 3.11. To change a dependency, edit
+`requirements.in` and recompile under 3.11 (a 3.12 compile can pin wheels that
+don't exist for 3.11):
+
+```bash
+uv run --no-project --python 3.11 --with pip-tools \
+  pip-compile --strip-extras --no-emit-index-url requirements.in -o requirements.txt
+```
+
+Dependabot proposes monthly updates to the lock, the GitHub Actions and the base
+image. CI runs the offline suite on every PR and push; the image is only built
+when it passes.
 
 ### Configuration
 1. **SPARQL Endpoint**: Ensure AOP-Wiki RDF endpoint is accessible
@@ -171,7 +186,8 @@ Failures are tracked via GitHub issues (e.g. #35 SP031 in `latest_ontology_usage
 │   │   ├── configuration.rst # Configuration guide
 │   │   └── api.rst      # Detailed API documentation
 │   └── build/            # Generated documentation
-└── requirements.txt      # Python dependencies
+├── requirements.in       # Direct Python dependencies
+└── requirements.txt      # pip-compile lock (Python 3.11)
 ```
 
 ### **Adding New Plots**
