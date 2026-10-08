@@ -16,9 +16,45 @@ against an endpoint that is already struggling.
 import logging
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor, wait
 from typing import Any, Callable, Dict, Mapping, Optional, Tuple
 
 logger = logging.getLogger(__name__)
+
+
+def run_tasks_with_deadline(
+    tasks: Mapping[str, Callable[[], Any]],
+    max_workers: int,
+    timeout: float,
+) -> Dict[str, Any]:
+    """Run named tasks in parallel and collect what finishes within ``timeout``.
+
+    Used for the startup precompute (#170). A task that raises, or is still
+    running at the deadline, maps to ``None``, which the recovery path treats as
+    a failed startup plot. Stragglers are abandoned rather than awaited (a thread
+    can't be killed); queued tasks that never started are cancelled.
+    """
+    results: Dict[str, Any] = {}
+    executor = ThreadPoolExecutor(max_workers=max_workers)
+    future_to_name = {executor.submit(fn): name for name, fn in tasks.items()}
+    done, not_done = wait(future_to_name, timeout=timeout)
+    for future in done:
+        name = future_to_name[future]
+        try:
+            results[name] = future.result()
+            logger.info(f"Plot {name} completed successfully")
+        except Exception as e:
+            logger.error(f"Plot {name} failed: {e}")
+            results[name] = None
+    for future in not_done:
+        name = future_to_name[future]
+        logger.error(
+            f"Plot {name} did not finish within the {timeout}s startup deadline; "
+            f"it will be recomputed on demand"
+        )
+        results[name] = None
+    executor.shutdown(wait=False, cancel_futures=True)
+    return results
 
 
 def is_usable_plot_html(html: Any) -> bool:
