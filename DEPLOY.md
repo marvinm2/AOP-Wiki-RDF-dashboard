@@ -92,9 +92,10 @@ Deploys are deliberately **not** automated past the image build.
 # 1. Push to main and wait for the "Docker Build" workflow to go green:
 gh run watch "$(gh run list --workflow=docker.yml --limit 1 --json databaseId --jq '.[0].databaseId')"
 
-# 2. Roll the service (pulls the new :latest):
-ssh tgx1 'docker service update --force \
-  --image ghcr.io/marvinm2/aopwiki-dashboard:latest aopwiki-dashboard_dashboard'
+# 2. Roll the service onto the commit's immutable tag (CI also pushes
+#    sha-<7-char short sha>; same digest as :latest at that moment):
+SHA=$(git rev-parse --short=7 HEAD)
+ssh tgx1 "docker service update --image ghcr.io/marvinm2/aopwiki-dashboard:sha-${SHA} aopwiki-dashboard_dashboard"
 
 # 3. Verify — startup recomputes the eager plots, so allow ~65-75s:
 curl https://aopwiki-dashboard.vhp4safety.nl/health   # -> {"plots_loaded":"N/N","status":"healthy"}
@@ -105,8 +106,10 @@ curl https://aopwiki-dashboard.vhp4safety.nl/health   # -> {"plots_loaded":"N/N"
 python scripts/check_live_trends.py                    # -> 48/48 trend plots render
 ```
 
-`--force` is what makes the pull happen even though the tag is unchanged. The
-package is public, so no `--with-registry-auth` is needed here (unlike private
+Deploying a sha tag rather than `:latest` means `docker service inspect` always
+says which commit is live. **Rollback** is the same command with the previous
+sha: `docker service update --image ghcr.io/marvinm2/aopwiki-dashboard:sha-<prev> aopwiki-dashboard_dashboard`.
+The package is public, so no `--with-registry-auth` is needed here (unlike private
 GHCR packages elsewhere on the cluster, e.g. `oppbk`).
 
 ## Reloading RDF data
@@ -124,9 +127,11 @@ CN=$(docker ps --filter name=aopwiki-dashboard_virtuoso --format '{{.Names}}' | 
 docker cp ~/staging/. "$CN:/database/data/"
 
 # 2. Reload (DESTRUCTIVE: clears all RDF, reloads version graphs + the
-#    metadata graph). Run from the repo clone (reads .env for DBA_PASSWORD):
+#    metadata graph). Run from the repo clone. The password comes from
+#    DBA_PASSWORD, DBA_PASSWORD_FILE or .env; the real one is in the swarm
+#    secret virtuoso_dba_password (the stack's DBA_PASSWORD is init-only).
 cd ~/aopwiki-dashboard
-./scripts/reload-virtuoso.sh          # prompts before deleting; add --yes to skip
+./scripts/reload-virtuoso.sh          # preflight, then prompts; add --yes to skip the prompt
 
 # 3. Refresh the dashboard's precomputed plots:
 docker service update --force aopwiki-dashboard_dashboard
@@ -141,6 +146,16 @@ local compose), loads every `AOPWikiRDF*-<date>.ttl` into
 graph is what keeps the version catalogue + service description live across a
 from-scratch reload — the legacy positional `load.sh` did not, which left the
 endpoint unable to advertise its versions after a reload.
+
+Before touching anything the script runs a read-only preflight and refuses to
+continue if any quarter lacks one of its four files (main, Genes, Enriched,
+Void), if either metadata file is missing, or if a graph in the store has no
+files on disk — the reload rebuilds from the data directory alone, so any of
+these would silently drop data. After loading it compares per-graph AOP counts
+with the pre-reload ones and exits non-zero on any difference.
+
+To add a single new quarter, don't use this script — load it incrementally
+(see `DEPLOY.md` in `AOP-Wiki_multi-endpoint`, "Cluster load").
 
 For a rollback point, back up first:
 `docker cp "$CN:/database/virtuoso.db" ~/virtuoso.db.bak` and copy the old
