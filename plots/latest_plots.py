@@ -66,6 +66,7 @@ import logging
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from .shared import (
+    resolves_version,
     BRAND_COLORS, config, _plot_data_cache, _plot_figure_cache, run_sparql_query, safe_read_csv, create_fallback_plot,
     render_plot_html, OECD_STATUS_ORDER, PROPERTY_TYPE_ORDER, pad_axis_for_outside_labels
 )
@@ -131,6 +132,7 @@ def _build_graph_filter(version: str = None) -> tuple[str, str]:
     return where_filter, order_limit
 
 
+@resolves_version
 def plot_latest_entity_counts(version: str = None) -> str:
     """Create a bar chart visualization of current AOP entity counts from the latest RDF version.
 
@@ -310,7 +312,7 @@ def plot_latest_entity_counts(version: str = None) -> str:
     df["Version"] = latest_version  # Add version column for context
 
     # Store in global cache for CSV download
-    _plot_data_cache['latest_entity_counts'] = df
+    _plot_data_cache[f'latest_entity_counts_{version or "latest"}'] = df
 
     fig = px.bar(
         df,
@@ -330,11 +332,12 @@ def plot_latest_entity_counts(version: str = None) -> str:
     )
 
     # Cache the figure object for image export (PNG/SVG/PDF)
-    _plot_figure_cache['latest_entity_counts'] = fig
+    _plot_figure_cache[f'latest_entity_counts_{version or "latest"}'] = fig
 
     return render_plot_html(fig)
 
 
+@resolves_version
 def plot_latest_ke_components(version: str = None) -> str:
     """Create a pie chart showing the current KE component distribution."""
     global _plot_data_cache
@@ -397,7 +400,7 @@ def plot_latest_ke_components(version: str = None) -> str:
 
     # Add version for context and cache data
     df["Version"] = latest_version
-    _plot_data_cache['latest_ke_components'] = df
+    _plot_data_cache[f'latest_ke_components_{version or "latest"}'] = df
 
     fig = px.pie(
         df,
@@ -414,11 +417,12 @@ def plot_latest_ke_components(version: str = None) -> str:
     )
 
     # Cache the figure object for image export (PNG/SVG/PDF)
-    _plot_figure_cache['latest_ke_components'] = fig
+    _plot_figure_cache[f'latest_ke_components_{version or "latest"}'] = fig
 
     return render_plot_html(fig)
 
 
+@resolves_version
 def plot_latest_aop_connectivity(version: str = None) -> str:
     """Analyze current AOP connectivity based on shared Key Events."""
     global _plot_data_cache
@@ -482,7 +486,7 @@ def plot_latest_aop_connectivity(version: str = None) -> str:
     df["Total_AOPs"] = total_aops   # Add total for reference
 
     # Store in global cache for CSV download
-    _plot_data_cache['latest_aop_connectivity'] = df
+    _plot_data_cache[f'latest_aop_connectivity_{version or "latest"}'] = df
 
     fig = px.pie(
         df, values="Count", names="Type",
@@ -501,11 +505,12 @@ def plot_latest_aop_connectivity(version: str = None) -> str:
     )
 
     # Cache the figure object for image export (PNG/SVG/PDF)
-    _plot_figure_cache['latest_aop_connectivity'] = fig
+    _plot_figure_cache[f'latest_aop_connectivity_{version or "latest"}'] = fig
 
     return render_plot_html(fig)
 
 
+@resolves_version
 def plot_latest_avg_per_aop(version: str = None) -> str:
     """Create a bar chart showing current average KEs and KERs per AOP."""
     global _plot_data_cache
@@ -580,7 +585,7 @@ def plot_latest_avg_per_aop(version: str = None) -> str:
     df["KER_Count"] = [ker_count, ker_count]  # Add raw counts for reference
 
     # Store in global cache for CSV download
-    _plot_data_cache['latest_avg_per_aop'] = df
+    _plot_data_cache[f'latest_avg_per_aop_{version or "latest"}'] = df
 
     fig = px.bar(
         df, x="Metric", y="Value",
@@ -596,11 +601,12 @@ def plot_latest_avg_per_aop(version: str = None) -> str:
     )
 
     # Cache the figure object for image export (PNG/SVG/PDF)
-    _plot_figure_cache['latest_avg_per_aop'] = fig
+    _plot_figure_cache[f'latest_avg_per_aop_{version or "latest"}'] = fig
 
     return render_plot_html(fig)
 
 
+@resolves_version
 def plot_latest_ontology_usage(version: str = None) -> str:
     """Create a chart showing current ontology usage."""
 
@@ -672,7 +678,7 @@ def plot_latest_ontology_usage(version: str = None) -> str:
 
     df = pd.DataFrame(data).sort_values("Terms", ascending=False)
     df["Version"] = latest_version
-    _plot_data_cache['latest_ontology_usage'] = df
+    _plot_data_cache[f'latest_ontology_usage_{version or "latest"}'] = df
 
     fig = px.bar(
         df, x="Ontology", y="Terms", text="Terms"
@@ -687,11 +693,12 @@ def plot_latest_ontology_usage(version: str = None) -> str:
     )
 
     # Cache the figure object for image export (PNG/SVG/PDF)
-    _plot_figure_cache['latest_ontology_usage'] = fig
+    _plot_figure_cache[f'latest_ontology_usage_{version or "latest"}'] = fig
 
     return render_plot_html(fig)
 
 
+@resolves_version
 def plot_latest_process_usage(version: str = None) -> str:
     """Create a sorted bar chart showing current ontology source distribution for biological processes."""
     global _plot_data_cache
@@ -763,7 +770,7 @@ def plot_latest_process_usage(version: str = None) -> str:
     df["Component_Type"] = "Process"  # Add component type for clarity
 
     # Store in global cache for CSV download
-    _plot_data_cache['latest_process_usage'] = df
+    _plot_data_cache[f'latest_process_usage_{version or "latest"}'] = df
 
     fig = px.bar(
         df, x="Ontology", y="Count", text="Count"
@@ -778,11 +785,12 @@ def plot_latest_process_usage(version: str = None) -> str:
     )
 
     # Cache the figure object for image export (PNG/SVG/PDF)
-    _plot_figure_cache['latest_process_usage'] = fig
+    _plot_figure_cache[f'latest_process_usage_{version or "latest"}'] = fig
 
     return render_plot_html(fig)
 
 
+@resolves_version
 def plot_latest_object_usage(version: str = None) -> str:
     """Create a sorted bar chart showing current ontology source distribution for biological objects."""
     global _plot_data_cache
@@ -855,7 +863,7 @@ def plot_latest_object_usage(version: str = None) -> str:
     df["Component_Type"] = "Object"  # Add component type for clarity
 
     # Store in global cache for CSV download
-    _plot_data_cache['latest_object_usage'] = df
+    _plot_data_cache[f'latest_object_usage_{version or "latest"}'] = df
 
     fig = px.bar(
         df, x="Ontology", y="Count", text="Count"
@@ -870,11 +878,12 @@ def plot_latest_object_usage(version: str = None) -> str:
     )
 
     # Cache the figure object for image export (PNG/SVG/PDF)
-    _plot_figure_cache['latest_object_usage'] = fig
+    _plot_figure_cache[f'latest_object_usage_{version or "latest"}'] = fig
 
     return render_plot_html(fig)
 
 
+@resolves_version
 def plot_latest_aop_completeness(version: str = None) -> str:
     """Create a chart showing current AOP data completeness for all properties."""
     global _plot_data_cache
@@ -966,7 +975,7 @@ def plot_latest_aop_completeness(version: str = None) -> str:
     df["Total_AOPs"] = total_aops   # Add total AOPs for reference
 
     # Store in global cache for CSV download
-    _plot_data_cache['latest_aop_completeness'] = df
+    _plot_data_cache[f'latest_aop_completeness_{version or "latest"}'] = df
 
     # Use centralized brand colors for consistency
     color_map = BRAND_COLORS['type_colors'].copy()
@@ -995,11 +1004,12 @@ def plot_latest_aop_completeness(version: str = None) -> str:
     )
 
     # Cache the figure object for image export (PNG/SVG/PDF)
-    _plot_figure_cache['latest_aop_completeness'] = fig
+    _plot_figure_cache[f'latest_aop_completeness_{version or "latest"}'] = fig
 
     return render_plot_html(fig)
 
 
+@resolves_version
 def plot_latest_aop_completeness_unique_colors(version: str = None) -> str:
     """Create a chart showing current AOP data completeness with unique colors for each property."""
     global _plot_data_cache
@@ -1085,7 +1095,7 @@ def plot_latest_aop_completeness_unique_colors(version: str = None) -> str:
     df["Total_AOPs"] = total_aops   # Add total AOPs for reference
 
     # Store in global cache for CSV download with unique key
-    _plot_data_cache['latest_aop_completeness_unique'] = df
+    _plot_data_cache[f'latest_aop_completeness_unique_{version or "latest"}'] = df
 
     fig = px.bar(
         df, x="Property", y="Completeness",
@@ -1103,11 +1113,12 @@ def plot_latest_aop_completeness_unique_colors(version: str = None) -> str:
     )
 
     # Cache the figure object for image export (PNG/SVG/PDF)
-    _plot_figure_cache['latest_aop_completeness_unique'] = fig
+    _plot_figure_cache[f'latest_aop_completeness_unique_{version or "latest"}'] = fig
 
     return render_plot_html(fig)
 
 
+@resolves_version
 def plot_latest_ke_annotation_depth(version: str = None) -> str:
     """Show current distribution of Key Events by annotation depth (number of components)."""
     global _plot_data_cache
@@ -1179,7 +1190,7 @@ def plot_latest_ke_annotation_depth(version: str = None) -> str:
     df["Numeric_Depth"] = df["Sort"]  # Add numeric depth for analysis
 
     # Store in global cache for CSV download
-    _plot_data_cache['latest_ke_annotation_depth'] = df
+    _plot_data_cache[f'latest_ke_annotation_depth_{version or "latest"}'] = df
 
     # Ordinal variable (annotation depth) — keep the depth order, not a pie.
     fig = px.bar(
@@ -1196,11 +1207,12 @@ def plot_latest_ke_annotation_depth(version: str = None) -> str:
     )
 
     # Cache the figure object for image export (PNG/SVG/PDF)
-    _plot_figure_cache['latest_ke_annotation_depth'] = fig
+    _plot_figure_cache[f'latest_ke_annotation_depth_{version or "latest"}'] = fig
 
     return render_plot_html(fig)
 
 
+@resolves_version
 def plot_latest_aop_completeness_by_status(version: str = None) -> str:
     """Create a grouped bar chart showing AOP completeness scores grouped by OECD status.
 
@@ -1354,7 +1366,7 @@ def plot_latest_aop_completeness_by_status(version: str = None) -> str:
     df["Version"] = latest_version  # Add version for context
 
     # Store in global cache for CSV download
-    _plot_data_cache['latest_aop_completeness_by_status'] = df
+    _plot_data_cache[f'latest_aop_completeness_by_status_{version or "latest"}'] = df
 
     # Use centralized brand colors for consistency
     color_map = BRAND_COLORS['type_colors'].copy()
@@ -1389,11 +1401,12 @@ def plot_latest_aop_completeness_by_status(version: str = None) -> str:
     )
 
     # Cache the figure object for image export (PNG/SVG/PDF)
-    _plot_figure_cache['latest_aop_completeness_by_status'] = fig
+    _plot_figure_cache[f'latest_aop_completeness_by_status_{version or "latest"}'] = fig
 
     return render_plot_html(fig)
 
 
+@resolves_version
 def plot_latest_ke_by_bio_level(version: str = None) -> str:
     """Show distribution of Key Events across biological levels of organization.
 
@@ -1500,6 +1513,7 @@ def plot_latest_ke_by_bio_level(version: str = None) -> str:
     return render_plot_html(fig)
 
 
+@resolves_version
 def plot_latest_taxonomic_groups(version: str = None) -> str:
     """Show which taxonomic groups are most represented across AOPs.
 
@@ -1644,6 +1658,7 @@ def plot_latest_taxonomic_groups(version: str = None) -> str:
     return render_plot_html(fig)
 
 
+@resolves_version
 def plot_latest_entity_by_oecd_status(version: str = None) -> str:
     """Show entity count breakdowns (AOPs, KEs, KERs) by OECD status.
 
@@ -1789,6 +1804,7 @@ def plot_latest_entity_by_oecd_status(version: str = None) -> str:
     return render_plot_html(fig)
 
 
+@resolves_version
 def plot_latest_ke_reuse(version: str = None) -> str:
     """Show the most reused Key Events across AOPs (top 30).
 
@@ -1919,6 +1935,7 @@ def _ontology_curie(iri: str):
     return frag, ""
 
 
+@resolves_version
 def plot_latest_top_ontology_terms(version: str = None) -> str:
     """Show the individual ontology terms most reused across Key Events (top 30).
 
@@ -2036,6 +2053,7 @@ def plot_latest_top_ontology_terms(version: str = None) -> str:
     return render_plot_html(fig)
 
 
+@resolves_version
 def plot_latest_ke_reuse_distribution(version: str = None) -> str:
     """Show the distribution of how many AOPs each KE belongs to (reuse histogram).
 
@@ -2136,6 +2154,7 @@ def plot_latest_ke_reuse_distribution(version: str = None) -> str:
     return render_plot_html(fig)
 
 
+@resolves_version
 def plot_latest_stressor_mie_coverage(version: str = None) -> str:
     """Show stressor coverage of Molecular Initiating Events (the MIE gap).
 
@@ -2247,6 +2266,7 @@ def plot_latest_stressor_mie_coverage(version: str = None) -> str:
     return render_plot_html(fig)
 
 
+@resolves_version
 def plot_latest_mie_ao_path_length(version: str = None) -> str:
     """Distribution of the shortest MIE→AO path length within each AOP.
 
@@ -2380,6 +2400,7 @@ def plot_latest_mie_ao_path_length(version: str = None) -> str:
     return render_plot_html(fig)
 
 
+@resolves_version
 def plot_latest_completeness_correlation(version: str = None) -> str:
     """Pairwise correlation between the presence of AOP properties.
 
@@ -2492,6 +2513,7 @@ def plot_latest_completeness_correlation(version: str = None) -> str:
     return render_plot_html(fig)
 
 
+@resolves_version
 def plot_latest_ker_directionality(version: str = None) -> str:
     """Classify Key Events by their position in the directed KER network.
 
@@ -2618,6 +2640,7 @@ def plot_latest_ker_directionality(version: str = None) -> str:
     return render_plot_html(fig)
 
 
+@resolves_version
 def plot_latest_ke_completeness_by_status(version: str = None) -> str:
     """Create a grouped bar chart showing KE completeness scores grouped by OECD status.
 
@@ -2770,7 +2793,7 @@ def plot_latest_ke_completeness_by_status(version: str = None) -> str:
     df["Version"] = latest_version  # Add version for context
 
     # Store in global cache for CSV download
-    _plot_data_cache['latest_ke_completeness_by_status'] = df
+    _plot_data_cache[f'latest_ke_completeness_by_status_{version or "latest"}'] = df
 
     # Use centralized brand colors for consistency
     color_map = BRAND_COLORS['type_colors'].copy()
@@ -2805,11 +2828,12 @@ def plot_latest_ke_completeness_by_status(version: str = None) -> str:
     )
 
     # Cache the figure object for image export (PNG/SVG/PDF)
-    _plot_figure_cache['latest_ke_completeness_by_status'] = fig
+    _plot_figure_cache[f'latest_ke_completeness_by_status_{version or "latest"}'] = fig
 
     return render_plot_html(fig)
 
 
+@resolves_version
 def plot_latest_ker_completeness_by_status(version: str = None) -> str:
     """Create a grouped bar chart showing KER completeness scores grouped by OECD status.
 
@@ -2962,7 +2986,7 @@ def plot_latest_ker_completeness_by_status(version: str = None) -> str:
     df["Version"] = latest_version  # Add version for context
 
     # Store in global cache for CSV download
-    _plot_data_cache['latest_ker_completeness_by_status'] = df
+    _plot_data_cache[f'latest_ker_completeness_by_status_{version or "latest"}'] = df
 
     # Use centralized brand colors for consistency
     color_map = BRAND_COLORS['type_colors'].copy()
@@ -3002,7 +3026,7 @@ def plot_latest_ker_completeness_by_status(version: str = None) -> str:
     )
 
     # Cache the figure object for image export (PNG/SVG/PDF)
-    _plot_figure_cache['latest_ker_completeness_by_status'] = fig
+    _plot_figure_cache[f'latest_ker_completeness_by_status_{version or "latest"}'] = fig
 
     return render_plot_html(fig)
 
@@ -3010,6 +3034,7 @@ def plot_latest_ker_completeness_by_status(version: str = None) -> str:
 # plot_latest_annotation_heatmap removed — produced non-sensical output per UAT feedback
 
 
+@resolves_version
 def plot_latest_ontology_diversity(version: str = None) -> str:
     """Create a bar chart showing unique ontology term counts per ontology source.
 
@@ -3119,7 +3144,6 @@ def plot_latest_ontology_diversity(version: str = None) -> str:
     df["Version"] = latest_version
 
     _plot_data_cache[cache_key] = df
-    _plot_data_cache['latest_ontology_diversity'] = df
 
     fig = px.bar(
         df,
@@ -3139,7 +3163,6 @@ def plot_latest_ontology_diversity(version: str = None) -> str:
     )
 
     _plot_figure_cache[cache_key] = fig
-    _plot_figure_cache['latest_ontology_diversity'] = fig
     return render_plot_html(fig)
 
 
@@ -3593,7 +3616,6 @@ def _coverage_plot_for_scope(
 
     cache_key = f"{cache_stub}_{version or 'latest'}"
     _plot_data_cache[cache_key] = per_pair
-    _plot_data_cache[cache_stub] = per_pair
 
     fig = _render_coverage_bar(
         per_pair,
@@ -3608,6 +3630,7 @@ def _coverage_plot_for_scope(
     return render_plot_html(fig)
 
 
+@resolves_version
 def plot_latest_organ_coverage(version: str = None) -> str:
     """AOP coverage of organ systems — all member KEs contribute (Signals A/A'/B/C)."""
     return _coverage_plot_for_scope(
@@ -3618,6 +3641,7 @@ def plot_latest_organ_coverage(version: str = None) -> str:
     )
 
 
+@resolves_version
 def plot_latest_organ_coverage_apical(version: str = None) -> str:
     """Apical-only view: only Tissue/Organ/Individual/Population KEs contribute
     to Signals A/A'/B. Signal C (AOP title) is kept. Surfaces what the AOP is
@@ -3631,6 +3655,7 @@ def plot_latest_organ_coverage_apical(version: str = None) -> str:
     )
 
 
+@resolves_version
 def plot_latest_organ_coverage_ao_only(version: str = None) -> str:
     """AO-only view: only the Adverse Outcome KE contributes to Signals A/A'/B.
     Signal C (AOP title) is kept since titles routinely describe the AO.
@@ -3643,6 +3668,7 @@ def plot_latest_organ_coverage_ao_only(version: str = None) -> str:
     )
 
 
+@resolves_version
 def plot_latest_life_stage(version: str = None) -> str:
     """Distribution of AOPs by life-stage applicability (issue #22, narrowed).
 
@@ -3712,7 +3738,6 @@ def plot_latest_life_stage(version: str = None) -> str:
     df["Version"] = version_label
     cache_key = f"latest_life_stage_{version or 'latest'}"
     _plot_data_cache[cache_key] = df
-    _plot_data_cache["latest_life_stage"] = df
 
     fig = px.bar(
         df, x="AOP count", y="Life stage", orientation="h", text="AOP count"
@@ -3735,6 +3760,7 @@ def plot_latest_life_stage(version: str = None) -> str:
     return render_plot_html(fig)
 
 
+@resolves_version
 def plot_latest_organ_coverage_percentage(version: str = None) -> str:
     """Percentage view of the all-KEs coverage plot."""
     return _coverage_plot_for_scope(
@@ -3770,6 +3796,7 @@ _BUCKET_PALETTE: dict[str, str] = {
 _BUCKET_PALETTE[NO_ANNOTATION_BUCKET] = "#cccccc"
 
 
+@resolves_version
 def plot_latest_organ_coverage_unified(
     version: str = None,
     scope: str = "all",
@@ -3796,6 +3823,7 @@ def plot_latest_organ_coverage_unified(
     )
 
 
+@resolves_version
 def plot_latest_organ_coverage_pie(
     version: str = None,
     scope: str = "all",
@@ -3855,7 +3883,7 @@ def plot_latest_organ_coverage_pie(
 
     cache_key = f"latest_organ_coverage_pie_{scope}_{version or 'latest'}"
     _plot_data_cache[cache_key] = df
-    _plot_data_cache["latest_organ_coverage_pie"] = df
+    _plot_data_cache[f"latest_organ_coverage_pie_{version or 'latest'}"] = df
 
     classified_aops = total_aops - unclassified
     memberships = int(df.loc[df["Organ System"] != "Unclassified", "AOPs"].sum())
@@ -3897,12 +3925,13 @@ def plot_latest_organ_coverage_pie(
     fig.update_traces(cliponaxis=False)
 
     _plot_figure_cache[cache_key] = fig
-    # Also cache under the bare stub so the generic /download/latest/<name>
-    # PNG/SVG export route resolves without needing the scope suffix.
-    _plot_figure_cache["latest_organ_coverage_pie"] = fig
+    # Also cache without the scope, so /download/latest/<name> (which carries
+    # no scope) exports the last-rendered scope of this version.
+    _plot_figure_cache[f"latest_organ_coverage_pie_{version or 'latest'}"] = fig
     return render_plot_html(fig)
 
 
+@resolves_version
 def plot_latest_multi_organ_aops(version: str = None) -> str:
     """Histogram of the number of distinct organ systems each AOP classifies into."""
     global _plot_data_cache, _plot_figure_cache
@@ -3966,7 +3995,6 @@ def plot_latest_multi_organ_aops(version: str = None) -> str:
 
     cache_key = f"latest_multi_organ_aops_{version or 'latest'}"
     _plot_data_cache[cache_key] = detail_df if not detail_df.empty else hist_df.copy()
-    _plot_data_cache["latest_multi_organ_aops"] = detail_df if not detail_df.empty else hist_df.copy()
 
     multi_count = int(multi.shape[0])
     multi_pct = 100.0 * multi_count / total_aops if total_aops else 0.0
@@ -3994,6 +4022,7 @@ def plot_latest_multi_organ_aops(version: str = None) -> str:
     _plot_figure_cache[cache_key] = fig
     return render_plot_html(fig)
 
+@resolves_version
 def plot_latest_ke_mmo_coverage(version: str = None) -> str:
     """KE measurement-method (obo:MMO_0000000) coverage for the current snapshot.
 
@@ -4061,9 +4090,7 @@ def plot_latest_ke_mmo_coverage(version: str = None) -> str:
 
         cache_key = f"latest_ke_mmo_coverage_{version or 'latest'}"
         _plot_data_cache[cache_key] = df
-        _plot_data_cache['latest_ke_mmo_coverage'] = df
         _plot_figure_cache[cache_key] = fig
-        _plot_figure_cache['latest_ke_mmo_coverage'] = fig
 
         return render_plot_html(fig)
 
@@ -4123,6 +4150,7 @@ def score_ke_set_similarity(ke_sets: dict, min_jaccard: float = 0.34,
     return scored
 
 
+@resolves_version
 def plot_latest_aop_aop_overlap(version: str = None, min_jaccard: float = 0.34,
                                 min_shared_kes: int = 2, max_pairs: int = 1000) -> str:
     """AOP-AOP overlap network: nodes=AOPs, edges=Jaccard on KE sets (#67, #152).
@@ -4420,9 +4448,7 @@ def plot_latest_aop_aop_overlap(version: str = None, min_jaccard: float = 0.34,
         ).reset_index(drop=True)
     cache_key = f"latest_aop_aop_overlap_{version or 'latest'}"
     _plot_data_cache[cache_key] = edge_df
-    _plot_data_cache['latest_aop_aop_overlap'] = edge_df
     _plot_figure_cache[cache_key] = fig
-    _plot_figure_cache['latest_aop_aop_overlap'] = fig
 
     return render_plot_html(fig)
 
@@ -4527,6 +4553,7 @@ def find_ontology_coverage_holes(branch_data: dict, used_short_ids) -> list:
     return holes
 
 
+@resolves_version
 def plot_latest_ontology_coverage_holes(version: str = None,
                                         branch: str = DEFAULT_ONTOLOGY_BRANCH,
                                         top_n: int = 15) -> str:
@@ -4651,8 +4678,6 @@ def plot_latest_ontology_coverage_holes(version: str = None,
     version_key = version or "latest"
     cache_key = f"latest_ontology_coverage_holes_{version_key}"
     _plot_data_cache[cache_key] = df
-    _plot_data_cache["latest_ontology_coverage_holes"] = df
     _plot_figure_cache[cache_key] = fig
-    _plot_figure_cache["latest_ontology_coverage_holes"] = fig
 
     return render_plot_html(fig)

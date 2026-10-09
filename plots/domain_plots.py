@@ -44,6 +44,7 @@ import pandas as pd
 import plotly.graph_objects as go
 
 from .shared import (
+    resolves_version,
     BRAND_COLORS,
     OECD_STATUS_ORDER,
     PROPERTY_TYPE_ORDER,
@@ -429,16 +430,13 @@ def _baseline(target_graph: str):
 
 
 def _cache_plot(stub: str, version_key: str, df: pd.DataFrame, fig) -> None:
-    """Cache data + figure under both the versioned and bare keys.
+    """Cache data + figure under the per-version key (#166).
 
-    The bare key is what the generic ``/download/latest/<name>`` route falls
-    back to, so a CSV or PNG export returns the domain the user is looking at
-    rather than the default.
+    One entry per version: the last-rendered domain, which is what the generic
+    ``/download/latest/<name>`` route (it carries no domain) exports.
     """
     _plot_data_cache[f"{stub}_{version_key}"] = df
-    _plot_data_cache[stub] = df
     _plot_figure_cache[f"{stub}_{version_key}"] = fig
-    _plot_figure_cache[stub] = fig
 
 
 # ---------------------------------------------------------------------------
@@ -446,6 +444,7 @@ def _cache_plot(stub: str, version_key: str, df: pd.DataFrame, fig) -> None:
 # ---------------------------------------------------------------------------
 
 
+@resolves_version
 def plot_latest_domain_coverage(version: str = None, domain: str = DEFAULT_DOMAIN) -> str:
     """AOPs per biological domain, selected domain highlighted (issue #149).
 
@@ -536,6 +535,7 @@ def plot_latest_domain_coverage(version: str = None, domain: str = DEFAULT_DOMAI
     return render_plot_html(fig)
 
 
+@resolves_version
 def plot_latest_domain_completeness(version: str = None, domain: str = DEFAULT_DOMAIN) -> str:
     """Property-tier presence for one domain against all AOPs (issue #149).
 
@@ -649,6 +649,7 @@ def plot_latest_domain_completeness(version: str = None, domain: str = DEFAULT_D
     return render_plot_html(fig)
 
 
+@resolves_version
 def plot_latest_domain_status(version: str = None, domain: str = DEFAULT_DOMAIN) -> str:
     """OECD status mix of a domain's AOPs against the whole wiki (issue #149).
 
