@@ -108,6 +108,7 @@ from .shared import (
     # Core SPARQL functions
     run_sparql_query,
     run_sparql_query_with_retry,
+    SparqlUnavailable,
     extract_counts,
     check_sparql_endpoint_health,
     wait_for_sparql_ready,
@@ -277,6 +278,7 @@ __all__ = [
     # Shared utilities
     'run_sparql_query',
     'run_sparql_query_with_retry',
+    'SparqlUnavailable',
     'extract_counts',
     'check_sparql_endpoint_health',
     'wait_for_sparql_ready',
