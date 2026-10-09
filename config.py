@@ -85,6 +85,10 @@ class Config:
     SPARQL_TIMEOUT = int(os.getenv("SPARQL_TIMEOUT", "30"))
     SPARQL_MAX_RETRIES = int(os.getenv("SPARQL_MAX_RETRIES", "3"))
     SPARQL_RETRY_DELAY = int(os.getenv("SPARQL_RETRY_DELAY", "2"))
+    # Virtuoso's [SPARQL] ResultSetMaxRows on the endpoint (200000 on the
+    # cluster since 2026-10-08). A result this long has probably been cut off
+    # silently, so it is logged as an error (#173).
+    SPARQL_RESULT_ROW_CAP = int(os.getenv("SPARQL_RESULT_ROW_CAP", "200000"))
     
     # Performance Configuration
     PARALLEL_WORKERS = int(os.getenv("PARALLEL_WORKERS", "5"))
