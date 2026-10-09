@@ -282,8 +282,16 @@ class PlotLazyLoader {
 /** Cap on in-flight /api/plot requests; each one runs a SPARQL query. */
 PlotLazyLoader.MAX_CONCURRENT = 4;
 
-/** Give up on a plot request after this long and show the retryable error. */
-PlotLazyLoader.LOAD_TIMEOUT_MS = 45000;
+/**
+ * Give up on a plot request after this long and show the retryable error.
+ *
+ * Kept just under gunicorn's 120s worker timeout (#170). A request can
+ * legitimately take longer than one SPARQL timeout (30s) because failed queries
+ * are retried, and aborting in the browser does not stop the server: the thread
+ * stays busy, and a user who clicks "retry" starts a second copy of the same
+ * work. Waiting until the server would give up anyway avoids that.
+ */
+PlotLazyLoader.LOAD_TIMEOUT_MS = 110000;
 
 // Initialize lazy loader when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {

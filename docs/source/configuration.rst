@@ -63,11 +63,14 @@ Performance Tuning
    * **Range**: 1-20 (adjust based on CPU cores and memory)
    * **Example**: ``export PARALLEL_WORKERS=8``
 
-**PLOT_TIMEOUT**
-   * **Default**: ``60``
-   * **Description**: Timeout for individual plot generation in seconds
-   * **Range**: 30-300 seconds
-   * **Example**: ``export PLOT_TIMEOUT=120``
+**STARTUP_BUDGET**
+   * **Default**: ``400``
+   * **Description**: Total seconds startup may take: the wait for the endpoint to
+     serve data plus the plot precompute. The precompute gets what the wait leaves
+     (at least ``STARTUP_MIN_PRECOMPUTE``, default ``90``); plots still running
+     at that point are recomputed on demand. Keep it below the swarm
+     healthcheck ``start_period`` (420s).
+   * **Example**: ``export STARTUP_BUDGET=400``
 
 Logging and Monitoring
 ~~~~~~~~~~~~~~~~~~~~~

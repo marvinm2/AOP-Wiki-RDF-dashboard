@@ -52,7 +52,6 @@ import re
 import json
 import inspect
 import logging
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 logger = logging.getLogger(__name__)
 
@@ -155,7 +154,7 @@ from plots import (
     create_bulk_download,
     get_or_compute_network
 )
-from plots.recovery import TrendPlotRecovery, result_has_usable_html
+from plots.recovery import TrendPlotRecovery, result_has_usable_html, run_tasks_with_deadline
 
 from usage_analytics import record_event, get_summary, init_db
 
@@ -299,7 +298,7 @@ def compute_plots_parallel() -> dict:
     
     Performance:
         - Uses configurable parallel workers (Config.PARALLEL_WORKERS)
-        - Individual plot timeout protection (Config.PLOT_TIMEOUT)
+        - One overall deadline (what is left of Config.STARTUP_BUDGET); stragglers recover on demand
         - Comprehensive timing and success rate logging
         - Graceful degradation for individual plot failures
     
@@ -327,23 +326,18 @@ def compute_plots_parallel() -> dict:
         for name, func in STARTUP_PLOT_FUNCTIONS.items()
     ]
     
-    results = {}
-    
-    # Execute plots in parallel
-    with ThreadPoolExecutor(max_workers=Config.PARALLEL_WORKERS) as executor:
-        # Submit all tasks
-        future_to_name = {executor.submit(task[1]): task[0] for task in plot_tasks}
-        
-        # Collect results as they complete
-        for future in as_completed(future_to_name):
-            plot_name = future_to_name[future]
-            try:
-                result = future.result(timeout=Config.PLOT_TIMEOUT)
-                results[plot_name] = result
-                logger.info(f"Plot {plot_name} completed successfully")
-            except Exception as e:
-                logger.error(f"Plot {plot_name} failed: {str(e)}")
-                results[plot_name] = None
+    # One deadline for the whole precompute (#170). The old per-future
+    # `future.result(timeout=...)` sat inside as_completed(), which only yields
+    # finished futures, so it could never fire.
+    # The precompute gets what the readiness wait left of STARTUP_BUDGET, so the
+    # whole startup stays inside the swarm healthcheck's start_period.
+    precompute_timeout = max(Config.STARTUP_MIN_PRECOMPUTE,
+                             Config.STARTUP_BUDGET - (time.time() - start_time))
+    results = run_tasks_with_deadline(
+        dict(plot_tasks),
+        max_workers=Config.PARALLEL_WORKERS,
+        timeout=precompute_timeout,
+    )
     
     total_time = time.time() - start_time
     # Fallback HTML is not None, so count real HTML only (#157).

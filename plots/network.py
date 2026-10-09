@@ -26,6 +26,7 @@ Usage:
 """
 
 import logging
+import threading
 from typing import Dict, List, Optional, Tuple
 
 import networkx as nx
@@ -40,11 +41,13 @@ from .shared import (
 
 logger = logging.getLogger(__name__)
 
-# Module-level cache for lazy computation
+# Module-level cache for lazy computation. The lock makes sure concurrent first
+# requests (4 gthreads per worker) compute it once rather than in parallel (#170).
 _network_cache: Dict = {}
+_network_lock = threading.Lock()
 
 
-def build_aop_network() -> nx.Graph:
+def build_aop_network(version: Optional[str] = None) -> nx.Graph:
     """Build KE-KER network graph from SPARQL endpoint data.
 
     Queries the SPARQL endpoint with 2 bulk queries against the latest version
@@ -55,7 +58,7 @@ def build_aop_network() -> nx.Graph:
         nx.Graph: NetworkX graph with KE node attributes (type, label, uri,
             wiki_url) and KER edge attributes (type='ker').
     """
-    version = get_latest_version()
+    version = version or get_latest_version()
     target_graph = f"http://aopwiki.org/graph/{version}"
     logger.info(f"Building KE-KER network from graph: {target_graph}")
 
@@ -388,6 +391,11 @@ def get_or_compute_network() -> Dict:
     """
     global _network_cache
 
+    if not _network_cache:
+        with _network_lock:
+            if not _network_cache:
+                return _compute_network()
+
     if _network_cache:
         # Re-populate _plot_data_cache if the TTL-based entry has expired.
         # _network_cache has no TTL (lives forever), but _plot_data_cache
@@ -399,16 +407,24 @@ def get_or_compute_network() -> Dict:
                 _plot_data_cache['network_metrics'] = pd.DataFrame(metrics_records)
                 logger.info("Re-populated _plot_data_cache['network_metrics'] from network cache")
         logger.info("Returning cached network data")
-        return _network_cache
+    return _network_cache
+
+
+def _compute_network() -> Dict:
+    """Build the network payload and store it in ``_network_cache``.
+
+    Called with ``_network_lock`` held by :func:`get_or_compute_network`.
+    """
+    global _network_cache
 
     try:
         logger.info("Computing network data (first request)...")
 
-        # Get version for metadata
+        # One version lookup for the whole build (it is an expensive query).
         version = get_latest_version()
 
         # Build graph
-        G = build_aop_network()
+        G = build_aop_network(version)
 
         # Detect MIE/KE/AO roles
         target_graph = f"http://aopwiki.org/graph/{version}"

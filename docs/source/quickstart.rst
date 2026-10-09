@@ -137,7 +137,7 @@ For optimal performance, consider these environment variables:
    
    # Increase timeouts for large datasets
    export SPARQL_TIMEOUT=60
-   export PLOT_TIMEOUT=120
+   export STARTUP_BUDGET=400
    
    # Tune retry behavior
    export SPARQL_MAX_RETRIES=5

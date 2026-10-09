@@ -17,7 +17,7 @@ Environment Variables:
     SPARQL_MAX_RETRIES: Maximum retry attempts for failed queries (default: 3)
     SPARQL_RETRY_DELAY: Delay between retry attempts in seconds (default: 2)
     PARALLEL_WORKERS: Number of parallel workers for plot generation (default: 5)
-    PLOT_TIMEOUT: Timeout for individual plot generation in seconds (default: 60)
+    STARTUP_BUDGET: Total seconds for readiness wait + precompute (default: 400)
     LOG_LEVEL: Logging verbosity level (default: INFO)
     FLASK_HOST: Flask host binding (default: 0.0.0.0)
     FLASK_PORT: Flask port number (default: 5000)
@@ -60,7 +60,7 @@ class Config:
         SPARQL_MAX_RETRIES (int): Maximum number of retry attempts for failed queries
         SPARQL_RETRY_DELAY (int): Delay in seconds between retry attempts
         PARALLEL_WORKERS (int): Number of parallel workers for plot generation
-        PLOT_TIMEOUT (int): Timeout in seconds for individual plot generation
+        PLOT_TIMEOUT (int): Unused since #170; see STARTUP_BUDGET
         LOG_LEVEL (str): Logging verbosity level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
         FLASK_HOST (str): Host address for Flask web server binding
         FLASK_PORT (int): Port number for Flask web server
@@ -88,6 +88,7 @@ class Config:
     
     # Performance Configuration
     PARALLEL_WORKERS = int(os.getenv("PARALLEL_WORKERS", "5"))
+    # Unused since #170 (startup uses STARTUP_BUDGET); kept so existing env files still load.
     PLOT_TIMEOUT = int(os.getenv("PLOT_TIMEOUT", "120"))
     SPARQL_SLOW_TIMEOUT = int(os.getenv("SPARQL_SLOW_TIMEOUT", "60"))
 
@@ -96,6 +97,12 @@ class Config:
     # coming up does not get its half-ready answers cached for the process life.
     STARTUP_READY_TIMEOUT = int(os.getenv("STARTUP_READY_TIMEOUT", "300"))
     STARTUP_READY_INTERVAL = int(os.getenv("STARTUP_READY_INTERVAL", "5"))
+    # Total time startup may take: readiness wait + plot precompute (#170). The
+    # precompute gets whatever the readiness wait leaves (at least
+    # STARTUP_MIN_PRECOMPUTE). Keep it below the swarm healthcheck start_period
+    # (420s in stack.yml). Precompute takes ~75s on the cluster today.
+    STARTUP_BUDGET = int(os.getenv("STARTUP_BUDGET", "400"))
+    STARTUP_MIN_PRECOMPUTE = int(os.getenv("STARTUP_MIN_PRECOMPUTE", "90"))
     # Minimum seconds between on-demand recomputes of a trend plot that failed.
     PLOT_RECOVERY_COOLDOWN = int(os.getenv("PLOT_RECOVERY_COOLDOWN", "60"))
 
