@@ -32,6 +32,9 @@ def _cache_writers() -> tuple[set[str], set[str]]:
     cache = r"_plot_(?:data|figure)_cache\["
     exact = set(re.findall(cache + r"\s*['\"]([A-Za-z0-9_]+)['\"]\s*\]\s*=", src))
     prefixes = set(re.findall(cache + r"\s*f['\"]([A-Za-z0-9_]+?)_\{", src))
+    # Snapshot plots build their per-version key in a variable first (#166):
+    #   cache_key = f"latest_ontology_coverage_holes_{version_key}"
+    prefixes |= set(re.findall(r"_key\s*=\s*f['\"](latest_[A-Za-z0-9_]+?)_\{", src))
     # domain_plots caches through _cache_plot("<stub>", version_key, df, fig)
     exact |= set(re.findall(r"_cache_plot\(\s*['\"]([A-Za-z0-9_]+)['\"]", src))
     return exact, prefixes

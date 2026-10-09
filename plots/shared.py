@@ -60,6 +60,7 @@ import plotly.io as pio
 from SPARQLWrapper import SPARQLWrapper, JSON, POST, SPARQLExceptions
 import time
 import logging
+import functools
 import threading
 from collections import OrderedDict
 import requests
@@ -413,6 +414,10 @@ def _rewarm_cache_key(cache: VersionedPlotCache, key: str) -> bool:
             return False
 
     return key in cache
+
+
+# Public name for routes that read a cache directly (e.g. /api/plot-data).
+rewarm_cache_key = _rewarm_cache_key
 
 
 def safe_read_csv(filename: str, default_data: Optional[List[Dict]] = None) -> pd.DataFrame:
@@ -1216,6 +1221,50 @@ def get_all_versions() -> list[dict]:
     ]
 
 
+# --- Snapshot plot cache keys (#166) ----------------------------------------
+# Snapshot ("latest_*") plots used to cache under a bare name such as
+# 'latest_entity_counts', which every ?version= render overwrote, so a download
+# could return a different version than the one its filename named. They are now
+# cached only as '<plot>_<YYYY-MM-DD>', with the version resolved before anything
+# is computed, and every reader resolves the same way.
+
+_VERSIONED_KEY_RE = re.compile(r'_(\d{4}-\d{2}-\d{2}|latest)$')
+
+
+def resolve_version(version: Optional[str] = None) -> Optional[str]:
+    """The concrete version a request refers to: ``version``, else the latest.
+
+    Returns None only when no version is known (endpoint never answered).
+    """
+    if version:
+        return version
+    latest = get_latest_version()
+    return None if latest == "Unknown" else latest
+
+
+def plot_cache_key(plot_name: str, version: Optional[str] = None) -> str:
+    """Cache key for ``plot_name`` at ``version`` (default: the latest).
+
+    Only snapshot plots (``latest_*``) are per version; trend plots and keys
+    that already end in a version are returned unchanged.
+    """
+    if not plot_name.startswith('latest_') or _VERSIONED_KEY_RE.search(plot_name):
+        return plot_name
+    return f"{plot_name}_{resolve_version(version) or 'latest'}"
+
+
+def resolves_version(func):
+    """Decorator for snapshot plot functions: ``version=None`` becomes the latest.
+
+    The plot then queries one explicit graph and caches under that date, so the
+    "latest" render and an explicit render of the same version share a key.
+    """
+    @functools.wraps(func)
+    def wrapper(version: Optional[str] = None, *args, **kwargs):
+        return func(resolve_version(version), *args, **kwargs)
+    return wrapper
+
+
 # SPARQL class URIs for the four headline entity types tracked across versions
 # (also used by the entity birth/death helper below).
 ENTITY_TYPE_CLASSES: Dict[str, str] = {
@@ -1411,6 +1460,9 @@ def build_export_filename(plot_name: str, format: str, version: str = None) -> s
     """
     from datetime import datetime
     date_str = datetime.now().strftime('%Y-%m-%d')
+    if plot_name.startswith('latest_'):
+        # Name the version that is actually exported, also when none was asked for (#166).
+        version = resolve_version(version)
     clean_name = plot_name.replace('_', '-')
 
     if version:
@@ -1425,6 +1477,7 @@ def export_figure_as_image(
     height: Optional[int] = None,
     start: Optional[str] = None,
     end: Optional[str] = None,
+    version: Optional[str] = None,
 ) -> Optional[bytes]:
     """Export a cached Plotly figure as PNG or SVG image.
 
@@ -1440,6 +1493,8 @@ def export_figure_as_image(
         start: Optional YYYY-MM-DD lower bound for the snapshot range (#44).
             Applied as an x-axis clamp on snapshot-keyed trend plots.
         end: Optional YYYY-MM-DD upper bound for the snapshot range (#44).
+        version: Snapshot version for a ``latest_*`` plot (default: the latest);
+            ignored for trend plots (#166).
 
     Returns:
         bytes: Image data as bytes, or None if export fails
@@ -1450,6 +1505,7 @@ def export_figure_as_image(
         ...     with open('plot.png', 'wb') as f:
         ...         f.write(image_bytes)
     """
+    plot_name = plot_cache_key(plot_name, version)
     try:
         if plot_name not in _plot_figure_cache:
             # May simply be a plot this worker never rendered — recompute once.
@@ -1751,6 +1807,7 @@ def get_csv_with_metadata(
     include_metadata: bool = True,
     start: Optional[str] = None,
     end: Optional[str] = None,
+    version: Optional[str] = None,
 ) -> Optional[str]:
     """Generate CSV string with optional metadata headers.
 
@@ -1761,6 +1818,8 @@ def get_csv_with_metadata(
             version column (#44). Rows are filtered against a `version` or
             `Version` column; plots without one are returned unfiltered.
         end: Optional YYYY-MM-DD upper bound (inclusive).
+        version: Snapshot version for a ``latest_*`` plot (default: the latest);
+            ignored for trend plots (#166).
 
     Returns:
         str: CSV string with optional metadata, or None if data not found
@@ -1772,6 +1831,7 @@ def get_csv_with_metadata(
         # Plot: latest_entity_counts
         ...
     """
+    plot_name = plot_cache_key(plot_name, version)
     try:
         if plot_name not in _plot_data_cache:
             # May simply be a plot this worker never rendered — recompute once.
