@@ -1,0 +1,29 @@
+version: 2
+updates:
+  # requirements.txt is a pip-compile lock of requirements.in, compiled for the
+  # Python in .python-version (the Docker base image's). Dependabot recompiles it.
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      python-deps:
+        patterns: ["*"]
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
+
+  # The Python base image only; the Virtuoso image is digest-pinned on purpose (#58).
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: monthly
+    ignore:
+      - dependency-name: python
+        update-types: [version-update:semver-major, version-update:semver-minor]
