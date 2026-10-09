@@ -75,6 +75,10 @@ services:
       # container recreates. TTL inputs live in the data/ subdirectory, keeping
       # the /database/data path inside the container unchanged. See issue #57.
       - /mnt/gluster/docker/aopwiki-dashboard/virtuoso-data:/database
+    # Virtuoso checkpoints on SIGINT. Docker's default 10s grace period ends in a
+    # SIGKILL that can land mid-checkpoint; on 2026-10-09 that left virtuoso.db
+    # truncated and the service crash-looping until restored from backup (#199).
+    stop_grace_period: 300s
     deploy:
       # `any`, not `on-failure`: a clean SIGINT stop exits 0, which on-failure
       # never restarts.
