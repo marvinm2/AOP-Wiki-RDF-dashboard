@@ -58,6 +58,7 @@ import logging
 from functools import reduce
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from .shared import (
+    SparqlUnavailable,
     BRAND_COLORS, config, _plot_data_cache, _plot_figure_cache,
     run_sparql_query, run_sparql_query_with_retry, extract_counts,
     safe_read_csv, create_fallback_plot, get_properties_for_entity,
@@ -369,6 +370,8 @@ def plot_entity_birth_death() -> tuple[str, pd.DataFrame]:
                     per_type_dfs.append(fut.result())
                 except Exception as e:
                     logger.error(f"Birth/death diff failed for {entity_type}: {e}")
+                    # A failed query must fail the whole plot, not leave a partial one to be cached (#167).
+                    raise SparqlUnavailable(f"{type(e).__name__}: {e}") from e
 
         if not per_type_dfs:
             return (
@@ -488,6 +491,8 @@ def plot_entity_cumulative_removed() -> tuple[str, pd.DataFrame]:
                 except Exception as e:
                     logger.error(f"Cumulative-removed fetch failed for {entity_type}: {e}")
                     per_type_uris[entity_type] = {v: set() for v in versions}
+                    # A failed query must fail the whole plot, not leave a partial one to be cached (#167).
+                    raise SparqlUnavailable(f"{type(e).__name__}: {e}") from e
 
         rows = []
         for entity_type in ENTITY_TYPE_CLASSES:
@@ -1549,6 +1554,8 @@ def plot_ke_components() -> tuple[str, str]:
                         data.append(result)
                 except Exception as e:
                     logger.warning(f"KE components query timed out for version {version_str}: {e}")
+                    # A failed query must fail the whole plot, not leave a partial one to be cached (#167).
+                    raise SparqlUnavailable(f"{type(e).__name__}: {e}") from e
 
         if not data:
             logger.warning("KE components query returned no results")
@@ -1728,6 +1735,8 @@ def plot_ke_components_percentage() -> tuple[str, str]:
                         data.append(result)
                 except Exception as e:
                     logger.warning(f"KE components percentage query timed out for version {version_str}: {e}")
+                    # A failed query must fail the whole plot, not leave a partial one to be cached (#167).
+                    raise SparqlUnavailable(f"{type(e).__name__}: {e}") from e
 
         if not data:
             logger.warning("KE components percentage query returned no results")
@@ -1862,6 +1871,8 @@ def plot_unique_ke_components() -> tuple[str, str]:
                         data.append(result)
                 except Exception as e:
                     logger.warning(f"Unique KE components query timed out for version {version_str}: {e}")
+                    # A failed query must fail the whole plot, not leave a partial one to be cached (#167).
+                    raise SparqlUnavailable(f"{type(e).__name__}: {e}") from e
 
         if not data:
             logger.warning("Unique KE components query returned no results")
@@ -2963,6 +2974,8 @@ def plot_entity_completeness_trends(label_file="property_labels.csv") -> str:
                 logger.info(f"All properties for {entity_type} are 100% present, skipping completeness calculation")
                 continue
 
+        except SparqlUnavailable:
+            raise
         except Exception as e:
             logger.warning(f"Error filtering 100% properties for {entity_type}: {str(e)}, proceeding with all properties")
             total_properties = len(applicable_uris)
@@ -3016,7 +3029,8 @@ def plot_entity_completeness_trends(label_file="property_labels.csv") -> str:
 
         except Exception as e:
             logger.error(f"Error querying completeness for {entity_type}: {str(e)}")
-            continue
+            # A failed query must fail the whole plot, not leave a partial one to be cached (#167).
+            raise SparqlUnavailable(f"{type(e).__name__}: {e}") from e
 
     if not all_completeness_data:
         return create_fallback_plot("Entity Completeness Trends", "No completeness data available")
@@ -3162,7 +3176,8 @@ def _query_boxplot_version(version_info, aop_props, ke_props, ker_props, all_pro
         }
     except Exception as e:
         logger.warning(f"Boxplot query failed for version {version_str}: {e}")
-        return None
+        # A failed query must fail the whole plot, not leave a partial one to be cached (#167).
+        raise SparqlUnavailable(f"{type(e).__name__}: {e}") from e
 
 
 def _query_boxplot_entity_props(version_info, aop_props, ke_props, ker_props,
@@ -3253,7 +3268,8 @@ def _query_boxplot_entity_props(version_info, aop_props, ke_props, ker_props,
         }
     except Exception as e:
         logger.warning(f"Boxplot entity props query failed for version {version_str}: {e}")
-        return None
+        # A failed query must fail the whole plot, not leave a partial one to be cached (#167).
+        raise SparqlUnavailable(f"{type(e).__name__}: {e}") from e
 
 
 def plot_aop_completeness_boxplot(label_file="property_labels.csv") -> tuple[str, str]:
@@ -3334,6 +3350,8 @@ def plot_aop_completeness_boxplot(label_file="property_labels.csv") -> tuple[str
                         version_data.append(result)
                 except Exception as e:
                     logger.warning(f"Boxplot presence query timed out for version {version_str}: {e}")
+                    # A failed query must fail the whole plot, not leave a partial one to be cached (#167).
+                    raise SparqlUnavailable(f"{type(e).__name__}: {e}") from e
 
         # Build totals map from per-version results: {version: {entity_type: total}}
         totals_map = {}
@@ -3385,6 +3403,8 @@ def plot_aop_completeness_boxplot(label_file="property_labels.csv") -> tuple[str
         ke_prop_count = len(ke_props)
         ker_prop_count = len(ker_props)
 
+    except SparqlUnavailable:
+        raise
     except Exception as e:
         logger.warning(f"Error filtering 100% properties: {str(e)}")
         # Fall back to using all properties
@@ -3434,6 +3454,8 @@ def plot_aop_completeness_boxplot(label_file="property_labels.csv") -> tuple[str
                         cohort_data.append(result)
                 except Exception as e:
                     logger.warning(f"Boxplot entity query timed out for version {version_str} ({label}): {e}")
+                    # A failed query must fail the whole plot, not leave a partial one to be cached (#167).
+                    raise SparqlUnavailable(f"{type(e).__name__}: {e}") from e
 
         if not cohort_data:
             return None
@@ -3643,7 +3665,8 @@ def plot_oecd_completeness_trend(label_file="property_labels.csv") -> str:
                 return version_data
             except Exception as e:
                 logger.warning(f"OECD completeness query failed for version {version_str}: {e}")
-                return []
+                # A failed query must fail the whole plot, not leave a partial one to be cached (#167).
+                raise SparqlUnavailable(f"{type(e).__name__}: {e}") from e
 
         # Query versions in parallel (4 workers to avoid overloading endpoint)
         all_data = []
@@ -3659,6 +3682,8 @@ def plot_oecd_completeness_trend(label_file="property_labels.csv") -> str:
                     all_data.extend(result)
                 except Exception as e:
                     logger.warning(f"OECD completeness query timed out for version {version_str}: {e}")
+                    # A failed query must fail the whole plot, not leave a partial one to be cached (#167).
+                    raise SparqlUnavailable(f"{type(e).__name__}: {e}") from e
 
         if not all_data:
             return create_fallback_plot("OECD Completeness Trend", "No completeness data available")
@@ -4123,6 +4148,8 @@ def plot_ontology_term_growth() -> tuple[str, str, pd.DataFrame]:
                 except Exception as e:
                     ver = futures[future]
                     logger.warning(f"Ontology term growth query failed for {ver['version']}: {e}")
+                    # A failed query must fail the whole plot, not leave a partial one to be cached (#167).
+                    raise SparqlUnavailable(f"{type(e).__name__}: {e}") from e
 
         if not rows:
             fallback = create_fallback_plot("Ontology Term Growth", "No data collected")
@@ -4273,7 +4300,8 @@ def plot_organ_coverage_trends() -> tuple[str, str, pd.DataFrame]:
                 total_aops = _query_aop_total(graph_uri)
             except Exception as exc:
                 logger.warning(f"Organ-coverage query failed for {version}: {exc}")
-                return None
+                # A failed query must fail the whole plot, not leave a partial one to be cached (#167).
+                raise SparqlUnavailable(f"{type(exc).__name__}: {exc}") from exc
 
             seen_per_bucket: dict[str, set] = {b: set() for b in ORGAN_SYSTEM_BUCKETS}
             classified_aops: set = set()
