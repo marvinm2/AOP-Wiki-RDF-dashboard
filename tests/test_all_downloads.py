@@ -14,19 +14,15 @@ Two ways to run it:
 * ``pytest tests/test_all_downloads.py -m slow`` — same checks as parametrized
   ``@pytest.mark.slow`` tests for CI (gated behind the live endpoint).
 
-Cache-key model this audit relies on (see ``plots/latest_plots.py`` and
-``plots/shared.py``):
+Cache-key model this audit relies on (see ``plots/shared.py``, #166):
 
 * Trend plots write **bare** data/figure cache keys at startup
   (``aop_network_density`` etc.), downloadable via ``/download/trend/<key>``.
-* Most ``latest_*`` plots write a **bare** key that is overwritten per requested
-  version (the ``?version=`` arg then only affects the filename, not selection).
-* Five ``latest_*`` plots write a **version-suffixed key only** — no bare alias:
-  ``latest_ke_by_bio_level``, ``latest_taxonomic_groups``,
-  ``latest_entity_by_oecd_status``, ``latest_ke_reuse``,
-  ``latest_ke_reuse_distribution``. They are *not* precomputed at startup, so a
-  download must be preceded by a view (``/api/plot/<name>?version=``) carrying the
-  same version — which is what the version selector does.
+* Every ``latest_*`` plot writes **only** a per-version key,
+  ``<plot>_<YYYY-MM-DD>``; a request without ``?version=`` means the latest
+  version, resolved before anything is computed. Downloads look up exactly that
+  key, and recompute it if the worker hasn't rendered it, so a download always
+  carries the version its filename names.
 
 Author:
     Marvin Martens

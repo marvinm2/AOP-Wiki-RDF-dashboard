@@ -126,6 +126,10 @@ from .shared import (
     export_figure_as_image,
     get_csv_with_metadata,
     register_cache_rewarm,
+    rewarm_cache_key,
+    plot_cache_key,
+    resolve_version,
+    resolves_version,
     create_bulk_download,
 
     # Cache class
@@ -289,6 +293,10 @@ __all__ = [
     'export_figure_as_image',
     'get_csv_with_metadata',
     'register_cache_rewarm',
+    'rewarm_cache_key',
+    'plot_cache_key',
+    'resolve_version',
+    'resolves_version',
     'create_bulk_download',
     'BRAND_COLORS',
     'PLOTLY_HTML_CONFIG',

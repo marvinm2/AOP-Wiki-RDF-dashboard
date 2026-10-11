@@ -150,6 +150,8 @@ from plots import (
     build_export_filename,
     export_figure_as_image,
     register_cache_rewarm,
+    plot_cache_key,
+    rewarm_cache_key,
     get_csv_with_metadata,
     create_bulk_download,
     get_or_compute_network
@@ -856,7 +858,7 @@ def download_latest_entity_counts():
 
     try:
         if export_format == 'csv':
-            csv_data = get_csv_with_metadata(plot_name, include_metadata)
+            csv_data = get_csv_with_metadata(plot_name, include_metadata, version=request.args.get("version"))
             if not csv_data:
                 return "No data available for download", 404
 
@@ -867,7 +869,7 @@ def download_latest_entity_counts():
             )
 
         elif export_format in ['png', 'svg']:
-            image_bytes = export_figure_as_image(plot_name, export_format)
+            image_bytes = export_figure_as_image(plot_name, export_format, version=request.args.get("version"))
             if not image_bytes:
                 return "No figure available for export", 404
 
@@ -894,7 +896,7 @@ def download_latest_ke_components():
 
     try:
         if export_format == 'csv':
-            csv_data = get_csv_with_metadata(plot_name, include_metadata)
+            csv_data = get_csv_with_metadata(plot_name, include_metadata, version=request.args.get("version"))
             if not csv_data:
                 return "No data available for download", 404
 
@@ -905,7 +907,7 @@ def download_latest_ke_components():
             )
 
         elif export_format in ['png', 'svg']:
-            image_bytes = export_figure_as_image(plot_name, export_format)
+            image_bytes = export_figure_as_image(plot_name, export_format, version=request.args.get("version"))
             if not image_bytes:
                 return "No figure available for export", 404
 
@@ -932,7 +934,7 @@ def download_latest_network_density():
 
     try:
         if export_format == 'csv':
-            csv_data = get_csv_with_metadata(plot_name, include_metadata)
+            csv_data = get_csv_with_metadata(plot_name, include_metadata, version=request.args.get("version"))
             if not csv_data:
                 return "No data available for download", 404
 
@@ -943,7 +945,7 @@ def download_latest_network_density():
             )
 
         elif export_format in ['png', 'svg']:
-            image_bytes = export_figure_as_image(plot_name, export_format)
+            image_bytes = export_figure_as_image(plot_name, export_format, version=request.args.get("version"))
             if not image_bytes:
                 return "No figure available for export", 404
 
@@ -970,7 +972,7 @@ def download_latest_avg_per_aop():
 
     try:
         if export_format == 'csv':
-            csv_data = get_csv_with_metadata(plot_name, include_metadata)
+            csv_data = get_csv_with_metadata(plot_name, include_metadata, version=request.args.get("version"))
             if not csv_data:
                 return "No data available for download", 404
 
@@ -981,7 +983,7 @@ def download_latest_avg_per_aop():
             )
 
         elif export_format in ['png', 'svg']:
-            image_bytes = export_figure_as_image(plot_name, export_format)
+            image_bytes = export_figure_as_image(plot_name, export_format, version=request.args.get("version"))
             if not image_bytes:
                 return "No figure available for export", 404
 
@@ -1008,7 +1010,7 @@ def download_latest_process_usage():
 
     try:
         if export_format == 'csv':
-            csv_data = get_csv_with_metadata(plot_name, include_metadata)
+            csv_data = get_csv_with_metadata(plot_name, include_metadata, version=request.args.get("version"))
             if not csv_data:
                 return "No data available for download", 404
 
@@ -1019,7 +1021,7 @@ def download_latest_process_usage():
             )
 
         elif export_format in ['png', 'svg']:
-            image_bytes = export_figure_as_image(plot_name, export_format)
+            image_bytes = export_figure_as_image(plot_name, export_format, version=request.args.get("version"))
             if not image_bytes:
                 return "No figure available for export", 404
 
@@ -1046,7 +1048,7 @@ def download_latest_object_usage():
 
     try:
         if export_format == 'csv':
-            csv_data = get_csv_with_metadata(plot_name, include_metadata)
+            csv_data = get_csv_with_metadata(plot_name, include_metadata, version=request.args.get("version"))
             if not csv_data:
                 return "No data available for download", 404
 
@@ -1057,7 +1059,7 @@ def download_latest_object_usage():
             )
 
         elif export_format in ['png', 'svg']:
-            image_bytes = export_figure_as_image(plot_name, export_format)
+            image_bytes = export_figure_as_image(plot_name, export_format, version=request.args.get("version"))
             if not image_bytes:
                 return "No figure available for export", 404
 
@@ -1084,7 +1086,7 @@ def download_latest_aop_completeness():
 
     try:
         if export_format == 'csv':
-            csv_data = get_csv_with_metadata(plot_name, include_metadata)
+            csv_data = get_csv_with_metadata(plot_name, include_metadata, version=request.args.get("version"))
             if not csv_data:
                 return "No data available for download", 404
 
@@ -1095,7 +1097,7 @@ def download_latest_aop_completeness():
             )
 
         elif export_format in ['png', 'svg']:
-            image_bytes = export_figure_as_image(plot_name, export_format)
+            image_bytes = export_figure_as_image(plot_name, export_format, version=request.args.get("version"))
             if not image_bytes:
                 return "No figure available for export", 404
 
@@ -1122,7 +1124,7 @@ def download_latest_aop_completeness_by_status():
 
     try:
         if export_format == 'csv':
-            csv_data = get_csv_with_metadata(plot_name, include_metadata)
+            csv_data = get_csv_with_metadata(plot_name, include_metadata, version=request.args.get("version"))
             if not csv_data:
                 return "No data available for download", 404
 
@@ -1133,7 +1135,7 @@ def download_latest_aop_completeness_by_status():
             )
 
         elif export_format in ['png', 'svg']:
-            image_bytes = export_figure_as_image(plot_name, export_format)
+            image_bytes = export_figure_as_image(plot_name, export_format, version=request.args.get("version"))
             if not image_bytes:
                 return "No figure available for export", 404
 
@@ -1160,7 +1162,7 @@ def download_latest_ke_completeness_by_status():
 
     try:
         if export_format == 'csv':
-            csv_data = get_csv_with_metadata(plot_name, include_metadata)
+            csv_data = get_csv_with_metadata(plot_name, include_metadata, version=request.args.get("version"))
             if not csv_data:
                 return "No data available for download", 404
 
@@ -1171,7 +1173,7 @@ def download_latest_ke_completeness_by_status():
             )
 
         elif export_format in ['png', 'svg']:
-            image_bytes = export_figure_as_image(plot_name, export_format)
+            image_bytes = export_figure_as_image(plot_name, export_format, version=request.args.get("version"))
             if not image_bytes:
                 return "No figure available for export", 404
 
@@ -1198,7 +1200,7 @@ def download_latest_ker_completeness_by_status():
 
     try:
         if export_format == 'csv':
-            csv_data = get_csv_with_metadata(plot_name, include_metadata)
+            csv_data = get_csv_with_metadata(plot_name, include_metadata, version=request.args.get("version"))
             if not csv_data:
                 return "No data available for download", 404
 
@@ -1209,7 +1211,7 @@ def download_latest_ker_completeness_by_status():
             )
 
         elif export_format in ['png', 'svg']:
-            image_bytes = export_figure_as_image(plot_name, export_format)
+            image_bytes = export_figure_as_image(plot_name, export_format, version=request.args.get("version"))
             if not image_bytes:
                 return "No figure available for export", 404
 
@@ -1236,7 +1238,7 @@ def download_ke_property_presence_absolute():
 
     try:
         if export_format == 'csv':
-            csv_data = get_csv_with_metadata(plot_name, include_metadata)
+            csv_data = get_csv_with_metadata(plot_name, include_metadata, version=request.args.get("version"))
             if not csv_data:
                 return "No data available for download", 404
 
@@ -1247,7 +1249,7 @@ def download_ke_property_presence_absolute():
             )
 
         elif export_format in ['png', 'svg']:
-            image_bytes = export_figure_as_image(plot_name, export_format)
+            image_bytes = export_figure_as_image(plot_name, export_format, version=request.args.get("version"))
             if not image_bytes:
                 return "No figure available for export", 404
 
@@ -1274,7 +1276,7 @@ def download_ke_property_presence_percentage():
 
     try:
         if export_format == 'csv':
-            csv_data = get_csv_with_metadata(plot_name, include_metadata)
+            csv_data = get_csv_with_metadata(plot_name, include_metadata, version=request.args.get("version"))
             if not csv_data:
                 return "No data available for download", 404
 
@@ -1285,7 +1287,7 @@ def download_ke_property_presence_percentage():
             )
 
         elif export_format in ['png', 'svg']:
-            image_bytes = export_figure_as_image(plot_name, export_format)
+            image_bytes = export_figure_as_image(plot_name, export_format, version=request.args.get("version"))
             if not image_bytes:
                 return "No figure available for export", 404
 
@@ -1312,7 +1314,7 @@ def download_ker_property_presence_absolute():
 
     try:
         if export_format == 'csv':
-            csv_data = get_csv_with_metadata(plot_name, include_metadata)
+            csv_data = get_csv_with_metadata(plot_name, include_metadata, version=request.args.get("version"))
             if not csv_data:
                 return "No data available for download", 404
 
@@ -1323,7 +1325,7 @@ def download_ker_property_presence_absolute():
             )
 
         elif export_format in ['png', 'svg']:
-            image_bytes = export_figure_as_image(plot_name, export_format)
+            image_bytes = export_figure_as_image(plot_name, export_format, version=request.args.get("version"))
             if not image_bytes:
                 return "No figure available for export", 404
 
@@ -1350,7 +1352,7 @@ def download_ker_property_presence_percentage():
 
     try:
         if export_format == 'csv':
-            csv_data = get_csv_with_metadata(plot_name, include_metadata)
+            csv_data = get_csv_with_metadata(plot_name, include_metadata, version=request.args.get("version"))
             if not csv_data:
                 return "No data available for download", 404
 
@@ -1361,7 +1363,7 @@ def download_ker_property_presence_percentage():
             )
 
         elif export_format in ['png', 'svg']:
-            image_bytes = export_figure_as_image(plot_name, export_format)
+            image_bytes = export_figure_as_image(plot_name, export_format, version=request.args.get("version"))
             if not image_bytes:
                 return "No figure available for export", 404
 
@@ -1388,7 +1390,7 @@ def download_stressor_property_presence_absolute():
 
     try:
         if export_format == 'csv':
-            csv_data = get_csv_with_metadata(plot_name, include_metadata)
+            csv_data = get_csv_with_metadata(plot_name, include_metadata, version=request.args.get("version"))
             if not csv_data:
                 return "No data available for download", 404
 
@@ -1399,7 +1401,7 @@ def download_stressor_property_presence_absolute():
             )
 
         elif export_format in ['png', 'svg']:
-            image_bytes = export_figure_as_image(plot_name, export_format)
+            image_bytes = export_figure_as_image(plot_name, export_format, version=request.args.get("version"))
             if not image_bytes:
                 return "No figure available for export", 404
 
@@ -1426,7 +1428,7 @@ def download_stressor_property_presence_percentage():
 
     try:
         if export_format == 'csv':
-            csv_data = get_csv_with_metadata(plot_name, include_metadata)
+            csv_data = get_csv_with_metadata(plot_name, include_metadata, version=request.args.get("version"))
             if not csv_data:
                 return "No data available for download", 404
 
@@ -1437,7 +1439,7 @@ def download_stressor_property_presence_percentage():
             )
 
         elif export_format in ['png', 'svg']:
-            image_bytes = export_figure_as_image(plot_name, export_format)
+            image_bytes = export_figure_as_image(plot_name, export_format, version=request.args.get("version"))
             if not image_bytes:
                 return "No figure available for export", 404
 
@@ -1464,7 +1466,7 @@ def download_latest_ke_annotation_depth():
 
     try:
         if export_format == 'csv':
-            csv_data = get_csv_with_metadata(plot_name, include_metadata)
+            csv_data = get_csv_with_metadata(plot_name, include_metadata, version=request.args.get("version"))
             if not csv_data:
                 return "No data available for download", 404
 
@@ -1475,7 +1477,7 @@ def download_latest_ke_annotation_depth():
             )
 
         elif export_format in ['png', 'svg']:
-            image_bytes = export_figure_as_image(plot_name, export_format)
+            image_bytes = export_figure_as_image(plot_name, export_format, version=request.args.get("version"))
             if not image_bytes:
                 return "No figure available for export", 404
 
@@ -1506,28 +1508,15 @@ def download_latest_generic(plot_name):
     export_format = request.args.get('format', 'csv').lower()
     include_metadata = request.args.get('metadata', 'true').lower() == 'true'
     version = request.args.get('version')
-    version_key = version or "latest"
-    canonical_key = f'latest_{plot_name}_{version_key}'
-    cache_key = canonical_key
-
-    # Fallback: try without version suffix. If nothing at all is cached, keep the
-    # canonical key rather than degrading to the bare plot name — a bare key
-    # carries no version and no `latest_` prefix, so the export's rewarm hook
-    # can't map it back to a plot function, which is precisely the cold-worker
-    # case this fallback chain is reached in (#148).
-    if cache_key not in _plot_data_cache:
-        cache_key = next(
-            (alt for alt in (f'latest_{plot_name}', plot_name) if alt in _plot_data_cache),
-            canonical_key,
-        )
-
-    # Filename uses the clean base name (not the resolved cache key), so the
-    # version_key suffix doesn't leak in as a doubled "-latest".
-    filename_base = f'latest_{plot_name}'
+    # The export helpers resolve this to the per-version cache key (#166), and
+    # recompute it if this worker hasn't rendered that version (#148). There is
+    # no fallback to another version's data.
+    cache_key = f'latest_{plot_name}'
+    filename_base = cache_key
 
     try:
         if export_format == 'csv':
-            csv_data = get_csv_with_metadata(cache_key, include_metadata)
+            csv_data = get_csv_with_metadata(cache_key, include_metadata, version=version)
             if not csv_data:
                 return "No data available for download", 404
 
@@ -1538,7 +1527,7 @@ def download_latest_generic(plot_name):
             )
 
         elif export_format in ['png', 'svg']:
-            image_bytes = export_figure_as_image(cache_key, export_format)
+            image_bytes = export_figure_as_image(cache_key, export_format, version=version)
             if not image_bytes:
                 return "No figure available for export", 404
 
@@ -1565,7 +1554,7 @@ def download_main_graph_absolute():
 
     try:
         if export_format == 'csv':
-            csv_data = get_csv_with_metadata(plot_name, include_metadata)
+            csv_data = get_csv_with_metadata(plot_name, include_metadata, version=request.args.get("version"))
             if not csv_data:
                 return "No data available for download", 404
 
@@ -1576,7 +1565,7 @@ def download_main_graph_absolute():
             )
 
         elif export_format in ['png', 'svg']:
-            image_bytes = export_figure_as_image(plot_name, export_format)
+            image_bytes = export_figure_as_image(plot_name, export_format, version=request.args.get("version"))
             if not image_bytes:
                 return "No figure available for export", 404
 
@@ -1603,7 +1592,7 @@ def download_main_graph_delta():
 
     try:
         if export_format == 'csv':
-            csv_data = get_csv_with_metadata(plot_name, include_metadata)
+            csv_data = get_csv_with_metadata(plot_name, include_metadata, version=request.args.get("version"))
             if not csv_data:
                 return "No data available for download", 404
 
@@ -1614,7 +1603,7 @@ def download_main_graph_delta():
             )
 
         elif export_format in ['png', 'svg']:
-            image_bytes = export_figure_as_image(plot_name, export_format)
+            image_bytes = export_figure_as_image(plot_name, export_format, version=request.args.get("version"))
             if not image_bytes:
                 return "No figure available for export", 404
 
@@ -1700,12 +1689,12 @@ def download_generic(plot_name):
     start = request.args.get('start')
     end = request.args.get('end')
 
-    csv_key = plot_name if plot_name in _plot_data_cache else f"{plot_name}_{version or 'latest'}"
-    fig_key = plot_name if plot_name in _plot_figure_cache else f"{plot_name}_{version or 'latest'}"
+    # Snapshot plots resolve to their per-version key inside the export helpers (#166).
+    csv_key = fig_key = plot_name
 
     try:
         if export_format == 'csv':
-            csv_data = get_csv_with_metadata(csv_key, include_metadata, start=start, end=end)
+            csv_data = get_csv_with_metadata(csv_key, include_metadata, start=start, end=end, version=version)
             if not csv_data:
                 return "No data available for download", 404
             return Response(
@@ -1715,7 +1704,7 @@ def download_generic(plot_name):
             )
 
         if export_format in ('png', 'svg'):
-            image_bytes = export_figure_as_image(fig_key, export_format, start=start, end=end)
+            image_bytes = export_figure_as_image(fig_key, export_format, start=start, end=end, version=version)
             if not image_bytes:
                 return "No figure available for export", 404
             return Response(
@@ -2000,15 +1989,10 @@ def api_plot_data(plot_name):
     version = request.args.get('version', None)
     max_rows = 100
 
-    # Determine cache key
-    if plot_name.startswith('latest_') and version:
-        cache_key = f"{plot_name}_{version}"
-        if cache_key not in _plot_data_cache:
-            cache_key = plot_name
-    else:
-        cache_key = plot_name
-
-    if cache_key not in _plot_data_cache:
+    # Per-version key for snapshot plots, no fallback to another version (#166);
+    # recompute if this worker hasn't rendered it yet (#148).
+    cache_key = plot_cache_key(plot_name, version)
+    if cache_key not in _plot_data_cache and not rewarm_cache_key(_plot_data_cache, cache_key):
         return jsonify({'error': 'No data available', 'success': False}), 404
 
     try:
@@ -2200,7 +2184,7 @@ def landing():
     latest_version = _latest_version or "Unknown"
 
     def _counts_from_cache():
-        cached_df = _plot_data_cache.get('latest_entity_counts')
+        cached_df = _plot_data_cache.get(plot_cache_key('latest_entity_counts', _latest_version))
         if cached_df is not None and hasattr(cached_df, 'empty') and not cached_df.empty:
             try:
                 return dict(zip(cached_df['Entity'], cached_df['Count']))
@@ -2217,7 +2201,7 @@ def landing():
         # swallows errors, so a still-down endpoint just leaves counts hidden
         # rather than erroring the page.
         try:
-            safe_plot_execution(plot_latest_entity_counts)
+            safe_plot_execution(plot_latest_entity_counts, _latest_version)
             entity_counts = _counts_from_cache()
         except Exception:
             logger.warning("Landing: on-demand entity_counts recompute failed", exc_info=True)
