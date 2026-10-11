@@ -51,7 +51,7 @@
         <span class="version-banner-text">
             Viewing historical version: <strong class="version-name"></strong>
         </span>
-        <button class="version-banner-reset" onclick="document.getElementById('version-selector').value = ''; document.getElementById('version-selector').dispatchEvent(new Event('change'));">
+        <button class="version-banner-reset" onclick="window.resetToCurrentVersion && window.resetToCurrentVersion();">
             Return to Current Version
         </button>
     </div>
@@ -942,6 +942,10 @@
 {% endblock %}
 
 {% block scripts_extra %}
+<script>
+// Snapshot plots that take ?version= (from LATEST_PLOT_FUNCTIONS, #171).
+window.VERSIONED_PLOTS = {{ versioned_plots|tojson }};
+</script>
 <script src="{{ url_for('static', filename='js/version-selector.js') }}"></script>
 <script src="{{ url_for('static', filename='js/coverage-toggle.js') }}"></script>
 <script src="{{ url_for('static', filename='js/raw-data-tables.js') }}"></script>
@@ -965,13 +969,13 @@
 
     var keReusePlot = document.getElementById('ke-reuse-plot');
     if (keReusePlot) {
-        var observer = new MutationObserver(function(mutations) {
-            for (var i = 0; i < mutations.length; i++) {
-                if (keReusePlot.querySelector('.plotly-graph-div, .js-plotly-plot')) {
-                    attachKeReuseClickHandler(keReusePlot);
-                    observer.disconnect();
-                    break;
-                }
+        // Keep watching: every version switch replaces the plot, and the new
+        // one needs its own handler (#171).
+        var observer = new MutationObserver(function() {
+            var plotlyDiv = keReusePlot.querySelector('.plotly-graph-div, .js-plotly-plot');
+            if (plotlyDiv && typeof plotlyDiv.on === 'function' && !plotlyDiv.dataset.keReuseClick) {
+                plotlyDiv.dataset.keReuseClick = '1';
+                attachKeReuseClickHandler(keReusePlot);
             }
         });
         observer.observe(keReusePlot, { childList: true, subtree: true });

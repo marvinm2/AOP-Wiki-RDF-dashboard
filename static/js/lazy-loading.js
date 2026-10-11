@@ -132,18 +132,9 @@ class PlotLazyLoader {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), PlotLazyLoader.LOAD_TIMEOUT_MS);
 
+        const url = PlotLazyLoader.plotUrl(element);
+
         try {
-            // Forward any data-* attributes that map to plot kwargs (scope,
-            // view, branch, domain). Lets the coverage toggles and the branch /
-            // domain selectors drive the initial render via markup alone, and
-            // keeps a re-lazy-loaded plot on the selection the user made.
-            const params = new URLSearchParams();
-            if (element.dataset.scope) params.set('scope', element.dataset.scope);
-            if (element.dataset.view) params.set('view', element.dataset.view);
-            if (element.dataset.branch) params.set('branch', element.dataset.branch);
-            if (element.dataset.domain) params.set('domain', element.dataset.domain);
-            const qs = params.toString();
-            const url = qs ? `/api/plot/${plotName}?${qs}` : `/api/plot/${plotName}`;
 
             // Fetch plot data
             dbg(`PlotLazyLoader: Fetching data for plot: ${plotName} (${url})`);
@@ -156,6 +147,13 @@ class PlotLazyLoader {
                 hasHtml: !!data.html,
                 htmlLength: data.html?.length || 0
             });
+
+            // The version or a plot setting changed while this was in flight;
+            // the request for the current selection renders instead (#171).
+            if (PlotLazyLoader.plotUrl(element) !== url) {
+                dbg(`PlotLazyLoader: Discarding stale response for ${plotName} (${url})`);
+                return;
+            }
 
             if (data.success) {
                 // Replace skeleton with actual plot
@@ -221,7 +219,59 @@ class PlotLazyLoader {
         } finally {
             clearTimeout(timeoutId);
             this.loadingPlots.delete(plotName);
+            // A reload was requested while this request was queued or in
+            // flight, for a selection it didn't cover: run it now.
+            if (element.dataset.reloadPending) {
+                delete element.dataset.reloadPending;
+                if (PlotLazyLoader.plotUrl(element) !== url) this.reload(element);
+            }
         }
+    }
+
+    /**
+     * Re-render a plot for the current selection (version, scope, threshold,
+     * ...). Visible plots go through the request queue now; the others show a
+     * skeleton and load when scrolled into view, so switching versions never
+     * fires every plot at once (#171).
+     */
+    reload(element) {
+        const plotName = element.dataset.plotName;
+        this.loadedPlots.delete(plotName);
+        if (this.loadingPlots.has(plotName)) {
+            element.dataset.reloadPending = '1';
+            return;
+        }
+        if (this.isElementVisible(element)) {
+            this.loadPlot(element);
+        } else {
+            this.showLoadingState(element);
+            this.observer.observe(element);
+        }
+    }
+
+    /** Snapshot plots that take a ?version= (published by the page template). */
+    static isVersioned(plotName) {
+        return Array.isArray(window.VERSIONED_PLOTS) && window.VERSIONED_PLOTS.includes(plotName);
+    }
+
+    /**
+     * The one place a plot request URL is built: the selected version for
+     * versioned plots, plus any data-* plot settings on the container (coverage
+     * scope/view, overlap threshold, ontology branch, domain lens).
+     */
+    static plotUrl(element) {
+        const plotName = element.dataset.plotName;
+        const params = new URLSearchParams();
+        if (PlotLazyLoader.selectedVersion && PlotLazyLoader.isVersioned(plotName)) {
+            params.set('version', PlotLazyLoader.selectedVersion);
+        }
+        if (element.dataset.scope) params.set('scope', element.dataset.scope);
+        if (element.dataset.view) params.set('view', element.dataset.view);
+        if (element.dataset.minJaccard) params.set('min_jaccard', element.dataset.minJaccard);
+        if (element.dataset.branch) params.set('branch', element.dataset.branch);
+        if (element.dataset.domain) params.set('domain', element.dataset.domain);
+        const qs = params.toString();
+        return qs ? `/api/plot/${plotName}?${qs}` : `/api/plot/${plotName}`;
     }
 
     showLoadingState(element) {
@@ -278,6 +328,19 @@ class PlotLazyLoader {
         }
     }
 }
+
+/**
+ * Snapshot version the page shows; null means the latest. Read from the URL so a
+ * plot scrolled into view on /snapshot?version=... loads that version from the
+ * start; the version selector updates it.
+ */
+PlotLazyLoader.selectedVersion = (() => {
+    try { return new URLSearchParams(window.location.search).get('version'); } catch (e) { return null; }
+})();
+
+// A top-level class isn't a window property; the version selector and the
+// coverage toggles reach the loader's static helpers through this.
+window.PlotLazyLoader = PlotLazyLoader;
 
 /** Cap on in-flight /api/plot requests; each one runs a SPARQL query. */
 PlotLazyLoader.MAX_CONCURRENT = 4;
