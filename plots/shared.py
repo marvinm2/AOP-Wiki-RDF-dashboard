@@ -1060,7 +1060,8 @@ def create_fallback_plot(title: str, error_message: str) -> str:
         autosize=True,
         margin=dict(l=50, r=20, t=50, b=50)
     )
-    return pio.to_html(fig, full_html=False, include_plotlyjs="cdn", config=PLOTLY_HTML_CONFIG)
+    # Plotly is already on the page (vendored, #175); never pull it from a CDN.
+    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config=PLOTLY_HTML_CONFIG)
 
 
 def safe_plot_execution(plot_func, *args, **kwargs) -> Any:

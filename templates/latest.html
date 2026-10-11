@@ -3,7 +3,8 @@
 {% block title %}Database Snapshot - AOP-Wiki RDF Dashboard{% endblock %}
 
 {% block head_extra %}
-    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+    {% from 'macros/vendor.html' import vendor_script with context %}
+    {{ vendor_script('plotly-cartesian', defer=True) }}
 {% endblock %}
 
 {% block page_header %}

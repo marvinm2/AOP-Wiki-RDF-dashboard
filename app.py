@@ -66,6 +66,47 @@ app = Flask(
 )
 CORS(app)  # Wildcard CORS for VHP4Safety cross-origin access
 
+# --- Static assets (#175) ------------------------------------------------------
+# Static files are cached for a year; every url_for('static', ...) carries a hash
+# of the file's content, so a changed file gets a new URL and is fetched again.
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 31536000
+_static_hashes: dict = {}
+
+
+@app.url_defaults
+def _static_cache_buster(endpoint, values):
+    if endpoint == 'static' and 'filename' in values and 'v' not in values:
+        filename = values['filename']
+        if filename not in _static_hashes:
+            import hashlib
+            path = os.path.join(app.static_folder, filename)
+            try:
+                with open(path, 'rb') as fh:
+                    _static_hashes[filename] = hashlib.md5(fh.read()).hexdigest()[:10]
+            except OSError:
+                _static_hashes[filename] = None
+        if _static_hashes[filename]:
+            values['v'] = _static_hashes[filename]
+
+
+def _load_vendor_manifest() -> dict:
+    """Third-party JS served from static/vendor with SRI (scripts/vendor_js.py)."""
+    try:
+        with open(os.path.join(app.static_folder, 'vendor', 'manifest.json')) as fh:
+            return json.load(fh)
+    except (OSError, ValueError) as e:
+        logger.error(f"Vendor manifest unreadable: {e}")
+        return {}
+
+
+_VENDOR_MANIFEST = _load_vendor_manifest()
+
+
+@app.context_processor
+def _inject_vendor_manifest():
+    return {'vendor': _VENDOR_MANIFEST}
+
+
 # Load methodology notes for plot documentation
 methodology_notes_path = os.path.join(app.static_folder, 'data', 'methodology_notes.json')
 with open(methodology_notes_path, 'r') as f:
