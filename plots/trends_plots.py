@@ -1459,7 +1459,12 @@ def plot_aop_lifetime() -> tuple[str, str]:
         # --- Plot 2: Created vs. Modified scatter ---
         html2 = fallback_scatter
         try:
-            fig2 = px.scatter(df_lifetime, x="created", y="modified", hover_name="aop",
+            # One point per distinct (AOP, created, modified): the query returns
+            # every AOP once per version, so an AOP unchanged across 30 snapshots
+            # was drawn 30 times on one spot (13,930 points -> 3,969 at 35
+            # versions), which also made long-lived AOPs look denser (#176).
+            df_points = df_lifetime.drop_duplicates(["aop", "created", "modified"])
+            fig2 = px.scatter(df_points, x="created", y="modified", hover_name="aop",
                               labels={"created": "Created", "modified": "Modified"},
                               color_discrete_sequence=[BRAND_COLORS['blue']],
                               render_mode='svg')
