@@ -1902,6 +1902,7 @@ def create_bulk_download(
     formats: list = ['csv', 'png', 'svg'],
     start: Optional[str] = None,
     end: Optional[str] = None,
+    version: Optional[str] = None,
 ) -> Optional[bytes]:
     """Create a ZIP archive containing multiple plots in multiple formats.
 
@@ -1910,6 +1911,7 @@ def create_bulk_download(
         formats: List of formats to export ('csv', 'png', 'svg')
         start: Optional YYYY-MM-DD lower bound forwarded to each export (#44).
         end: Optional YYYY-MM-DD upper bound forwarded to each export.
+        version: Snapshot version for the ``latest_*`` plots (default: latest).
 
     Returns:
         bytes: ZIP file contents as bytes, or None if creation fails
@@ -1931,21 +1933,21 @@ def create_bulk_download(
             for plot_name in plot_names:
                 # Add CSV if requested
                 if 'csv' in formats:
-                    csv_data = get_csv_with_metadata(plot_name, include_metadata=True, start=start, end=end)
+                    csv_data = get_csv_with_metadata(plot_name, include_metadata=True, start=start, end=end, version=version)
                     if csv_data:
                         zip_file.writestr(f'{plot_name}.csv', csv_data)
                         logger.info(f"Added {plot_name}.csv to ZIP")
 
                 # Add PNG if requested
                 if 'png' in formats:
-                    png_bytes = export_figure_as_image(plot_name, 'png', start=start, end=end)
+                    png_bytes = export_figure_as_image(plot_name, 'png', start=start, end=end, version=version)
                     if png_bytes:
                         zip_file.writestr(f'{plot_name}.png', png_bytes)
                         logger.info(f"Added {plot_name}.png to ZIP")
 
                 # Add SVG if requested
                 if 'svg' in formats:
-                    svg_bytes = export_figure_as_image(plot_name, 'svg', start=start, end=end)
+                    svg_bytes = export_figure_as_image(plot_name, 'svg', start=start, end=end, version=version)
                     if svg_bytes:
                         zip_file.writestr(f'{plot_name}.svg', svg_bytes)
                         logger.info(f"Added {plot_name}.svg to ZIP")

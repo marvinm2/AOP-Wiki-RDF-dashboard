@@ -17,41 +17,9 @@
 
     let selectedVersion = null;  // null = latest version
     let availableVersions = [];
-    let loadingPlots = new Set();
 
-    // List of plot names that support version selection (all 11 plots)
-    const versionedPlots = [
-        'latest_entity_counts',
-        'latest_ke_components',
-        'latest_aop_connectivity',
-        'latest_avg_per_aop',
-        'latest_process_usage',
-        'latest_object_usage',
-        'latest_aop_completeness',
-        'latest_aop_completeness_unique',
-        'latest_ontology_usage',
-        'latest_ke_annotation_depth',
-        'latest_ke_by_bio_level',
-        'latest_taxonomic_groups',
-        'latest_entity_by_oecd_status',
-        'latest_ke_reuse',
-        'latest_ke_reuse_distribution',
-        'latest_mie_ao_path_length',
-        'latest_stressor_mie_coverage',
-        'latest_ker_directionality',
-        'latest_top_ontology_terms',
-        'latest_completeness_correlation',
-        'latest_ontology_diversity',
-        'latest_organ_coverage_unified',
-        'latest_organ_coverage_pie',
-        'latest_multi_organ_aops',
-        'latest_life_stage',
-        'latest_aop_aop_overlap',
-        'latest_ontology_coverage_holes',
-        'latest_domain_coverage',
-        'latest_domain_completeness',
-        'latest_domain_status'
-    ];
+    // Which plots take a version comes from the server (window.VERSIONED_PLOTS,
+    // rendered from LATEST_PLOT_FUNCTIONS), not from a list kept here (#171).
 
     // Plots driven by the domain-lens selector — one control, three charts.
     const domainLensPlots = [
@@ -89,8 +57,9 @@
                 var option = Array.from(selector.options).find(function(o) { return o.value === version; });
                 if (option) {
                     selector.value = version;
-                    // Trigger change event to load plots for this version
-                    selector.dispatchEvent(new Event('change'));
+                    // Plots already load this version (the lazy loader reads the
+                    // URL), so only the surrounding UI needs to follow.
+                    applyVersion(version, { reload: false });
                 }
             }
         }
@@ -204,9 +173,6 @@
 
         select.addEventListener('change', () => {
             plotDiv.dataset.branch = select.value;
-            if (window.plotLoader) {
-                window.plotLoader.loadedPlots.delete(plotName);
-            }
             reloadPlot(plotName);
         });
 
@@ -227,9 +193,6 @@
                 const plotDiv = document.querySelector(`[data-plot-name="${plotName}"]`);
                 if (!plotDiv) return;
                 plotDiv.dataset.domain = select.value;
-                if (window.plotLoader) {
-                    window.plotLoader.loadedPlots.delete(plotName);
-                }
                 reloadPlot(plotName);
             });
         });
@@ -261,9 +224,6 @@
 
         slider.addEventListener('change', () => {
             plotDiv.dataset.minJaccard = slider.value;
-            if (window.plotLoader) {
-                window.plotLoader.loadedPlots.delete(plotName);
-            }
             reloadPlot(plotName);
         });
 
@@ -273,42 +233,66 @@
     /**
      * Handle version selection change
      */
-    async function handleVersionChange(event) {
-        dbg('VERSION CHANGE EVENT FIRED!');
-        dbg('Event target:', event.target);
-        dbg('Event target value:', event.target.value);
+    function handleVersionChange(event) {
+        applyVersion(event.target.value || null, { reload: true });
+    }
 
-        const newVersion = event.target.value || null;  // Empty string = latest
-
-        dbg(`New version: "${newVersion}", Current version: "${selectedVersion}"`);
-
-        if (newVersion === selectedVersion) {
+    /**
+     * Make `version` the page's version: shared loader state, URL, banner,
+     * methodology queries, download links, data tables, and (unless the plots
+     * already show it) the versioned plots.
+     */
+    function applyVersion(version, { reload }) {
+        const latest = availableVersions[0] && availableVersions[0].version;
+        // "Current" is just the latest version; treat it as no selection so the
+        // banner hides and the URL stays clean.
+        const newVersion = version && version !== latest ? version : null;
+        if (newVersion === selectedVersion && reload) {
             dbg('Version unchanged, skipping reload');
-            return; // No change
+            return;
         }
-
-        dbg(`Version changed: ${selectedVersion} → ${newVersion || 'latest'}`);
+        dbg(`Version changed: ${selectedVersion || 'latest'} -> ${newVersion || 'latest'}`);
         selectedVersion = newVersion;
+        if (window.PlotLazyLoader) window.PlotLazyLoader.selectedVersion = newVersion;
 
-        // Update URL with version parameter
         updateURLState(selectedVersion || '');
-
-        // Update UI to show selected version
-        dbg('Updating version banner...');
         updateVersionBanner();
+        updateDownloadLinks(selectedVersion);
 
-        // Dispatch version-changed event so data tables can reset
+        // Data tables reset on this event.
         document.dispatchEvent(new CustomEvent('version-changed', { detail: { version: selectedVersion } }));
 
         // Re-render the SPARQL methodology previews so the displayed graph URI
         // matches the selected version (issue #43).
         updateMethodologyQueryUris(selectedVersion);
 
-        // Reload all versioned plots
-        dbg('Starting plot reload...');
-        await reloadVersionedPlots();
-        dbg('Plot reload complete!');
+        if (reload) reloadVersionedPlots();
     }
+
+    /**
+     * Point every snapshot download link (per-plot and bulk) at the selected
+     * version, so a download after a switch carries that version (#171).
+     */
+    function updateDownloadLinks(version) {
+        document.querySelectorAll('a[href^="/download/"]').forEach(link => {
+            const url = new URL(link.getAttribute('href'), window.location.origin);
+            const isSnapshot = url.pathname.startsWith('/download/latest')
+                || (url.pathname === '/download/bulk' && (url.searchParams.get('category') || '').startsWith('latest'));
+            if (!isSnapshot) return;
+            if (version) url.searchParams.set('version', version);
+            else url.searchParams.delete('version');
+            link.setAttribute('href', url.pathname + url.search);
+        });
+    }
+
+    /** "Return to Current Version" in the banner. */
+    window.resetToCurrentVersion = function () {
+        const selector = document.getElementById('version-selector');
+        const latest = availableVersions[0] && availableVersions[0].version;
+        if (!selector || !latest) return;
+        selector.value = latest;
+        selector.dispatchEvent(new Event('change'));
+    };
 
     /**
      * Update the graph URI in every methodology SPARQL preview to match the
@@ -365,115 +349,22 @@
     }
 
     /**
-     * Reload all versioned plots with the selected version
+     * Reload the versioned plots through the lazy loader: visible ones queue
+     * now (at most a few requests at a time), the rest load when scrolled to.
      */
-    async function reloadVersionedPlots() {
-        dbg(`Reloading ${versionedPlots.length} plots for version: ${selectedVersion || 'latest'}`);
-
-        const reloadPromises = versionedPlots.map(plotName => reloadPlot(plotName));
-
-        try {
-            await Promise.all(reloadPromises);
-            dbg('All plots reloaded successfully');
-        } catch (error) {
-            console.error('Error reloading plots:', error);
-        }
-    }
-
-    /**
-     * Reload a single plot with the selected version
-     */
-    async function reloadPlot(plotName) {
-        if (loadingPlots.has(plotName)) {
-            dbg(`Plot ${plotName} already loading, skipping...`);
-            return;
-        }
-
-        loadingPlots.add(plotName);
-        const plotDiv = document.querySelector(`[data-plot-name="${plotName}"]`);
-
-        if (!plotDiv) {
-            console.warn(`Plot div not found for ${plotName}`);
-            loadingPlots.delete(plotName);
-            return;
-        }
-
-        // Mark this plot as manually loaded so lazy-loader won't reload it
-        if (window.plotLoader) {
-            window.plotLoader.loadedPlots.add(plotName);
-            dbg(`Marked ${plotName} as loaded in lazy-loader cache`);
-        }
-
-        // Show loading spinner
-        showLoadingSpinner(plotDiv);
-
-        try {
-            // Build API URL with version + any toggle parameters from the
-            // plot container (scope/view drive the unified coverage views).
-            const params = new URLSearchParams();
-            if (selectedVersion) params.set('version', selectedVersion);
-            if (plotDiv.dataset.scope) params.set('scope', plotDiv.dataset.scope);
-            if (plotDiv.dataset.view) params.set('view', plotDiv.dataset.view);
-            if (plotDiv.dataset.minJaccard) params.set('min_jaccard', plotDiv.dataset.minJaccard);
-            if (plotDiv.dataset.branch) params.set('branch', plotDiv.dataset.branch);
-            if (plotDiv.dataset.domain) params.set('domain', plotDiv.dataset.domain);
-            const qs = params.toString();
-            const url = qs ? `/api/plot/${plotName}?${qs}` : `/api/plot/${plotName}`;
-
-            dbg(`Fetching plot from: ${url}`);
-
-            const response = await fetch(url);
-            const data = await response.json();
-
-            if (data.success && data.html) {
-                // Replace plot content
-                plotDiv.innerHTML = data.html;
-
-                // Execute any script tags in the HTML (needed for Plotly plots)
-                const scripts = plotDiv.querySelectorAll('script');
-                scripts.forEach(script => {
-                    const newScript = document.createElement('script');
-                    if (script.src) {
-                        newScript.src = script.src;
-                    } else {
-                        newScript.textContent = script.textContent;
-                    }
-                    script.parentNode.replaceChild(newScript, script);
-                });
-
-                dbg(`Plot ${plotName} loaded successfully`);
-            } else {
-                throw new Error(data.error || 'Failed to load plot');
+    function reloadVersionedPlots() {
+        if (!window.plotLoader) return;
+        document.querySelectorAll('.lazy-plot').forEach(element => {
+            if (window.PlotLazyLoader.isVersioned(element.dataset.plotName)) {
+                window.plotLoader.reload(element);
             }
-
-        } catch (error) {
-            console.error(`Error loading plot ${plotName}:`, error);
-            plotDiv.innerHTML = `<p style="color: red;">Error loading plot: ${error.message}</p>`;
-        } finally {
-            loadingPlots.delete(plotName);
-        }
+        });
     }
 
-    /**
-     * Show loading spinner in plot container
-     */
-    function showLoadingSpinner(container) {
-        container.innerHTML = `
-            <div style="display: flex; justify-content: center; align-items: center; min-height: 300px;">
-                <div style="text-align: center;">
-                    <div class="spinner" style="
-                        border: 4px solid #f3f3f3;
-                        border-top: 4px solid #29235C;
-                        border-radius: 50%;
-                        width: 40px;
-                        height: 40px;
-                        animation: spin 1s linear infinite;
-                        margin: 0 auto 10px;
-                    "></div>
-                    <p style="color: #666;">Loading plot...</p>
-                </div>
-            </div>
-        `;
+    /** Reload one plot after one of its settings (slider, selector) changed. */
+    function reloadPlot(plotName) {
+        const element = document.querySelector(`[data-plot-name="${plotName}"]`);
+        if (element && window.plotLoader) window.plotLoader.reload(element);
     }
 
     // Initialize when DOM is ready

@@ -425,6 +425,7 @@ function setupSearch(cyInstance) {
  */
 function setupFilters(cyInstance) {
     const roleSelect = document.getElementById('filter-role');
+    const communitySelect = document.getElementById('filter-community');
     const resetBtn = document.getElementById('reset-filters');
 
     const applyCurrentFilters = function () {
@@ -432,11 +433,13 @@ function setupFilters(cyInstance) {
     };
 
     if (roleSelect) roleSelect.addEventListener('change', applyCurrentFilters);
+    if (communitySelect) communitySelect.addEventListener('change', applyCurrentFilters);
 
     // Reset filters
     if (resetBtn) {
         resetBtn.addEventListener('click', function () {
             if (roleSelect) roleSelect.value = 'all';
+            if (communitySelect) communitySelect.value = 'all';
             applyFilters(cyInstance);
         });
     }
@@ -449,18 +452,20 @@ function setupFilters(cyInstance) {
 function applyFilters(cyInstance) {
     const roleSelect = document.getElementById('filter-role');
     const roleValue = roleSelect ? roleSelect.value : 'all';
+    const communitySelect = document.getElementById('filter-community');
+    const communityValue = communitySelect ? communitySelect.value : 'all';
 
     // Start by showing all elements
     cyInstance.elements().show();
 
-    // Role filter
-    if (roleValue !== 'all') {
-        cyInstance.nodes().forEach(function (n) {
-            if (n.data('type') !== roleValue) {
-                n.hide();
-            }
-        });
-    }
+    // Role and community filters
+    cyInstance.nodes().forEach(function (n) {
+        if (roleValue !== 'all' && n.data('type') !== roleValue) {
+            n.hide();
+        } else if (communityValue !== 'all' && String(n.data('community')) !== communityValue) {
+            n.hide();
+        }
+    });
 
     // Hide edges where either endpoint is hidden
     cyInstance.edges().forEach(function (e) {
@@ -662,6 +667,14 @@ function updateSortIndicators() {
     });
 }
 
+/** One <option> for the community filter. */
+function communityOption(id, size) {
+    const option = document.createElement('option');
+    option.value = String(id);
+    option.textContent = 'Community ' + id + (size ? ' (' + size + ')' : '');
+    return option;
+}
+
 /**
  * Populate the community summary section with cards.
  * @param {Array} communities - Array of community objects from the API
@@ -672,6 +685,18 @@ function populateCommunities(communities) {
     if (!countEl || !cardsEl) return;
 
     countEl.textContent = communities.length + ' communities detected in the AOP-KE network';
+
+    // Offer every community in the graph filter (#171: the cards used to set a
+    // select that didn't exist, so clicking one filtered nothing).
+    const communitySelect = document.getElementById('filter-community');
+    if (communitySelect) {
+        communitySelect.querySelectorAll('option:not([value="all"])').forEach(function (o) { o.remove(); });
+        // Single-node communities would only clutter the list; a card click
+        // on one adds its option on demand (see below).
+        communities.filter(function (comm) { return comm.size > 1; }).forEach(function (comm) {
+            communitySelect.appendChild(communityOption(comm.id, comm.size));
+        });
+    }
 
     // Get the VHP4Safety palette for community colors
     const palette = [
@@ -708,6 +733,10 @@ function populateCommunities(communities) {
             const commId = this.dataset.communityId;
             const communitySelect = document.getElementById('filter-community');
             if (communitySelect) {
+                if (!communitySelect.querySelector('option[value="' + commId + '"]')) {
+                    const size = (communities.find(function (c) { return String(c.id) === commId; }) || {}).size;
+                    communitySelect.appendChild(communityOption(commId, size));
+                }
                 communitySelect.value = commId;
             }
             // Switch to Graph tab and apply filter

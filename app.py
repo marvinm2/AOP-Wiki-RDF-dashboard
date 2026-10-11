@@ -1817,12 +1817,15 @@ def download_bulk():
         # Create ZIP file, honouring optional snapshot-range filter (#44)
         start = request.args.get('start')
         end = request.args.get('end')
-        zip_bytes = create_bulk_download(plot_names, formats, start=start, end=end)
+        version = request.args.get('version')
+        zip_bytes = create_bulk_download(plot_names, formats, start=start, end=end, version=version)
         if not zip_bytes:
             return "Failed to create bulk download", 500
 
         # Generate filename, embedding the snapshot range when one is active (#59)
         suffix = f"_{start or ''}_to_{end or ''}" if (start or end) else ""
+        if version:
+            suffix += f"_v{version}"
         if category:
             filename = f"aopwiki_{category}{suffix}_plots.zip"
         else:
@@ -2216,7 +2219,7 @@ def database_snapshot():
     Displays key metrics and visualizations from any version of the AOP-Wiki
     database, allowing users to explore current and historical snapshots.
     """
-    return render_template("latest.html", methodology_notes=methodology_notes, sparql_endpoint=Config.SPARQL_PUBLIC_ENDPOINT, latest_graph_uri=_current_latest_graph_uri(), ontology_branches=available_ontology_branches(), domains=available_domains(), active_page='snapshot')
+    return render_template("latest.html", methodology_notes=methodology_notes, sparql_endpoint=Config.SPARQL_PUBLIC_ENDPOINT, latest_graph_uri=_current_latest_graph_uri(), ontology_branches=available_ontology_branches(), domains=available_domains(), versioned_plots=sorted(LATEST_PLOT_FUNCTIONS), active_page='snapshot')
 
 
 @app.route("/latest")
