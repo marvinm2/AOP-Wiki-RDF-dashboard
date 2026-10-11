@@ -706,6 +706,16 @@ def add_missing_prefixes(query: str) -> str:
     return f"{block}\n{query}"
 
 
+class SparqlUnavailable(RuntimeError):
+    """A SPARQL query could not be answered (#167).
+
+    Raised instead of returning ``[]``, so a failed query can't be mistaken for
+    an empty result and cached as data. Plot functions let it propagate: the
+    caller (startup, ``/api/plot``, an export rewarm) shows a fallback or an
+    error and caches nothing, and the plot is recomputed on a later request.
+    """
+
+
 def run_sparql_query_with_retry(query: str, max_retries: int = MAX_RETRIES,
                                 use_post: bool = False) -> List[Dict[str, Any]]:
     """Execute SPARQL query with comprehensive retry logic and error handling.
@@ -727,14 +737,18 @@ def run_sparql_query_with_retry(query: str, max_retries: int = MAX_RETRIES,
     Returns:
         List[Dict[str, Any]]: List of result bindings from the SPARQL query.
             Each dictionary represents one result row with variable bindings.
-            Returns empty list if query fails after all retries.
+            An empty list means the query genuinely matched nothing.
+
+    Raises:
+        SparqlUnavailable: The query failed after all retries, or failed in a
+            way retrying can't fix (bad syntax, endpoint not found) (#167).
 
     Query Execution Process:
         1. Validates and prepares SPARQL query
         2. Configures SPARQLWrapper with timeout settings
         3. Executes query with performance monitoring
         4. Handles various error conditions with appropriate retry logic
-        5. Returns parsed JSON results or empty list on failure
+        5. Returns parsed JSON results, or raises SparqlUnavailable on failure
 
     Retry Logic:
         - Exponential backoff: delay increases with each retry attempt
@@ -839,7 +853,7 @@ def run_sparql_query_with_retry(query: str, max_retries: int = MAX_RETRIES,
             break
 
     logger.error(f"All {max_retries} query attempts failed. Last error: {str(last_exception)}")
-    return []
+    raise SparqlUnavailable(str(last_exception)) from last_exception
 
 
 def run_sparql_query(query: str, use_post: bool = False) -> List[Dict[str, Any]]:
@@ -1298,7 +1312,8 @@ def fetch_entity_uris_in_graph(graph_uri: str, entity_class: str) -> set:
         return {r.get('e', {}).get('value', '') for r in results if r.get('e', {}).get('value')}
     except Exception as e:
         logger.error(f"Error fetching entities of class {entity_class} in {graph_uri}: {e}")
-        return set()
+        # A failed query must fail the whole plot, not leave a partial one to be cached (#167).
+        raise SparqlUnavailable(f"{type(e).__name__}: {e}") from e
 
 
 def fetch_entity_uris_by_version(
@@ -1343,11 +1358,9 @@ def fetch_entity_uris_by_version(
         }}
     """
     uris_by_version: Dict[str, set] = {v: set() for v in versions}
-    try:
-        results = run_sparql_query_with_retry(bulk_query)
-    except Exception as e:
-        logger.error(f"Bulk fetch failed for {entity_type}: {e}")
-        results = []
+    # No fallback to an empty result: that was cached for the process lifetime
+    # and showed every entity as removed (#167). SparqlUnavailable propagates.
+    results = run_sparql_query_with_retry(bulk_query)
 
     for r in results:
         graph_uri = r.get('graph', {}).get('value', '')
