@@ -67,6 +67,7 @@ from .shared import (
     humanize_predicate_uri,
     ENTITY_TYPE_CLASSES, diff_entities_between_versions,
     fetch_entity_uris_by_version,
+    ontology_bucket_sparql,
 )
 from .organ_systems import (
     ORGAN_SYSTEM_BUCKETS,
@@ -1979,25 +1980,18 @@ def plot_bio_processes() -> tuple[str, str]:
     global _plot_data_cache, _plot_figure_cache
 
     try:
-        query_ontologies = """
+        query_ontologies = f"""
         SELECT ?graph ?ontology (COUNT(DISTINCT ?process) AS ?count)
-        WHERE {
-          GRAPH ?graph {
+        WHERE {{
+          GRAPH ?graph {{
             ?ke a aopo:KeyEvent ;
                 aopo:hasBiologicalEvent ?bioevent .
             ?bioevent aopo:hasProcess ?process .
-
-            BIND(
-              IF(STRSTARTS(STR(?process), "http://purl.obolibrary.org/obo/GO_"), "GO",
-              IF(STRSTARTS(STR(?process), "http://purl.obolibrary.org/obo/MP_"), "MP",
-              IF(STRSTARTS(STR(?process), "http://purl.obolibrary.org/obo/NBO_"), "NBO",
-              IF(STRSTARTS(STR(?process), "http://purl.obolibrary.org/obo/MI_"), "MI",
-              IF(STRSTARTS(STR(?process), "http://purl.obolibrary.org/obo/VT_"), "VT",
-              IF(STRSTARTS(STR(?process), "http://purl.org/commons/record/mesh/"), "MESH",
-              IF(STRSTARTS(STR(?process), "http://purl.obolibrary.org/obo/HP_"), "HP", "OTHER"))))))) AS ?ontology)
-          }
+            FILTER(isIRI(?process))
+            BIND({ontology_bucket_sparql("process")} AS ?ontology)
+          }}
           FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-        }
+        }}
         GROUP BY ?graph ?ontology
         ORDER BY ?graph ?ontology
         """
@@ -2039,7 +2033,7 @@ def plot_bio_processes() -> tuple[str, str]:
             y="count",
             color="ontology",
             markers=True,
-            labels={"count": "Annotated KEs", "ontology": "Ontology"},
+            labels={"count": "Distinct terms", "ontology": "Ontology"},
             color_discrete_sequence=BRAND_COLORS['palette']
         )
         _apply_marker_symbols(fig_abs)
@@ -2055,7 +2049,7 @@ def plot_bio_processes() -> tuple[str, str]:
             y="count",
             color="ontology",
             markers=True,
-            labels={"count": "Change in Annotated KEs", "ontology": "Ontology"},
+            labels={"count": "Change in distinct terms", "ontology": "Ontology"},
             color_discrete_sequence=BRAND_COLORS['palette']
         )
         _apply_marker_symbols(fig_delta)
@@ -2087,29 +2081,18 @@ def plot_bio_objects() -> tuple[str, str]:
     global _plot_data_cache, _plot_figure_cache
 
     try:
-        query_objects = """
+        query_objects = f"""
         SELECT ?graph ?ontology (COUNT(DISTINCT ?object) AS ?count)
-        WHERE {
-          GRAPH ?graph {
+        WHERE {{
+          GRAPH ?graph {{
             ?ke a aopo:KeyEvent ;
                 aopo:hasBiologicalEvent ?bioevent .
             ?bioevent aopo:hasObject ?object .
-
-            BIND(
-              IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/GO_"), "GO",
-              IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/PR_"), "PR",
-              IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/CHEBI_"), "CHEBI",
-              IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/UBERON_"), "UBERON",
-              IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/CL_"), "CL",
-              IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/MP_"), "MP",
-              IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/NBO_"), "NBO",
-              IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/MI_"), "MI",
-              IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/VT_"), "VT",
-              IF(STRSTARTS(STR(?object), "http://purl.org/commons/record/mesh/"), "MESH",
-              IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/HP_"), "HP", "OTHER"))))))))))) AS ?ontology)
-          }
+            FILTER(isIRI(?object))
+            BIND({ontology_bucket_sparql("object")} AS ?ontology)
+          }}
           FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-        }
+        }}
         GROUP BY ?graph ?ontology
         ORDER BY ?graph ?ontology
         """
@@ -2150,7 +2133,7 @@ def plot_bio_objects() -> tuple[str, str]:
             y="count",
             color="ontology",
             markers=True,
-            labels={"count": "Annotated KEs", "ontology": "Ontology"},
+            labels={"count": "Distinct terms", "ontology": "Ontology"},
             color_discrete_sequence=BRAND_COLORS['palette']
         )
         _apply_marker_symbols(fig_abs)
@@ -2166,7 +2149,7 @@ def plot_bio_objects() -> tuple[str, str]:
             y="count",
             color="ontology",
             markers=True,
-            labels={"count": "Change in Annotated KEs", "ontology": "Ontology"},
+            labels={"count": "Change in distinct terms", "ontology": "Ontology"},
             color_discrete_sequence=BRAND_COLORS['palette']
         )
         _apply_marker_symbols(fig_delta)

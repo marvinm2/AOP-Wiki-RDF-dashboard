@@ -222,6 +222,56 @@ PROPERTY_TYPE_ORDER = [
     "Metadata",
 ]
 
+# The one namespace → ontology-label map every ontology view buckets with
+# (issue #155). Before this, six views carried five different lists and folded
+# whatever they missed into OTHER. Measured on the 2026-10-01 and 2018-04-01
+# graphs over aopo:hasProcess ∪ aopo:hasObject: these are every namespace in
+# use, largest first. aopo:hasAction holds only literals ("increased", ...), so
+# there are no PATO IRIs to bucket. A namespace not listed here lands in
+# ONTOLOGY_OTHER; add it when one shows up there. Labels follow the terms' own
+# dc:source values, so SPARQL-bucketed and dc:source-labelled views agree.
+_OBO = "http://purl.obolibrary.org/obo/"
+ONTOLOGY_NAMESPACES = [
+    ("GO", _OBO + "GO_"),
+    ("PR", _OBO + "PR_"),
+    ("MP", _OBO + "MP_"),
+    ("CHEBI", _OBO + "CHEBI_"),
+    ("MESH", "http://purl.org/commons/record/mesh/"),
+    ("UBERON", _OBO + "UBERON_"),
+    ("CL", _OBO + "CL_"),
+    ("HP", _OBO + "HP_"),
+    ("FMA", _OBO + "FMA_"),
+    ("VT", _OBO + "VT_"),
+    ("NBO", _OBO + "NBO_"),
+    ("MI", _OBO + "MI_"),
+    ("PCO", _OBO + "PCO_"),
+    ("IDO", _OBO + "IDO_"),
+    ("RBO", _OBO + "RBO_"),
+    ("NCI", "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#"),
+]
+ONTOLOGY_OTHER = "OTHER"
+
+
+def ontology_bucket(iri: str) -> str:
+    """Ontology label for a term IRI, by the same rule as ``ontology_bucket_sparql``."""
+    for label, prefix in ONTOLOGY_NAMESPACES:
+        if iri.startswith(prefix):
+            return label
+    return ONTOLOGY_OTHER
+
+
+def ontology_bucket_sparql(var: str, indent: str = "      ") -> str:
+    """SPARQL expression mapping ``?var`` to its ontology label (nested IF/STRSTARTS).
+
+    Use as ``BIND(<expr> AS ?ontology)`` together with ``FILTER(isIRI(?var))``,
+    so literal-valued annotations are not counted as OTHER. One IF per line,
+    continuation lines prefixed with ``indent``, so disclosed queries stay readable.
+    """
+    lines = [f'IF(STRSTARTS(STR(?{var}), "{prefix}"), "{label}",'
+             for label, prefix in ONTOLOGY_NAMESPACES]
+    closing = ")" * len(ONTOLOGY_NAMESPACES)
+    return ("\n" + indent).join(lines) + f' "{ONTOLOGY_OTHER}"{closing}'
+
 SPARQL_ENDPOINT = Config.SPARQL_ENDPOINT
 MAX_RETRIES = Config.SPARQL_MAX_RETRIES
 RETRY_DELAY = Config.SPARQL_RETRY_DELAY

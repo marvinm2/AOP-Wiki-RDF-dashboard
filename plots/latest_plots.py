@@ -68,7 +68,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from .shared import (
     resolves_version,
     BRAND_COLORS, config, _plot_data_cache, _plot_figure_cache, run_sparql_query, safe_read_csv, create_fallback_plot,
-    render_plot_html, OECD_STATUS_ORDER, PROPERTY_TYPE_ORDER, pad_axis_for_outside_labels
+    render_plot_html, OECD_STATUS_ORDER, PROPERTY_TYPE_ORDER, pad_axis_for_outside_labels,
+    ontology_bucket, ontology_bucket_sparql,
 )
 from .organ_systems import (
     ORGAN_SYSTEM_BUCKETS,
@@ -642,18 +643,9 @@ def plot_latest_ontology_usage(version: str = None) -> str:
           ?bioevent aopo:hasProcess ?term .
         }} UNION {{
           ?bioevent aopo:hasObject ?term .
-        }} UNION {{
-          ?bioevent aopo:hasAction ?term .
         }}
-
-        BIND(
-          IF(STRSTARTS(STR(?term), "http://purl.obolibrary.org/obo/GO_"), "GO",
-          IF(STRSTARTS(STR(?term), "http://purl.obolibrary.org/obo/MP_"), "MP",
-          IF(STRSTARTS(STR(?term), "http://purl.obolibrary.org/obo/NBO_"), "NBO",
-          IF(STRSTARTS(STR(?term), "http://purl.obolibrary.org/obo/MI_"), "MI",
-          IF(STRSTARTS(STR(?term), "http://purl.obolibrary.org/obo/VT_"), "VT",
-          IF(STRSTARTS(STR(?term), "http://purl.org/commons/record/mesh/"), "MESH",
-          IF(STRSTARTS(STR(?term), "http://purl.obolibrary.org/obo/HP_"), "HP", "OTHER"))))))) AS ?ontology)
+        FILTER(isIRI(?term))
+        BIND({ontology_bucket_sparql("term")} AS ?ontology)
       }}
     }}
     GROUP BY ?ontology
@@ -731,15 +723,8 @@ def plot_latest_process_usage(version: str = None) -> str:
         ?ke a aopo:KeyEvent ;
             aopo:hasBiologicalEvent ?bioevent .
         ?bioevent aopo:hasProcess ?process .
-
-        BIND(
-          IF(STRSTARTS(STR(?process), "http://purl.obolibrary.org/obo/GO_"), "GO",
-          IF(STRSTARTS(STR(?process), "http://purl.obolibrary.org/obo/MP_"), "MP",
-          IF(STRSTARTS(STR(?process), "http://purl.obolibrary.org/obo/NBO_"), "NBO",
-          IF(STRSTARTS(STR(?process), "http://purl.obolibrary.org/obo/MI_"), "MI",
-          IF(STRSTARTS(STR(?process), "http://purl.obolibrary.org/obo/VT_"), "VT",
-          IF(STRSTARTS(STR(?process), "http://purl.org/commons/record/mesh/"), "MESH",
-          IF(STRSTARTS(STR(?process), "http://purl.obolibrary.org/obo/HP_"), "HP", "OTHER"))))))) AS ?ontology)
+        FILTER(isIRI(?process))
+        BIND({ontology_bucket_sparql("process")} AS ?ontology)
       }}
     }}
     GROUP BY ?ontology
@@ -823,16 +808,8 @@ def plot_latest_object_usage(version: str = None) -> str:
         ?ke a aopo:KeyEvent ;
             aopo:hasBiologicalEvent ?bioevent .
         ?bioevent aopo:hasObject ?object .
-
-        BIND(
-          IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/GO_"), "GO",
-          IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/CHEBI_"), "CHEBI",
-          IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/PR_"), "PR",
-          IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/CL_"), "CL",
-          IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/UBERON_"), "UBERON",
-          IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/NCBITaxon_"), "NCBITaxon",
-          IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/DOID_"), "DOID",
-          IF(STRSTARTS(STR(?object), "http://purl.obolibrary.org/obo/HP_"), "HP", "OTHER")))))))) AS ?ontology)
+        FILTER(isIRI(?object))
+        BIND({ontology_bucket_sparql("object")} AS ?ontology)
       }}
     }}
     GROUP BY ?ontology
@@ -1916,19 +1893,22 @@ def plot_latest_ke_reuse(version: str = None) -> str:
     return render_plot_html(fig)
 
 
-def _ontology_curie(iri: str):
-    """Best-effort compact CURIE + source prefix for an ontology term IRI.
+def _ontology_curie(iri: str) -> str:
+    """Best-effort compact CURIE for an ontology term IRI.
 
-    Returns (curie, prefix), e.g. GO_0023052 -> ("GO:0023052", "GO"),
-    mesh/D006965 -> ("MeSH:D006965", "MESH"). Falls back to the IRI's last
-    segment when the pattern is unknown.
+    e.g. GO_0023052 -> "GO:0023052", mesh/D006965 -> "MeSH:D006965". Falls back
+    to the IRI's last segment when the pattern is unknown. The ontology *source*
+    comes from ``ontology_bucket`` instead, so it matches the other views.
     """
     if "/obo/" in iri:
         frag = iri.rsplit("/", 1)[-1]          # e.g. GO_0023052
         if "_" in frag:
             prefix, _, local = frag.partition("_")
-            return f"{prefix}:{local}", prefix.upper()
-        return frag, ""
+            return f"{prefix}:{local}"
+        return frag
+    if "/mesh/" in iri:
+        return f"MeSH:{iri.rsplit('/', 1)[-1]}"
+    return iri.rsplit("#", 1)[-1].rsplit("/", 1)[-1]
     if "/mesh/" in iri:
         return f"MeSH:{iri.rsplit('/', 1)[-1]}", "MESH"
     frag = iri.rsplit("#", 1)[-1].rsplit("/", 1)[-1]
@@ -1939,9 +1919,10 @@ def _ontology_curie(iri: str):
 def plot_latest_top_ontology_terms(version: str = None) -> str:
     """Show the individual ontology terms most reused across Key Events (top 30).
 
-    Counts how many distinct Key Events reference each ontology term through any
-    biological-event slot (Process/Object/Action), labelled by dc:title and
-    coloured by ontology source (GO, CHEBI, PATO, MeSH, ...).
+    Counts how many distinct Key Events reference each ontology term through the
+    Process or Object slot of a biological event, labelled by dc:title and
+    coloured by ontology source (GO, PR, CHEBI, MESH, ...). The Action slot holds
+    literals only, so it contributes no terms (#155).
 
     Args:
         version: Optional version string. If None, uses latest.
@@ -1978,7 +1959,7 @@ def plot_latest_top_ontology_terms(version: str = None) -> str:
       GRAPH <{target_graph}> {{
         ?ke a aopo:KeyEvent ;
             aopo:hasBiologicalEvent ?be .
-        ?be aopo:hasProcess|aopo:hasObject|aopo:hasAction ?term .
+        ?be aopo:hasProcess|aopo:hasObject ?term .
         OPTIONAL {{ ?term dc:title ?title_val . }}
         OPTIONAL {{ ?term dc:source ?source_val . }}
       }}
@@ -1996,8 +1977,8 @@ def plot_latest_top_ontology_terms(version: str = None) -> str:
     data = []
     for r in results:
         term_uri = r["term"]["value"]
-        curie, derived_source = _ontology_curie(term_uri)
-        source = r.get("source", {}).get("value") or derived_source or "Other"
+        curie = _ontology_curie(term_uri)
+        source = r.get("source", {}).get("value") or ontology_bucket(term_uri)
         title = r.get("label", {}).get("value", "").strip()
         ke_count = int(r["ke_count"]["value"])
         data.append({
@@ -3039,7 +3020,7 @@ def plot_latest_ontology_diversity(version: str = None) -> str:
     """Create a bar chart showing unique ontology term counts per ontology source.
 
     Queries all distinct ontology-linked IRI values from biological process and object
-    annotations, parses the URIs in Python to extract ontology prefixes, and counts
+    annotations, buckets each IRI with the shared ``ontology_bucket`` map, and counts
     unique terms per source (GO, CHEBI, UBERON, etc.).
 
     Args:
@@ -3104,36 +3085,11 @@ def plot_latest_ontology_diversity(version: str = None) -> str:
     if not results:
         return create_fallback_plot("Ontology Term Diversity", "No ontology term data available")
 
-    # Parse URIs to extract ontology prefix and count unique terms
-    prefix_map = {
-        "GO_": "GO",
-        "CHEBI_": "CHEBI",
-        "UBERON_": "UBERON",
-        "NCBITaxon_": "NCBITaxon",
-        "PR_": "PR",
-        "CL_": "CL",
-        "DOID_": "DOID",
-        "HP_": "HP",
-        "MP_": "MP",
-        "NBO_": "NBO",
-        "MI_": "MI",
-        "VT_": "VT",
-    }
-
+    # Bucket by the shared namespace map, as the SPARQL-side views do (#155)
     ontology_counts = {}
     for r in results:
-        term_uri = r["term"]["value"]
-        matched = False
-        for fragment, prefix_name in prefix_map.items():
-            if fragment in term_uri:
-                ontology_counts[prefix_name] = ontology_counts.get(prefix_name, 0) + 1
-                matched = True
-                break
-        if not matched:
-            if "mesh/" in term_uri.lower():
-                ontology_counts["MESH"] = ontology_counts.get("MESH", 0) + 1
-            else:
-                ontology_counts["Other"] = ontology_counts.get("Other", 0) + 1
+        bucket = ontology_bucket(r["term"]["value"])
+        ontology_counts[bucket] = ontology_counts.get(bucket, 0) + 1
 
     if not ontology_counts:
         return create_fallback_plot("Ontology Term Diversity", "No ontology terms found")
