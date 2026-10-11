@@ -542,6 +542,9 @@ def get_properties_for_entity(entity_type: str) -> Dict[str, List[Dict[str, str]
     return grouped
 
 
+_endpoint_health_cache: Dict[str, Any] = {}
+
+
 def check_sparql_endpoint_health() -> bool:
     """Check if SPARQL endpoint is accessible and responsive.
 
@@ -552,7 +555,7 @@ def check_sparql_endpoint_health() -> bool:
 
     Health Check Process:
         1. Validates SPARQL endpoint URL format and scheme
-        2. Executes a minimal test query (COUNT of any triple)
+        2. Asks whether any AOP-Wiki graph holds an AOP (READINESS_QUERY)
         3. Verifies response within timeout period
         4. Confirms valid JSON response format
 
@@ -561,10 +564,8 @@ def check_sparql_endpoint_health() -> bool:
             Logs appropriate messages for both success and failure cases.
 
     Test Query:
-        Executes: "SELECT (COUNT(*) as ?count) WHERE { ?s ?p ?o } LIMIT 1"
-        - Lightweight query that works on any RDF store
-        - Tests connectivity, query processing, and response format
-        - Uses short timeout (10 seconds) for quick health checks
+        READINESS_QUERY, an ASK against real AOP-Wiki data (cheap; uses the
+        type index). The answer is memoized for 15 seconds.
 
     Error Conditions:
         - Invalid URL format or scheme
@@ -601,16 +602,22 @@ def check_sparql_endpoint_health() -> bool:
             logger.error(f"Invalid SPARQL endpoint URL: {SPARQL_ENDPOINT}")
             return False
 
-        # Simple health check query
-        test_query = "SELECT (COUNT(*) as ?count) WHERE { ?s ?p ?o } LIMIT 1"
+        # The readiness ASK (defined below) instead of a COUNT(*) over every
+        # triple: /health is polled every 30 s and that count scanned the whole
+        # 5.9M-triple store each time (#177). Memoized for a few seconds.
+        now = time.monotonic()
+        cached = _endpoint_health_cache.get('result')
+        if cached is not None and now - _endpoint_health_cache['at'] < 15:
+            return cached
         sparql = SPARQLWrapper(SPARQL_ENDPOINT)
         sparql.setTimeout(10)
         sparql.setReturnFormat(JSON)
-        sparql.setQuery(test_query)
-
-        result = sparql.query().convert()
-        logger.info(f"SPARQL endpoint {SPARQL_ENDPOINT} is healthy")
-        return True
+        sparql.setQuery(READINESS_QUERY)
+        healthy = bool(sparql.query().convert().get('boolean'))
+        _endpoint_health_cache.update(result=healthy, at=now)
+        if not healthy:
+            logger.warning("SPARQL endpoint answered but holds no AOP-Wiki data")
+        return healthy
 
     except Exception as e:
         logger.error(f"SPARQL endpoint health check failed: {str(e)}")

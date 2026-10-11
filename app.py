@@ -394,18 +394,22 @@ _startup_complete = False
 plot_results = compute_plots_parallel()
 _startup_complete = True
 
-# Pre-rendered HTML for latest_* plots that don't take a version parameter
-# from the UI. The lazy-load endpoint returns these directly so first-paint
-# is instant; the underlying plot function still runs when a specific
-# version is requested via ?version=YYYY-MM-DD.
+# Pre-rendered HTML for every snapshot plot the startup already computed (#177).
+# /api/plot serves these for a request with no version and no tuning parameters,
+# instead of re-running the plot's SPARQL on every page view; any ?version= or
+# setting still renders on demand. Only while the endpoint's latest version is
+# still the one these were built from (see _serve_precomputed).
 _latest_precomputed_html: dict[str, str] = {
-    k: plot_results[k] for k in (
-        'latest_aop_aop_overlap',
-        'latest_ke_mmo_coverage',
+    k: v for k, v in plot_results.items()
     # A fallback from a failed startup run must not be pinned here (#157);
     # leaving it out makes /api/plot render the plot per request instead.
-    ) if result_has_usable_html(plot_results.get(k))
+    if k.startswith('latest_') and isinstance(v, str) and result_has_usable_html(v)
 }
+
+
+def _serve_precomputed(plot_name: str) -> bool:
+    """True if the startup HTML for plot_name still shows the latest version."""
+    return plot_name in _latest_precomputed_html and get_latest_version() == _latest_version
 
 # Latest-snapshot plot functions, keyed by plot name. Module-level (rather than
 # local to /api/plot) so the export cache-rewarm hook can resolve a cache key
@@ -716,6 +720,24 @@ latest_ke_completeness_by_status_html = plot_results.get('latest_ke_completeness
 latest_ker_completeness_by_status_html = plot_results.get('latest_ker_completeness_by_status') or ""
 # --- End of precomputed plots ---
 
+def _version_freshness() -> dict:
+    """Latest version on the endpoint and how old it is (#177).
+
+    ``latest_version_age_days`` counts from the snapshot's date, so a value well
+    past ~110 days means a quarterly snapshot has not been loaded.
+    ``startup_version`` is what the startup caches (trend plots, landing counts)
+    were built from; it differs from ``latest_version`` until the next restart.
+    """
+    from datetime import date
+    latest = get_latest_version()
+    info = {"latest_version": latest, "startup_version": _latest_version}
+    try:
+        info["latest_version_age_days"] = (date.today() - date.fromisoformat(latest)).days
+    except ValueError:
+        pass
+    return info
+
+
 @app.route("/health")
 def health_check():
     """Health check endpoint for application and service monitoring.
@@ -802,6 +824,7 @@ def health_check():
                 "plots_loaded": f"{successful_plots}/{total_plots}",
                 "timestamp": time.time()
             }
+            health_status.update(_version_freshness())
             if failed_plots:
                 health_status["plots_failed"] = failed_plots
             return health_status, 200
@@ -2151,7 +2174,7 @@ def get_plot(plot_name):
     # cached default.
     _tuning_args = ('scope', 'view', 'min_shared_kes', 'min_jaccard', 'branch', 'domain')
     _has_tuning = any(request.args.get(k) for k in _tuning_args)
-    if not version and not _has_tuning and plot_name in _latest_precomputed_html:
+    if not version and not _has_tuning and _serve_precomputed(plot_name):
         return jsonify({'html': _latest_precomputed_html[plot_name], 'success': True})
 
     # Check if it's a versioned latest plot
