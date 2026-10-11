@@ -19,7 +19,8 @@
     let availableVersions = [];
 
     // Which plots take a version comes from the server (window.VERSIONED_PLOTS,
-    // rendered from LATEST_PLOT_FUNCTIONS), not from a list kept here (#171).
+    // rendered from the snapshot specs in plots/registry.py), not from a list
+    // kept here (#171, #178).
 
     // Plots driven by the domain-lens selector — one control, three charts.
     const domainLensPlots = [

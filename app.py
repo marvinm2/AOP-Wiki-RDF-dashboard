@@ -50,7 +50,6 @@ import time
 import os
 import re
 import json
-import inspect
 import logging
 
 logger = logging.getLogger(__name__)
@@ -112,74 +111,11 @@ methodology_notes_path = os.path.join(app.static_folder, 'data', 'methodology_no
 with open(methodology_notes_path, 'r') as f:
     methodology_notes = json.load(f)
 
+import plots
+from plots import registry
 from plots import (
-    plot_main_graph,
-    plot_entity_birth_death,
-    plot_entity_cumulative_removed,
-    plot_oecd_status_distribution,
-    plot_stressor_coverage_growth,
-    plot_aops_per_stressor_distribution,
-    plot_ke_mmo_coverage_trends,
-    plot_ke_migration_map,
-    plot_avg_per_aop,
-    plot_network_density,
-    plot_ke_components,
-    plot_ke_components_percentage,
-    plot_unique_ke_components,
-    plot_bio_processes,
-    plot_bio_objects,
-    plot_author_counts,
-    plot_aop_lifetime,
-    plot_aop_property_presence,
-    plot_ke_property_presence,
-    plot_ker_property_presence,
-    plot_stressor_property_presence,
-    plot_entity_completeness_trends,
-    plot_aop_completeness_boxplot,
-    plot_oecd_completeness_trend,
-    plot_kes_by_kec_count,
-    plot_latest_entity_counts,
-    plot_latest_ke_components,
-    plot_latest_aop_connectivity,
-    plot_latest_avg_per_aop,
-    plot_latest_ontology_usage,
-    plot_latest_process_usage,
-    plot_latest_object_usage,
-    plot_latest_aop_completeness,
-    plot_latest_aop_completeness_by_status,
-    plot_latest_ke_completeness_by_status,
-    plot_latest_ker_completeness_by_status,
-    plot_latest_ke_annotation_depth,
-    plot_latest_ke_by_bio_level,
-    plot_latest_taxonomic_groups,
-    plot_latest_entity_by_oecd_status,
-    plot_latest_ke_reuse,
-    plot_latest_ke_reuse_distribution,
-    plot_latest_mie_ao_path_length,
-    plot_latest_stressor_mie_coverage,
-    plot_latest_ker_directionality,
-    plot_latest_top_ontology_terms,
-    plot_latest_completeness_correlation,
-    plot_latest_ontology_diversity,
-    plot_latest_aop_completeness_unique_colors,
-    plot_latest_organ_coverage,
-    plot_latest_organ_coverage_percentage,
-    plot_latest_organ_coverage_apical,
-    plot_latest_organ_coverage_ao_only,
-    plot_latest_organ_coverage_unified,
-    plot_latest_organ_coverage_pie,
-    plot_latest_multi_organ_aops,
-    plot_latest_life_stage,
-    plot_latest_ke_mmo_coverage,
-    plot_latest_aop_aop_overlap,
-    plot_latest_ontology_coverage_holes,
     available_ontology_branches,
-    plot_latest_domain_coverage,
-    plot_latest_domain_completeness,
-    plot_latest_domain_status,
     available_domains,
-    plot_ontology_term_growth,
-    plot_organ_coverage_trends,
     check_sparql_endpoint_health,
     wait_for_sparql_ready,
     safe_plot_execution,
@@ -265,54 +201,13 @@ try:
 except Exception as _usage_exc:  # pragma: no cover - non-fatal
     logger.warning(f"Usage analytics DB init failed: {_usage_exc}")
 
-# Plots precomputed at startup, keyed by task name. Module-level so a trend
-# plot whose startup computation failed can be recomputed on demand (#157).
+# Plots precomputed at startup, keyed by task name, from the plot registry
+# (#178). Module-level so a trend plot whose startup computation failed can be
+# recomputed on demand (#157).
 STARTUP_PLOT_FUNCTIONS = {
-    'main_graph': plot_main_graph,
-    'entity_birth_death': plot_entity_birth_death,
-    'entity_cumulative_removed': plot_entity_cumulative_removed,
-    'oecd_status_distribution': plot_oecd_status_distribution,
-    'stressor_coverage_growth': plot_stressor_coverage_growth,
-    'aops_per_stressor_distribution': plot_aops_per_stressor_distribution,
-    'ke_mmo_coverage': plot_ke_mmo_coverage_trends,
-    'ke_migration_map': plot_ke_migration_map,
-    'avg_per_aop': plot_avg_per_aop,
-    'network_density': plot_network_density,
-    'ke_components': plot_ke_components,
-    'unique_ke_components': plot_unique_ke_components,
-    'ke_components_percentage': plot_ke_components_percentage,
-    'bio_processes': plot_bio_processes,
-    'bio_objects': plot_bio_objects,
-    'author_counts': plot_author_counts,
-    'aop_lifetime': plot_aop_lifetime,
-    'aop_property_presence': plot_aop_property_presence,
-    'ke_property_presence': plot_ke_property_presence,
-    'ker_property_presence': plot_ker_property_presence,
-    'stressor_property_presence': plot_stressor_property_presence,
-    'entity_completeness_trends': plot_entity_completeness_trends,
-    # Re-enabled after SPARQL optimization (reduced from 10 queries to 4, 410K rows to ~20K)
-    'aop_completeness_boxplot': plot_aop_completeness_boxplot,
-    'oecd_completeness_trend': plot_oecd_completeness_trend,
-    'kes_by_kec_count': plot_kes_by_kec_count,
-    'latest_entity_counts': plot_latest_entity_counts,
-    'latest_ke_components': plot_latest_ke_components,
-    'latest_aop_connectivity': plot_latest_aop_connectivity,
-    'latest_avg_per_aop': plot_latest_avg_per_aop,
-    'latest_ontology_usage': plot_latest_ontology_usage,
-    'latest_process_usage': plot_latest_process_usage,
-    'latest_object_usage': plot_latest_object_usage,
-    'latest_aop_completeness': plot_latest_aop_completeness,
-    'latest_aop_completeness_by_status': plot_latest_aop_completeness_by_status,
-    'latest_ke_completeness_by_status': plot_latest_ke_completeness_by_status,
-    'latest_ker_completeness_by_status': plot_latest_ker_completeness_by_status,
-    'latest_ke_annotation_depth': plot_latest_ke_annotation_depth,
-    'ontology_term_growth': plot_ontology_term_growth,
-    'organ_coverage': plot_organ_coverage_trends,
-    # New latest-snapshot plots — pre-rendered at startup so first hit is instant (#67, #68, #70)
-    'latest_aop_aop_overlap': plot_latest_aop_aop_overlap,
-    'latest_ke_mmo_coverage': plot_latest_ke_mmo_coverage,
+    task: getattr(plots, producer)
+    for task, producer in registry.startup_tasks().items()
 }
-
 
 def compute_plots_parallel() -> dict:
     """Compute all visualization plots in parallel for optimal startup performance.
@@ -411,48 +306,11 @@ def _serve_precomputed(plot_name: str) -> bool:
     """True if the startup HTML for plot_name still shows the latest version."""
     return plot_name in _latest_precomputed_html and get_latest_version() == _latest_version
 
-# Latest-snapshot plot functions, keyed by plot name. Module-level (rather than
-# local to /api/plot) so the export cache-rewarm hook can resolve a cache key
-# back to the function that produces it.
+# Snapshot plot functions, keyed by plot name. Module-level (rather than local
+# to /api/plot) so the export cache-rewarm hook can resolve a cache key back to
+# the function that produces it.
 LATEST_PLOT_FUNCTIONS = {
-    'latest_entity_counts': plot_latest_entity_counts,
-    'latest_ke_components': plot_latest_ke_components,
-    'latest_aop_connectivity': plot_latest_aop_connectivity,
-    'latest_avg_per_aop': plot_latest_avg_per_aop,
-    'latest_process_usage': plot_latest_process_usage,
-    'latest_object_usage': plot_latest_object_usage,
-    'latest_aop_completeness': plot_latest_aop_completeness,
-    'latest_aop_completeness_by_status': plot_latest_aop_completeness_by_status,
-    'latest_ke_completeness_by_status': plot_latest_ke_completeness_by_status,
-    'latest_ker_completeness_by_status': plot_latest_ker_completeness_by_status,
-    'latest_ontology_usage': plot_latest_ontology_usage,
-    'latest_ke_annotation_depth': plot_latest_ke_annotation_depth,
-    'latest_ke_by_bio_level': plot_latest_ke_by_bio_level,
-    'latest_taxonomic_groups': plot_latest_taxonomic_groups,
-    'latest_entity_by_oecd_status': plot_latest_entity_by_oecd_status,
-    'latest_ke_reuse': plot_latest_ke_reuse,
-    'latest_ke_reuse_distribution': plot_latest_ke_reuse_distribution,
-    'latest_mie_ao_path_length': plot_latest_mie_ao_path_length,
-    'latest_stressor_mie_coverage': plot_latest_stressor_mie_coverage,
-    'latest_ker_directionality': plot_latest_ker_directionality,
-    'latest_top_ontology_terms': plot_latest_top_ontology_terms,
-    'latest_completeness_correlation': plot_latest_completeness_correlation,
-    'latest_ontology_diversity': plot_latest_ontology_diversity,
-    'latest_aop_completeness_unique': plot_latest_aop_completeness_unique_colors,
-    'latest_organ_coverage': plot_latest_organ_coverage,
-    'latest_organ_coverage_percentage': plot_latest_organ_coverage_percentage,
-    'latest_organ_coverage_apical': plot_latest_organ_coverage_apical,
-    'latest_organ_coverage_ao_only': plot_latest_organ_coverage_ao_only,
-    'latest_organ_coverage_unified': plot_latest_organ_coverage_unified,
-    'latest_organ_coverage_pie': plot_latest_organ_coverage_pie,
-    'latest_multi_organ_aops': plot_latest_multi_organ_aops,
-    'latest_life_stage': plot_latest_life_stage,
-    'latest_ke_mmo_coverage': plot_latest_ke_mmo_coverage,
-    'latest_aop_aop_overlap': plot_latest_aop_aop_overlap,
-    'latest_ontology_coverage_holes': plot_latest_ontology_coverage_holes,
-    'latest_domain_coverage': plot_latest_domain_coverage,
-    'latest_domain_completeness': plot_latest_domain_completeness,
-    'latest_domain_status': plot_latest_domain_status,
+    spec.id: getattr(plots, spec.producer) for spec in registry.snapshot_specs()
 }
 
 
@@ -517,165 +375,21 @@ if _latest_version and _latest_version != "Unknown":
     _plot_figure_cache.pin_version(_latest_version)
     logger.info(f"Pinned version {_latest_version} in data and figure caches")
 
-# Extract results with fallbacks
-try:
-    graph_main_abs, graph_main_delta, df_all = plot_results.get('main_graph', (None, None, None))
-    if graph_main_abs is None:
-        graph_main_abs = graph_main_delta = ""
-        df_all = pd.DataFrame()
-except (TypeError, ValueError):
-    graph_main_abs = graph_main_delta = ""
-    df_all = pd.DataFrame()
+# Trend plots served by /api/plot -> (startup task, position of their HTML in
+# the task's result tuple, or None when the task returns the HTML itself).
+TREND_PLOT_OUTPUTS = registry.trend_outputs()
 
-try:
-    graph_entity_birth_death, _ = plot_results.get('entity_birth_death', (None, None))
-    if graph_entity_birth_death is None:
-        graph_entity_birth_death = ""
-except (TypeError, ValueError):
-    graph_entity_birth_death = ""
 
-try:
-    graph_entity_cumulative_removed, _ = plot_results.get('entity_cumulative_removed', (None, None))
-    if graph_entity_cumulative_removed is None:
-        graph_entity_cumulative_removed = ""
-except (TypeError, ValueError):
-    graph_entity_cumulative_removed = ""
+def _startup_trend_html(plot_name: str) -> str:
+    """The startup HTML for a trend plot, or "" if its task failed or timed out."""
+    task, index = TREND_PLOT_OUTPUTS[plot_name]
+    result = plot_results.get(task)
+    try:
+        html = result if index is None else result[index]
+    except (TypeError, IndexError, KeyError):
+        html = None
+    return html or ""
 
-try:
-    graph_oecd_status_abs, graph_oecd_status_pct, _ = plot_results.get('oecd_status_distribution', (None, None, None))
-    if graph_oecd_status_abs is None:
-        graph_oecd_status_abs = graph_oecd_status_pct = ""
-except (TypeError, ValueError):
-    graph_oecd_status_abs = graph_oecd_status_pct = ""
-
-try:
-    graph_stressor_growth_abs, graph_stressor_growth_delta, _ = plot_results.get('stressor_coverage_growth', (None, None, None))
-    if graph_stressor_growth_abs is None:
-        graph_stressor_growth_abs = graph_stressor_growth_delta = ""
-except (TypeError, ValueError):
-    graph_stressor_growth_abs = graph_stressor_growth_delta = ""
-
-try:
-    graph_aops_per_stressor_abs, graph_aops_per_stressor_pct, _ = plot_results.get('aops_per_stressor_distribution', (None, None, None))
-    if graph_aops_per_stressor_abs is None:
-        graph_aops_per_stressor_abs = graph_aops_per_stressor_pct = ""
-except (TypeError, ValueError):
-    graph_aops_per_stressor_abs = graph_aops_per_stressor_pct = ""
-
-try:
-    graph_ke_mmo_abs, graph_ke_mmo_pct, _ = plot_results.get('ke_mmo_coverage', (None, None, None))
-    if graph_ke_mmo_abs is None:
-        graph_ke_mmo_abs = graph_ke_mmo_pct = ""
-except (TypeError, ValueError):
-    graph_ke_mmo_abs = graph_ke_mmo_pct = ""
-
-try:
-    graph_ke_migration_map, _ = plot_results.get('ke_migration_map', (None, None))
-    if graph_ke_migration_map is None:
-        graph_ke_migration_map = ""
-except (TypeError, ValueError):
-    graph_ke_migration_map = ""
-
-try:
-    graph_avg_abs, graph_avg_delta = plot_results.get('avg_per_aop', (None, None))
-    if graph_avg_abs is None:
-        graph_avg_abs = graph_avg_delta = ""
-except (TypeError, ValueError):
-    graph_avg_abs = graph_avg_delta = ""
-
-# Extract other results with similar pattern
-graph_density = plot_results.get('network_density') or ""
-graph_components_abs, graph_components_delta = plot_results.get('ke_components', ("", ""))
-graph_unique_abs, graph_unique_delta = plot_results.get('unique_ke_components', ("", ""))
-graph_components_pct_abs, graph_components_pct_delta = plot_results.get('ke_components_percentage', ("", ""))
-graph_bio_processes_abs, graph_bio_processes_delta = plot_results.get('bio_processes', ("", ""))
-graph_bio_objects_abs, graph_bio_objects_delta = plot_results.get('bio_objects', ("", ""))
-graph_authors_abs, graph_authors_delta = plot_results.get('author_counts', ("", ""))
-try:
-    graph_created, graph_scatter = plot_results.get('aop_lifetime', ("", ""))
-except (TypeError, ValueError):
-    graph_created = graph_scatter = ""
-graph_prop_abs, graph_prop_pct = plot_results.get('aop_property_presence', ("", ""))
-graph_ke_prop_abs, graph_ke_prop_pct = plot_results.get('ke_property_presence', ("", ""))
-graph_ker_prop_abs, graph_ker_prop_pct = plot_results.get('ker_property_presence', ("", ""))
-graph_stressor_prop_abs, graph_stressor_prop_pct = plot_results.get('stressor_property_presence', ("", ""))
-graph_entity_completeness = plot_results.get('entity_completeness_trends') or ""
-try:
-    graph_aop_completeness_boxplot, graph_aop_completeness_boxplot_all = plot_results.get('aop_completeness_boxplot', ("", ""))
-except (TypeError, ValueError):
-    graph_aop_completeness_boxplot = graph_aop_completeness_boxplot_all = ""
-graph_oecd_completeness_trend = plot_results.get('oecd_completeness_trend') or ""
-graph_kec_count_abs, graph_kec_count_delta = plot_results.get('kes_by_kec_count', ("", ""))
-
-# Curation and ontology trends
-try:
-    graph_ontology_growth_abs, graph_ontology_growth_delta, _ = plot_results.get('ontology_term_growth', ("", "", None))
-    if graph_ontology_growth_abs is None:
-        graph_ontology_growth_abs = graph_ontology_growth_delta = ""
-except (TypeError, ValueError):
-    graph_ontology_growth_abs = graph_ontology_growth_delta = ""
-
-# Organ-system coverage trends (Signals A/A'/B) — returns (abs_html, percentage_html, df)
-try:
-    graph_organ_cov_abs, graph_organ_cov_pct, _ = plot_results.get('organ_coverage', ("", "", None))
-    if graph_organ_cov_abs is None:
-        graph_organ_cov_abs = graph_organ_cov_pct = ""
-except (TypeError, ValueError):
-    graph_organ_cov_abs = graph_organ_cov_pct = ""
-
-# Trend plots served by /api/plot, mapped to the startup task that produces
-# them and the position of their HTML in that task's result tuple (None when
-# the task returns a single HTML string). Mirrors the extraction above.
-TREND_PLOT_OUTPUTS = {
-    'aop_entity_counts_absolute': ('main_graph', 0),
-    'aop_entity_counts_delta': ('main_graph', 1),
-    'entity_birth_death': ('entity_birth_death', 0),
-    'entity_cumulative_removed': ('entity_cumulative_removed', 0),
-    'oecd_status_distribution_absolute': ('oecd_status_distribution', 0),
-    'oecd_status_distribution_percentage': ('oecd_status_distribution', 1),
-    'stressor_coverage_growth_absolute': ('stressor_coverage_growth', 0),
-    'stressor_coverage_growth_delta': ('stressor_coverage_growth', 1),
-    'aops_per_stressor_distribution_absolute': ('aops_per_stressor_distribution', 0),
-    'aops_per_stressor_distribution_percentage': ('aops_per_stressor_distribution', 1),
-    'ke_mmo_coverage_absolute': ('ke_mmo_coverage', 0),
-    'ke_mmo_coverage_percentage': ('ke_mmo_coverage', 1),
-    'ke_migration_map': ('ke_migration_map', 0),
-    'average_components_per_aop_absolute': ('avg_per_aop', 0),
-    'average_components_per_aop_delta': ('avg_per_aop', 1),
-    'aop_network_density': ('network_density', None),
-    'ke_component_annotations_absolute': ('ke_components', 0),
-    'ke_component_annotations_delta': ('ke_components', 1),
-    'ke_components_percentage_absolute': ('ke_components_percentage', 0),
-    'ke_components_percentage_delta': ('ke_components_percentage', 1),
-    'unique_ke_components_absolute': ('unique_ke_components', 0),
-    'unique_ke_components_delta': ('unique_ke_components', 1),
-    'biological_process_annotations_absolute': ('bio_processes', 0),
-    'biological_process_annotations_delta': ('bio_processes', 1),
-    'biological_object_annotations_absolute': ('bio_objects', 0),
-    'biological_object_annotations_delta': ('bio_objects', 1),
-    'aop_authors_absolute': ('author_counts', 0),
-    'aop_authors_delta': ('author_counts', 1),
-    'aops_created_over_time': ('aop_lifetime', 0),
-    'aop_creation_vs_modification_timeline': ('aop_lifetime', 1),
-    'aop_property_presence_absolute': ('aop_property_presence', 0),
-    'aop_property_presence_percentage': ('aop_property_presence', 1),
-    'ke_property_presence_absolute': ('ke_property_presence', 0),
-    'ke_property_presence_percentage': ('ke_property_presence', 1),
-    'ker_property_presence_absolute': ('ker_property_presence', 0),
-    'ker_property_presence_percentage': ('ker_property_presence', 1),
-    'stressor_property_presence_absolute': ('stressor_property_presence', 0),
-    'stressor_property_presence_percentage': ('stressor_property_presence', 1),
-    'entity_completeness_trends': ('entity_completeness_trends', None),
-    'aop_completeness_boxplot': ('aop_completeness_boxplot', 0),
-    'aop_completeness_boxplot_all': ('aop_completeness_boxplot', 1),
-    'oecd_completeness_trend': ('oecd_completeness_trend', None),
-    'kes_by_kec_count_absolute': ('kes_by_kec_count', 0),
-    'kes_by_kec_count_delta': ('kes_by_kec_count', 1),
-    'ontology_term_growth_absolute': ('ontology_term_growth', 0),
-    'ontology_term_growth_delta': ('ontology_term_growth', 1),
-    'organ_coverage_absolute': ('organ_coverage', 0),
-    'organ_coverage_percentage': ('organ_coverage', 1),
-}
 
 # Re-runs the startup task behind a trend plot whose startup run failed (#157).
 trend_recovery = TrendPlotRecovery(
@@ -704,21 +418,6 @@ def failed_startup_plots() -> list:
         failed.append(task)
     return sorted(failed)
 
-
-# Latest data plots
-latest_entity_counts = plot_results.get('latest_entity_counts') or ""
-latest_ke_components = plot_results.get('latest_ke_components') or ""
-latest_aop_connectivity = plot_results.get('latest_aop_connectivity') or ""
-latest_avg_per_aop = plot_results.get('latest_avg_per_aop') or ""
-latest_ontology_usage = plot_results.get('latest_ontology_usage') or ""
-latest_process_usage = plot_results.get('latest_process_usage') or ""
-latest_object_usage = plot_results.get('latest_object_usage') or ""
-latest_aop_completeness = plot_results.get('latest_aop_completeness') or ""
-latest_ke_annotation_depth = plot_results.get('latest_ke_annotation_depth') or ""
-latest_aop_completeness_by_status_html = plot_results.get('latest_aop_completeness_by_status') or ""
-latest_ke_completeness_by_status_html = plot_results.get('latest_ke_completeness_by_status') or ""
-latest_ker_completeness_by_status_html = plot_results.get('latest_ker_completeness_by_status') or ""
-# --- End of precomputed plots ---
 
 def _version_freshness() -> dict:
     """Latest version on the endpoint and how old it is (#177).
@@ -873,915 +572,64 @@ def status_page():
     """
     return render_template("status.html", active_page='status')
 
-@app.route("/download/latest_entity_counts")
-def download_latest_entity_counts():
-    """Download CSV data for the Latest Entity Counts visualization.
-    
-    Provides CSV export functionality for the latest entity counts data,
-    allowing users to download the raw data behind the bar chart visualization
-    for further analysis or reporting purposes.
-    
-    The CSV includes:
-        - Entity types (AOPs, KEs, KERs, Stressors, Authors)
-        - Current counts for each entity type
-        - Version information for data context
-        - Metadata columns for reference
-    
-    Returns:
-        Response: Flask Response object with CSV data as attachment
-            - Content-Type: text/csv
-            - Content-Disposition: attachment with filename
-            - HTTP 200 on success, 404 if data unavailable, 500 on error
-    
-    CSV Format:
-        Entity,Count,Version
-        AOPs,245,2024-01-15
-        KEs,1580,2024-01-15
-        ...
-        
-    Error Handling:
-        - 404: Data not available in cache (plot generation failed)
-        - 500: Server error during CSV generation or file serving
-    
-    Example Usage:
-        >>> import requests
-        >>> response = requests.get("http://localhost:5000/download/latest_entity_counts")
-        >>> if response.status_code == 200:
-        ...     with open("entity_counts.csv", "wb") as f:
-        ...         f.write(response.content)
-        
-        Or via browser: Direct download link in the dashboard interface
-    
-    Note:
-        Data is cached from plot generation during application startup.
-        If plots failed to generate, this endpoint returns 404.
+def _export_response(plot_name, *, filename_base=None, version=None, start=None, end=None):
+    """CSV/PNG/SVG download of one plot, as every /download route serves it.
+
+    Snapshot plots resolve to their per-version cache key inside the export
+    helpers (#166) and are recomputed if this worker hasn't rendered that
+    version (#148); there is no fallback to another version's data. ``start``
+    and ``end`` limit trend plots to a snapshot range (#44).
     """
-    plot_name = 'latest_entity_counts'
     export_format = request.args.get('format', 'csv').lower()
     include_metadata = request.args.get('metadata', 'true').lower() == 'true'
+    filename_base = filename_base or plot_name
+    # The filename names the version the request asked for, as before (#59).
+    filename_version = request.args.get('version')
 
     try:
         if export_format == 'csv':
-            csv_data = get_csv_with_metadata(plot_name, include_metadata, version=request.args.get("version"))
-            if not csv_data:
+            body = get_csv_with_metadata(plot_name, include_metadata, start=start, end=end, version=version)
+            if not body:
                 return "No data available for download", 404
-
-            return Response(
-                csv_data,
-                mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, "csv", request.args.get("version"))}'}
-            )
-
-        elif export_format in ['png', 'svg']:
-            image_bytes = export_figure_as_image(plot_name, export_format, version=request.args.get("version"))
-            if not image_bytes:
+            mimetype = 'text/csv'
+        elif export_format in ('png', 'svg'):
+            body = export_figure_as_image(plot_name, export_format, start=start, end=end, version=version)
+            if not body:
                 return "No figure available for export", 404
-
             mimetype = f'image/{export_format}'
-            return Response(
-                image_bytes,
-                mimetype=mimetype,
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, export_format, request.args.get("version"))}'}
-            )
-
         else:
             return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
+
+        filename = build_export_filename(filename_base, export_format, filename_version)
+        return Response(body, mimetype=mimetype,
+                        headers={'Content-Disposition': f'attachment; filename={filename}'})
 
     except Exception as e:
         logger.error(f"Download failed for {plot_name}: {str(e)}")
         return f"Download failed: {str(e)}", 500
 
-@app.route("/download/latest_ke_components")
-def download_latest_ke_components():
-    """Download CSV data for Latest KE Components plot."""
-    plot_name = 'latest_ke_components'
-    export_format = request.args.get('format', 'csv').lower()
-    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
-
-    try:
-        if export_format == 'csv':
-            csv_data = get_csv_with_metadata(plot_name, include_metadata, version=request.args.get("version"))
-            if not csv_data:
-                return "No data available for download", 404
-
-            return Response(
-                csv_data,
-                mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, "csv", request.args.get("version"))}'}
-            )
-
-        elif export_format in ['png', 'svg']:
-            image_bytes = export_figure_as_image(plot_name, export_format, version=request.args.get("version"))
-            if not image_bytes:
-                return "No figure available for export", 404
-
-            mimetype = f'image/{export_format}'
-            return Response(
-                image_bytes,
-                mimetype=mimetype,
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, export_format, request.args.get("version"))}'}
-            )
-
-        else:
-            return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
-
-    except Exception as e:
-        logger.error(f"Download failed for {plot_name}: {str(e)}")
-        return f"Download failed: {str(e)}", 500
-
-@app.route("/download/latest_network_density")
-def download_latest_network_density():
-    """Download data for the AOP Connectivity plot (legacy URL; served as latest_aop_connectivity)."""
-    plot_name = 'latest_aop_connectivity'
-    export_format = request.args.get('format', 'csv').lower()
-    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
-
-    try:
-        if export_format == 'csv':
-            csv_data = get_csv_with_metadata(plot_name, include_metadata, version=request.args.get("version"))
-            if not csv_data:
-                return "No data available for download", 404
-
-            return Response(
-                csv_data,
-                mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, "csv", request.args.get("version"))}'}
-            )
-
-        elif export_format in ['png', 'svg']:
-            image_bytes = export_figure_as_image(plot_name, export_format, version=request.args.get("version"))
-            if not image_bytes:
-                return "No figure available for export", 404
-
-            mimetype = f'image/{export_format}'
-            return Response(
-                image_bytes,
-                mimetype=mimetype,
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, export_format, request.args.get("version"))}'}
-            )
-
-        else:
-            return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
-
-    except Exception as e:
-        logger.error(f"Download failed for {plot_name}: {str(e)}")
-        return f"Download failed: {str(e)}", 500
-
-@app.route("/download/latest_avg_per_aop")
-def download_latest_avg_per_aop():
-    """Download CSV data for Latest Avg per AOP plot."""
-    plot_name = 'latest_avg_per_aop'
-    export_format = request.args.get('format', 'csv').lower()
-    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
-
-    try:
-        if export_format == 'csv':
-            csv_data = get_csv_with_metadata(plot_name, include_metadata, version=request.args.get("version"))
-            if not csv_data:
-                return "No data available for download", 404
-
-            return Response(
-                csv_data,
-                mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, "csv", request.args.get("version"))}'}
-            )
-
-        elif export_format in ['png', 'svg']:
-            image_bytes = export_figure_as_image(plot_name, export_format, version=request.args.get("version"))
-            if not image_bytes:
-                return "No figure available for export", 404
-
-            mimetype = f'image/{export_format}'
-            return Response(
-                image_bytes,
-                mimetype=mimetype,
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, export_format, request.args.get("version"))}'}
-            )
-
-        else:
-            return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
-
-    except Exception as e:
-        logger.error(f"Download failed for {plot_name}: {str(e)}")
-        return f"Download failed: {str(e)}", 500
-
-@app.route("/download/latest_process_usage")
-def download_latest_process_usage():
-    """Download CSV data for Latest Process Usage plot."""
-    plot_name = 'latest_process_usage'
-    export_format = request.args.get('format', 'csv').lower()
-    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
-
-    try:
-        if export_format == 'csv':
-            csv_data = get_csv_with_metadata(plot_name, include_metadata, version=request.args.get("version"))
-            if not csv_data:
-                return "No data available for download", 404
-
-            return Response(
-                csv_data,
-                mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, "csv", request.args.get("version"))}'}
-            )
-
-        elif export_format in ['png', 'svg']:
-            image_bytes = export_figure_as_image(plot_name, export_format, version=request.args.get("version"))
-            if not image_bytes:
-                return "No figure available for export", 404
-
-            mimetype = f'image/{export_format}'
-            return Response(
-                image_bytes,
-                mimetype=mimetype,
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, export_format, request.args.get("version"))}'}
-            )
-
-        else:
-            return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
-
-    except Exception as e:
-        logger.error(f"Download failed for {plot_name}: {str(e)}")
-        return f"Download failed: {str(e)}", 500
-
-@app.route("/download/latest_object_usage")
-def download_latest_object_usage():
-    """Download CSV data for Latest Object Usage plot."""
-    plot_name = 'latest_object_usage'
-    export_format = request.args.get('format', 'csv').lower()
-    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
-
-    try:
-        if export_format == 'csv':
-            csv_data = get_csv_with_metadata(plot_name, include_metadata, version=request.args.get("version"))
-            if not csv_data:
-                return "No data available for download", 404
-
-            return Response(
-                csv_data,
-                mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, "csv", request.args.get("version"))}'}
-            )
-
-        elif export_format in ['png', 'svg']:
-            image_bytes = export_figure_as_image(plot_name, export_format, version=request.args.get("version"))
-            if not image_bytes:
-                return "No figure available for export", 404
-
-            mimetype = f'image/{export_format}'
-            return Response(
-                image_bytes,
-                mimetype=mimetype,
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, export_format, request.args.get("version"))}'}
-            )
-
-        else:
-            return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
-
-    except Exception as e:
-        logger.error(f"Download failed for {plot_name}: {str(e)}")
-        return f"Download failed: {str(e)}", 500
-
-@app.route("/download/latest_aop_completeness")
-def download_latest_aop_completeness():
-    """Download CSV data for Latest AOP Completeness plot."""
-    plot_name = 'latest_aop_completeness'
-    export_format = request.args.get('format', 'csv').lower()
-    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
-
-    try:
-        if export_format == 'csv':
-            csv_data = get_csv_with_metadata(plot_name, include_metadata, version=request.args.get("version"))
-            if not csv_data:
-                return "No data available for download", 404
-
-            return Response(
-                csv_data,
-                mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, "csv", request.args.get("version"))}'}
-            )
-
-        elif export_format in ['png', 'svg']:
-            image_bytes = export_figure_as_image(plot_name, export_format, version=request.args.get("version"))
-            if not image_bytes:
-                return "No figure available for export", 404
-
-            mimetype = f'image/{export_format}'
-            return Response(
-                image_bytes,
-                mimetype=mimetype,
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, export_format, request.args.get("version"))}'}
-            )
-
-        else:
-            return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
-
-    except Exception as e:
-        logger.error(f"Download failed for {plot_name}: {str(e)}")
-        return f"Download failed: {str(e)}", 500
-
-@app.route("/download/latest_aop_completeness_by_status")
-def download_latest_aop_completeness_by_status():
-    """Download CSV data for Latest AOP Completeness by OECD Status plot."""
-    plot_name = 'latest_aop_completeness_by_status'
-    export_format = request.args.get('format', 'csv').lower()
-    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
-
-    try:
-        if export_format == 'csv':
-            csv_data = get_csv_with_metadata(plot_name, include_metadata, version=request.args.get("version"))
-            if not csv_data:
-                return "No data available for download", 404
-
-            return Response(
-                csv_data,
-                mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, "csv", request.args.get("version"))}'}
-            )
-
-        elif export_format in ['png', 'svg']:
-            image_bytes = export_figure_as_image(plot_name, export_format, version=request.args.get("version"))
-            if not image_bytes:
-                return "No figure available for export", 404
-
-            mimetype = f'image/{export_format}'
-            return Response(
-                image_bytes,
-                mimetype=mimetype,
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, export_format, request.args.get("version"))}'}
-            )
-
-        else:
-            return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
-
-    except Exception as e:
-        logger.error(f"Download failed for {plot_name}: {str(e)}")
-        return f"Download failed: {str(e)}", 500
-
-@app.route("/download/latest_ke_completeness_by_status")
-def download_latest_ke_completeness_by_status():
-    """Download CSV data for Latest KE Completeness by OECD Status plot."""
-    plot_name = 'latest_ke_completeness_by_status'
-    export_format = request.args.get('format', 'csv').lower()
-    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
-
-    try:
-        if export_format == 'csv':
-            csv_data = get_csv_with_metadata(plot_name, include_metadata, version=request.args.get("version"))
-            if not csv_data:
-                return "No data available for download", 404
-
-            return Response(
-                csv_data,
-                mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, "csv", request.args.get("version"))}'}
-            )
-
-        elif export_format in ['png', 'svg']:
-            image_bytes = export_figure_as_image(plot_name, export_format, version=request.args.get("version"))
-            if not image_bytes:
-                return "No figure available for export", 404
-
-            mimetype = f'image/{export_format}'
-            return Response(
-                image_bytes,
-                mimetype=mimetype,
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, export_format, request.args.get("version"))}'}
-            )
-
-        else:
-            return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
-
-    except Exception as e:
-        logger.error(f"Download failed for {plot_name}: {str(e)}")
-        return f"Download failed: {str(e)}", 500
-
-@app.route("/download/latest_ker_completeness_by_status")
-def download_latest_ker_completeness_by_status():
-    """Download CSV data for Latest KER Completeness by OECD Status plot."""
-    plot_name = 'latest_ker_completeness_by_status'
-    export_format = request.args.get('format', 'csv').lower()
-    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
-
-    try:
-        if export_format == 'csv':
-            csv_data = get_csv_with_metadata(plot_name, include_metadata, version=request.args.get("version"))
-            if not csv_data:
-                return "No data available for download", 404
-
-            return Response(
-                csv_data,
-                mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, "csv", request.args.get("version"))}'}
-            )
-
-        elif export_format in ['png', 'svg']:
-            image_bytes = export_figure_as_image(plot_name, export_format, version=request.args.get("version"))
-            if not image_bytes:
-                return "No figure available for export", 404
-
-            mimetype = f'image/{export_format}'
-            return Response(
-                image_bytes,
-                mimetype=mimetype,
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, export_format, request.args.get("version"))}'}
-            )
-
-        else:
-            return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
-
-    except Exception as e:
-        logger.error(f"Download failed for {plot_name}: {str(e)}")
-        return f"Download failed: {str(e)}", 500
-
-@app.route("/download/trend/ke_property_presence_absolute")
-def download_ke_property_presence_absolute():
-    """Download data for KE Property Presence (Absolute Count) plot."""
-    plot_name = 'ke_property_presence_absolute'
-    export_format = request.args.get('format', 'csv').lower()
-    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
-
-    try:
-        if export_format == 'csv':
-            csv_data = get_csv_with_metadata(plot_name, include_metadata, version=request.args.get("version"))
-            if not csv_data:
-                return "No data available for download", 404
-
-            return Response(
-                csv_data,
-                mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, "csv", request.args.get("version"))}'}
-            )
-
-        elif export_format in ['png', 'svg']:
-            image_bytes = export_figure_as_image(plot_name, export_format, version=request.args.get("version"))
-            if not image_bytes:
-                return "No figure available for export", 404
-
-            mimetype = f'image/{export_format}'
-            return Response(
-                image_bytes,
-                mimetype=mimetype,
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, export_format, request.args.get("version"))}'}
-            )
-
-        else:
-            return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
-
-    except Exception as e:
-        logger.error(f"Download failed for {plot_name}: {str(e)}")
-        return f"Download failed: {str(e)}", 500
-
-@app.route("/download/trend/ke_property_presence_percentage")
-def download_ke_property_presence_percentage():
-    """Download data for KE Property Presence (Percentage) plot."""
-    plot_name = 'ke_property_presence_percentage'
-    export_format = request.args.get('format', 'csv').lower()
-    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
-
-    try:
-        if export_format == 'csv':
-            csv_data = get_csv_with_metadata(plot_name, include_metadata, version=request.args.get("version"))
-            if not csv_data:
-                return "No data available for download", 404
-
-            return Response(
-                csv_data,
-                mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, "csv", request.args.get("version"))}'}
-            )
-
-        elif export_format in ['png', 'svg']:
-            image_bytes = export_figure_as_image(plot_name, export_format, version=request.args.get("version"))
-            if not image_bytes:
-                return "No figure available for export", 404
-
-            mimetype = f'image/{export_format}'
-            return Response(
-                image_bytes,
-                mimetype=mimetype,
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, export_format, request.args.get("version"))}'}
-            )
-
-        else:
-            return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
-
-    except Exception as e:
-        logger.error(f"Download failed for {plot_name}: {str(e)}")
-        return f"Download failed: {str(e)}", 500
-
-@app.route("/download/trend/ker_property_presence_absolute")
-def download_ker_property_presence_absolute():
-    """Download data for KER Property Presence (Absolute Count) plot."""
-    plot_name = 'ker_property_presence_absolute'
-    export_format = request.args.get('format', 'csv').lower()
-    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
-
-    try:
-        if export_format == 'csv':
-            csv_data = get_csv_with_metadata(plot_name, include_metadata, version=request.args.get("version"))
-            if not csv_data:
-                return "No data available for download", 404
-
-            return Response(
-                csv_data,
-                mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, "csv", request.args.get("version"))}'}
-            )
-
-        elif export_format in ['png', 'svg']:
-            image_bytes = export_figure_as_image(plot_name, export_format, version=request.args.get("version"))
-            if not image_bytes:
-                return "No figure available for export", 404
-
-            mimetype = f'image/{export_format}'
-            return Response(
-                image_bytes,
-                mimetype=mimetype,
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, export_format, request.args.get("version"))}'}
-            )
-
-        else:
-            return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
-
-    except Exception as e:
-        logger.error(f"Download failed for {plot_name}: {str(e)}")
-        return f"Download failed: {str(e)}", 500
-
-@app.route("/download/trend/ker_property_presence_percentage")
-def download_ker_property_presence_percentage():
-    """Download data for KER Property Presence (Percentage) plot."""
-    plot_name = 'ker_property_presence_percentage'
-    export_format = request.args.get('format', 'csv').lower()
-    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
-
-    try:
-        if export_format == 'csv':
-            csv_data = get_csv_with_metadata(plot_name, include_metadata, version=request.args.get("version"))
-            if not csv_data:
-                return "No data available for download", 404
-
-            return Response(
-                csv_data,
-                mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, "csv", request.args.get("version"))}'}
-            )
-
-        elif export_format in ['png', 'svg']:
-            image_bytes = export_figure_as_image(plot_name, export_format, version=request.args.get("version"))
-            if not image_bytes:
-                return "No figure available for export", 404
-
-            mimetype = f'image/{export_format}'
-            return Response(
-                image_bytes,
-                mimetype=mimetype,
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, export_format, request.args.get("version"))}'}
-            )
-
-        else:
-            return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
-
-    except Exception as e:
-        logger.error(f"Download failed for {plot_name}: {str(e)}")
-        return f"Download failed: {str(e)}", 500
-
-@app.route("/download/trend/stressor_property_presence_absolute")
-def download_stressor_property_presence_absolute():
-    """Download data for Stressor Property Presence (Absolute Count) plot."""
-    plot_name = 'stressor_property_presence_absolute'
-    export_format = request.args.get('format', 'csv').lower()
-    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
-
-    try:
-        if export_format == 'csv':
-            csv_data = get_csv_with_metadata(plot_name, include_metadata, version=request.args.get("version"))
-            if not csv_data:
-                return "No data available for download", 404
-
-            return Response(
-                csv_data,
-                mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, "csv", request.args.get("version"))}'}
-            )
-
-        elif export_format in ['png', 'svg']:
-            image_bytes = export_figure_as_image(plot_name, export_format, version=request.args.get("version"))
-            if not image_bytes:
-                return "No figure available for export", 404
-
-            mimetype = f'image/{export_format}'
-            return Response(
-                image_bytes,
-                mimetype=mimetype,
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, export_format, request.args.get("version"))}'}
-            )
-
-        else:
-            return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
-
-    except Exception as e:
-        logger.error(f"Download failed for {plot_name}: {str(e)}")
-        return f"Download failed: {str(e)}", 500
-
-@app.route("/download/trend/stressor_property_presence_percentage")
-def download_stressor_property_presence_percentage():
-    """Download data for Stressor Property Presence (Percentage) plot."""
-    plot_name = 'stressor_property_presence_percentage'
-    export_format = request.args.get('format', 'csv').lower()
-    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
-
-    try:
-        if export_format == 'csv':
-            csv_data = get_csv_with_metadata(plot_name, include_metadata, version=request.args.get("version"))
-            if not csv_data:
-                return "No data available for download", 404
-
-            return Response(
-                csv_data,
-                mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, "csv", request.args.get("version"))}'}
-            )
-
-        elif export_format in ['png', 'svg']:
-            image_bytes = export_figure_as_image(plot_name, export_format, version=request.args.get("version"))
-            if not image_bytes:
-                return "No figure available for export", 404
-
-            mimetype = f'image/{export_format}'
-            return Response(
-                image_bytes,
-                mimetype=mimetype,
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, export_format, request.args.get("version"))}'}
-            )
-
-        else:
-            return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
-
-    except Exception as e:
-        logger.error(f"Download failed for {plot_name}: {str(e)}")
-        return f"Download failed: {str(e)}", 500
-
-@app.route("/download/latest_ke_annotation_depth")
-def download_latest_ke_annotation_depth():
-    """Download CSV data for Latest KE Annotation Depth plot."""
-    plot_name = 'latest_ke_annotation_depth'
-    export_format = request.args.get('format', 'csv').lower()
-    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
-
-    try:
-        if export_format == 'csv':
-            csv_data = get_csv_with_metadata(plot_name, include_metadata, version=request.args.get("version"))
-            if not csv_data:
-                return "No data available for download", 404
-
-            return Response(
-                csv_data,
-                mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, "csv", request.args.get("version"))}'}
-            )
-
-        elif export_format in ['png', 'svg']:
-            image_bytes = export_figure_as_image(plot_name, export_format, version=request.args.get("version"))
-            if not image_bytes:
-                return "No figure available for export", 404
-
-            mimetype = f'image/{export_format}'
-            return Response(
-                image_bytes,
-                mimetype=mimetype,
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, export_format, request.args.get("version"))}'}
-            )
-
-        else:
-            return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
-
-    except Exception as e:
-        logger.error(f"Download failed for {plot_name}: {str(e)}")
-        return f"Download failed: {str(e)}", 500
 
 @app.route("/download/latest/<plot_name>")
 def download_latest_generic(plot_name):
-    """Generic download route for latest-data plots (supports CSV, PNG, SVG).
+    """Snapshot plot download by suffix: /download/latest/ke_reuse -> latest_ke_reuse."""
+    return _export_response(f'latest_{plot_name}', version=request.args.get('version'))
 
-    Handles any latest_* plot that caches data with a version-keyed cache key.
-    Falls back to the bare plot_name if no versioned key is found.
-
-    Args:
-        plot_name (str): The plot name suffix (e.g., 'ke_by_bio_level')
-    """
-    export_format = request.args.get('format', 'csv').lower()
-    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
-    version = request.args.get('version')
-    # The export helpers resolve this to the per-version cache key (#166), and
-    # recompute it if this worker hasn't rendered that version (#148). There is
-    # no fallback to another version's data.
-    cache_key = f'latest_{plot_name}'
-    filename_base = cache_key
-
-    try:
-        if export_format == 'csv':
-            csv_data = get_csv_with_metadata(cache_key, include_metadata, version=version)
-            if not csv_data:
-                return "No data available for download", 404
-
-            return Response(
-                csv_data,
-                mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(filename_base, "csv", version)}'}
-            )
-
-        elif export_format in ['png', 'svg']:
-            image_bytes = export_figure_as_image(cache_key, export_format, version=version)
-            if not image_bytes:
-                return "No figure available for export", 404
-
-            mimetype = f'image/{export_format}'
-            return Response(
-                image_bytes,
-                mimetype=mimetype,
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(filename_base, export_format, version)}'}
-            )
-
-        else:
-            return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
-
-    except Exception as e:
-        logger.error(f"Download failed for latest plot {plot_name}: {str(e)}")
-        return f"Download failed: {str(e)}", 500
-
-@app.route("/download/main_graph_absolute")
-def download_main_graph_absolute():
-    """Download CSV data for Main Graph Absolute plot."""
-    plot_name = 'main_graph_absolute'
-    export_format = request.args.get('format', 'csv').lower()
-    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
-
-    try:
-        if export_format == 'csv':
-            csv_data = get_csv_with_metadata(plot_name, include_metadata, version=request.args.get("version"))
-            if not csv_data:
-                return "No data available for download", 404
-
-            return Response(
-                csv_data,
-                mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, "csv", request.args.get("version"))}'}
-            )
-
-        elif export_format in ['png', 'svg']:
-            image_bytes = export_figure_as_image(plot_name, export_format, version=request.args.get("version"))
-            if not image_bytes:
-                return "No figure available for export", 404
-
-            mimetype = f'image/{export_format}'
-            return Response(
-                image_bytes,
-                mimetype=mimetype,
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, export_format, request.args.get("version"))}'}
-            )
-
-        else:
-            return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
-
-    except Exception as e:
-        logger.error(f"Download failed for {plot_name}: {str(e)}")
-        return f"Download failed: {str(e)}", 500
-
-@app.route("/download/main_graph_delta")
-def download_main_graph_delta():
-    """Download CSV data for Main Graph Delta plot."""
-    plot_name = 'main_graph_delta'
-    export_format = request.args.get('format', 'csv').lower()
-    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
-
-    try:
-        if export_format == 'csv':
-            csv_data = get_csv_with_metadata(plot_name, include_metadata, version=request.args.get("version"))
-            if not csv_data:
-                return "No data available for download", 404
-
-            return Response(
-                csv_data,
-                mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, "csv", request.args.get("version"))}'}
-            )
-
-        elif export_format in ['png', 'svg']:
-            image_bytes = export_figure_as_image(plot_name, export_format, version=request.args.get("version"))
-            if not image_bytes:
-                return "No figure available for export", 404
-
-            mimetype = f'image/{export_format}'
-            return Response(
-                image_bytes,
-                mimetype=mimetype,
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, export_format, request.args.get("version"))}'}
-            )
-
-        else:
-            return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
-
-    except Exception as e:
-        logger.error(f"Download failed for {plot_name}: {str(e)}")
-        return f"Download failed: {str(e)}", 500
 
 @app.route("/download/trend/<plot_name>")
 def download_trend_plot(plot_name):
-    """Generic download route for all trend plots (supports CSV, PNG, SVG).
-
-    Args:
-        plot_name (str): The cache key for the trend plot (e.g., 'aop_entity_counts_absolute', 'aop_network_density')
-
-    Query Parameters:
-        format (str): Export format - 'csv', 'png', or 'svg' (default: 'csv')
-        metadata (bool): Include metadata in CSV (default: true)
-
-    Examples:
-        /download/trend/graph_main_abs?format=png
-        /download/trend/graph_density?format=svg
-        /download/trend/graph_components_abs?format=csv
-    """
-    export_format = request.args.get('format', 'csv').lower()
-    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
-    start = request.args.get('start')
-    end = request.args.get('end')
-
-    try:
-        if export_format == 'csv':
-            csv_data = get_csv_with_metadata(plot_name, include_metadata, start=start, end=end)
-            if not csv_data:
-                return "No data available for download", 404
-
-            return Response(
-                csv_data,
-                mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, "csv", request.args.get("version"))}'}
-            )
-
-        elif export_format in ['png', 'svg']:
-            image_bytes = export_figure_as_image(plot_name, export_format, start=start, end=end)
-            if not image_bytes:
-                return "No figure available for export", 404
-
-            mimetype = f'image/{export_format}'
-            return Response(
-                image_bytes,
-                mimetype=mimetype,
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, export_format, request.args.get("version"))}'}
-            )
-
-        else:
-            return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
-
-    except Exception as e:
-        logger.error(f"Download failed for trend plot {plot_name}: {str(e)}")
-        return f"Download failed: {str(e)}", 500
+    """Trend plot download, optionally limited to ?start=&end= snapshots."""
+    return _export_response(plot_name, start=request.args.get('start'), end=request.args.get('end'))
 
 
 @app.route("/download/<plot_name>")
 def download_generic(plot_name):
-    """Generic /download/<plot_name> catch-all (#42).
+    """Download any plot by id (#42), or by a legacy alias (registry.DOWNLOAD_ALIASES).
 
-    Hit when a plot URL like /download/latest_ontology_diversity doesn't match
-    any of the explicitly-registered routes above. Tries the bare cache key
-    first, then falls back to a version-suffixed form so we don't have to add
-    a per-plot route for every new latest_* plot.
+    Replaces the per-plot download routes (#178); their URLs resolve here.
     """
-    export_format = request.args.get('format', 'csv').lower()
-    include_metadata = request.args.get('metadata', 'true').lower() == 'true'
-    version = request.args.get('version')
-    start = request.args.get('start')
-    end = request.args.get('end')
-
-    # Snapshot plots resolve to their per-version key inside the export helpers (#166).
-    csv_key = fig_key = plot_name
-
-    try:
-        if export_format == 'csv':
-            csv_data = get_csv_with_metadata(csv_key, include_metadata, start=start, end=end, version=version)
-            if not csv_data:
-                return "No data available for download", 404
-            return Response(
-                csv_data,
-                mimetype='text/csv',
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, "csv", version)}'}
-            )
-
-        if export_format in ('png', 'svg'):
-            image_bytes = export_figure_as_image(fig_key, export_format, start=start, end=end, version=version)
-            if not image_bytes:
-                return "No figure available for export", 404
-            return Response(
-                image_bytes,
-                mimetype=f'image/{export_format}',
-                headers={'Content-Disposition': f'attachment; filename={build_export_filename(plot_name, export_format, version)}'}
-            )
-
-        return f"Unsupported format: {export_format}. Use csv, png, or svg.", 400
-
-    except Exception as e:
-        logger.error(f"Download failed for plot {plot_name}: {str(e)}")
-        return f"Download failed: {str(e)}", 500
+    target = registry.DOWNLOAD_ALIASES.get(plot_name, plot_name)
+    return _export_response(target, version=request.args.get('version'),
+                            start=request.args.get('start'), end=request.args.get('end'))
 
 
 @app.route("/download/bulk")
@@ -1802,60 +650,8 @@ def download_bulk():
         /download/bulk?category=all&formats=csv
     """
     try:
-        # Predefined plot categories
-        categories = {
-            # Latest Data plots
-            'latest-all': [
-                'latest_entity_counts', 'latest_ke_components', 'latest_aop_connectivity',
-                'latest_avg_per_aop', 'latest_process_usage', 'latest_object_usage',
-                'latest_aop_completeness', 'latest_ke_annotation_depth',
-                'latest_ke_by_bio_level', 'latest_taxonomic_groups',
-                'latest_entity_by_oecd_status', 'latest_ke_reuse',
-                'latest_ke_reuse_distribution', 'latest_mie_ao_path_length',
-                'latest_stressor_mie_coverage', 'latest_ker_directionality',
-                'latest_top_ontology_terms',
-                'latest_completeness_correlation',
-                'latest_ontology_coverage_holes',
-                'latest_domain_coverage', 'latest_domain_completeness',
-                'latest_domain_status'
-            ],
-            'database-state': ['latest_entity_counts'],
-            'network-analysis': ['latest_aop_connectivity', 'latest_avg_per_aop'],
-            'ke-analysis': ['latest_ke_components', 'latest_ke_annotation_depth'],
-            'data-quality': ['latest_aop_completeness', 'latest_process_usage', 'latest_object_usage',
-                             'latest_ontology_coverage_holes'],
-
-            # Trend plots (absolute views only to avoid duplication)
-            'trends-all': [
-                'aop_entity_counts_absolute', 'entity_birth_death', 'entity_cumulative_removed', 'average_components_per_aop_absolute', 'aop_network_density', 'aop_authors_absolute',
-                'aops_created_over_time', 'aop_creation_vs_modification_timeline',
-                'ke_component_annotations_absolute', 'ke_components_percentage_absolute', 'unique_ke_components_absolute',
-                'biological_process_annotations_absolute', 'biological_object_annotations_absolute',
-                'aop_property_presence_absolute', 'kes_by_kec_count_absolute'
-            ],
-            'trends-main': ['aop_entity_counts_absolute', 'aop_entity_counts_delta', 'entity_birth_death', 'entity_cumulative_removed'],
-            'trends-network': ['average_components_per_aop_absolute', 'average_components_per_aop_delta', 'aop_network_density'],
-            'trends-authors': ['aop_authors_absolute', 'aop_authors_delta', 'aops_created_over_time', 'aop_creation_vs_modification_timeline'],
-            'trends-components': [
-                'ke_component_annotations_absolute', 'ke_component_annotations_delta',
-                'ke_components_percentage_absolute', 'ke_components_percentage_delta',
-                'unique_ke_components_absolute', 'unique_ke_components_delta'
-            ],
-            'trends-ontology': ['biological_process_annotations_absolute', 'biological_process_annotations_delta', 'biological_object_annotations_absolute', 'biological_object_annotations_delta'],
-            'trends-properties': ['aop_property_presence_absolute', 'aop_property_presence_percentage'],
-
-            # Combined: all plots from both pages
-            'all': [
-                'latest_entity_counts', 'latest_ke_components', 'latest_aop_connectivity',
-                'latest_avg_per_aop', 'latest_process_usage', 'latest_object_usage',
-                'latest_aop_completeness', 'latest_ke_annotation_depth',
-                'aop_entity_counts_absolute', 'entity_birth_death', 'entity_cumulative_removed', 'average_components_per_aop_absolute', 'aop_network_density', 'aop_authors_absolute',
-                'aops_created_over_time', 'aop_creation_vs_modification_timeline',
-                'ke_component_annotations_absolute', 'ke_components_percentage_absolute', 'unique_ke_components_absolute',
-                'biological_process_annotations_absolute', 'biological_object_annotations_absolute',
-                'aop_property_presence_absolute', 'kes_by_kec_count_absolute'
-            ]
-        }
+        # Predefined plot categories, from the plot registry (#178)
+        categories = registry.bulk_categories()
 
         # Get plot names from query params
         category = request.args.get('category', '').lower()
@@ -2037,6 +833,17 @@ def api_get_properties(entity_type):
             "error": str(e)
         }), 500
 
+@app.route("/api/v2/manifest")
+def api_v2_manifest():
+    """Every plot the dashboard serves, from the plot registry (#178).
+
+    One entry per plot: id, kind (snapshot/trend), the startup task that
+    produces it, its methodology-note key, the page holding its container,
+    whether it takes ?version=, its tuning args and bulk categories.
+    """
+    return jsonify({'plots': registry.manifest()})
+
+
 @app.route("/api/plot-data/<plot_name>")
 def api_plot_data(plot_name):
     """API endpoint to serve raw data for a plot as JSON.
@@ -2109,91 +916,24 @@ def get_plot(plot_name):
     # Get version parameter from query string (for latest_* plots only)
     version = request.args.get('version', None)
 
-    # Map plot names to their corresponding variables or functions
-    # For latest_* plots that support version parameter, we'll regenerate them
-    # For historical trend plots, use pre-computed global variables
-    plot_map = {
-        'aop_entity_counts_absolute': graph_main_abs,
-        'aop_entity_counts_delta': graph_main_delta,
-        'entity_birth_death': graph_entity_birth_death,
-        'entity_cumulative_removed': graph_entity_cumulative_removed,
-        'oecd_status_distribution_absolute': graph_oecd_status_abs,
-        'oecd_status_distribution_percentage': graph_oecd_status_pct,
-        'stressor_coverage_growth_absolute': graph_stressor_growth_abs,
-        'stressor_coverage_growth_delta': graph_stressor_growth_delta,
-        'aops_per_stressor_distribution_absolute': graph_aops_per_stressor_abs,
-        'aops_per_stressor_distribution_percentage': graph_aops_per_stressor_pct,
-        'ke_mmo_coverage_absolute': graph_ke_mmo_abs,
-        'ke_mmo_coverage_percentage': graph_ke_mmo_pct,
-        'ke_migration_map': graph_ke_migration_map,
-        'average_components_per_aop_absolute': graph_avg_abs,
-        'average_components_per_aop_delta': graph_avg_delta,
-        'aop_network_density': graph_density,
-        'ke_component_annotations_absolute': graph_components_abs,
-        'ke_component_annotations_delta': graph_components_delta,
-        'ke_components_percentage_absolute': graph_components_pct_abs,
-        'ke_components_percentage_delta': graph_components_pct_delta,
-        'unique_ke_components_absolute': graph_unique_abs,
-        'unique_ke_components_delta': graph_unique_delta,
-        'biological_process_annotations_absolute': graph_bio_processes_abs,
-        'biological_process_annotations_delta': graph_bio_processes_delta,
-        'biological_object_annotations_absolute': graph_bio_objects_abs,
-        'biological_object_annotations_delta': graph_bio_objects_delta,
-        'aop_authors_absolute': graph_authors_abs,
-        'aop_authors_delta': graph_authors_delta,
-        'aops_created_over_time': graph_created,
-        'aop_creation_vs_modification_timeline': graph_scatter,
-        'aop_property_presence_absolute': graph_prop_abs,
-        'aop_property_presence_percentage': graph_prop_pct,
-        'ke_property_presence_absolute': graph_ke_prop_abs,
-        'ke_property_presence_percentage': graph_ke_prop_pct,
-        'ker_property_presence_absolute': graph_ker_prop_abs,
-        'ker_property_presence_percentage': graph_ker_prop_pct,
-        'stressor_property_presence_absolute': graph_stressor_prop_abs,
-        'stressor_property_presence_percentage': graph_stressor_prop_pct,
-        'entity_completeness_trends': graph_entity_completeness,
-        'aop_completeness_boxplot': graph_aop_completeness_boxplot,
-        'aop_completeness_boxplot_all': graph_aop_completeness_boxplot_all,
-        'oecd_completeness_trend': graph_oecd_completeness_trend,
-        'kes_by_kec_count_absolute': graph_kec_count_abs,
-        'kes_by_kec_count_delta': graph_kec_count_delta,
-        'ontology_term_growth_absolute': graph_ontology_growth_abs,
-        'ontology_term_growth_delta': graph_ontology_growth_delta,
-        'organ_coverage_absolute': graph_organ_cov_abs,
-        'organ_coverage_percentage': graph_organ_cov_pct,
-    }
-
-    latest_plots_with_version = LATEST_PLOT_FUNCTIONS
-
-    # Handle latest_* plots without version support yet (use pre-computed)
-    latest_plots_precomputed = {}
-
-    # Fast path: pre-rendered latest plots (no version requested and no
-    # per-plot tuning args). Any of scope/view/min_shared_kes forces a
-    # re-render so the plot reflects the user's choice instead of the
-    # cached default.
-    _tuning_args = ('scope', 'view', 'min_shared_kes', 'min_jaccard', 'branch', 'domain')
-    _has_tuning = any(request.args.get(k) for k in _tuning_args)
+    # Fast path: pre-rendered snapshot plots (no version requested and no
+    # tuning args). Any tuning arg forces a re-render so the plot reflects the
+    # user's choice instead of the cached default.
+    _has_tuning = any(request.args.get(k) for k in registry.tuning_params())
     if not version and not _has_tuning and _serve_precomputed(plot_name):
         return jsonify({'html': _latest_precomputed_html[plot_name], 'success': True})
 
-    # Check if it's a versioned latest plot
-    if plot_name in latest_plots_with_version:
+    if plot_name in LATEST_PLOT_FUNCTIONS:
         try:
-            plot_function = latest_plots_with_version[plot_name]
-            # Pass through any extra query-string args (e.g. scope, view) that
-            # the target plot function declares — keeps the unified coverage
-            # toggles working without overloading the route surface.
+            plot_function = LATEST_PLOT_FUNCTIONS[plot_name]
+            # Pass through the tuning args this plot's spec declares (scope,
+            # view, ...) — keeps the unified coverage toggles working without
+            # overloading the route surface.
             extra_kwargs = {}
-            try:
-                params = inspect.signature(plot_function).parameters
-                for key in ('scope', 'view', 'min_shared_kes', 'min_jaccard', 'branch', 'domain'):
-                    if key in params:
-                        value = request.args.get(key)
-                        if value:
-                            extra_kwargs[key] = value
-            except (TypeError, ValueError):
-                pass
+            for key in registry.BY_ID[plot_name].params:
+                value = request.args.get(key)
+                if value:
+                    extra_kwargs[key] = value
             if version:
                 html = plot_function(version, **extra_kwargs)
             else:
@@ -2203,13 +943,9 @@ def get_plot(plot_name):
             logger.error(f"Error generating plot {plot_name} with version {version}: {e}")
             return jsonify({'error': str(e), 'success': False}), 500
 
-    # Check precomputed latest plots
-    elif plot_name in latest_plots_precomputed:
-        return jsonify({'html': latest_plots_precomputed[plot_name], 'success': True})
-
-    # Check historical trend plots
-    elif plot_name in plot_map:
-        plot_html = trend_recovery.html(plot_name, plot_map[plot_name])
+    # Historical trend plots, served from their startup result
+    elif plot_name in TREND_PLOT_OUTPUTS:
+        plot_html = trend_recovery.html(plot_name, _startup_trend_html(plot_name))
         # If it's a callable (lambda function), execute it to generate the plot on-demand
         if callable(plot_html):
             try:
@@ -2268,7 +1004,7 @@ def landing():
         # swallows errors, so a still-down endpoint just leaves counts hidden
         # rather than erroring the page.
         try:
-            safe_plot_execution(plot_latest_entity_counts, _latest_version)
+            safe_plot_execution(LATEST_PLOT_FUNCTIONS['latest_entity_counts'], _latest_version)
             entity_counts = _counts_from_cache()
         except Exception:
             logger.warning("Landing: on-demand entity_counts recompute failed", exc_info=True)

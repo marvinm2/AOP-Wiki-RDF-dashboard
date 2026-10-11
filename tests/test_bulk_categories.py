@@ -2,13 +2,12 @@
 
 ``create_bulk_download`` looks each id up in the plot data/figure caches by name
 and silently skips ids it can't find, so a stale id just yields a ZIP with files
-missing. This test reads the category table from ``app.py`` (parsed, not
-imported: importing ``app`` starts the live-endpoint precompute) and checks each
-id against the cache keys that the plot modules write.
+missing. This test checks each
+id against the cache keys that the plot modules write. The categories come from
+the plot registry (#178).
 """
 from __future__ import annotations
 
-import ast
 import re
 from pathlib import Path
 
@@ -17,13 +16,8 @@ PLOT_SOURCES = sorted((ROOT / "plots").glob("*.py"))
 
 
 def _bulk_categories() -> dict[str, list[str]]:
-    tree = ast.parse((ROOT / "app.py").read_text())
-    for node in ast.walk(tree):
-        if (isinstance(node, ast.Assign)
-                and any(isinstance(t, ast.Name) and t.id == "categories" for t in node.targets)
-                and isinstance(node.value, ast.Dict)):
-            return ast.literal_eval(node.value)
-    raise AssertionError("bulk-download `categories` dict not found in app.py")
+    from plots import registry
+    return registry.bulk_categories()
 
 
 def _cache_writers() -> tuple[set[str], set[str]]:

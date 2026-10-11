@@ -405,14 +405,42 @@ def scan_plots_dir(plots_dir: pathlib.Path) -> dict[str, int]:
     return merged
 
 
+def load_note_producers(plots_dir: pathlib.Path) -> dict[str, list[str]]:
+    """Methodology-note key -> the plot functions behind it, from the plot registry.
+
+    ``plots/registry.py`` (#178) is pure data, so it is loaded by path; the
+    ``plots`` package itself is never imported (Pitfall P2). Returns ``{}``
+    when there is no registry, and LINT-04 falls back to ``plot_<key>``.
+    """
+    path = plots_dir / "registry.py"
+    if not path.is_file():
+        return {}
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("_plot_registry", path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module  # dataclasses resolve the module by name
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        sys.modules.pop(spec.name, None)
+    producers: dict[str, list[str]] = {}
+    for plot in module.SPECS:
+        if plot.note and plot.producer not in producers.setdefault(plot.note, []):
+            producers[plot.note].append(plot.producer)
+    return producers
+
+
 def check_lint_04(
     name: str,
     entry: dict,
     plot_call_counts: dict[str, int],
+    producers: Optional[list[str]] = None,
 ) -> Optional[dict]:
     """Soft-warn when a plot function issues more calls than the entry discloses.
 
-    Maps methodology key ``foo`` to expected function ``plot_foo`` (e.g.
+    ``producers`` are the plot functions behind the entry, from the plot
+    registry (``load_note_producers``); each is checked on its own. Without
+    them, methodology key ``foo`` maps to function ``plot_foo`` (e.g.
     ``latest_ke_components`` -> ``plot_latest_ke_components``). Disclosed
     query count comes from whichever schema the entry uses:
 
@@ -427,8 +455,8 @@ def check_lint_04(
     severity is ``LINT_04_SEVERITY`` (``"warn"`` this phase). The future
     schema-migration phase flips that constant to ``"fail"``.
     """
-    func_name = f"plot_{name}"
-    count = plot_call_counts.get(func_name)
+    counted = [(plot_call_counts.get(f, 0), f) for f in (producers or [f"plot_{name}"])]
+    count, func_name = max(counted)
     if not count:
         return None
     if isinstance(entry.get("queries"), list):
@@ -645,8 +673,10 @@ def run_lint(
     enforce_call_budget(notes, budget=budget, no_network=no_network)
 
     plot_call_counts: dict[str, int] = {}
+    note_producers: dict[str, list[str]] = {}
     if plots_dir is not None:
         plot_call_counts = scan_plots_dir(plots_dir)
+        note_producers = load_note_producers(plots_dir)
 
     findings: list[dict] = []
     session: Optional[requests.Session] = None
@@ -660,7 +690,7 @@ def run_lint(
             continue
         lint03_findings = check_lint_03(name, entry)
         findings.extend(lint03_findings)
-        lint04 = check_lint_04(name, entry, plot_call_counts)
+        lint04 = check_lint_04(name, entry, plot_call_counts, note_producers.get(name))
         if lint04 is not None:
             findings.append(lint04)
         if no_network:
