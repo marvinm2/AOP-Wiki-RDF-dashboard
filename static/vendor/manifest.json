@@ -1,0 +1,16 @@
+{
+  "plotly-cartesian": {
+    "version": "2.32.0",
+    "path": "vendor/plotly-cartesian@2.32.0/plotly-cartesian-2.32.0.min.js",
+    "integrity": "sha384-YkB4lePNddYzhu5qO7x1xDTHzANdk9+OdOwKTZgpTSFoZfAsolrGmRa9zJA6c9EQ",
+    "bytes": 1298502,
+    "source": "https://cdn.plot.ly/plotly-cartesian-2.32.0.min.js"
+  },
+  "cytoscape": {
+    "version": "3.33.1",
+    "path": "vendor/cytoscape@3.33.1/cytoscape.min.js",
+    "integrity": "sha384-lXrzMjLDk3q9l0I/kjqjMcDgfFnHvWTDeWP3DmMqoeOq49/qa8drmlP3OBWN9dQ3",
+    "bytes": 434037,
+    "source": "https://unpkg.com/cytoscape@3.33.1/dist/cytoscape.min.js"
+  }
+}

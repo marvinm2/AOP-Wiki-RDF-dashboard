@@ -1,0 +1,6 @@
+{# Third-party JavaScript, served from static/vendor with Subresource Integrity (#175).
+   `vendor` comes from static/vendor/manifest.json (see scripts/vendor_js.py). #}
+{% macro vendor_script(name, defer=False) -%}
+{%- set lib = vendor[name] -%}
+<script src="{{ url_for('static', filename=lib.path) }}" integrity="{{ lib.integrity }}" crossorigin="anonymous"{% if defer %} defer{% endif %}></script>
+{%- endmacro %}
