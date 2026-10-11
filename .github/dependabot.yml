@@ -10,6 +10,12 @@ updates:
       python-deps:
         patterns: ["*"]
         update-types: [minor, patch]
+    # Major upgrades are planned work, not monthly chores: plotly 6+ is tied to
+    # the server-side export decision (#191), and gunicorn / python-json-logger
+    # majors change runtime behaviour. Bump those by hand when ready.
+    ignore:
+      - dependency-name: "*"
+        update-types: [version-update:semver-major]
 
   - package-ecosystem: github-actions
     directory: /
