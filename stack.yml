@@ -34,6 +34,10 @@ services:
         - traefik.http.routers.aopwiki-dashboard.tls=true
         - traefik.http.routers.aopwiki-dashboard.tls.certresolver=letsencrypt
         - traefik.http.services.aopwiki-dashboard.loadbalancer.server.port=5000
+        # gzip/brotli: /snapshot 279 KB -> 36 KB, network graph 690 KB -> 123 KB (#174).
+        # The SPARQL endpoint needs no equivalent: Virtuoso compresses its own responses.
+        - traefik.http.middlewares.aopwiki-dashboard-gzip.compress=true
+        - traefik.http.routers.aopwiki-dashboard.middlewares=aopwiki-dashboard-gzip
         - traefik.docker.network=core
       resources:
         limits:
