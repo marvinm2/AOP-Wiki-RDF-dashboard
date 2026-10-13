@@ -214,7 +214,7 @@ def _query_domain_members(target_graph: str, term_iris: Sequence[str]) -> Dict[s
         return {}
     predicate_list = ", ".join(f"<{p}>" for p in _KE_ANNOTATION_PREDICATES)
     members: Dict[str, Set[str]] = {}
-    for chunk in _chunks(list(term_iris)):
+    for chunk in _chunks(sorted(term_iris)):
         values = " ".join(f"<{t}>" for t in chunk)
         query = f"""
         SELECT DISTINCT ?aop ?term
@@ -262,7 +262,7 @@ def _query_cohort_entities(
     """KE and KER URIs belonging to a set of AOPs."""
     kes: Set[str] = set()
     kers: Set[str] = set()
-    for chunk in _chunks(list(aop_uris)):
+    for chunk in _chunks(sorted(aop_uris)):
         values = " ".join(f"<{a}>" for a in chunk)
         query = f"""
         SELECT DISTINCT ?ke ?ker
@@ -306,7 +306,7 @@ def _property_values(
     """
     if not property_uris:
         return {}
-    property_values = " ".join(f"<{p}>" for p in property_uris)
+    property_values = " ".join(f"<{p}>" for p in sorted(property_uris))
     have: Dict[str, Set[str]] = {p: set() for p in property_uris}
 
     if entity_uris is None:
@@ -314,7 +314,7 @@ def _property_values(
     else:
         blocks = [
             f"VALUES ?s {{ {' '.join(f'<{u}>' for u in chunk)} }}"
-            for chunk in _chunks(list(entity_uris))
+            for chunk in _chunks(sorted(entity_uris))
         ]
 
     for block in blocks:

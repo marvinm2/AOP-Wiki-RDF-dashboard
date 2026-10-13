@@ -68,6 +68,7 @@ from typing import List, Dict, Any, Optional, Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urlparse
 from config import Config
+from . import query_store
 
 logger = logging.getLogger(__name__)
 
@@ -276,6 +277,10 @@ SPARQL_ENDPOINT = Config.SPARQL_ENDPOINT
 MAX_RETRIES = Config.SPARQL_MAX_RETRIES
 RETRY_DELAY = Config.SPARQL_RETRY_DELAY
 TIMEOUT = Config.SPARQL_TIMEOUT
+
+# Read-only here; scripts/build_query_store.py reconfigures it as the writer (#179).
+query_store.configure(Config.QUERY_STORE_DIR or None,
+                      manifest_ttl=Config.QUERY_STORE_MANIFEST_TTL)
 
 # Official House Style Color Palette — single source of truth for all chart colors
 BRAND_COLORS = {
@@ -861,6 +866,14 @@ def run_sparql_query_with_retry(query: str, max_retries: int = MAX_RETRIES,
     last_exception = None
     query = add_missing_prefixes(query)
 
+    # Answer from the persistent query store when it holds this query at the
+    # current graph fingerprints (#179); the build job also writes to it.
+    store = query_store.active_store()
+    if store is not None:
+        stored = store.get(query)
+        if stored is not None:
+            return stored
+
     for attempt in range(max_retries):
         try:
             start_time = time.time()
@@ -886,6 +899,8 @@ def run_sparql_query_with_retry(query: str, max_retries: int = MAX_RETRIES,
                     f"({Config.SPARQL_RESULT_ROW_CAP}); the result is probably "
                     f"truncated. Query starts: {query.strip()[:120]!r}"
                 )
+            if store is not None and query_store.is_writable():
+                store.put(query, bindings)
             return bindings
 
         except SPARQLExceptions.QueryBadFormed as e:
@@ -910,6 +925,8 @@ def run_sparql_query_with_retry(query: str, max_retries: int = MAX_RETRIES,
             break
 
     logger.error(f"All {max_retries} query attempts failed. Last error: {str(last_exception)}")
+    if store is not None:
+        store.failures += 1
     raise SparqlUnavailable(str(last_exception)) from last_exception
 
 

@@ -51,6 +51,7 @@ import os
 import re
 import json
 import logging
+import threading
 
 logger = logging.getLogger(__name__)
 
@@ -134,6 +135,8 @@ from plots import (
     get_or_compute_network
 )
 from plots.recovery import TrendPlotRecovery, result_has_usable_html, run_tasks_with_deadline
+from plots import query_store
+from plots.shared import get_version_registry
 
 from usage_analytics import record_event, get_summary, init_db
 
@@ -209,6 +212,12 @@ STARTUP_PLOT_FUNCTIONS = {
     for task, spec in registry.startup_tasks().items()
 }
 
+def _store_manifest():
+    """The query store's current manifest, or None without a store or a build (#179)."""
+    store = query_store.active_store()
+    return store.manifest() if store is not None else None
+
+
 def compute_plots_parallel() -> dict:
     """Compute all visualization plots in parallel for optimal startup performance.
     
@@ -255,8 +264,11 @@ def compute_plots_parallel() -> dict:
     
     # Wait for the endpoint to serve real data, not just HTTP (#157). A Virtuoso
     # started alongside us can answer while still empty, and whatever we compute
-    # now is served for the life of the process.
-    if not wait_for_sparql_ready():
+    # now is served for the life of the process. With a built query store the
+    # precompute reads the store instead, so there is nothing to wait for (#179).
+    if _store_manifest() is not None:
+        logger.info("Query store has a manifest; precomputing from the store")
+    elif not wait_for_sparql_ready():
         logger.error("SPARQL endpoint is not ready, proceeding with degraded service")
     
     plot_tasks = [
@@ -286,6 +298,7 @@ def compute_plots_parallel() -> dict:
 
 # --- Precompute plots at startup ---
 _startup_complete = False
+_startup_manifest = _store_manifest()
 plot_results = compute_plots_parallel()
 _startup_complete = True
 
@@ -396,6 +409,56 @@ trend_recovery = TrendPlotRecovery(
     STARTUP_PLOT_FUNCTIONS, TREND_PLOT_OUTPUTS,
     run=safe_plot_execution, cooldown=Config.PLOT_RECOVERY_COOLDOWN,
 )
+
+_refresh_lock = threading.Lock()
+
+
+def _refresh_from_new_build() -> None:
+    """Recompute the startup plots once a newer query-store build is published (#179).
+
+    A new quarter, or a reloaded graph, reaches the store through a build, which
+    publishes a new manifest. Each worker notices on its next request, recomputes
+    the startup plots from the store in the background, and swaps them in when
+    done; until then it keeps serving the previous ones. No restart needed.
+    """
+    manifest = _store_manifest()
+    if manifest is None or manifest == _startup_manifest or not _refresh_lock.acquire(blocking=False):
+        return
+
+    def refresh():
+        global plot_results, _latest_precomputed_html, _latest_version, trend_recovery, _startup_manifest
+        try:
+            logger.info(f"Query store rebuilt at {manifest.built_at}; recomputing startup plots")
+            get_version_registry().invalidate()
+            results = run_tasks_with_deadline(
+                {name: (lambda func=func: safe_plot_execution(func))
+                 for name, func in STARTUP_PLOT_FUNCTIONS.items()},
+                max_workers=Config.PARALLEL_WORKERS, timeout=Config.STARTUP_BUDGET)
+            latest = get_latest_version()
+            plot_results = results
+            _latest_precomputed_html = {
+                k: v for k, v in results.items()
+                if k.startswith('latest_') and isinstance(v, str) and result_has_usable_html(v)
+            }
+            _latest_version = latest
+            if latest and latest != "Unknown":
+                _plot_data_cache.pin_version(latest)
+                _plot_figure_cache.pin_version(latest)
+            trend_recovery = TrendPlotRecovery(
+                STARTUP_PLOT_FUNCTIONS, TREND_PLOT_OUTPUTS,
+                run=safe_plot_execution, cooldown=Config.PLOT_RECOVERY_COOLDOWN,
+            )
+            _startup_manifest = manifest
+            logger.info(f"Startup plots refreshed; latest version {latest}")
+        finally:
+            _refresh_lock.release()
+
+    threading.Thread(target=refresh, name="store-refresh", daemon=True).start()
+
+
+@app.before_request
+def _check_for_new_build():
+    _refresh_from_new_build()
 
 
 

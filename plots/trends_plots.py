@@ -2501,7 +2501,7 @@ def plot_entity_completeness_trends(label_file="property_labels.csv") -> str:
 
         # Query to identify 100% present properties (to exclude them)
         # First get total entity counts per version
-        uri_filter_presence = ">, <".join(applicable_uris)
+        uri_filter_presence = ">, <".join(sorted(applicable_uris))
         query_total = f"""
         SELECT ?graph (COUNT(DISTINCT {variable}) AS ?total)
         WHERE {{
@@ -2574,7 +2574,7 @@ def plot_entity_completeness_trends(label_file="property_labels.csv") -> str:
             total_properties = len(applicable_uris)
 
         # Query to get property counts per entity per version (using filtered properties)
-        uri_filter = ">, <".join(applicable_uris)
+        uri_filter = ">, <".join(sorted(applicable_uris))
         query = f"""
         SELECT ?graph {variable} (COUNT(DISTINCT ?p) AS ?prop_count)
         WHERE {{
@@ -2687,7 +2687,7 @@ def _query_boxplot_version(version_info, aop_props, ke_props, ker_props, all_pro
     graph_uri = version_info["graph_uri"]
     version_str = version_info["version"]
 
-    all_props_filter = ">, <".join(all_props)
+    all_props_filter = ">, <".join(sorted(all_props))
 
     # Query 1: Entity totals for this version
     query_totals = f"""
@@ -2787,7 +2787,7 @@ def _query_boxplot_entity_props(version_info, aop_props, ke_props, ker_props,
     union_parts = []
 
     if aop_prop_count > 0:
-        aop_uri_filter = ">, <".join(aop_props)
+        aop_uri_filter = ">, <".join(sorted(aop_props))
         union_parts.append(f"""
           {{
             ?entity a aopo:AdverseOutcomePathway ;
@@ -2798,7 +2798,7 @@ def _query_boxplot_entity_props(version_info, aop_props, ke_props, ker_props,
         """)
 
     if ke_prop_count > 0:
-        ke_uri_filter = ">, <".join(ke_props)
+        ke_uri_filter = ">, <".join(sorted(ke_props))
         union_parts.append(f"""
           {{
             ?entity a aopo:KeyEvent ;
@@ -2809,7 +2809,7 @@ def _query_boxplot_entity_props(version_info, aop_props, ke_props, ker_props,
         """)
 
     if ker_prop_count > 0:
-        ker_uri_filter = ">, <".join(ker_props)
+        ker_uri_filter = ">, <".join(sorted(ker_props))
         union_parts.append(f"""
           {{
             ?entity a aopo:KeyEventRelationship ;
@@ -3211,7 +3211,7 @@ def plot_oecd_completeness_trend(label_file="property_labels.csv") -> str:
             return create_fallback_plot("OECD Completeness Trend", "No AOP properties configured")
 
         # Build property filter for SPARQL
-        prop_filter_values = ", ".join([f"<{uri}>" for uri in aop_property_uris])
+        prop_filter_values = ", ".join([f"<{uri}>" for uri in sorted(aop_property_uris)])
 
         # Get all versions
         versions = get_all_versions()
@@ -3469,19 +3469,19 @@ def plot_aop_completeness_boxplot_by_status():
 
         # Build property filter strings
         if aop_prop_count > 0:
-            aop_prop_filter_values = ", ".join([f"<{uri}>" for uri in aop_props])
+            aop_prop_filter_values = ", ".join([f"<{uri}>" for uri in sorted(aop_props)])
             aop_prop_filter = f"FILTER(?p IN ({aop_prop_filter_values}))"
         else:
             aop_prop_filter = ""
 
         if ke_prop_count > 0:
-            ke_prop_filter_values = ", ".join([f"<{uri}>" for uri in ke_props])
+            ke_prop_filter_values = ", ".join([f"<{uri}>" for uri in sorted(ke_props)])
             ke_prop_filter = f"FILTER(?p IN ({ke_prop_filter_values}))"
         else:
             ke_prop_filter = ""
 
         if ker_prop_count > 0:
-            ker_prop_filter_values = ", ".join([f"<{uri}>" for uri in ker_props])
+            ker_prop_filter_values = ", ".join([f"<{uri}>" for uri in sorted(ker_props)])
             ker_prop_filter = f"FILTER(?p IN ({ker_prop_filter_values}))"
         else:
             ker_prop_filter = ""
