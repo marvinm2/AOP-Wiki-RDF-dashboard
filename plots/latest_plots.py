@@ -30,7 +30,6 @@ Latest Data Plot Functions:
 
     Data Quality:
         - plot_latest_aop_completeness(): Property completeness analysis
-        - plot_latest_aop_completeness_unique_colors(): Enhanced completeness visualization
 
 Visualization Characteristics:
     - Current state focus (latest RDF graph version only)
@@ -982,115 +981,6 @@ def plot_latest_aop_completeness(version: str = None) -> str:
 
     # Cache the figure object for image export (PNG/SVG/PDF)
     _plot_figure_cache[f'latest_aop_completeness_{version or "latest"}'] = fig
-
-    return render_plot_html(fig)
-
-
-@resolves_version
-def plot_latest_aop_completeness_unique_colors(version: str = None) -> str:
-    """Create a chart showing current AOP data completeness with unique colors for each property."""
-    global _plot_data_cache
-
-    where_filter, order_limit = _build_graph_filter(version)
-
-    # Default fallback properties for essential AOP completeness
-    default_properties = [
-        {"uri": "http://purl.org/dc/elements/1.1/title", "label": "Title", "type": "Essential"},
-        {"uri": "http://purl.org/dc/terms/abstract", "label": "Abstract", "type": "Essential"},
-        {"uri": "http://purl.org/dc/elements/1.1/creator", "label": "Creator", "type": "Metadata"},
-        {"uri": "http://aopkb.org/aop_ontology#has_key_event", "label": "Has Key Event", "type": "Content"},
-        {"uri": "http://aopkb.org/aop_ontology#has_adverse_outcome", "label": "Has Adverse Outcome", "type": "Content"}
-    ]
-    properties_df = safe_read_csv("property_labels.csv", default_properties)
-    properties = properties_df.to_dict(orient="records")
-
-    # Query total number of AOPs
-    total_query = f"""
-    SELECT ?graph (COUNT(DISTINCT ?aop) AS ?total_aops)
-    WHERE {{
-        GRAPH ?graph {{ ?aop a aopo:AdverseOutcomePathway . }}
-        FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-        {where_filter}
-    }}
-    GROUP BY ?graph
-    {order_limit}
-    """
-    total_results = run_sparql_query(total_query)
-    if not total_results:
-        return create_fallback_plot("AOP Completeness (Unique Colors)", "No AOP data available")
-
-    total_aops = int(total_results[0]["total_aops"]["value"])
-    latest_version = total_results[0]["graph"]["value"].split("/")[-1]
-
-    # Use elegant single GROUP BY query to count all properties at once
-    # This queries what properties AOPs actually have, much faster than checking each one
-
-    # First, we need to ensure we query only the target graph
-    # If version is specified, use it directly. Otherwise, query for latest graph first.
-    if version:
-        target_graph = f"http://aopwiki.org/graph/{version}"
-    else:
-        target_graph = f"http://aopwiki.org/graph/{latest_version}"
-
-    property_count_query = f"""
-    SELECT DISTINCT ?p (COUNT(DISTINCT ?aop) AS ?n)
-    WHERE {{
-        GRAPH <{target_graph}> {{
-            ?aop a aopo:AdverseOutcomePathway ;
-                 ?p ?o .
-        }}
-    }}
-    GROUP BY ?p
-    """
-
-    results = run_sparql_query(property_count_query)
-
-    # Build a map of property URI -> count
-    property_counts = {}
-    for result in results:
-        prop_uri = result["p"]["value"]
-        count = int(result["n"]["value"])
-        property_counts[prop_uri] = count
-
-    # Match with our property labels and calculate completeness
-    completeness_data = []
-    for prop in properties:
-        uri = prop["uri"]
-        count = property_counts.get(uri, 0)
-        completeness = (count / total_aops) * 100
-
-        completeness_data.append({
-            "Property": prop["label"],
-            "Completeness": completeness,
-            "Type": prop["type"],
-            "URI": uri,
-            "Count": count
-        })
-
-    df = pd.DataFrame(completeness_data)
-    df["Version"] = latest_version  # Add version for context
-    df["Total_AOPs"] = total_aops   # Add total AOPs for reference
-
-    # Store in global cache for CSV download with unique key
-    _plot_data_cache[f'latest_aop_completeness_unique_{version or "latest"}'] = df
-
-    fig = px.bar(
-        df, x="Property", y="Completeness",
-        text="Completeness",
-    )
-    fig.update_traces(marker_color=BRAND_COLORS['blue'], texttemplate='%{text:.1f}%', textposition='outside')
-    fig.update_layout(
-
-
-        height=600,  # Larger height for better visibility
-        margin=dict(l=50, r=20, t=70, b=120),  # More space for labels
-        yaxis=dict(title="Completeness (%)", range=[0, 105]),
-        xaxis=dict(title="AOP Properties", tickangle=45),
-        showlegend=False  # Hide legend since colors are unique per property
-    )
-
-    # Cache the figure object for image export (PNG/SVG/PDF)
-    _plot_figure_cache[f'latest_aop_completeness_unique_{version or "latest"}'] = fig
 
     return render_plot_html(fig)
 
@@ -3234,44 +3124,6 @@ def _coverage_plot_for_scope(
 
 
 @resolves_version
-def plot_latest_organ_coverage(version: str = None) -> str:
-    """AOP coverage of organ systems — all member KEs contribute (Signals A/A'/B/C)."""
-    return _coverage_plot_for_scope(
-        version,
-        scope="all",
-        cache_stub="latest_organ_coverage",
-        title="AOP Coverage of Organ Systems",
-    )
-
-
-@resolves_version
-def plot_latest_organ_coverage_apical(version: str = None) -> str:
-    """Apical-only view: only Tissue/Organ/Individual/Population KEs contribute
-    to Signals A/A'/B. Signal C (AOP title) is kept. Surfaces what the AOP is
-    *about* at the organ-and-up level rather than its molecular footprint.
-    """
-    return _coverage_plot_for_scope(
-        version,
-        scope="apical",
-        cache_stub="latest_organ_coverage_apical",
-        title="AOP Coverage of Organ Systems — Apical KEs only",
-    )
-
-
-@resolves_version
-def plot_latest_organ_coverage_ao_only(version: str = None) -> str:
-    """AO-only view: only the Adverse Outcome KE contributes to Signals A/A'/B.
-    Signal C (AOP title) is kept since titles routinely describe the AO.
-    """
-    return _coverage_plot_for_scope(
-        version,
-        scope="ao",
-        cache_stub="latest_organ_coverage_ao_only",
-        title="AOP Coverage of Organ Systems — Adverse Outcome only",
-    )
-
-
-@resolves_version
 def plot_latest_life_stage(version: str = None) -> str:
     """Distribution of AOPs by life-stage applicability (issue #22, narrowed).
 
@@ -3363,18 +3215,6 @@ def plot_latest_life_stage(version: str = None) -> str:
     return render_plot_html(fig)
 
 
-@resolves_version
-def plot_latest_organ_coverage_percentage(version: str = None) -> str:
-    """Percentage view of the all-KEs coverage plot."""
-    return _coverage_plot_for_scope(
-        version,
-        scope="all",
-        cache_stub="latest_organ_coverage_percentage",
-        title="AOP Coverage of Organ Systems — % view",
-        percentage=True,
-    )
-
-
 _SCOPE_TITLE_SUFFIX: dict[str, str] = {
     "all": "All KEs",
     "apical": "Apical KEs only",
@@ -3407,8 +3247,7 @@ def plot_latest_organ_coverage_unified(
 ) -> str:
     """Unified coverage bar — accepts ``scope`` (all/apical/ao) and ``view``
     (absolute/percentage) so the front-end can drive both toggles from one
-    plot name. The four legacy ``plot_latest_organ_coverage*`` functions
-    remain as compatibility shims for direct CSV/PNG downloads.
+    plot name.
     """
     if scope not in _SCOPE_LABELS:
         scope = "all"
