@@ -219,9 +219,15 @@ page has moved past, never draws a response for an older selection, and dispatch
 each draw. Page state (version, trends range, plot settings) lives in the URL via `static/js/state.js`, so
 every view can be bookmarked or shared. Controls only change that state.
 
+Once a figure is drawn, `static/js/viz/export.js` adds "PNG (as shown)" and "SVG (as shown)" to its
+download menu. These save the figure with its current zoom, range and settings, under a file name that
+records the version or range and the settings. `static/js/viz/a11y.js` makes each figure a labelled,
+focusable element (arrow keys, Home and End step through its values and read them out) and loads the
+"Show Raw Data" tables from `/api/v2/data` for the same selection as the figure.
+
 ```bash
 npm ci && npx playwright install chromium
-npm run test:js     # node --test: the state module
+npm run test:js     # node --test: state, figure, export and a11y modules
 npm run test:e2e    # Playwright: pages served by the app, data requests stubbed (no endpoint needed)
 ```
 
@@ -232,7 +238,7 @@ npm run test:e2e    # Playwright: pages served by the app, data requests stubbed
 4. Add download button to appropriate HTML template
 
 ### **Customization**
-- **Colors**: Modify `BRAND_COLORS` in `plots/shared.py`
+- **Colors**: Modify `BRAND_COLORS` in `plots/shared.py`, then run `python scripts/build_tokens.py` to refresh `static/data/tokens.json` (the copy browser code reads; a test fails while it is stale)
 - **Properties**: Update `property_labels.csv` with new AOP properties
 - **Endpoints**: Configure SPARQL endpoint in `config.py`
 - **Layout**: Customize templates and CSS for different layouts

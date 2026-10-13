@@ -48,7 +48,6 @@
             if (!changed.includes('version')) return;
             selector.value = state.get('version') || latest;
             applyVersion();
-            document.dispatchEvent(new CustomEvent('version-changed', { detail: { version: state.get('version') } }));
         });
         applyVersion();
     }

@@ -181,9 +181,12 @@ class PlotRuntime {
         return this.renderers[key] || this.renderers['legacy-html'];
     }
 
-    /** The one place a plot request URL is built. */
-    plotUrl(element) {
-        const plotName = element.dataset.plotName;
+    /**
+     * The query string ("" or "?...") that selects what a plot shows: the
+     * version (versioned plots) and its settings. Plot requests, the data
+     * tables and export file names all use it.
+     */
+    query(plotName) {
         const params = new URLSearchParams();
         const get = (k) => (this.state ? this.state.get(k) : null);
         if (PlotRuntime.isVersioned(plotName) && get('version')) params.set('version', get('version'));
@@ -192,7 +195,13 @@ class PlotRuntime {
             if (v !== null && v !== undefined) params.set(k, v);
         });
         const qs = params.toString();
-        return this.rendererFor(element).endpoint(plotName, qs ? `?${qs}` : '');
+        return qs ? `?${qs}` : '';
+    }
+
+    /** The one place a plot request URL is built. */
+    plotUrl(element) {
+        const plotName = element.dataset.plotName;
+        return this.rendererFor(element).endpoint(plotName, this.query(plotName));
     }
 
     /**

@@ -166,9 +166,10 @@ async function initNetworkGraph() {
  */
 async function fetchMetricsAndCommunities() {
     try {
-        const [metricsResp, commResp] = await Promise.all([
+        const [metricsResp, commResp, palette] = await Promise.all([
             fetch('/api/network/metrics'),
-            fetch('/api/network/communities')
+            fetch('/api/network/communities'),
+            brandPalette()
         ]);
 
         if (metricsResp.ok) {
@@ -180,7 +181,7 @@ async function fetchMetricsAndCommunities() {
         if (commResp.ok) {
             const commJson = await commResp.json();
             communitiesData = commJson.communities || [];
-            populateCommunities(communitiesData);
+            populateCommunities(communitiesData, palette);
         }
     } catch (err) {
         console.error('Failed to fetch metrics/communities:', err);
@@ -272,7 +273,7 @@ function showInfoPanel(nodeData, nodeId) {
                     cy.animate({
                         center: { eles: targetNode },
                         zoom: 2
-                    }, { duration: 500 });
+                    }, { duration: window.DashA11y ? window.DashA11y.motionMs(500) : 500 });
                     targetNode.select();
                     showInfoPanel(targetNode.data(), targetNode.id());
                 });
@@ -395,7 +396,7 @@ function setupSearch(cyInstance) {
             cyInstance.animate({
                 center: { eles: node },
                 zoom: 2
-            }, { duration: 500 });
+            }, { duration: window.DashA11y ? window.DashA11y.motionMs(500) : 500 });
             node.select();
             showInfoPanel(node.data(), node.id());
         }
@@ -641,7 +642,7 @@ function renderMetricsTable() {
                     cy.animate({
                         center: { eles: node },
                         zoom: 2
-                    }, { duration: 500 });
+                    }, { duration: window.DashA11y ? window.DashA11y.motionMs(500) : 500 });
                     node.select();
                     showInfoPanel(node.data(), node.id());
                 }, 100);
@@ -679,7 +680,18 @@ function communityOption(id, size) {
  * Populate the community summary section with cards.
  * @param {Array} communities - Array of community objects from the API
  */
-function populateCommunities(communities) {
+/**
+ * The brand palette from static/data/tokens.json (generated from
+ * plots/shared.py BRAND_COLORS, #181); one fallback colour if it is unavailable.
+ */
+function brandPalette() {
+    return fetch('/static/data/tokens.json')
+        .then(function (r) { return r.json(); })
+        .then(function (t) { return t.color.palette; })
+        .catch(function () { return ['#29235C']; });
+}
+
+function populateCommunities(communities, palette) {
     const countEl = document.getElementById('community-count');
     const cardsEl = document.getElementById('community-cards');
     if (!countEl || !cardsEl) return;
@@ -697,12 +709,6 @@ function populateCommunities(communities) {
             communitySelect.appendChild(communityOption(comm.id, comm.size));
         });
     }
-
-    // Get the VHP4Safety palette for community colors
-    const palette = [
-        '#29235C', '#E6007E', '#307BBF', '#93D5F6', '#F39200',
-        '#009FE3', '#951B81', '#00A59B', '#6E4C9E', '#007B77', '#8B70B8'
-    ];
 
     let html = '';
     communities.forEach(function (comm) {
