@@ -3052,6 +3052,8 @@ def plot_aop_completeness_boxplot(label_file="property_labels.csv") -> tuple[str
 
         if not cohort_data:
             return None
+        # as_completed() yields in finishing order; fix it (#220).
+        cohort_data.sort(key=lambda vd: vd["version"])
 
         network_map: dict[str, dict] = {}
         aop_completeness: dict[str, dict] = {}
@@ -3089,12 +3091,13 @@ def plot_aop_completeness_boxplot(label_file="property_labels.csv") -> tuple[str
                     entity_scores.append(aop_completeness[version][aop_uri])
                 elif n_aop > 0:
                     entity_scores.append(0)
-                for ke_uri in network["kes"]:
+                # Sorted sets: the summation order moves the last float digits (#220).
+                for ke_uri in sorted(network["kes"]):
                     if version in ke_completeness and ke_uri in ke_completeness[version]:
                         entity_scores.append(ke_completeness[version][ke_uri])
                     elif n_ke > 0:
                         entity_scores.append(0)
-                for ker_uri in network["kers"]:
+                for ker_uri in sorted(network["kers"]):
                     if version in ker_completeness and ker_uri in ker_completeness[version]:
                         entity_scores.append(ker_completeness[version][ker_uri])
                     elif n_ker > 0:
@@ -3112,7 +3115,8 @@ def plot_aop_completeness_boxplot(label_file="property_labels.csv") -> tuple[str
 
         df = pd.DataFrame(rows)
         df["version_dt"] = pd.to_datetime(df["version"], errors="coerce")
-        return df.sort_values("version_dt")
+        # Stable sort with a tie-break, so AOPs keep one order within a version.
+        return df.sort_values(["version_dt", "aop_uri"], kind="mergesort")
 
     def _render_boxplot(df, y_title):
         fig = px.box(

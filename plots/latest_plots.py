@@ -2391,7 +2391,9 @@ def plot_latest_completeness_correlation(version: str = None) -> str:
         return create_fallback_plot("Completeness Correlation", "No AOP data found")
 
     matrix = pd.DataFrame(
-        [{lab: (1 if lab in present.get(a, set()) else 0) for lab in labels} for a in aops]
+        # Sorted: set order changes per process, and the row order moves the
+        # last digits of the correlations (#220).
+        [{lab: (1 if lab in present.get(a, set()) else 0) for lab in labels} for a in sorted(aops)]
     )
     corr = matrix.corr().reindex(index=labels, columns=labels)
     version_key = version or "latest"
@@ -3734,12 +3736,17 @@ def plot_latest_aop_aop_overlap(version: str = None, min_jaccard: float = 0.34,
     # Detect connected components (each is a cluster of mutually-overlapping
     # AOPs) and lay them out separately so the picture reads as discrete
     # families rather than one entangled hairball.
-    components = sorted(nx.connected_components(G), key=len, reverse=True)
+    # Ties broken by AOP so equal-sized components keep their grid cell (#220).
+    components = sorted(nx.connected_components(G), key=lambda c: (-len(c), min(c)))
     comp_size: dict = {n: len(comp) for comp in components for n in comp}
     pos: dict = {}
     n_cols = max(1, int(math.ceil(math.sqrt(len(components)))))
     for i, comp in enumerate(components):
-        sub = G.subgraph(comp)
+        # A subgraph view iterates its nodes in set order, which changes per
+        # process; spring_layout seeds from that order, so rebuild it sorted (#220).
+        sub = nx.Graph()
+        sub.add_nodes_from(sorted(comp))
+        sub.add_edges_from(sorted(tuple(sorted(e)) for e in G.subgraph(comp).edges()))
         # Stronger repulsion (larger k) + more iterations so nodes inside the
         # dense clusters spread out instead of piling on top of each other (#plot-review).
         sub_pos = nx.spring_layout(
