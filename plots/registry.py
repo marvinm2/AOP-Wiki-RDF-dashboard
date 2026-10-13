@@ -40,6 +40,9 @@ class PlotSpec:
         precompute: Rendered at startup. Always true for trend plots.
         params: Query-string tuning arguments ``/api/plot`` passes through.
         bulk: Bulk-download categories (``/download/bulk?category=``).
+        args: Fixed keyword arguments the producer is always called with, as
+            ``(name, value)`` pairs; one function serves several plots this
+            way (e.g. ``entity="ke"``).
     """
 
     id: str
@@ -52,21 +55,28 @@ class PlotSpec:
     precompute: bool
     params: tuple[str, ...] = ()
     bulk: tuple[str, ...] = ()
+    args: tuple[tuple[str, str], ...] = ()
+
+    @property
+    def kwargs(self) -> dict[str, str]:
+        return dict(self.args)
 
 
 def snapshot(id, producer, *, note="", page="snapshot", precompute=False,
-             params=(), bulk=()) -> PlotSpec:
+             params=(), bulk=(), args=None) -> PlotSpec:
     """A version-selectable snapshot plot. ``note`` defaults to the plot id."""
     return PlotSpec(id=id, kind="snapshot", producer=producer, task=id,
                     output=None, note=id if note == "" else note, page=page,
-                    precompute=precompute, params=tuple(params), bulk=tuple(bulk))
+                    precompute=precompute, params=tuple(params), bulk=tuple(bulk),
+                    args=tuple((args or {}).items()))
 
 
-def trend(task, producer, *, note, outputs) -> tuple[PlotSpec, ...]:
+def trend(task, producer, *, note, outputs, args=None) -> tuple[PlotSpec, ...]:
     """The plots one trend task produces: ``outputs`` maps id -> (index, bulk)."""
     return tuple(
         PlotSpec(id=id, kind="trend", producer=producer, task=task, output=index,
-                 note=note, page="trends", precompute=True, bulk=tuple(bulk))
+                 note=note, page="trends", precompute=True, bulk=tuple(bulk),
+                 args=tuple((args or {}).items()))
         for id, (index, bulk) in outputs.items()
     )
 
@@ -137,19 +147,19 @@ SPECS: tuple[PlotSpec, ...] = (
         'aops_created_over_time': (0, ('trends-all', 'trends-authors', 'all')),
         'aop_creation_vs_modification_timeline': (1, ('trends-all', 'trends-authors', 'all')),
     }),
-    *trend('aop_property_presence', 'plot_aop_property_presence', note='aop_property_presence', outputs={
+    *trend('aop_property_presence', 'plot_property_presence', note='aop_property_presence', args={'entity': 'aop'}, outputs={
         'aop_property_presence_absolute': (0, ('trends-all', 'trends-properties', 'all')),
         'aop_property_presence_percentage': (1, ('trends-properties',)),
     }),
-    *trend('ke_property_presence', 'plot_ke_property_presence', note='ke_property_presence', outputs={
+    *trend('ke_property_presence', 'plot_property_presence', note='ke_property_presence', args={'entity': 'ke'}, outputs={
         'ke_property_presence_absolute': (0, ()),
         'ke_property_presence_percentage': (1, ()),
     }),
-    *trend('ker_property_presence', 'plot_ker_property_presence', note='ker_property_presence', outputs={
+    *trend('ker_property_presence', 'plot_property_presence', note='ker_property_presence', args={'entity': 'ker'}, outputs={
         'ker_property_presence_absolute': (0, ()),
         'ker_property_presence_percentage': (1, ()),
     }),
-    *trend('stressor_property_presence', 'plot_stressor_property_presence', note='stressor_property_presence', outputs={
+    *trend('stressor_property_presence', 'plot_property_presence', note='stressor_property_presence', args={'entity': 'stressor'}, outputs={
         'stressor_property_presence_absolute': (0, ()),
         'stressor_property_presence_percentage': (1, ()),
     }),
@@ -184,9 +194,9 @@ SPECS: tuple[PlotSpec, ...] = (
     snapshot('latest_process_usage', 'plot_latest_process_usage', precompute=True, bulk=('latest-all', 'data-quality', 'all')),
     snapshot('latest_object_usage', 'plot_latest_object_usage', precompute=True, bulk=('latest-all', 'data-quality', 'all')),
     snapshot('latest_aop_completeness', 'plot_latest_aop_completeness', precompute=True, bulk=('latest-all', 'data-quality', 'all')),
-    snapshot('latest_aop_completeness_by_status', 'plot_latest_aop_completeness_by_status', precompute=True),
-    snapshot('latest_ke_completeness_by_status', 'plot_latest_ke_completeness_by_status', precompute=True),
-    snapshot('latest_ker_completeness_by_status', 'plot_latest_ker_completeness_by_status', precompute=True),
+    snapshot('latest_aop_completeness_by_status', 'plot_latest_completeness_by_status', precompute=True, args={'entity': 'aop'}),
+    snapshot('latest_ke_completeness_by_status', 'plot_latest_completeness_by_status', precompute=True, args={'entity': 'ke'}),
+    snapshot('latest_ker_completeness_by_status', 'plot_latest_completeness_by_status', precompute=True, args={'entity': 'ker'}),
     snapshot('latest_ontology_usage', 'plot_latest_ontology_usage', precompute=True),
     snapshot('latest_ke_annotation_depth', 'plot_latest_ke_annotation_depth', precompute=True, bulk=('latest-all', 'ke-analysis', 'all')),
     snapshot('latest_ke_by_bio_level', 'plot_latest_ke_by_bio_level', bulk=('latest-all',)),
@@ -241,12 +251,12 @@ def trend_specs() -> list[PlotSpec]:
     return [s for s in SPECS if s.kind == "trend"]
 
 
-def startup_tasks() -> dict[str, str]:
-    """Startup task name -> producer name, trend tasks first."""
-    tasks: dict[str, str] = {}
+def startup_tasks() -> dict[str, PlotSpec]:
+    """Startup task name -> the (first) spec it renders, trend tasks first."""
+    tasks: dict[str, PlotSpec] = {}
     for s in SPECS:
         if s.precompute:
-            tasks.setdefault(s.task, s.producer)
+            tasks.setdefault(s.task, s)
     return tasks
 
 
@@ -269,6 +279,6 @@ def manifest() -> list[dict]:
     return [
         {"id": s.id, "kind": s.kind, "task": s.task, "note": s.note,
          "page": s.page, "versioned": s.kind == "snapshot",
-         "params": list(s.params), "bulk": list(s.bulk)}
+         "params": list(s.params), "bulk": list(s.bulk), "args": s.kwargs}
         for s in SPECS
     ]

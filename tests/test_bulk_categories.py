@@ -31,6 +31,15 @@ def _cache_writers() -> tuple[set[str], set[str]]:
     prefixes |= set(re.findall(r"_key\s*=\s*f['\"](latest_[A-Za-z0-9_]+?)_\{", src))
     # domain_plots caches through _cache_plot("<stub>", version_key, df, fig)
     exact |= set(re.findall(r"_cache_plot\(\s*['\"]([A-Za-z0-9_]+)['\"]", src))
+    # Entity-parameterised producers (#178) put {entity} in the key; expand it
+    # with the entities the registry binds them to.
+    from plots import registry
+    entities = {s.kwargs["entity"] for s in registry.SPECS if "entity" in s.kwargs}
+    for e in entities:
+        exact |= {k.replace("{entity}", e) for k in re.findall(
+            cache + r"\s*f['\"]([A-Za-z0-9_]*\{entity\}[A-Za-z0-9_]*)['\"]\s*\]", src)}
+        prefixes |= {k.replace("{entity}", e) for k in re.findall(
+            r"_key\s*=\s*f['\"](latest_\{entity\}[A-Za-z0-9_]*?)_\{", src)}
     return exact, prefixes
 
 
