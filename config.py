@@ -122,6 +122,13 @@ class Config:
     ENABLE_HEALTH_CHECK = os.getenv("ENABLE_HEALTH_CHECK", "True").lower() == "true"
     ENABLE_PERFORMANCE_LOGGING = os.getenv("ENABLE_PERFORMANCE_LOGGING", "True").lower() == "true"
 
+    # Persistent SPARQL result store (#179). Empty = off: every query goes to the
+    # endpoint. When set, queries are answered from the store and fall back to the
+    # endpoint on a miss; scripts/build_query_store.py fills it. On the cluster:
+    # /mnt/gluster/docker/aopwiki-dashboard/query-store
+    QUERY_STORE_DIR = os.getenv("QUERY_STORE_DIR", "")
+    QUERY_STORE_MANIFEST_TTL = int(os.getenv("QUERY_STORE_MANIFEST_TTL", "30"))
+
     # Usage Analytics (privacy-respecting, server-side; no cookies, no IP/PII)
     ENABLE_USAGE_ANALYTICS = os.getenv("ENABLE_USAGE_ANALYTICS", "True").lower() == "true"
     # SQLite event store. On the cluster, point this at a gluster-backed path so

@@ -112,6 +112,30 @@ sha: `docker service update --image ghcr.io/marvinm2/aopwiki-dashboard:sha-<prev
 The package is public, so no `--with-registry-auth` is needed here (unlike private
 GHCR packages elsewhere on the cluster, e.g. `oppbk`).
 
+## Query store (#179)
+
+The app can answer its SPARQL queries from a persistent store instead of the
+endpoint. It is off unless `QUERY_STORE_DIR` is set. The store holds every query
+result keyed by the query text and a fingerprint of the graphs it reads (triple
+count plus the VoID `pav:createdOn` / `void:triples`), so a reloaded or added
+graph changes the keys of exactly the queries that read it.
+
+```bash
+# fill or update the store (runs every plot for every version; ~15 min cold,
+# ~10 s when nothing changed: one fingerprint query)
+QUERY_STORE_DIR=/path/to/store SPARQL_ENDPOINT=http://virtuoso:8890/sparql \
+  python scripts/build_query_store.py
+```
+
+- `manifest.json` is written last. The app keys on it, starts from the store
+  without waiting for Virtuoso, and when a newer build is published recomputes
+  its startup plots in the background (no restart).
+- A query the store does not hold (e.g. a non-default plot setting) still goes to
+  the endpoint.
+- Run the build with the **same image** as the app: the plot code decides the
+  query text, so an older build image leaves the newer app with misses.
+- One build at a time: `<store>/.lock` (taken over after 6 h).
+
 ## Reloading RDF data
 
 After regenerating the per-version TTLs (via the AOP-Wiki-RDF Setup pipeline —
