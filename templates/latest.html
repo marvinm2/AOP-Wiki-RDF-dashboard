@@ -944,7 +944,7 @@
 
 {% block scripts_extra %}
 <script>
-// Snapshot plots that take ?version= (from LATEST_PLOT_FUNCTIONS, #171).
+// Snapshot plots that take ?version= (from plots/registry.py, #171, #178).
 window.VERSIONED_PLOTS = {{ versioned_plots|tojson }};
 </script>
 <script src="{{ url_for('static', filename='js/version-selector.js') }}"></script>

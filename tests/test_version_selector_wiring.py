@@ -7,7 +7,6 @@ now publishes the set from the server; these checks keep it that way.
 
 from __future__ import annotations
 
-import ast
 import re
 from pathlib import Path
 
@@ -15,12 +14,9 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 def _latest_plot_functions() -> set[str]:
-    tree = ast.parse((ROOT / "app.py").read_text())
-    for node in ast.walk(tree):
-        if (isinstance(node, ast.Assign)
-                and any(isinstance(t, ast.Name) and t.id == "LATEST_PLOT_FUNCTIONS" for t in node.targets)):
-            return {k.value for k in node.value.keys}
-    raise AssertionError("LATEST_PLOT_FUNCTIONS not found in app.py")
+    # LATEST_PLOT_FUNCTIONS in app.py is built from these specs (#178).
+    from plots import registry
+    return {spec.id for spec in registry.snapshot_specs()}
 
 
 def test_every_snapshot_container_is_versionable():
