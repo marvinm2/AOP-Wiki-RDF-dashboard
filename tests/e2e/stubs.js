@@ -61,6 +61,18 @@ async function installStubs(page, { minDelay = 20, maxDelay = 400 } = {}) {
             await route.fulfill({ json: { meta: { id: plot }, figure } });
         } catch (e) { /* aborted */ }
     });
+    // Plot data (/api/v2/data): one row naming what was asked for, plus filler
+    // rows so the table has something to truncate.
+    await page.route('**/api/v2/data/**', (route) => {
+        const url = route.request().url();
+        stats.requests.push(url);
+        const label = labelFor(url);
+        const rows = 150;
+        return route.fulfill({ json: {
+            meta: { id: label.split('|')[0], rows, columns: [{ name: 'label', type: 'string' }, { name: 'n', type: 'integer' }] },
+            data: { label: Array.from({ length: rows }, (_, i) => (i === 0 ? label : `row ${i}`)), n: Array.from({ length: rows }, (_, i) => i) },
+        } });
+    });
     return stats;
 }
 
