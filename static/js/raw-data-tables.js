@@ -24,7 +24,7 @@ async function toggleDataTable(plotName) {
                 // Get version from URL params or version selector
                 var params = new URLSearchParams(window.location.search);
                 var version = params.get('version') || '';
-                var url = '/api/plot-data/' + plotName + (version ? '?version=' + encodeURIComponent(version) : '');
+                var url = '/api/plot-data/' + plotName + '?limit=100' + (version ? '&version=' + encodeURIComponent(version) : '');
                 var response = await fetch(url);
                 var data = await response.json();
 
