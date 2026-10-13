@@ -17,8 +17,12 @@ services:
       - SPARQL_PUBLIC_ENDPOINT=https://aopwiki-multirdf.vhp4safety.nl/sparql
       # Persist usage analytics on gluster so counts survive redeploys (#91).
       - USAGE_DB_PATH=/data/usage.sqlite
+      # Answer queries from the persistent query store (#179); filled by
+      # scripts/build_query_store.py, see DEPLOY.md. Read-only here.
+      - QUERY_STORE_DIR=/store
     volumes:
       - /mnt/gluster/docker/aopwiki-dashboard/usage:/data
+      - /mnt/gluster/docker/aopwiki-dashboard/query-store:/store:ro
     deploy:
       # `any`, not `on-failure`: a clean SIGINT stop exits 0, which on-failure
       # never restarts.

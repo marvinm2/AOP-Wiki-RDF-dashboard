@@ -136,6 +136,26 @@ QUERY_STORE_DIR=/path/to/store SPARQL_ENDPOINT=http://virtuoso:8890/sparql \
   query text, so an older build image leaves the newer app with misses.
 - One build at a time: `<store>/.lock` (taken over after 6 h).
 
+On the cluster the store is `/mnt/gluster/docker/aopwiki-dashboard/query-store`
+(read-only in the dashboard). Run a build as a one-off service with the image the
+dashboard runs, after every deploy and after loading a quarter:
+
+```bash
+IMG=$(docker service inspect aopwiki-dashboard_dashboard --format '{{.Spec.TaskTemplate.ContainerSpec.Image}}')
+docker service create --detach --name aopwiki-dashboard-store-build --restart-condition none \
+  --network core -e QUERY_STORE_DIR=/store \
+  -e SPARQL_ENDPOINT=http://aopwiki-dashboard_virtuoso:8890/sparql \
+  --mount type=bind,source=/mnt/gluster/docker/aopwiki-dashboard/query-store,target=/store \
+  "$IMG" python scripts/build_query_store.py
+docker service logs --raw aopwiki-dashboard-store-build | tail -1   # "Published manifest: {...}"
+docker service rm aopwiki-dashboard-store-build
+```
+
+A cold build of all 35 versions took 293 s (2,721 results, 23 MB). The dashboard
+picks up the new manifest within 30 s and recomputes its startup plots in the
+background; no restart. **Until a build has run, a newly loaded quarter does not
+appear** (the version list is itself a stored query).
+
 ## Reloading RDF data
 
 After regenerating the per-version TTLs (via the AOP-Wiki-RDF Setup pipeline —
@@ -157,8 +177,9 @@ docker cp ~/staging/. "$CN:/database/data/"
 cd ~/aopwiki-dashboard
 ./scripts/reload-virtuoso.sh          # preflight, then prompts; add --yes to skip the prompt
 
-# 3. Refresh the dashboard's precomputed plots:
-docker service update --force aopwiki-dashboard_dashboard
+# 3. Rebuild the query store (see "Query store" above); the dashboard picks
+#    the new data up without a restart. Without a store:
+#    docker service update --force aopwiki-dashboard_dashboard
 ```
 
 `scripts/reload-virtuoso.sh` auto-detects the Virtuoso container (Swarm or
