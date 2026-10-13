@@ -213,6 +213,18 @@ df = pd.DataFrame(r["data"])[[c["name"] for c in r["meta"]["columns"]]]
 └── requirements.txt      # pip-compile lock (Python 3.11)
 ```
 
+### **Frontend runtime and its tests**
+All plot loading goes through `static/js/runtime.js`. It fetches through a queue of 4, aborts requests the
+page has moved past, never draws a response for an older selection, and dispatches `plot:rendered` after
+each draw. Page state (version, trends range, plot settings) lives in the URL via `static/js/state.js`, so
+every view can be bookmarked or shared. Controls only change that state.
+
+```bash
+npm ci && npx playwright install chromium
+npm run test:js     # node --test: the state module
+npm run test:e2e    # Playwright: pages served by the app, data requests stubbed (no endpoint needed)
+```
+
 ### **Adding New Plots**
 1. Create plot function in the `plots/` package with data caching
 2. Add Flask route for CSV download in `app.py`

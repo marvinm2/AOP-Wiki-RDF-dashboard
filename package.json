@@ -1,0 +1,12 @@
+{
+  "name": "aopwiki-dashboard-frontend-tests",
+  "private": true,
+  "description": "Frontend tests for the AOP-Wiki RDF dashboard (#181). The app itself has no JS build step.",
+  "scripts": {
+    "test:js": "node --test tests/js/",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1"
+  }
+}

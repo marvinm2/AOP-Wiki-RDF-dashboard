@@ -33,8 +33,26 @@ def test_selector_keeps_no_plot_list_of_its_own():
 
 
 def test_page_publishes_the_versioned_set_and_one_url_builder_exists():
-    assert "window.VERSIONED_PLOTS" in (ROOT / "templates" / "latest.html").read_text()
-    loader = (ROOT / "static" / "js" / "lazy-loading.js").read_text()
-    assert "static plotUrl(element)" in loader
-    for script in ("version-selector.js", "coverage-toggle.js"):
-        assert "fetch(`/api/plot" not in (ROOT / "static" / "js" / script).read_text(), script
+    page = (ROOT / "templates" / "latest.html").read_text()
+    assert "window.VERSIONED_PLOTS" in page and "window.PLOT_PARAMS" in page
+    runtime = (ROOT / "static" / "js" / "runtime.js").read_text()
+    assert "plotUrl(element)" in runtime
+
+
+def test_only_the_runtime_fetches_and_injects_plots():
+    """One fetch-and-inject path (#181): every other script changes the state."""
+    for path in sorted((ROOT / "static" / "js").glob("*.js")):
+        if path.name == "runtime.js":
+            continue
+        js = path.read_text()
+        assert "/api/plot/" not in js, path.name
+        assert "data.html" not in js, path.name
+
+
+def test_snapshot_controls_cover_every_plot_setting():
+    """Every setting a snapshot plot takes is a state key the controls can write."""
+    from plots import registry
+    state_js = (ROOT / "static" / "js" / "state.js").read_text()
+    keys = set(re.search(r"var KEYS = \[([^\]]+)\]", state_js).group(1).replace("'", "").replace(" ", "").split(","))
+    params = {p for s in registry.snapshot_specs() for p in s.params} - {"min_shared_kes"}
+    assert params <= keys
