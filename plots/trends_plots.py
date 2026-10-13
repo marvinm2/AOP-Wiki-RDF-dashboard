@@ -1413,9 +1413,14 @@ def plot_aop_lifetime() -> tuple[str, str]:
         df_lifetime = pd.DataFrame([{
             "aop": r["aop"]["value"],
             "version": r["graph"]["value"].split("/")[-1],
-            "created": pd.to_datetime(r["created"]["value"], errors="coerce"),
-            "modified": pd.to_datetime(r["modified"]["value"], errors="coerce")
+            "created": r["created"]["value"],
+            "modified": r["modified"]["value"],
         } for r in results_lifetime])
+        # One vectorised parse; parsing ~28k values one call at a time made
+        # pandas guess the format each time and took ~10 s (#179). "mixed"
+        # parses each value on its own, as the per-value calls did.
+        for col in ("created", "modified"):
+            df_lifetime[col] = pd.to_datetime(df_lifetime[col], errors="coerce", format="mixed")
 
         if df_lifetime.empty:
             logger.warning("AOP lifetime DataFrame is empty after parsing")

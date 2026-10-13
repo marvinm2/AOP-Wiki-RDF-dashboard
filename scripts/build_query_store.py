@@ -53,8 +53,30 @@ def code_hash() -> str:
     return digest.hexdigest()
 
 
+def setting_variants(spec):
+    """Every combination of the settings a page offers for this plot (defaults included).
+
+    Mirrors the controls in templates/latest.html: the coverage scope/view
+    toggles, the overlap slider (0.30-0.60 in steps of 0.02), and the ontology
+    branch and domain selectors. ``min_shared_kes`` has no control and keeps its
+    default.
+    """
+    import itertools
+    import plots
+
+    choices = {
+        "scope": ["all", "apical", "ao"],
+        "view": ["absolute", "percentage"],
+        "min_jaccard": [f"{0.30 + 0.02 * i:.2f}" for i in range(16)],
+        "branch": plots.available_ontology_branches(),
+        "domain": plots.available_domains(),
+    }
+    names = [p for p in spec.params if p in choices]
+    return [dict(zip(names, combo)) for combo in itertools.product(*(choices[n] for n in names))]
+
+
 def plan_runs(registry, versions, only=None):
-    """(run name, callable factory) for every trend task and snapshot plot x version."""
+    """(run name, version, callable) for every trend task and snapshot plot x version x setting."""
     import plots
 
     runs = [("versions", None, lambda: plots.get_all_versions())]
@@ -65,8 +87,10 @@ def plan_runs(registry, versions, only=None):
         if only and spec.id not in only:
             continue
         func = plots.bind_producer(spec)
-        for version in versions:
-            runs.append((f"snapshot:{spec.id}", version, lambda f=func, v=version: f(v)))
+        for settings in setting_variants(spec):
+            label = f"snapshot:{spec.id}" + "".join(f" {k}={v}" for k, v in settings.items())
+            for version in versions:
+                runs.append((label, version, lambda f=func, v=version, kw=settings: f(v, **kw)))
     if not only:
         runs.append(("network", None, lambda: plots.get_or_compute_network()))
     return runs
