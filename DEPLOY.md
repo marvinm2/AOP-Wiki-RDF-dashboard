@@ -137,8 +137,16 @@ QUERY_STORE_DIR=/path/to/store SPARQL_ENDPOINT=http://virtuoso:8890/sparql \
 - One build at a time: `<store>/.lock` (taken over after 6 h).
 
 On the cluster the store is `/mnt/gluster/docker/aopwiki-dashboard/query-store`
-(read-only in the dashboard). Run a build as a one-off service with the image the
-dashboard runs, after every deploy and after loading a quarter:
+(read-only in the dashboard). The job `cronjobs_aopwiki-dashboard-store-build`
+builds it daily at 04:30 UTC with the dashboard's current image (definition in
+TGX-UM/cronjobs). After a deploy or a quarter load, trigger it rather than wait:
+
+```bash
+docker service scale cronjobs_aopwiki-dashboard-store-build=1
+docker service logs --raw cronjobs_aopwiki-dashboard-store-build | tail -3   # "Store build complete."
+```
+
+Or run the build by hand as a one-off service, which is what the job does:
 
 ```bash
 IMG=$(docker service inspect aopwiki-dashboard_dashboard --format '{{.Spec.TaskTemplate.ContainerSpec.Image}}')
@@ -151,7 +159,8 @@ docker service logs --raw aopwiki-dashboard-store-build | tail -1   # "Published
 docker service rm aopwiki-dashboard-store-build
 ```
 
-A cold build of all 35 versions took 293 s (2,721 results, 23 MB). The dashboard
+A cold build of all 35 versions, every page setting included, takes about 7 min
+(2,864 plot runs, 35 MB). The dashboard
 picks up the new manifest within 30 s and recomputes its startup plots in the
 background; no restart. **Until a build has run, a newly loaded quarter does not
 appear** (the version list is itself a stored query).
