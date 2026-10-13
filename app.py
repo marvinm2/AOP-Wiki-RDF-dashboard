@@ -136,7 +136,7 @@ from plots import (
 )
 from plots.recovery import TrendPlotRecovery, result_has_usable_html, run_tasks_with_deadline
 from plots import query_store, data_api
-from plots.shared import get_version_registry
+from plots.shared import get_version_registry, PLOTLY_HTML_CONFIG
 
 from usage_analytics import record_event, get_summary, init_db
 
@@ -1010,6 +1010,19 @@ def api_v2_data(plot_id):
     return _v2_response({'meta': meta, 'data': table['data']})
 
 
+@app.route("/api/v2/plotly")
+def api_v2_plotly():
+    """The dashboard's Plotly template and config (#181).
+
+    /api/v2/figure strips the template from every figure; the browser applies
+    this one, so a figure drawn from JSON looks the same as the server's HTML.
+    """
+    import plotly.graph_objects as go
+    # Exactly the template every server figure embeds (the default one).
+    template = json.loads(go.Figure().to_json())['layout']['template']
+    return _v2_response({'template': template, 'config': PLOTLY_HTML_CONFIG})
+
+
 @app.route("/api/v2/figure/<plot_id>")
 def api_v2_figure(plot_id):
     """A plot's figure as Plotly JSON, template stripped (#180)."""
@@ -1226,7 +1239,7 @@ def historical_trends():
     Displays evolution and growth patterns of the AOP-Wiki database
     over time using quarterly releases.
     """
-    return render_template("trends_page.html", methodology_notes=methodology_notes, sparql_endpoint=Config.SPARQL_PUBLIC_ENDPOINT, latest_graph_uri=_current_latest_graph_uri(), active_page='trends')
+    return render_template("trends_page.html", methodology_notes=methodology_notes, sparql_endpoint=Config.SPARQL_PUBLIC_ENDPOINT, latest_graph_uri=_current_latest_graph_uri(), delta_views=registry.DELTA_VIEWS, active_page='trends')
 
 
 @app.route("/dashboard")

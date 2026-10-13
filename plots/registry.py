@@ -232,6 +232,25 @@ BULK_CATEGORIES: tuple[str, ...] = (
     "trends-properties", "all",
 )
 
+# The delta (quarter-over-quarter) trend views, drawn in the browser from their
+# absolute plot (#181): y becomes y[i] - y[i-1], 0 for the first snapshot. The
+# server still renders the *_delta figures for downloads; these entries carry
+# the labels so the browser draws the same thing. Checked against the server
+# figures with scripts/check_delta_views.js (run against the live API).
+DELTA_VIEWS: dict[str, dict] = {
+    "aop_entity_counts_delta": {"of": "aop_entity_counts_absolute", "y_title": "Count"},
+    "stressor_coverage_growth_delta": {"of": "stressor_coverage_growth_absolute", "y_title": "Quarter-over-quarter Δ", "bar": True},
+    "average_components_per_aop_delta": {"of": "average_components_per_aop_absolute", "y_title": "Δ Average", "name_replace": ["Average ", "Δ "]},
+    "ke_component_annotations_delta": {"of": "ke_component_annotations_absolute", "y_title": "Change"},
+    "unique_ke_components_delta": {"of": "unique_ke_components_absolute", "y_title": "Change"},
+    "ke_components_percentage_delta": {"of": "ke_components_percentage_absolute", "y_title": "Percentage Change (%)", "hover_label": "Percentage Change"},
+    "biological_process_annotations_delta": {"of": "biological_process_annotations_absolute", "y_title": "Change in distinct terms"},
+    "biological_object_annotations_delta": {"of": "biological_object_annotations_absolute", "y_title": "Change in distinct terms"},
+    "aop_authors_delta": {"of": "aop_authors_absolute", "y_title": "author_count_Δ"},
+    "kes_by_kec_count_delta": {"of": "kes_by_kec_count_absolute", "y_title": "Change in KEs", "bar": True},
+    "ontology_term_growth_delta": {"of": "ontology_term_growth_absolute", "y_title": "New Terms Added", "bar": True},
+}
+
 # Legacy download URLs whose path names a different plot (/download/<alias>).
 DOWNLOAD_ALIASES: dict[str, str] = {
     "latest_network_density": "latest_aop_connectivity",

@@ -28,7 +28,13 @@ test('smoke: every page loads and draws its visible plots without script errors'
         await expect(page.locator('.lazy-plot[data-rendered-url]').first()).toBeVisible();
         const drawn = await drawnLabels(page);
         expect(drawn.length, path).toBeGreaterThan(0);
-        for (const d of drawn) expect(d.label?.split('|')[0], path).toBe(d.name);
+        if (path === '/snapshot') {
+            for (const d of drawn) expect(d.label?.split('|')[0], path).toBe(d.name);
+        } else {
+            // Trend plots are drawn from figure JSON (#181).
+            const urls = await page.$$eval('.lazy-plot[data-rendered-url]', (els) => els.map((e) => e.dataset.renderedUrl));
+            for (const u of urls) expect(u, path).toMatch(/^\/api\/v2\/figure\//);
+        }
     }
     // Resizing and the delta toggle resize every figure, including hidden ones.
     const toggle = page.locator('#toggle-delta');

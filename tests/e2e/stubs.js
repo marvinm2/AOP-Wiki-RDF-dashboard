@@ -37,6 +37,30 @@ async function installStubs(page, { minDelay = 20, maxDelay = 400 } = {}) {
             await route.fulfill({ json: { success: true, html } });
         } catch (e) { /* the page aborted it */ }
     });
+    // Trend figures (/api/v2/figure) and the Plotly setup (/api/v2/plotly).
+    await page.route('**/api/v2/plotly', (route) => route.fulfill({
+        json: { template: { layout: { font: { family: 'Arial' } } }, config: { displayModeBar: false, responsive: true } },
+    }));
+    await page.route('**/api/v2/figure/**', async (route) => {
+        const url = route.request().url();
+        stats.requests.push(url);
+        const n = seq++;
+        await new Promise((r) => setTimeout(r, minDelay + ((n * 137) % (maxDelay - minDelay + 1))));
+        const plot = new URL(url).pathname.split('/').pop();
+        const x = VERSIONS.slice().reverse();
+        const figure = {
+            data: [
+                { type: 'scatter', mode: 'lines+markers', name: 'A', x, y: x.map((_, i) => 10 + i * i),
+                  hovertemplate: 'version=%{x}<br>Count=%{y}<extra></extra>' },
+                { type: 'scatter', mode: 'lines+markers', name: 'B', x, y: x.map((_, i) => 5 + 2 * i),
+                  hovertemplate: 'version=%{x}<br>Count=%{y}<extra></extra>' },
+            ],
+            layout: { title: { text: plot }, height: 160, yaxis: { title: { text: 'Count' } }, meta: plot },
+        };
+        try {
+            await route.fulfill({ json: { meta: { id: plot }, figure } });
+        } catch (e) { /* aborted */ }
+    });
     return stats;
 }
 

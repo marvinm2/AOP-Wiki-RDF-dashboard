@@ -67,6 +67,14 @@
 {% endblock %}
 
 {% block scripts_extra %}
+<script>
+// Trend plots are drawn from /api/v2/figure; delta views are derived in the
+// browser from their absolute plot (plots/registry.py DELTA_VIEWS, #181).
+window.DEFAULT_RENDERER = 'plotly-json';
+window.DELTA_VIEWS = {{ delta_views|tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/viz/figure.js') }}"></script>
+<script src="{{ url_for('static', filename='js/trend-links.js') }}"></script>
 <script src="{{ url_for('static', filename='js/raw-data-tables.js') }}"></script>
 <script src="{{ url_for('static', filename='js/trends-range-selector.js') }}"></script>
 {% endblock %}
