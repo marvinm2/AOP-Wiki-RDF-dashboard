@@ -134,3 +134,14 @@ def test_app_keeps_no_hand_written_plot_lists():
     assert "plot_latest_" not in source
     assert not re.search(r'@app\.route\("/download/(latest_|trend/[a-z]|main_graph)', source)
     assert "'aop_entity_counts_absolute'" not in source
+
+
+def test_delta_views_cover_every_delta_plot():
+    """Each *_delta trend plot is drawn in the browser from its absolute plot (#181)."""
+    deltas = {s.id for s in registry.trend_specs() if s.id.endswith("_delta")}
+    assert set(registry.DELTA_VIEWS) == deltas
+    for delta_id, view in registry.DELTA_VIEWS.items():
+        source = registry.BY_ID[view["of"]]
+        assert source.kind == "trend" and source.task == registry.BY_ID[delta_id].task, delta_id
+        assert view["y_title"]
+        assert set(view) <= {"of", "y_title", "hover_label", "bar", "name_replace"}, delta_id

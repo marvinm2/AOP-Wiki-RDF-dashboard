@@ -11,8 +11,12 @@
  * - A request that the state has moved past is aborted, and a response for an
  *   older selection is never drawn, so rapid switching cannot leave a stale
  *   plot on screen.
- * - Drawing goes through a renderer (mount / update / destroy). `legacy-html`
- *   draws the HTML /api/plot returns and purges the previous Plotly figure.
+ * - Drawing goes through a renderer (endpoint / mount / update / destroy):
+ *   `legacy-html` draws the HTML /api/plot returns; `plotly-json` draws the
+ *   figure /api/v2/figure returns with the dashboard's template and config
+ *   (/api/v2/plotly); `delta` draws a trend plot's quarter-over-quarter view
+ *   from its absolute figure (window.DELTA_VIEWS), sharing that request.
+ *   A page picks its default with window.DEFAULT_RENDERER.
  * - After every draw the container dispatches a bubbling `plot:rendered`
  *   event ({plotName, url}); page code hooks that instead of watching the DOM.
  */
@@ -37,6 +41,7 @@ function resizeIfShown(div) {
 
 /** Draws /api/plot HTML: inject it, run its init scripts, size the figure. */
 const legacyHtmlRenderer = {
+    endpoint(plotName, qs) { return `/api/plot/${plotName}${qs}`; },
     mount(element, payload) {
         element.innerHTML = payload.html;
         // innerHTML-inserted <script> tags don't run; re-inject them so
@@ -68,6 +73,55 @@ const legacyHtmlRenderer = {
     },
 };
 
+/** The dashboard's Plotly template and config, fetched once per page. */
+let plotlySetup = null;
+function getPlotlySetup() {
+    if (!plotlySetup) {
+        plotlySetup = fetch('/api/v2/plotly').then((r) => {
+            if (!r.ok) throw new Error(`/api/v2/plotly: ${r.status}`);
+            return r.json();
+        }).catch((e) => { plotlySetup = null; throw e; });
+    }
+    return plotlySetup;
+}
+
+/** Draw a Plotly figure spec into a container, reusing its div on update. */
+async function drawFigure(element, figure) {
+    const setup = await getPlotlySetup();
+    const layout = Object.assign({}, figure.layout, { template: setup.template });
+    let div = element.querySelector(':scope > .plotly-graph-div');
+    if (!div) {
+        element.innerHTML = '';
+        div = document.createElement('div');
+        div.className = 'plotly-graph-div';
+        div.style.width = '100%';
+        div.style.height = '100%';
+        element.appendChild(div);
+        await window.Plotly.newPlot(div, figure.data, layout, setup.config);
+    } else {
+        await window.Plotly.react(div, figure.data, layout, setup.config);
+    }
+}
+
+const plotlyJsonRenderer = {
+    endpoint(plotName, qs) { return `/api/v2/figure/${plotName}${qs}`; },
+    shared: true,
+    mount(element, payload) { return drawFigure(element, payload.figure); },
+    update(element, payload) { return drawFigure(element, payload.figure); },
+    destroy: legacyHtmlRenderer.destroy,
+};
+
+const deltaRenderer = {
+    endpoint(plotName) { return `/api/v2/figure/${window.DELTA_VIEWS[plotName].of}`; },
+    shared: true,
+    mount(element, payload) {
+        const spec = window.DELTA_VIEWS[element.dataset.plotName];
+        return drawFigure(element, window.DashFigure.deriveDelta(payload.figure, spec));
+    },
+    update(element, payload) { return this.mount(element, payload); },
+    destroy: legacyHtmlRenderer.destroy,
+};
+
 class PlotRuntime {
     constructor(state) {
         this.state = state;
@@ -76,7 +130,12 @@ class PlotRuntime {
         this.inflight = new Map();   // container -> {controller, url}
         this.drawn = new Map();      // container -> url of what is on screen
         this.mounted = new Set();    // containers holding a drawn plot
-        this.renderers = { 'legacy-html': legacyHtmlRenderer };
+        this.renderers = {
+            'legacy-html': legacyHtmlRenderer,
+            'plotly-json': plotlyJsonRenderer,
+            'delta': deltaRenderer,
+        };
+        this.shared = new Map();     // url -> promise of {ok, status, data}, for shared renderers
 
         this.observer = new IntersectionObserver(
             (entries) => entries.forEach((entry) => {
@@ -115,6 +174,13 @@ class PlotRuntime {
         return deps;
     }
 
+    rendererFor(element) {
+        const name = element.dataset.plotName;
+        if (window.DELTA_VIEWS && window.DELTA_VIEWS[name] && window.DashFigure) return this.renderers.delta;
+        const key = element.dataset.renderer || window.DEFAULT_RENDERER || 'legacy-html';
+        return this.renderers[key] || this.renderers['legacy-html'];
+    }
+
     /** The one place a plot request URL is built. */
     plotUrl(element) {
         const plotName = element.dataset.plotName;
@@ -126,7 +192,28 @@ class PlotRuntime {
             if (v !== null && v !== undefined) params.set(k, v);
         });
         const qs = params.toString();
-        return `/api/plot/${plotName}` + (qs ? `?${qs}` : '');
+        return this.rendererFor(element).endpoint(plotName, qs ? `?${qs}` : '');
+    }
+
+    /**
+     * GET a JSON response. Shared renderers reuse one request per URL (an
+     * absolute plot and its delta view), kept while the page lives; a failed
+     * one is forgotten so a retry refetches.
+     */
+    async requestJson(url, signal, shared) {
+        const run = () => fetch(url, shared ? {} : { signal })
+            .then((r) => r.json().then((data) => ({ ok: r.ok, status: r.status, data })));
+        if (!shared) return run();
+        if (!this.shared.has(url)) {
+            const p = run().then((res) => { if (!res.ok) this.shared.delete(url); return res; },
+                (e) => { this.shared.delete(url); throw e; });
+            this.shared.set(url, p);
+        }
+        const aborted = new Promise((_, reject) => {
+            if (signal.aborted) reject(new DOMException('Aborted', 'AbortError'));
+            signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), { once: true });
+        });
+        return Promise.race([this.shared.get(url), aborted]);
     }
 
     isVisible(element) {
@@ -195,13 +282,13 @@ class PlotRuntime {
         const timer = setTimeout(() => controller.abort('timeout'), PlotRuntime.LOAD_TIMEOUT_MS);
         try {
             dbg('fetch', url);
-            const response = await fetch(url, { signal: controller.signal });
-            const data = await response.json();
+            const renderer = this.rendererFor(element);
+            const { ok, status, data } = await this.requestJson(url, controller.signal, !!renderer.shared);
             if (this.plotUrl(element) !== url) return;  // the state moved on
-            if (data.success) {
-                this.draw(element, data, url);
+            if (ok && data.success !== false && !data.error) {
+                await this.draw(element, data, url);
             } else {
-                this.showError(element, data.error || 'Unknown error');
+                this.showError(element, `${data.error || 'Unknown error'} (${status})`);
             }
         } catch (error) {
             if (controller.signal.aborted && controller.signal.reason === SUPERSEDED) {
@@ -223,10 +310,10 @@ class PlotRuntime {
         }
     }
 
-    draw(element, payload, url) {
-        const renderer = this.renderers[element.dataset.renderer || 'legacy-html'];
-        if (this.mounted.has(element)) renderer.update(element, payload);
-        else renderer.mount(element, payload);
+    async draw(element, payload, url) {
+        const renderer = this.rendererFor(element);
+        if (this.mounted.has(element)) await renderer.update(element, payload);
+        else await renderer.mount(element, payload);
         this.mounted.add(element);
         this.drawn.set(element, url);
         element.setAttribute('data-rendered-url', url);
@@ -237,8 +324,7 @@ class PlotRuntime {
 
     unmount(element) {
         if (!this.mounted.has(element)) return;
-        const renderer = this.renderers[element.dataset.renderer || 'legacy-html'];
-        renderer.destroy(element);
+        this.rendererFor(element).destroy(element);
         this.mounted.delete(element);
         this.drawn.delete(element);
     }
