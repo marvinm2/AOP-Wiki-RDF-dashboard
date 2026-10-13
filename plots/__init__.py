@@ -233,13 +233,8 @@ from .latest_plots import (
     plot_latest_ontology_diversity,
 
     # Enhanced completeness visualization
-    plot_latest_aop_completeness_unique_colors,
 
     # Organ-system coverage + life-stage applicability
-    plot_latest_organ_coverage,
-    plot_latest_organ_coverage_percentage,
-    plot_latest_organ_coverage_apical,
-    plot_latest_organ_coverage_ao_only,
     plot_latest_organ_coverage_unified,
     plot_latest_organ_coverage_pie,
     plot_latest_multi_organ_aops,
@@ -349,10 +344,6 @@ __all__ = [
     'plot_latest_completeness_correlation',
     'plot_latest_ke_reuse_distribution',
     'plot_latest_ontology_diversity',
-    'plot_latest_organ_coverage',
-    'plot_latest_organ_coverage_percentage',
-    'plot_latest_organ_coverage_apical',
-    'plot_latest_organ_coverage_ao_only',
     'plot_latest_organ_coverage_unified',
     'plot_latest_organ_coverage_pie',
     'plot_latest_multi_organ_aops',
