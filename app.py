@@ -205,8 +205,8 @@ except Exception as _usage_exc:  # pragma: no cover - non-fatal
 # (#178). Module-level so a trend plot whose startup computation failed can be
 # recomputed on demand (#157).
 STARTUP_PLOT_FUNCTIONS = {
-    task: getattr(plots, producer)
-    for task, producer in registry.startup_tasks().items()
+    task: plots.bind_producer(spec)
+    for task, spec in registry.startup_tasks().items()
 }
 
 def compute_plots_parallel() -> dict:
@@ -310,7 +310,7 @@ def _serve_precomputed(plot_name: str) -> bool:
 # to /api/plot) so the export cache-rewarm hook can resolve a cache key back to
 # the function that produces it.
 LATEST_PLOT_FUNCTIONS = {
-    spec.id: getattr(plots, spec.producer) for spec in registry.snapshot_specs()
+    spec.id: plots.bind_producer(spec) for spec in registry.snapshot_specs()
 }
 
 

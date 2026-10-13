@@ -29,10 +29,7 @@ Historical Trends (trends_plots):
         - plot_bio_objects(): Biological object annotation trends
 
     Property Analysis:
-        - plot_aop_property_presence(): AOP property presence evolution with marker shapes
-        - plot_ke_property_presence(): KE property presence evolution with marker shapes
-        - plot_ker_property_presence(): KER property presence evolution with marker shapes
-        - plot_stressor_property_presence(): Stressor property presence evolution with marker shapes
+        - plot_property_presence(entity): AOP, KE, KER or Stressor property presence evolution with marker shapes
 
     Entity Completeness:
         - plot_entity_completeness_trends(): Average completeness percentage trends across entity types
@@ -173,10 +170,7 @@ from .trends_plots import (
     plot_bio_objects,
 
     # Property analysis
-    plot_aop_property_presence,
-    plot_ke_property_presence,
-    plot_ker_property_presence,
-    plot_stressor_property_presence,
+    plot_property_presence,
 
     # Temporal analysis
     plot_aop_lifetime,
@@ -221,9 +215,7 @@ from .latest_plots import (
 
     # Data quality analysis
     plot_latest_aop_completeness,
-    plot_latest_aop_completeness_by_status,
-    plot_latest_ke_completeness_by_status,
-    plot_latest_ker_completeness_by_status,
+    plot_latest_completeness_by_status,
 
     # Breakdown analysis (Phase 04-02)
     plot_latest_ke_by_bio_level,
@@ -327,10 +319,7 @@ __all__ = [
     'plot_kes_by_kec_count',
     'plot_bio_processes',
     'plot_bio_objects',
-    'plot_aop_property_presence',
-    'plot_ke_property_presence',
-    'plot_ker_property_presence',
-    'plot_stressor_property_presence',
+    'plot_property_presence',
     'plot_aop_lifetime',
     'plot_entity_completeness_trends',
     'plot_aop_completeness_boxplot',
@@ -348,9 +337,7 @@ __all__ = [
     'plot_latest_process_usage',
     'plot_latest_object_usage',
     'plot_latest_aop_completeness',
-    'plot_latest_aop_completeness_by_status',
-    'plot_latest_ke_completeness_by_status',
-    'plot_latest_ker_completeness_by_status',
+    'plot_latest_completeness_by_status',
     'plot_latest_ke_by_bio_level',
     'plot_latest_taxonomic_groups',
     'plot_latest_entity_by_oecd_status',
@@ -391,9 +378,28 @@ __all__ = [
     'compute_network_metrics',
     'graph_to_cytoscape_json',
     'get_or_compute_network',
+    'bind_producer',
 ]
 
 # Module-level convenience functions
+def bind_producer(spec):
+    """The callable that renders a registry spec: its producer with the spec's fixed args (#178).
+
+    A spec with ``args`` gets a ``functools.partial`` named after the call
+    (``plot_property_presence(entity='ke')``), so logs and fallback plots still
+    say which plot it was.
+    """
+    import functools
+
+    func = globals()[spec.producer]
+    if not spec.args:
+        return func
+    bound = functools.partial(func, **spec.kwargs)
+    functools.update_wrapper(bound, func)
+    bound.__name__ = f"{spec.producer}({', '.join(f'{k}={v!r}' for k, v in spec.args)})"
+    return bound
+
+
 def get_available_functions():
     """Return a dictionary of all available plot functions organized by category.
 

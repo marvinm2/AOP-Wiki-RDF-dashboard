@@ -57,6 +57,13 @@ def test_params_match_signature(spec):
     assert spec.params == accepted
 
 
+@pytest.mark.parametrize("spec", [s for s in SPECS if s.args], ids=lambda s: s.id)
+def test_fixed_args_are_accepted_by_the_producer(spec):
+    signature = inspect.signature(getattr(plots, spec.producer)).parameters
+    assert set(spec.kwargs) <= set(signature), spec.kwargs
+    assert not set(spec.kwargs) & set(spec.params)
+
+
 def test_trend_outputs_are_distinct_per_task():
     seen = {}
     for s in registry.trend_specs():
@@ -64,7 +71,8 @@ def test_trend_outputs_are_distinct_per_task():
         assert key not in seen, f"{s.id} and {seen[key]} both read output {key}"
         seen[key] = s.id
     for s in registry.trend_specs():
-        assert {t.producer for t in registry.trend_specs() if t.task == s.task} == {s.producer}
+        same_task = [t for t in registry.trend_specs() if t.task == s.task]
+        assert {(t.producer, t.args) for t in same_task} == {(s.producer, s.args)}
 
 
 @pytest.mark.parametrize("spec", [s for s in SPECS if s.note], ids=lambda s: s.id)

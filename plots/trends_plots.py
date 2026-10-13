@@ -29,7 +29,7 @@ Historical Plot Functions:
         - plot_bio_objects(): Biological object annotation trends
 
     Property Analysis:
-        - plot_aop_property_presence(): Property presence evolution with marker shapes
+        - plot_property_presence(entity): Property presence evolution with marker shapes
 
     Temporal Analysis:
         - plot_aop_lifetime(): AOP creation and modification patterns
@@ -2176,110 +2176,98 @@ def plot_bio_objects() -> tuple[str, str]:
         )
 
 
-def plot_aop_property_presence(label_file="property_labels.csv") -> tuple[str, str]:
-    """Generate AOP property presence visualization with absolute and percentage views.
+# Entity types the property-presence trend covers: RDF class, the per-version
+# total column in the exported table, and the wording of titles and axes.
+PROPERTY_PRESENCE_ENTITIES = {
+    "aop": {"cls": "aopo:AdverseOutcomePathway", "total": "total_aops",
+            "plural": "AOPs", "short": "AOPs", "label": "AOP"},
+    "ke": {"cls": "aopo:KeyEvent", "total": "total_kes",
+           "plural": "Key Events", "short": "KEs", "label": "KE"},
+    "ker": {"cls": "aopo:KeyEventRelationship", "total": "total_kers",
+            "plural": "Key Event Relationships", "short": "KERs", "label": "KER"},
+    "stressor": {"cls": "nci:C54571", "total": "total_stressors",
+                 "plural": "Stressors", "short": "Stressors", "label": "Stressor"},
+}
 
-    Uses marker shapes to differentiate properties when colors repeat, ensuring
-    visual distinction across all properties.
+
+def plot_property_presence(entity: str, label_file="property_labels.csv") -> tuple[str, str]:
+    """Property presence over time for one entity type, as count and percentage views.
+
+    One function for AOPs, KEs, KERs and Stressors (#178); ``entity`` is a key
+    of ``PROPERTY_PRESENCE_ENTITIES``. Uses marker shapes to differentiate
+    properties when colors repeat, ensuring visual distinction across all
+    properties.
     """
     global _plot_data_cache, _plot_figure_cache
 
+    cfg = PROPERTY_PRESENCE_ENTITIES[entity]
+    title = f"Property Presence in {cfg['plural']} Over Time"
+    total_col = cfg["total"]
+
+    def fallback(message):
+        return (
+            create_fallback_plot(f"{title} (Count)", message),
+            create_fallback_plot(f"{title} (Percentage)", message)
+        )
+
     try:
-        query_props = """
-        SELECT ?graph ?p (COUNT(DISTINCT ?AOP) AS ?count)
-        WHERE {
-          GRAPH ?graph {
-            ?AOP a aopo:AdverseOutcomePathway ;
-                 ?p ?o .
-          }
+        results_props = run_sparql_query(f"""
+        SELECT ?graph ?p (COUNT(DISTINCT ?s) AS ?count)
+        WHERE {{
+          GRAPH ?graph {{ ?s a {cfg['cls']} ; ?p ?o . }}
           FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-        }
-        GROUP BY ?graph ?p
-        ORDER BY ?graph ?p
-        """
-
-        query_total = """
-        SELECT ?graph (COUNT(DISTINCT ?AOP) AS ?total)
-        WHERE {
-          GRAPH ?graph {
-            ?AOP a aopo:AdverseOutcomePathway .
-          }
+        }}
+        GROUP BY ?graph ?p ORDER BY ?graph ?p
+        """)
+        results_total = run_sparql_query(f"""
+        SELECT ?graph (COUNT(DISTINCT ?s) AS ?total)
+        WHERE {{
+          GRAPH ?graph {{ ?s a {cfg['cls']} . }}
           FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-        }
-        GROUP BY ?graph
-        ORDER BY ?graph
-        """
-
-        results_props = run_sparql_query(query_props)
-        results_total = run_sparql_query(query_total)
+        }}
+        GROUP BY ?graph ORDER BY ?graph
+        """)
 
         if not results_props or not results_total:
-            logger.warning("AOP property presence query returned no results")
-            return (
-                create_fallback_plot("Property Presence in AOPs Over Time (Count)", "No data available"),
-                create_fallback_plot("Property Presence in AOPs Over Time (Percentage)", "No data available")
-            )
+            logger.warning(f"{cfg['label']} property presence query returned no results")
+            return fallback("No data available")
 
         df_props = pd.DataFrame([{
             "version": r["graph"]["value"].split("/")[-1],
             "property": r["p"]["value"],
             "count": int(r["count"]["value"])
         } for r in results_props])
-
         df_total = pd.DataFrame([{
             "version": r["graph"]["value"].split("/")[-1],
-            "total_aops": int(r["total"]["value"])
+            total_col: int(r["total"]["value"])
         } for r in results_total])
 
         if df_props.empty or df_total.empty:
-            logger.warning("AOP property presence DataFrames are empty")
-            return (
-                create_fallback_plot("Property Presence in AOPs Over Time (Count)", "No data available"),
-                create_fallback_plot("Property Presence in AOPs Over Time (Percentage)", "No data available")
-            )
+            return fallback("No data available")
 
-        # Merge
         df = df_props.merge(df_total, on="version", how="left")
         # Guard against division by zero in percentage calculation
         df["percentage"] = df.apply(
-            lambda row: (row["count"] / row["total_aops"]) * 100 if row["total_aops"] > 0 else 0, axis=1
+            lambda row: (row["count"] / row[total_col]) * 100 if row[total_col] > 0 else 0, axis=1
         )
 
         # Remove properties that are 100% in all versions
-        props_to_keep = (
-            df.groupby("property")["percentage"]
-              .max()
-              .loc[lambda x: x < 100]
-              .index
-        )
+        props_to_keep = df.groupby("property")["percentage"].max().loc[lambda x: x < 100].index
         df = df[df["property"].isin(props_to_keep)]
 
         # Ensure complete data: fill missing property-version combinations with 0
         if not df.empty:
             all_versions = sorted(df['version'].unique())
             all_props = sorted(df['property'].unique())
-            complete_index = pd.MultiIndex.from_product(
-                [all_versions, all_props],
-                names=['version', 'property']
-            )
+            complete_index = pd.MultiIndex.from_product([all_versions, all_props], names=['version', 'property'])
             df_complete = df.set_index(['version', 'property']).reindex(complete_index, fill_value=0).reset_index()
-
-            # Merge with totals to get proper totals for each version
+            # The re-merge suffixes the total column (_x holds the reindex
+            # zeros, _y the real totals); the export keeps both, as it always has.
             df_complete = df_complete.merge(df_total, on="version", how="left")
-
-            # Find the total column name (total_aops, total_kes, total_kers, or total_stressors)
-            total_col = [col for col in df_complete.columns if col.startswith('total_')][0]
-
-            # Recalculate percentage with the correct total column, guarding division by zero
+            merged_total = [col for col in df_complete.columns if col.startswith('total_')][0]
             df_complete["percentage"] = df_complete.apply(
-                lambda row: (row["count"] / row[total_col]) * 100 if row[total_col] > 0 else 0, axis=1
+                lambda row: (row["count"] / row[merged_total]) * 100 if row[merged_total] > 0 else 0, axis=1
             )
-
-            # Preserve display_label if it exists, otherwise will be added later
-            if 'display_label' in df.columns:
-                label_map = df[['property', 'display_label']].drop_duplicates().set_index('property')['display_label'].to_dict()
-                df_complete['display_label'] = df_complete['property'].map(label_map)
-
             df = df_complete
 
         # Label mapping with safe file reading
@@ -2288,7 +2276,6 @@ def plot_aop_property_presence(label_file="property_labels.csv") -> tuple[str, s
             {"uri": "http://purl.org/dc/elements/1.1/creator", "label": "Creator", "type": "Metadata"}
         ]
         df_labels = safe_read_csv(label_file, default_labels)
-
         if not df_labels.empty:
             df = df.merge(df_labels, how="left", left_on="property", right_on="uri")
             # Curated label where property_labels.csv has one; otherwise a
@@ -2300,415 +2287,33 @@ def plot_aop_property_presence(label_file="property_labels.csv") -> tuple[str, s
         else:
             df["display_label"] = df["property"].map(humanize_predicate_uri)
 
-        # Sort
         df["version_dt"] = pd.to_datetime(df["version"], errors="coerce")
         df = df.sort_values("version_dt")
 
-        # Cache data for CSV export (raw 0s intact — the table's truthful value).
-        _plot_data_cache['aop_property_presence_absolute'] = df.copy()
-        _plot_data_cache['aop_property_presence_percentage'] = df.copy()
+        # Raw 0s intact for the CSV/raw-data export.
+        _plot_data_cache[f'{entity}_property_presence_absolute'] = df.copy()
+        _plot_data_cache[f'{entity}_property_presence_percentage'] = df.copy()
 
         # Small multiples, one panel per property (#130). Mask leading zeros so a
         # property's line starts when it first appears, not from a flat zero run.
         plot_df = mask_property_prefix_zeros(df)
         fig_abs = build_property_presence_figure(
-            plot_df, "count", "Number of AOPs", "AOP")
-        fig_delta = build_property_presence_figure(
-            plot_df, "percentage", "Percentage (%)", "AOP", percentage=True)
+            plot_df, "count", f"Number of {cfg['short']}", cfg["label"])
+        fig_pct = build_property_presence_figure(
+            plot_df, "percentage", "Percentage (%)", cfg["label"], percentage=True)
 
         # Cache figures for image export
-        _plot_figure_cache['aop_property_presence_absolute'] = fig_abs
-        _plot_figure_cache['aop_property_presence_percentage'] = fig_delta
+        _plot_figure_cache[f'{entity}_property_presence_absolute'] = fig_abs
+        _plot_figure_cache[f'{entity}_property_presence_percentage'] = fig_pct
 
         return (
             render_plot_html(fig_abs),
-            render_plot_html(fig_delta)
+            render_plot_html(fig_pct)
         )
 
     except Exception as e:
-        logger.error(f"Failed to generate AOP property presence plots: {str(e)}")
-        return (
-            create_fallback_plot("Property Presence in AOPs Over Time (Count)", str(e)),
-            create_fallback_plot("Property Presence in AOPs Over Time (Percentage)", str(e))
-        )
-
-
-def plot_ke_property_presence(label_file="property_labels.csv") -> tuple[str, str]:
-    """Generate Key Event property presence visualization with absolute and percentage views.
-
-    Uses marker shapes to differentiate properties when colors repeat, ensuring
-    visual distinction across all properties.
-    """
-    global _plot_data_cache, _plot_figure_cache
-
-    try:
-        query_props = """
-        SELECT ?graph ?p (COUNT(DISTINCT ?ke) AS ?count)
-        WHERE {
-          GRAPH ?graph {
-            ?ke a aopo:KeyEvent ;
-                 ?p ?o .
-          }
-          FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-        }
-        GROUP BY ?graph ?p
-        ORDER BY ?graph ?p
-        """
-
-        query_total = """
-        SELECT ?graph (COUNT(DISTINCT ?ke) AS ?total)
-        WHERE {
-          GRAPH ?graph {
-            ?ke a aopo:KeyEvent .
-          }
-          FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-        }
-        GROUP BY ?graph
-        ORDER BY ?graph
-        """
-
-        results_props = run_sparql_query(query_props)
-        results_total = run_sparql_query(query_total)
-
-        if not results_props or not results_total:
-            logger.warning("KE property presence query returned no results")
-            return (
-                create_fallback_plot("Property Presence in Key Events Over Time (Count)", "No data available"),
-                create_fallback_plot("Property Presence in Key Events Over Time (Percentage)", "No data available")
-            )
-
-        df_props = pd.DataFrame([{
-            "version": r["graph"]["value"].split("/")[-1],
-            "property": r["p"]["value"],
-            "count": int(r["count"]["value"])
-        } for r in results_props])
-
-        df_total = pd.DataFrame([{
-            "version": r["graph"]["value"].split("/")[-1],
-            "total_kes": int(r["total"]["value"])
-        } for r in results_total])
-
-        if df_props.empty or df_total.empty:
-            return (
-                create_fallback_plot("Property Presence in Key Events Over Time (Count)", "No data available"),
-                create_fallback_plot("Property Presence in Key Events Over Time (Percentage)", "No data available")
-            )
-
-        # Merge
-        df = df_props.merge(df_total, on="version", how="left")
-        df["percentage"] = df.apply(
-            lambda row: (row["count"] / row["total_kes"]) * 100 if row["total_kes"] > 0 else 0, axis=1
-        )
-
-        # Remove properties that are 100% in all versions
-        props_to_keep = (
-            df.groupby("property")["percentage"]
-              .max()
-              .loc[lambda x: x < 100]
-              .index
-        )
-        df = df[df["property"].isin(props_to_keep)]
-
-        # Ensure complete data: fill missing property-version combinations with 0
-        if not df.empty:
-            all_versions = sorted(df['version'].unique())
-            all_props = sorted(df['property'].unique())
-            complete_index = pd.MultiIndex.from_product(
-                [all_versions, all_props],
-                names=['version', 'property']
-            )
-            df_complete = df.set_index(['version', 'property']).reindex(complete_index, fill_value=0).reset_index()
-            df_complete = df_complete.merge(df_total, on="version", how="left")
-            total_col = [col for col in df_complete.columns if col.startswith('total_')][0]
-            df_complete["percentage"] = df_complete.apply(
-                lambda row: (row["count"] / row[total_col]) * 100 if row[total_col] > 0 else 0, axis=1
-            )
-            if 'display_label' in df.columns:
-                label_map = df[['property', 'display_label']].drop_duplicates().set_index('property')['display_label'].to_dict()
-                df_complete['display_label'] = df_complete['property'].map(label_map)
-            df = df_complete
-
-        # Label mapping with safe file reading
-        default_labels = [
-            {"uri": "http://purl.org/dc/elements/1.1/title", "label": "Title", "type": "Essential"},
-            {"uri": "http://purl.org/dc/elements/1.1/creator", "label": "Creator", "type": "Metadata"}
-        ]
-        df_labels = safe_read_csv(label_file, default_labels)
-        if not df_labels.empty:
-            df = df.merge(df_labels, how="left", left_on="property", right_on="uri")
-            # Curated label where property_labels.csv has one; otherwise a
-            # humanized last-resort label so an unmapped predicate never renders
-            # as a raw URI (#130).
-            df["display_label"] = df["label"].fillna(
-                df["property"].map(humanize_predicate_uri)
-            )
-        else:
-            df["display_label"] = df["property"].map(humanize_predicate_uri)
-
-        df["version_dt"] = pd.to_datetime(df["version"], errors="coerce")
-        df = df.sort_values("version_dt")
-
-        # Raw 0s intact for the CSV/raw-data export.
-        _plot_data_cache['ke_property_presence_absolute'] = df.copy()
-        _plot_data_cache['ke_property_presence_percentage'] = df.copy()
-
-        # Small multiples, one panel per property (#130).
-        plot_df = mask_property_prefix_zeros(df)
-        fig_abs = build_property_presence_figure(
-            plot_df, "count", "Number of KEs", "KE")
-        fig_delta = build_property_presence_figure(
-            plot_df, "percentage", "Percentage (%)", "KE", percentage=True)
-
-        _plot_figure_cache['ke_property_presence_absolute'] = fig_abs
-        _plot_figure_cache['ke_property_presence_percentage'] = fig_delta
-
-        return (
-            render_plot_html(fig_abs),
-            render_plot_html(fig_delta)
-        )
-
-    except Exception as e:
-        logger.error(f"Failed to generate KE property presence plots: {str(e)}")
-        return (
-            create_fallback_plot("Property Presence in Key Events Over Time (Count)", str(e)),
-            create_fallback_plot("Property Presence in Key Events Over Time (Percentage)", str(e))
-        )
-
-
-def plot_ker_property_presence(label_file="property_labels.csv") -> tuple[str, str]:
-    """Generate Key Event Relationship property presence visualization with absolute and percentage views.
-
-    Uses marker shapes to differentiate properties when colors repeat, ensuring
-    visual distinction across all properties.
-    """
-    global _plot_data_cache, _plot_figure_cache
-
-    try:
-        results_props = run_sparql_query("""
-        SELECT ?graph ?p (COUNT(DISTINCT ?ker) AS ?count)
-        WHERE {
-          GRAPH ?graph { ?ker a aopo:KeyEventRelationship ; ?p ?o . }
-          FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-        }
-        GROUP BY ?graph ?p ORDER BY ?graph ?p
-        """)
-        results_total = run_sparql_query("""
-        SELECT ?graph (COUNT(DISTINCT ?ker) AS ?total)
-        WHERE {
-          GRAPH ?graph { ?ker a aopo:KeyEventRelationship . }
-          FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-        }
-        GROUP BY ?graph ORDER BY ?graph
-        """)
-
-        if not results_props or not results_total:
-            logger.warning("KER property presence query returned no results")
-            return (
-                create_fallback_plot("Property Presence in Key Event Relationships Over Time (Count)", "No data available"),
-                create_fallback_plot("Property Presence in Key Event Relationships Over Time (Percentage)", "No data available")
-            )
-
-        df_props = pd.DataFrame([{
-            "version": r["graph"]["value"].split("/")[-1],
-            "property": r["p"]["value"],
-            "count": int(r["count"]["value"])
-        } for r in results_props])
-        df_total = pd.DataFrame([{
-            "version": r["graph"]["value"].split("/")[-1],
-            "total_kers": int(r["total"]["value"])
-        } for r in results_total])
-
-        if df_props.empty or df_total.empty:
-            return (
-                create_fallback_plot("Property Presence in Key Event Relationships Over Time (Count)", "No data available"),
-                create_fallback_plot("Property Presence in Key Event Relationships Over Time (Percentage)", "No data available")
-            )
-
-        df = df_props.merge(df_total, on="version", how="left")
-        df["percentage"] = df.apply(
-            lambda row: (row["count"] / row["total_kers"]) * 100 if row["total_kers"] > 0 else 0, axis=1
-        )
-
-        props_to_keep = df.groupby("property")["percentage"].max().loc[lambda x: x < 100].index
-        df = df[df["property"].isin(props_to_keep)]
-
-        if not df.empty:
-            all_versions = sorted(df['version'].unique())
-            all_props = sorted(df['property'].unique())
-            complete_index = pd.MultiIndex.from_product([all_versions, all_props], names=['version', 'property'])
-            df_complete = df.set_index(['version', 'property']).reindex(complete_index, fill_value=0).reset_index()
-            df_complete = df_complete.merge(df_total, on="version", how="left")
-            total_col = [col for col in df_complete.columns if col.startswith('total_')][0]
-            df_complete["percentage"] = df_complete.apply(
-                lambda row: (row["count"] / row[total_col]) * 100 if row[total_col] > 0 else 0, axis=1
-            )
-            if 'display_label' in df.columns:
-                label_map = df[['property', 'display_label']].drop_duplicates().set_index('property')['display_label'].to_dict()
-                df_complete['display_label'] = df_complete['property'].map(label_map)
-            df = df_complete
-
-        default_labels = [
-            {"uri": "http://purl.org/dc/elements/1.1/title", "label": "Title", "type": "Essential"},
-            {"uri": "http://purl.org/dc/elements/1.1/creator", "label": "Creator", "type": "Metadata"}
-        ]
-        df_labels = safe_read_csv(label_file, default_labels)
-        if not df_labels.empty:
-            df = df.merge(df_labels, how="left", left_on="property", right_on="uri")
-            # Curated label where property_labels.csv has one; otherwise a
-            # humanized last-resort label so an unmapped predicate never renders
-            # as a raw URI (#130).
-            df["display_label"] = df["label"].fillna(
-                df["property"].map(humanize_predicate_uri)
-            )
-        else:
-            df["display_label"] = df["property"].map(humanize_predicate_uri)
-
-        df["version_dt"] = pd.to_datetime(df["version"], errors="coerce")
-        df = df.sort_values("version_dt")
-
-        # Raw 0s intact for the CSV/raw-data export.
-        _plot_data_cache['ker_property_presence_absolute'] = df.copy()
-        _plot_data_cache['ker_property_presence_percentage'] = df.copy()
-
-        # Small multiples, one panel per property (#130).
-        plot_df = mask_property_prefix_zeros(df)
-        fig_abs = build_property_presence_figure(
-            plot_df, "count", "Number of KERs", "KER")
-        fig_delta = build_property_presence_figure(
-            plot_df, "percentage", "Percentage (%)", "KER", percentage=True)
-
-        _plot_figure_cache['ker_property_presence_absolute'] = fig_abs
-        _plot_figure_cache['ker_property_presence_percentage'] = fig_delta
-
-        return (
-            render_plot_html(fig_abs),
-            render_plot_html(fig_delta)
-        )
-
-    except Exception as e:
-        logger.error(f"Failed to generate KER property presence plots: {str(e)}")
-        return (
-            create_fallback_plot("Property Presence in Key Event Relationships Over Time (Count)", str(e)),
-            create_fallback_plot("Property Presence in Key Event Relationships Over Time (Percentage)", str(e))
-        )
-
-
-def plot_stressor_property_presence(label_file="property_labels.csv") -> tuple[str, str]:
-    """Generate Stressor property presence visualization with absolute and percentage views.
-
-    Uses marker shapes to differentiate properties when colors repeat, ensuring
-    visual distinction across all properties.
-    """
-    global _plot_data_cache, _plot_figure_cache
-
-    try:
-        results_props = run_sparql_query("""
-        SELECT ?graph ?p (COUNT(DISTINCT ?s) AS ?count)
-        WHERE {
-          GRAPH ?graph { ?s a nci:C54571 ; ?p ?o . }
-          FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-        }
-        GROUP BY ?graph ?p ORDER BY ?graph ?p
-        """)
-        results_total = run_sparql_query("""
-        SELECT ?graph (COUNT(DISTINCT ?s) AS ?total)
-        WHERE {
-          GRAPH ?graph { ?s a nci:C54571 . }
-          FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-        }
-        GROUP BY ?graph ORDER BY ?graph
-        """)
-
-        if not results_props or not results_total:
-            logger.warning("Stressor property presence query returned no results")
-            return (
-                create_fallback_plot("Property Presence in Stressors Over Time (Count)", "No data available"),
-                create_fallback_plot("Property Presence in Stressors Over Time (Percentage)", "No data available")
-            )
-
-        df_props = pd.DataFrame([{
-            "version": r["graph"]["value"].split("/")[-1],
-            "property": r["p"]["value"],
-            "count": int(r["count"]["value"])
-        } for r in results_props])
-        df_total = pd.DataFrame([{
-            "version": r["graph"]["value"].split("/")[-1],
-            "total_stressors": int(r["total"]["value"])
-        } for r in results_total])
-
-        if df_props.empty or df_total.empty:
-            return (
-                create_fallback_plot("Property Presence in Stressors Over Time (Count)", "No data available"),
-                create_fallback_plot("Property Presence in Stressors Over Time (Percentage)", "No data available")
-            )
-
-        df = df_props.merge(df_total, on="version", how="left")
-        df["percentage"] = df.apply(
-            lambda row: (row["count"] / row["total_stressors"]) * 100 if row["total_stressors"] > 0 else 0, axis=1
-        )
-
-        props_to_keep = df.groupby("property")["percentage"].max().loc[lambda x: x < 100].index
-        df = df[df["property"].isin(props_to_keep)]
-
-        if not df.empty:
-            all_versions = sorted(df['version'].unique())
-            all_props = sorted(df['property'].unique())
-            complete_index = pd.MultiIndex.from_product([all_versions, all_props], names=['version', 'property'])
-            df_complete = df.set_index(['version', 'property']).reindex(complete_index, fill_value=0).reset_index()
-            df_complete = df_complete.merge(df_total, on="version", how="left")
-            total_col = [col for col in df_complete.columns if col.startswith('total_')][0]
-            df_complete["percentage"] = df_complete.apply(
-                lambda row: (row["count"] / row[total_col]) * 100 if row[total_col] > 0 else 0, axis=1
-            )
-            if 'display_label' in df.columns:
-                label_map = df[['property', 'display_label']].drop_duplicates().set_index('property')['display_label'].to_dict()
-                df_complete['display_label'] = df_complete['property'].map(label_map)
-            df = df_complete
-
-        default_labels = [
-            {"uri": "http://purl.org/dc/elements/1.1/title", "label": "Title", "type": "Essential"},
-            {"uri": "http://purl.org/dc/elements/1.1/creator", "label": "Creator", "type": "Metadata"}
-        ]
-        df_labels = safe_read_csv(label_file, default_labels)
-        if not df_labels.empty:
-            df = df.merge(df_labels, how="left", left_on="property", right_on="uri")
-            # Curated label where property_labels.csv has one; otherwise a
-            # humanized last-resort label so an unmapped predicate never renders
-            # as a raw URI (#130).
-            df["display_label"] = df["label"].fillna(
-                df["property"].map(humanize_predicate_uri)
-            )
-        else:
-            df["display_label"] = df["property"].map(humanize_predicate_uri)
-
-        df["version_dt"] = pd.to_datetime(df["version"], errors="coerce")
-        df = df.sort_values("version_dt")
-
-        # Raw 0s intact for the CSV/raw-data export.
-        _plot_data_cache['stressor_property_presence_absolute'] = df.copy()
-        _plot_data_cache['stressor_property_presence_percentage'] = df.copy()
-
-        # Small multiples, one panel per property (#130).
-        plot_df = mask_property_prefix_zeros(df)
-        fig_abs = build_property_presence_figure(
-            plot_df, "count", "Number of Stressors", "Stressor")
-        fig_delta = build_property_presence_figure(
-            plot_df, "percentage", "Percentage (%)", "Stressor", percentage=True)
-
-        _plot_figure_cache['stressor_property_presence_absolute'] = fig_abs
-        _plot_figure_cache['stressor_property_presence_percentage'] = fig_delta
-
-        return (
-            render_plot_html(fig_abs),
-            render_plot_html(fig_delta)
-        )
-
-    except Exception as e:
-        logger.error(f"Failed to generate stressor property presence plots: {str(e)}")
-        return (
-            create_fallback_plot("Property Presence in Stressors Over Time (Count)", str(e)),
-            create_fallback_plot("Property Presence in Stressors Over Time (Percentage)", str(e))
-        )
+        logger.error(f"Failed to generate {cfg['label']} property presence plots: {str(e)}")
+        return fallback(str(e))
 
 
 def plot_kes_by_kec_count() -> tuple[str, str]:
