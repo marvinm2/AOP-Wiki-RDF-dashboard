@@ -32,8 +32,53 @@ jobs:
       - name: Run tests
         run: pytest -q
 
+  # Frontend runtime (#181): node --test for the state module, Playwright for
+  # the pages. The app serves the pages; the tests stub every data request, so
+  # no SPARQL endpoint is involved.
+  frontend:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version-file: '.python-version'
+          cache: pip
+
+      - name: Install app dependencies
+        run: pip install -r requirements.txt
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install test tooling
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Unit tests (node --test)
+        run: npm run test:js
+
+      - name: Browser tests (Playwright)
+        run: npm run test:e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
   docker-build:
-    needs: test
+    needs: [test, frontend]
     runs-on: ubuntu-latest
     permissions:
       contents: read

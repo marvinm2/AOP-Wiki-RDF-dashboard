@@ -6,7 +6,8 @@
  *   chosen sub-range using Plotly.relayout. Trend plots use a categorical
  *   x-axis (string version dates), so the range is expressed in index space
  *   (start_idx - 0.5, end_idx + 0.5).
- * - Mirrors the selection to ?start=...&end=... in the URL.
+ * - Keeps the selection in the page state (static/js/state.js), which mirrors
+ *   it to ?start=...&end=... in the URL (#181).
  * - Appends start/end query params to every download link on the page
  *   (CSV/PNG/SVG/bulk) so server-side exports honour the same constraint.
  * - Skips plots that are not snapshot-iterated (lifetime/creation-date plots).
@@ -81,9 +82,8 @@
     }
 
     function restoreFromURL() {
-        const params = new URLSearchParams(window.location.search);
-        const s = params.get('start');
-        const e = params.get('end');
+        const s = window.DashState ? window.DashState.get('start') : null;
+        const e = window.DashState ? window.DashState.get('end') : null;
         const startSel = document.getElementById('trends-range-start');
         const endSel = document.getElementById('trends-range-end');
         const known = new Set(allVersions.map((v) => v.version));
@@ -104,24 +104,13 @@
             applyRange({ skipPlotRelayout: false });
         });
 
-        // When the lazy-loader replaces a placeholder with a real plot, the
-        // current range needs to be re-applied to the new plotly div.
-        // Hook into a MutationObserver on each snapshot-keyed container —
-        // ONE-SHOT: disconnect after the first relayout. Otherwise Plotly's
-        // own internal DOM mutations (notably for stacked / grouped bars with
-        // add_hline shapes) re-trigger the observer in a tight loop that
-        // freezes the main thread and leaves the chart blank.
-        document.querySelectorAll('.lazy-plot').forEach((el) => {
-            const name = el.dataset.plotName;
+        // A plot drawn after the range was chosen gets the range applied when
+        // the runtime reports it drawn (#181; replaces a MutationObserver).
+        document.addEventListener('plot:rendered', (event) => {
+            const name = event.detail.plotName;
             if (!name || EXCLUDED_PLOTS.has(stripSuffix(name))) return;
-            const obs = new MutationObserver(() => {
-                const plotly = el.querySelector('.plotly-graph-div');
-                if (plotly) {
-                    obs.disconnect();
-                    relayoutPlot(plotly);
-                }
-            });
-            obs.observe(el, { childList: true, subtree: true });
+            const plotly = event.target.querySelector('.plotly-graph-div');
+            if (plotly) relayoutPlot(plotly);
         });
     }
 
@@ -171,17 +160,10 @@
     }
 
     function updateURLState() {
-        const params = new URLSearchParams(window.location.search);
-        if (isFullRange()) {
-            params.delete('start');
-            params.delete('end');
-        } else {
-            params.set('start', startVersion);
-            params.set('end', endVersion);
-        }
-        const qs = params.toString();
-        const newUrl = window.location.pathname + (qs ? '?' + qs : '');
-        history.replaceState(null, '', newUrl);
+        if (!window.DashState) return;
+        window.DashState.set(isFullRange()
+            ? { start: null, end: null }
+            : { start: startVersion, end: endVersion });
     }
 
     function updateDownloadLinks() {

@@ -1210,7 +1210,7 @@ def database_snapshot():
     Displays key metrics and visualizations from any version of the AOP-Wiki
     database, allowing users to explore current and historical snapshots.
     """
-    return render_template("latest.html", methodology_notes=methodology_notes, sparql_endpoint=Config.SPARQL_PUBLIC_ENDPOINT, latest_graph_uri=_current_latest_graph_uri(), ontology_branches=available_ontology_branches(), domains=available_domains(), versioned_plots=sorted(LATEST_PLOT_FUNCTIONS), active_page='snapshot')
+    return render_template("latest.html", methodology_notes=methodology_notes, sparql_endpoint=Config.SPARQL_PUBLIC_ENDPOINT, latest_graph_uri=_current_latest_graph_uri(), ontology_branches=available_ontology_branches(), domains=available_domains(), versioned_plots=sorted(LATEST_PLOT_FUNCTIONS), plot_params={s.id: list(s.params) for s in registry.snapshot_specs() if s.params}, active_page='snapshot')
 
 
 @app.route("/latest")

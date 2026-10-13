@@ -14,3 +14,8 @@ app_new.log
 *.sqlite-wal
 *.sqlite-shm
 /data/usage.sqlite*
+
+# Frontend test tooling (#181)
+node_modules/
+test-results/
+playwright-report/

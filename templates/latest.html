@@ -153,7 +153,7 @@
                 metadata.
             </p>
             {{ methodology_note(methodology_notes, 'latest_aop_aop_overlap') }}
-            <div class="lazy-plot" data-plot-name="latest_aop_aop_overlap" data-min-jaccard="0.34">
+            <div class="lazy-plot" data-plot-name="latest_aop_aop_overlap">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
             {{ data_table_toggle('latest_aop_aop_overlap') }}
@@ -388,7 +388,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="lazy-plot" data-plot-name="latest_organ_coverage_unified" data-scope="all" data-view="absolute">
+                    <div class="lazy-plot" data-plot-name="latest_organ_coverage_unified">
                         <!-- Plot will be loaded here via JavaScript -->
                     </div>
                     {{ data_table_toggle('latest_organ_coverage_unified') }}
@@ -405,7 +405,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="lazy-plot" data-plot-name="latest_organ_coverage_pie" data-scope="all">
+                    <div class="lazy-plot" data-plot-name="latest_organ_coverage_pie">
                         <!-- Plot will be loaded here via JavaScript -->
                     </div>
                     {{ data_table_toggle('latest_organ_coverage_pie') }}
@@ -523,7 +523,7 @@
                 blind spot the coverage-holes chart reports from the other side.
             </p>
             {{ methodology_note(methodology_notes, 'latest_domain_coverage') }}
-            <div class="lazy-plot" data-plot-name="latest_domain_coverage" data-domain="Cardiovascular">
+            <div class="lazy-plot" data-plot-name="latest_domain_coverage">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
             {{ data_table_toggle('latest_domain_coverage') }}
@@ -548,7 +548,7 @@
                 a filled field can still be wrong or out of date.
             </p>
             {{ methodology_note(methodology_notes, 'latest_domain_completeness') }}
-            <div class="lazy-plot" data-plot-name="latest_domain_completeness" data-domain="Cardiovascular">
+            <div class="lazy-plot" data-plot-name="latest_domain_completeness">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
             {{ data_table_toggle('latest_domain_completeness') }}
@@ -571,7 +571,7 @@
                 process &mdash; it is displayed, never scored.
             </p>
             {{ methodology_note(methodology_notes, 'latest_domain_status') }}
-            <div class="lazy-plot" data-plot-name="latest_domain_status" data-domain="Cardiovascular">
+            <div class="lazy-plot" data-plot-name="latest_domain_status">
                 <!-- Plot will be loaded here via JavaScript -->
             </div>
             {{ data_table_toggle('latest_domain_status') }}
@@ -946,42 +946,25 @@
 <script>
 // Snapshot plots that take ?version= (from plots/registry.py, #171, #178).
 window.VERSIONED_PLOTS = {{ versioned_plots|tojson }};
+// The settings each plot takes, as query parameters (plots/registry.py, #181).
+window.PLOT_PARAMS = {{ plot_params|tojson }};
 </script>
 <script src="{{ url_for('static', filename='js/version-selector.js') }}"></script>
-<script src="{{ url_for('static', filename='js/coverage-toggle.js') }}"></script>
+<script src="{{ url_for('static', filename='js/snapshot-controls.js') }}"></script>
 <script src="{{ url_for('static', filename='js/raw-data-tables.js') }}"></script>
 <script>
-// EXPL-04: Click-to-AOP-Wiki handler for KE reuse plot
-// Uses MutationObserver to attach Plotly click handler after lazy-loaded plot renders
-(function() {
-    'use strict';
-    function attachKeReuseClickHandler(plotContainer) {
-        var plotlyDiv = plotContainer.querySelector('.plotly-graph-div, .js-plotly-plot');
-        if (!plotlyDiv) return;
-        plotlyDiv.on('plotly_click', function(eventData) {
-            if (eventData && eventData.points && eventData.points[0] && eventData.points[0].customdata) {
-                var url = eventData.points[0].customdata[0];
-                if (url && url.startsWith('https://aopwiki.org/')) {
-                    window.open(url, '_blank');
-                }
-            }
-        });
-    }
-
-    var keReusePlot = document.getElementById('ke-reuse-plot');
-    if (keReusePlot) {
-        // Keep watching: every version switch replaces the plot, and the new
-        // one needs its own handler (#171).
-        var observer = new MutationObserver(function() {
-            var plotlyDiv = keReusePlot.querySelector('.plotly-graph-div, .js-plotly-plot');
-            if (plotlyDiv && typeof plotlyDiv.on === 'function' && !plotlyDiv.dataset.keReuseClick) {
-                plotlyDiv.dataset.keReuseClick = '1';
-                attachKeReuseClickHandler(keReusePlot);
-            }
-        });
-        observer.observe(keReusePlot, { childList: true, subtree: true });
-    }
-})();
+// EXPL-04: clicking a KE in the KE-reuse plot opens it on AOP-Wiki. Every
+// render (each version switch) draws a new figure, which needs its own handler.
+document.addEventListener('plot:rendered', function (event) {
+    if (event.detail.plotName !== 'latest_ke_reuse') return;
+    var plotlyDiv = event.target.querySelector('.js-plotly-plot');
+    if (!plotlyDiv || typeof plotlyDiv.on !== 'function') return;
+    plotlyDiv.on('plotly_click', function (eventData) {
+        var point = eventData && eventData.points && eventData.points[0];
+        var url = point && point.customdata && point.customdata[0];
+        if (url && url.startsWith('https://aopwiki.org/')) window.open(url, '_blank');
+    });
+});
 </script>
 <script>
 // Load property details dynamically from the API
