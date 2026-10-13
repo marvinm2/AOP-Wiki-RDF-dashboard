@@ -163,6 +163,29 @@ Failures are tracked via GitHub issues (e.g. #35 SP031 in `latest_ontology_usage
 3. For historical trends: choose "CSV (Abs)" or "CSV (Δ)"
 4. Files include version metadata and contextual information
 
+### **Data API (v2)**
+Every plot's data and figure are available as JSON, for notebooks, other tools and
+custom views:
+
+| Endpoint | Returns |
+|---|---|
+| `GET /api/v2/manifest` | every plot (id, kind, settings), the available versions, the store build time |
+| `GET /api/v2/data/<id>?version=YYYY-MM-DD` | the rows of the plot's CSV download, as columnar JSON: `{"meta": {..., "columns": [{"name", "type"}], "queries": [...]}, "data": {column: [values]}}` |
+| `GET /api/v2/figure/<id>?version=YYYY-MM-DD` | the plot as Plotly JSON (layout template removed) |
+
+- `version` applies to snapshot plots (default: the latest); trend plots cover every version.
+- A plot's settings are query parameters too, e.g. `?min_jaccard=0.4` or `?domain=Cardiovascular`
+  (see `params` in the manifest).
+- `meta.queries` holds the SPARQL behind the plot, as shown in its methodology panel.
+- Responses carry an `ETag`; send it back as `If-None-Match` to get `304 Not Modified`.
+
+```python
+import pandas as pd, requests
+r = requests.get("https://aopwiki-dashboard.vhp4safety.nl/api/v2/data/latest_entity_counts",
+                 params={"version": "2024-01-01"}).json()
+df = pd.DataFrame(r["data"])[[c["name"] for c in r["meta"]["columns"]]]
+```
+
 ## Development
 
 ### **File Structure**

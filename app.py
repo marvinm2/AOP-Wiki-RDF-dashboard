@@ -135,7 +135,7 @@ from plots import (
     get_or_compute_network
 )
 from plots.recovery import TrendPlotRecovery, result_has_usable_html, run_tasks_with_deadline
-from plots import query_store
+from plots import query_store, data_api
 from plots.shared import get_version_registry
 
 from usage_analytics import record_event, get_summary, init_db
@@ -904,7 +904,130 @@ def api_v2_manifest():
     produces it, its methodology-note key, the page holding its container,
     whether it takes ?version=, its tuning args and bulk categories.
     """
-    return jsonify({'plots': registry.manifest()})
+    store = _store_manifest()
+    return jsonify({
+        'plots': registry.manifest(),
+        'versions': [v['version'] for v in get_all_versions()],
+        'latest_version': get_latest_version(),
+        'store_built_at': store.built_at if store else None,
+        'endpoints': {
+            'data': '/api/v2/data/{id}?version={version}',
+            'figure': '/api/v2/figure/{id}?version={version}',
+        },
+    })
+
+
+# One render at a time per plot: the data and figure caches are keyed by plot
+# and version but not by setting, so two concurrent renders of one plot with
+# different settings would race on the same cache entry.
+_capture_locks: dict = {}
+_capture_locks_guard = threading.Lock()
+
+
+def _capture_plot(spec, version, settings):
+    """(DataFrame, figure, concrete version) behind a plot, rendered if needed (#180).
+
+    Snapshot plots are rendered for the concrete version and settings asked for
+    (from the query store, so this is cheap), then read back from the caches
+    the render fills, under a per-plot lock. Trend plots read their startup
+    caches and recompute the task if this worker has not got them.
+    """
+    if spec.kind == "trend":
+        if spec.id not in _plot_data_cache:
+            rewarm_cache_key(_plot_data_cache, spec.id)
+        return _plot_data_cache.get(spec.id), _plot_figure_cache.get(spec.id), None
+
+    resolved = plots.resolve_version(version)
+    key = plot_cache_key(spec.id, resolved)
+    with _capture_locks_guard:
+        lock = _capture_locks.setdefault(spec.id, threading.Lock())
+    with lock:
+        if settings or key not in _plot_data_cache or spec.params:
+            LATEST_PLOT_FUNCTIONS[spec.id](resolved, **settings)
+        return _plot_data_cache.get(key), _plot_figure_cache.get(key), resolved
+
+
+def _v2_request(plot_id):
+    """Spec, settings and version of a v2 request, or an error response."""
+    spec = registry.BY_ID.get(registry.DOWNLOAD_ALIASES.get(plot_id, plot_id))
+    if spec is None:
+        return None, None, None, (jsonify({'error': f'Unknown plot: {plot_id}'}), 404)
+    version = request.args.get('version') or None
+    if version and spec.kind == "trend":
+        return None, None, None, (jsonify({'error': 'Trend plots cover every version; drop ?version='}), 400)
+    if version and version not in [v['version'] for v in get_all_versions()]:
+        return None, None, None, (jsonify({'error': f'Unknown version: {version}'}), 404)
+    settings = {k: request.args[k] for k in spec.params if request.args.get(k)}
+    return spec, settings, version, None
+
+
+def _v2_meta(spec, version, settings):
+    graph_uri = f"http://aopwiki.org/graph/{version}" if version else None
+    store = _store_manifest()
+    return {
+        'id': spec.id,
+        'kind': spec.kind,
+        'version': version,
+        'graph_uri': graph_uri,
+        'settings': settings,
+        'note': spec.note,
+        'queries': data_api.disclosed_queries(methodology_notes.get(spec.note), graph_uri or _current_latest_graph_uri()),
+        'endpoint': Config.SPARQL_PUBLIC_ENDPOINT,
+        'store_built_at': store.built_at if store else None,
+    }
+
+
+def _v2_response(payload):
+    """JSON with an ETag over the body; 304 when the client already has it."""
+    body = data_api.encode(payload)
+    tag = data_api.etag(body)
+    headers = {'ETag': tag, 'Cache-Control': 'no-cache'}
+    if data_api.etag_matches(request.headers.get('If-None-Match'), tag):
+        return Response(status=304, headers=headers)
+    return Response(body, mimetype='application/json', headers=headers)
+
+
+@app.route("/api/v2/data/<plot_id>")
+def api_v2_data(plot_id):
+    """A plot's data as columnar JSON: the rows its CSV download holds (#180).
+
+    Query parameters: ``version`` (snapshot plots; default the latest) and the
+    plot's settings (see ``params`` in /api/v2/manifest).
+    """
+    spec, settings, version, error = _v2_request(plot_id)
+    if error:
+        return error
+    try:
+        df, _, resolved = _capture_plot(spec, version, settings)
+    except Exception as e:
+        logger.error(f"v2 data for {plot_id} failed: {e}")
+        return jsonify({'error': 'Data unavailable'}), 503
+    if df is None:
+        return jsonify({'error': 'Data unavailable'}), 503
+    table = data_api.frame_to_columnar(df)
+    meta = _v2_meta(spec, resolved, settings)
+    meta.update({'rows': len(df), 'columns': table['columns'], 'complete': True})
+    return _v2_response({'meta': meta, 'data': table['data']})
+
+
+@app.route("/api/v2/figure/<plot_id>")
+def api_v2_figure(plot_id):
+    """A plot's figure as Plotly JSON, template stripped (#180)."""
+    spec, settings, version, error = _v2_request(plot_id)
+    if error:
+        return error
+    try:
+        df, fig, resolved = _capture_plot(spec, version, settings)
+    except Exception as e:
+        logger.error(f"v2 figure for {plot_id} failed: {e}")
+        return jsonify({'error': 'Figure unavailable'}), 503
+    if fig is None:
+        if df is not None and df.empty:
+            # e.g. no taxonomic data before 2020: the page shows a placeholder.
+            return jsonify({'error': 'No data for this version, so no figure'}), 404
+        return jsonify({'error': 'Figure unavailable'}), 503
+    return _v2_response({'meta': _v2_meta(spec, resolved, settings),
+                         'figure': data_api.figure_to_json(fig)})
 
 
 @app.route("/api/plot-data/<plot_name>")
@@ -924,7 +1047,12 @@ def api_plot_data(plot_name):
         dict: JSON with columns, rows, total_rows, truncated, plot_name, success
     """
     version = request.args.get('version', None)
-    max_rows = 100
+    # Every row unless ?limit= asks for fewer (#180); the page's data tables
+    # ask for 100.
+    try:
+        max_rows = max(1, int(request.args['limit'])) if request.args.get('limit') else None
+    except ValueError:
+        return jsonify({'error': 'limit must be a positive integer', 'success': False}), 400
 
     # Per-version key for snapshot plots, no fallback to another version (#166);
     # recompute if this worker hasn't rendered it yet (#148).
@@ -938,8 +1066,8 @@ def api_plot_data(plot_name):
             return jsonify({'error': 'No data available', 'success': False}), 404
 
         total_rows = len(df)
-        truncated = total_rows > max_rows
-        display_df = df.head(max_rows).copy()
+        truncated = max_rows is not None and total_rows > max_rows
+        display_df = (df.head(max_rows) if max_rows else df).copy()
         display_df = display_df.fillna('')
         columns = list(display_df.columns)
         rows = display_df.to_dict('records')
