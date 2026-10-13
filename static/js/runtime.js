@@ -26,6 +26,15 @@ function dbg(...args) { if (PLOT_DEBUG) console.log('[runtime]', ...args); }
 
 const SUPERSEDED = 'superseded';
 
+/**
+ * Resize a figure if it is on screen. Plotly rejects a resize of a hidden or
+ * detached div (e.g. the delta plots on /trends while absolute is shown).
+ */
+function resizeIfShown(div) {
+    if (!window.Plotly || !div.isConnected || div.offsetParent === null) return;
+    Promise.resolve(window.Plotly.Plots.resize(div)).catch(() => {});
+}
+
 /** Draws /api/plot HTML: inject it, run its init scripts, size the figure. */
 const legacyHtmlRenderer = {
     mount(element, payload) {
@@ -45,7 +54,7 @@ const legacyHtmlRenderer = {
             }
         });
         const div = element.querySelector('.plotly-graph-div');
-        if (div && window.Plotly) setTimeout(() => window.Plotly.Plots.resize(div), 100);
+        if (div) setTimeout(() => resizeIfShown(div), 100);
     },
     update(element, payload) {
         this.destroy(element);
@@ -290,6 +299,5 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 window.addEventListener('resize', () => {
-    if (!window.Plotly) return;
-    document.querySelectorAll('.plotly-graph-div').forEach((div) => window.Plotly.Plots.resize(div));
+    document.querySelectorAll('.plotly-graph-div').forEach(resizeIfShown);
 });

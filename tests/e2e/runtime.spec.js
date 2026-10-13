@@ -30,6 +30,15 @@ test('smoke: every page loads and draws its visible plots without script errors'
         expect(drawn.length, path).toBeGreaterThan(0);
         for (const d of drawn) expect(d.label?.split('|')[0], path).toBe(d.name);
     }
+    // Resizing and the delta toggle resize every figure, including hidden ones.
+    const toggle = page.locator('#toggle-delta');
+    if (await toggle.count()) {
+        await toggle.click();
+        await page.setViewportSize({ width: 1000, height: 800 });
+        await toggle.click();
+        await page.setViewportSize({ width: 1400, height: 900 });
+        await page.waitForTimeout(300);
+    }
     await page.goto('/network');
     await expect(page.locator('h1, h2').first()).toBeVisible();
     // Network data is not stubbed and the test server has no endpoint, so its
