@@ -142,7 +142,9 @@ builds it daily at 04:30 UTC with the dashboard's current image (definition in
 TGX-UM/cronjobs). After a deploy or a quarter load, trigger it rather than wait:
 
 ```bash
-docker service scale cronjobs_aopwiki-dashboard-store-build=1
+# --force starts a new task; a plain `scale =1` does nothing while the last
+# finished run still counts as the one replica.
+docker service update --detach --force --replicas 1 cronjobs_aopwiki-dashboard-store-build
 docker service logs --raw cronjobs_aopwiki-dashboard-store-build | tail -3   # "Store build complete."
 ```
 
