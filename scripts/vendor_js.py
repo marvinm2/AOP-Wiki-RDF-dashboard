@@ -34,6 +34,8 @@ VENDOR = ROOT / "static" / "vendor"
 LIBRARIES = {
     "plotly-cartesian": ("2.32.0", "https://cdn.plot.ly/plotly-cartesian-2.32.0.min.js"),
     "cytoscape": ("3.33.1", "https://unpkg.com/cytoscape@3.33.1/dist/cytoscape.min.js"),
+    # D3 for the views Plotly has no form for (version scrubber #182, ...).
+    "d3": ("7.9.0", "https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"),
 }
 
 

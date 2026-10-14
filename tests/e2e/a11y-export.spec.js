@@ -2,7 +2,7 @@
 // downloads named after the state, keyboard reading of a figure, and data
 // tables that follow the version.
 const { test, expect } = require('@playwright/test');
-const { installStubs, VERSIONS } = require('./stubs');
+const { installStubs, pickVersion, VERSIONS } = require('./stubs');
 
 test.beforeEach(async ({ page }) => {
     page.errors = [];
@@ -82,7 +82,7 @@ test('a drawn figure is labelled and can be read with the keyboard', async ({ pa
 test('the raw-data table follows the version and settings', async ({ page }) => {
     const stats = await installStubs(page);
     await page.goto(`/snapshot?version=${VERSIONS[2]}`);
-    await expect(page.locator('#version-selector option')).toHaveCount(VERSIONS.length);
+    await expect(page.locator('#version-scrubber .scrubber-marks circle')).toHaveCount(VERSIONS.length);
     const table = page.locator('[data-table-for="latest_entity_counts"]');
     await table.getByRole('button', { name: 'Show Raw Data' }).click();
     await expect(table.getByRole('button', { name: 'Hide Raw Data' })).toHaveAttribute('aria-expanded', 'true');
@@ -92,7 +92,7 @@ test('the raw-data table follows the version and settings', async ({ page }) => 
     await expect(table.locator('caption')).toHaveText(/^Data behind: /);
 
     // An open table reloads when the version changes.
-    await page.selectOption('#version-selector', VERSIONS[3]);
+    await pickVersion(page, VERSIONS[3]);
     await expect(table.locator('td').first()).toHaveText(`latest_entity_counts|${VERSIONS[3]}|`);
     expect(stats.requests.filter((u) => u.includes('/api/v2/data/latest_entity_counts'))).toHaveLength(2);
     expect(page.errors).toEqual([]);

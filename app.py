@@ -1223,7 +1223,7 @@ def database_snapshot():
     Displays key metrics and visualizations from any version of the AOP-Wiki
     database, allowing users to explore current and historical snapshots.
     """
-    return render_template("latest.html", methodology_notes=methodology_notes, sparql_endpoint=Config.SPARQL_PUBLIC_ENDPOINT, latest_graph_uri=_current_latest_graph_uri(), ontology_branches=available_ontology_branches(), domains=available_domains(), versioned_plots=sorted(LATEST_PLOT_FUNCTIONS), plot_params={s.id: list(s.params) for s in registry.snapshot_specs() if s.params}, active_page='snapshot')
+    return render_template("latest.html", methodology_notes=methodology_notes, sparql_endpoint=Config.SPARQL_PUBLIC_ENDPOINT, latest_graph_uri=_current_latest_graph_uri(), ontology_branches=available_ontology_branches(), domains=available_domains(), versioned_plots=sorted(LATEST_PLOT_FUNCTIONS), plot_params={s.id: list(s.params) for s in registry.snapshot_specs() if s.params}, timeline_events=registry.TIMELINE_EVENTS, active_page='snapshot')
 
 
 @app.route("/latest")
@@ -1239,7 +1239,7 @@ def historical_trends():
     Displays evolution and growth patterns of the AOP-Wiki database
     over time using quarterly releases.
     """
-    return render_template("trends_page.html", methodology_notes=methodology_notes, sparql_endpoint=Config.SPARQL_PUBLIC_ENDPOINT, latest_graph_uri=_current_latest_graph_uri(), delta_views=registry.DELTA_VIEWS, active_page='trends')
+    return render_template("trends_page.html", methodology_notes=methodology_notes, sparql_endpoint=Config.SPARQL_PUBLIC_ENDPOINT, latest_graph_uri=_current_latest_graph_uri(), delta_views=registry.DELTA_VIEWS, timeline_events=registry.TIMELINE_EVENTS, active_page='trends')
 
 
 @app.route("/dashboard")

@@ -5,6 +5,7 @@
 {% block head_extra %}
     {% from 'macros/vendor.html' import vendor_script with context %}
     {{ vendor_script('plotly-cartesian', defer=True) }}
+    {{ vendor_script('d3', defer=True) }}
 {% endblock %}
 
 {% block page_header %}
@@ -29,6 +30,7 @@
         </div>
     </div>
 </div>
+<div id="version-scrubber" class="version-scrubber" data-mode="single" aria-label="Snapshot version timeline" role="group"></div>
 <nav class="snapshot-section-nav" aria-label="Jump to section">
     <a class="nav-button nav-button--compact" href="#database-state">Database State</a>
     <a class="nav-button nav-button--compact" href="#network-analysis">Network Analysis</a>
@@ -70,6 +72,9 @@
         <li><b>Data Quality:</b> annotation completeness and ontology usage patterns</li>
     </ul>
 </details>
+<div class="timeline-note">
+    {{ methodology_note(methodology_notes, 'version_timeline', summary='About the version timeline and its shaded periods') }}
+</div>
 
 <section class="section-block" id="database-state">
     <h2 class="section-header">Current Database State</h2>
@@ -948,8 +953,11 @@
 window.VERSIONED_PLOTS = {{ versioned_plots|tojson }};
 // The settings each plot takes, as query parameters (plots/registry.py, #181).
 window.PLOT_PARAMS = {{ plot_params|tojson }};
+// Shaded periods on the version scrubber (plots/registry.py, #182).
+window.TIMELINE_EVENTS = {{ timeline_events|tojson }};
 </script>
 <script src="{{ url_for('static', filename='js/version-selector.js') }}"></script>
+<script src="{{ url_for('static', filename='js/viz/scrubber.js') }}"></script>
 <script src="{{ url_for('static', filename='js/snapshot-controls.js') }}"></script>
 <script>
 // EXPL-04: clicking a KE in the KE-reuse plot opens it on AOP-Wiki. Every

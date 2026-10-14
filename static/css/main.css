@@ -1967,3 +1967,218 @@ footer img {
         grid-template-columns: 1fr;
     }
 }
+
+/* ==========================================================================
+   Version scrubber (#182): static/js/viz/scrubber.js
+   Brand variables only; the shaded periods use sky blue and orange.
+   ========================================================================== */
+
+.version-scrubber {
+    margin: 0 auto 10px;
+}
+
+.scrubber-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 4px 12px;
+}
+
+.scrubber-play {
+    flex: none;
+    min-width: 64px;
+    padding: 5px 12px;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-primary);
+    background: white;
+    border: 2px solid var(--color-primary);
+    border-radius: 999px;
+    cursor: pointer;
+}
+
+.scrubber-play[aria-pressed="true"] {
+    color: white;
+    background: var(--color-primary);
+}
+
+.scrubber-svg {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: block;
+    overflow: visible;
+}
+
+.scrubber-readout {
+    flex: none;
+    min-width: 12em;
+    text-align: right;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-primary);
+}
+
+.scrubber-track {
+    stroke: var(--color-border);
+    stroke-width: 2;
+}
+
+.scrubber-marks circle {
+    fill: white;
+    stroke: var(--color-primary);
+    stroke-width: 1.5;
+}
+
+.scrubber-marks circle.is-selected {
+    fill: var(--color-primary);
+}
+
+.scrubber-overlay {
+    fill: transparent;
+    cursor: pointer;
+}
+
+.scrubber-handle {
+    cursor: grab;
+    outline: none;
+}
+
+.scrubber-handle line {
+    stroke: var(--color-cta);
+    stroke-width: 2;
+}
+
+.scrubber-handle circle {
+    fill: var(--color-cta);
+    stroke: white;
+    stroke-width: 2;
+}
+
+.scrubber-handle:focus-visible circle {
+    stroke: var(--color-primary);
+    stroke-width: 3;
+}
+
+.scrubber-brush .selection {
+    fill: var(--color-cta);
+    fill-opacity: 0.12;
+    stroke: var(--color-cta);
+    stroke-opacity: 0.6;
+}
+
+.scrubber-axis text {
+    fill: var(--color-text-secondary);
+    font-size: 11px;
+}
+
+.scrubber-axis path,
+.scrubber-axis line {
+    stroke: var(--color-border);
+}
+
+.scrubber-band--aop-modified-reset {
+    fill: var(--color-sky-blue);
+    opacity: 0.5;
+}
+
+.scrubber-band--oecd-status-wipe {
+    fill: var(--color-orange);
+    opacity: 0.35;
+}
+
+.scrubber-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 18px;
+    list-style: none;
+    margin: 4px 0 0;
+    padding: 0 4px;
+    font-size: 12px;
+    color: var(--color-text-secondary);
+}
+
+.scrubber-legend li {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: help;
+}
+
+.scrubber-swatch {
+    display: inline-block;
+    width: 14px;
+    height: 10px;
+    border-radius: 2px;
+}
+
+.scrubber-swatch.scrubber-band--aop-modified-reset {
+    background: var(--color-sky-blue);
+}
+
+.scrubber-swatch.scrubber-band--oecd-status-wipe {
+    background: var(--color-orange);
+}
+
+/* The <select>s the scrubber replaces; they stay if D3 fails to load. */
+.has-scrubber .snapshot-topbar-version,
+.has-scrubber #trends-range-start,
+.has-scrubber #trends-range-end,
+.has-scrubber .snapshot-topbar-range-sep,
+.has-scrubber .snapshot-topbar-range .version-selector-label {
+    display: none;
+}
+
+/* /trends: the scrubber and the section nav stick together, so a jumped-to
+   section has to clear both (the 60px above covers the nav alone). */
+body:has(.sticky-controls) .section-block {
+    scroll-margin-top: var(--sticky-controls-height, 150px);
+}
+
+/* /trends: the scrubber and the section nav stick together. */
+.sticky-controls {
+    position: sticky;
+    top: 0;
+    z-index: 90;
+    background-color: var(--color-bg);
+    margin: 0 -20px 14px;
+    padding: 6px 20px 0;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.sticky-controls .version-scrubber {
+    margin-bottom: 0;
+}
+
+.sticky-controls .snapshot-section-nav {
+    position: static;
+    margin: 0;
+    padding: 6px 0 8px;
+    box-shadow: none;
+}
+
+@media (max-width: 640px) {
+    /* As for .snapshot-section-nav: no full-bleed breakout on phones. */
+    .sticky-controls {
+        margin-left: 0;
+        margin-right: 0;
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    .scrubber-bar {
+        flex-wrap: wrap;
+    }
+
+    .scrubber-svg {
+        flex-basis: 100%;
+        order: 3;
+    }
+
+    .scrubber-readout {
+        min-width: 0;
+    }
+}

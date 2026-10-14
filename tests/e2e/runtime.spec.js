@@ -1,7 +1,7 @@
 // Browser tests for the frontend runtime (#181): smoke, ARIA snapshot, rapid
 // version switching, and downloads/settings following the URL-backed state.
 const { test, expect } = require('@playwright/test');
-const { installStubs, VERSIONS } = require('./stubs');
+const { installStubs, pickVersion, VERSIONS } = require('./stubs');
 
 /** Plot containers on screen that have drawn something. */
 async function drawnLabels(page) {
@@ -55,12 +55,19 @@ test('smoke: every page loads and draws its visible plots without script errors'
 test('ARIA snapshot: the snapshot controls are labelled', async ({ page }) => {
     await installStubs(page);
     await page.goto('/snapshot');
-    await expect(page.locator('#version-selector option')).toHaveCount(VERSIONS.length);
-    await expect(page.locator('.snapshot-topbar-version')).toMatchAriaSnapshot(`
-      - text: "View version:"
-      - combobox "View version:":
-        - option "Current (${VERSIONS[0]})" [selected]
+    await expect(page.locator('#version-scrubber .scrubber-marks circle')).toHaveCount(VERSIONS.length);
+    // The version scrubber replaces the version <select> (#182).
+    await expect(page.locator('.snapshot-topbar-version')).toBeHidden();
+    await expect(page.locator('#version-scrubber')).toMatchAriaSnapshot(`
+      - group "Snapshot version timeline":
+        - button "Play through the snapshots"
+        - slider "Snapshot version"
+        - list:
+          - listitem: /AOP modified dates unreliable \\(2023-04-29 to 2024-04-01\\)/
+          - listitem: /OECD status wipe \\(2024-01-01 to 2024-04-01\\)/
     `);
+    await expect(page.getByRole('slider', { name: 'Snapshot version' }))
+        .toHaveAttribute('aria-valuetext', `${VERSIONS[0]} (current)`);
     await expect(page.locator('.coverage-toggle')).toMatchAriaSnapshot(`
       - group "Coverage scope":
         - button "All KEs" [pressed]
@@ -75,7 +82,7 @@ test('ARIA snapshot: the snapshot controls are labelled', async ({ page }) => {
 test('five version switches in two seconds leave no stale plot', async ({ page }) => {
     const stats = await installStubs(page, { minDelay: 50, maxDelay: 900 });
     await page.goto('/snapshot');
-    await expect(page.locator('#version-selector option')).toHaveCount(VERSIONS.length);
+    await expect(page.locator('#version-scrubber .scrubber-marks circle')).toHaveCount(VERSIONS.length);
     await expect(page.locator('.lazy-plot[data-rendered-url]').first()).toBeVisible();
 
     // Record every draw, so a stale response drawn on the way (even if a later
@@ -92,7 +99,7 @@ test('five version switches in two seconds leave no stale plot', async ({ page }
     const started = Date.now();
     for (const [i, v] of picks.entries()) {
         if (i === picks.length - 1) await page.evaluate(() => { window.__lastSwitch = true; });
-        await page.selectOption('#version-selector', v);
+        await pickVersion(page, v);
         await page.waitForTimeout(250);
     }
     expect(Date.now() - started).toBeLessThan(2000);
@@ -118,10 +125,10 @@ test('five version switches in two seconds leave no stale plot', async ({ page }
 test('downloads and settings follow the URL-backed state', async ({ page }) => {
     await installStubs(page);
     await page.goto('/snapshot');
-    await expect(page.locator('#version-selector option')).toHaveCount(VERSIONS.length);
+    await expect(page.locator('#version-scrubber .scrubber-marks circle')).toHaveCount(VERSIONS.length);
 
     // Version: snapshot download links carry it; trend ones do not exist here.
-    await page.selectOption('#version-selector', VERSIONS[2]);
+    await pickVersion(page, VERSIONS[2]);
     const hrefs = await page.$$eval('a[href^="/download/latest"]', (as) => as.map((a) => a.getAttribute('href')));
     expect(hrefs.length).toBeGreaterThan(10);
     for (const h of hrefs) expect(h).toContain(`version=${VERSIONS[2]}`);
@@ -136,7 +143,7 @@ test('downloads and settings follow the URL-backed state', async ({ page }) => {
         `latest_aop_aop_overlap|${VERSIONS[2]}|min_jaccard=0.5`);
 
     await page.reload();
-    await expect(page.locator('#version-selector')).toHaveValue(VERSIONS[2]);
+    await expect(page.getByRole('slider', { name: 'Snapshot version' })).toHaveAttribute('aria-valuetext', VERSIONS[2]);
     await expect(page.locator('#aop-aop-threshold-value')).toHaveText('0.5');
     await overlap.scrollIntoViewIfNeeded();
     await expect(overlap.locator('[data-label]')).toHaveAttribute('data-label',
@@ -152,7 +159,7 @@ test('downloads and settings follow the URL-backed state', async ({ page }) => {
         `latest_organ_coverage_unified|${VERSIONS[2]}|scope=ao`);
 
     // Back to the latest: the version leaves the URL and the links.
-    await page.selectOption('#version-selector', VERSIONS[0]);
+    await pickVersion(page, VERSIONS[0]);
     await expect(page).not.toHaveURL(/version=/);
     const after = await page.$$eval('a[href^="/download/latest"]', (as) => as.map((a) => a.getAttribute('href')));
     for (const h of after) expect(h).not.toContain('version=');
