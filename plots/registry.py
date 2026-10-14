@@ -251,6 +251,34 @@ DELTA_VIEWS: dict[str, dict] = {
     "ontology_term_growth_delta": {"of": "ontology_term_growth_absolute", "y_title": "New Terms Added", "bar": True},
 }
 
+# Events in the data that every view over time should flag, drawn as bands
+# on the version scrubber (#182). `start`/`end` bound the band; `date` is the
+# event itself. Verified on the endpoint 2026-10-14; the queries behind them
+# are in the "version_timeline" methodology note.
+TIMELINE_EVENTS: list[dict] = [
+    {
+        "id": "aop-modified-reset",
+        "date": "2023-04-29",
+        "start": "2023-04-29",
+        "end": "2024-04-01",
+        "label": "AOP modified dates unreliable",
+        "detail": ("AOP-Wiki Release 2.6 (2023-04-29) reset AOP modified dates. The 2023-07-01, "
+                   "2023-10-01 and 2024-01-01 graphs give every AOP the conversion time as its "
+                   "modified date; from 2024-04-01 most AOPs carry 2023-04-29."),
+    },
+    {
+        "id": "oecd-status-wipe",
+        "date": "2024-04-01",
+        "start": "2024-01-01",
+        "end": "2024-04-01",
+        "label": "OECD status wipe",
+        "detail": "AOPs with an OECD status fell from 295 (2024-01-01) to 133 (2024-04-01).",
+    },
+]
+
+# Methodology notes that describe a page control rather than a plot.
+CONTROL_NOTES = {"version_timeline"}
+
 # Legacy download URLs whose path names a different plot (/download/<alias>).
 DOWNLOAD_ALIASES: dict[str, str] = {
     "latest_network_density": "latest_aop_connectivity",

@@ -876,5 +876,29 @@
             }
         ],
         "curated_mapping_url": "/api/domain-lens"
+    },
+    "version_timeline": {
+        "title": "Version Timeline",
+        "description": "The version scrubber places every quarterly RDF snapshot on a time axis. Pick a snapshot (Snapshot page) or a range of snapshots (Trends page) by clicking, dragging or with the keyboard, or press Play to step through them. Two shaded periods mark changes in the data itself, not in the knowledge they describe; read trends across them with care.",
+        "data_source": "The snapshots are the named graphs on the endpoint (http://aopwiki.org/graph/YYYY-MM-DD), listed by /api/versions. The two periods were measured on the endpoint with the queries below.",
+        "method_steps": [
+            "<strong>AOP modified dates unreliable (2023-04-29 to 2024-04-01).</strong> AOP-Wiki Release 2.6 (2023-04-29) reset AOP modified dates. Up to the 2023-04-01 graph, AOPs carry their own dcterms:modified values. The 2023-07-01, 2023-10-01 and 2024-01-01 graphs give every AOP one timestamp, the time of the RDF conversion. From 2024-04-01 the dates are back, with 382 AOPs (200 in 2026-10-01) on 2023-04-29.",
+            "<strong>OECD status wipe (2024-01-01 to 2024-04-01).</strong> AOPs with an OECD status (nci:C25688) fell from 295 in the 2024-01-01 graph to 133 in the 2024-04-01 graph. Status counts before and after that quarter are not comparable."
+        ],
+        "limitations": "The periods are fixed, measured once (2026-10-14); a later re-conversion of old snapshots could change them. They are drawn on the scrubber only, not on every plot.",
+        "queries": [
+            {
+                "caption": "Distinct AOP modified dates per graph (shows the conversion-time snapshots)",
+                "query": "SELECT ?graph (COUNT(DISTINCT ?aop) AS ?aops) (COUNT(DISTINCT ?modified) AS ?distinct_dates)\n  (MIN(STR(?modified)) AS ?earliest) (MAX(STR(?modified)) AS ?latest)\nWHERE {\n  GRAPH ?graph {\n    ?aop a aopo:AdverseOutcomePathway ;\n         dcterms:modified ?modified .\n  }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph\nORDER BY ?graph"
+            },
+            {
+                "caption": "AOPs whose modified date is 2023-04-29, per graph",
+                "query": "SELECT ?graph (COUNT(DISTINCT ?aop) AS ?count)\nWHERE {\n  GRAPH ?graph {\n    ?aop a aopo:AdverseOutcomePathway ;\n         dcterms:modified ?modified .\n    FILTER(STRSTARTS(STR(?modified), \"2023-04-29\"))\n  }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph\nORDER BY ?graph"
+            },
+            {
+                "caption": "AOPs with an OECD status, per graph",
+                "query": "SELECT ?graph (COUNT(DISTINCT ?aop) AS ?count)\nWHERE {\n  GRAPH ?graph {\n    ?aop a aopo:AdverseOutcomePathway ;\n         nci:C25688 ?status .\n  }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph\nORDER BY ?graph"
+            }
+        ]
     }
 }

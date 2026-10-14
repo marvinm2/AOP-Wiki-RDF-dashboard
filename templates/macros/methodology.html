@@ -21,14 +21,14 @@
 </details>
 {% endmacro %}
 
-{% macro methodology_note(notes, plot_key) %}
+{% macro methodology_note(notes, plot_key, summary='Methodology') %}
 {% if plot_key in notes %}
 {% set note = notes[plot_key] %}
 {% set graph_uri = latest_graph_uri | default('http://aopwiki.org/graph/LATEST', true) %}
 {% set graph_uri_sparql = '<' ~ graph_uri ~ '>' %}
 {% set sparql_text = note.sparql | replace('__GRAPH_URI__', graph_uri_sparql) if note.sparql else '' %}
 <details class="methodology-note">
-    <summary>Methodology</summary>
+    <summary>{{ summary }}</summary>
     <div class="methodology-content">
         <p><strong>What this measures:</strong> {{ note.description }}</p>
         <p><strong>Data source:</strong> {{ note.data_source }}</p>

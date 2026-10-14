@@ -7,7 +7,8 @@
  *   x-axis (string version dates), so the range is expressed in index space
  *   (start_idx - 0.5, end_idx + 0.5).
  * - Keeps the selection in the page state (static/js/state.js), which mirrors
- *   it to ?start=...&end=... in the URL (#181).
+ *   it to ?start=...&end=... in the URL (#181), and follows the state when
+ *   the version scrubber changes it (#182; the scrubber hides these selects).
  * - Appends start/end query params to every download link on the page
  *   (CSV/PNG/SVG/bulk) so server-side exports honour the same constraint.
  * - Skips plots that are not snapshot-iterated (lifetime/creation-date plots).
@@ -103,6 +104,19 @@
             endSel.value = allVersions[allVersions.length - 1].version;
             applyRange({ skipPlotRelayout: false });
         });
+
+        // Another writer of the range (the version scrubber, #182) changed
+        // the state: show it here and apply it to the plots and links.
+        if (window.DashState) {
+            window.DashState.subscribe((changed) => {
+                if (!changed.includes('start') && !changed.includes('end')) return;
+                startSel.value = allVersions[0].version;
+                endSel.value = allVersions[allVersions.length - 1].version;
+                restoreFromURL();
+                if (startSel.value === startVersion && endSel.value === endVersion) return;
+                applyRange({ skipPlotRelayout: false });
+            });
+        }
 
         // A plot drawn after the range was chosen gets the range applied when
         // the runtime reports it drawn (#181; replaces a MutationObserver).

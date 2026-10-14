@@ -81,7 +81,7 @@ def test_note_exists(spec):
 
 
 def test_every_note_belongs_to_a_plot():
-    assert set(NOTES) <= {s.note for s in SPECS}
+    assert set(NOTES) <= {s.note for s in SPECS} | registry.CONTROL_NOTES
 
 
 @pytest.mark.parametrize("spec", [s for s in SPECS if s.page], ids=lambda s: s.id)

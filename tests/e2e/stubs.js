@@ -76,4 +76,16 @@ async function installStubs(page, { minDelay = 20, maxDelay = 400 } = {}) {
     return stats;
 }
 
-module.exports = { installStubs, labelFor, VERSIONS };
+/**
+ * Pick a version on the snapshot page's scrubber (#182) by clicking its mark,
+ * as a pointer user would. Scrolls to the top first: the scrubber is not sticky.
+ */
+async function pickVersion(page, version) {
+    const asc = VERSIONS.slice().reverse();
+    // Instant: html has scroll-behavior: smooth, and the mark must be measured after the scroll.
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+    const box = await page.locator('#version-scrubber .scrubber-marks circle').nth(asc.indexOf(version)).boundingBox();
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+}
+
+module.exports = { installStubs, labelFor, pickVersion, VERSIONS };

@@ -12,5 +12,12 @@
     "integrity": "sha384-lXrzMjLDk3q9l0I/kjqjMcDgfFnHvWTDeWP3DmMqoeOq49/qa8drmlP3OBWN9dQ3",
     "bytes": 434037,
     "source": "https://unpkg.com/cytoscape@3.33.1/dist/cytoscape.min.js"
+  },
+  "d3": {
+    "version": "7.9.0",
+    "path": "vendor/d3@7.9.0/d3.min.js",
+    "integrity": "sha384-CjloA8y00+1SDAUkjs099PVfnY2KmDC2BZnws9kh8D/lX1s46w6EPhpXdqMfjK6i",
+    "bytes": 279706,
+    "source": "https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"
   }
 }
