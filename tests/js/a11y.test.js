@@ -13,6 +13,18 @@ test('categories come from the shown traces, in order, without duplicates', () =
     assert.deepEqual(A.categoriesOf(traces), ['2025-01-01', '2025-04-01', '2025-07-01']);
 });
 
+test('only the categories inside a clamped or zoomed axis are stepped through', () => {
+    const cats = ['2018-04-01', '2020-01-01', '2026-01-01', '2026-10-01'];
+    // A date axis clamped to 2020-01-01 .. 2026-01-01 (with Plotly's half-day padding).
+    const date = { type: 'date', autorange: false, range: ['2019-12-31T12:00:00.000Z', '2026-01-01T12:00:00.000Z'] };
+    assert.deepEqual(A.visibleCategories(cats, date), ['2020-01-01', '2026-01-01']);
+    assert.deepEqual(A.visibleCategories(cats, { type: 'date', autorange: false, range: ['2019-12-31 12:00', '2026-01-01 12:00'] }),
+        ['2020-01-01', '2026-01-01']);
+    assert.deepEqual(A.visibleCategories(['a', 'b', 'c', 'd'], { type: 'category', autorange: false, range: [0.5, 2.5] }), ['b', 'c']);
+    assert.deepEqual(A.visibleCategories(cats, { type: 'date', autorange: true, range: date.range }), cats);
+    assert.deepEqual(A.visibleCategories(cats, undefined), cats);
+});
+
 test('values at a category: one entry per trace that has it, typed arrays included', () => {
     assert.deepEqual(A.valuesAt(traces, '2025-04-01'), [
         { curveNumber: 0, pointNumber: 1, name: 'AOPs', value: 505.5 },

@@ -3,8 +3,9 @@
  *
  * - Labelled figures: every drawn plot is a focusable figure named by its
  *   card heading and described by the card's description.
- * - Keyboard: on a focused figure, Left/Right step through its categories
- *   (snapshots on /trends), Home/End jump to the ends and Escape clears the
+ * - Keyboard: on a focused figure, Left/Right step through the categories it
+ *   shows (snapshots on /trends, within any zoom or range), Home/End jump
+ *   to the ends and Escape clears the
  *   hover. The values at the current step are read out through a live
  *   region. On /trends the linked crosshair follows (trend-links.js).
  * - Data-table fallback: "Show Raw Data" loads the plot's rows from
@@ -13,7 +14,8 @@
  * - Reduced motion: motionMs() is 0 when the user asks for reduced motion
  *   (the network page's zoom animations use it; CSS handles the rest).
  *
- * categoriesOf(), valuesAt(), describeStep() and tableHtml() are pure and
+ * categoriesOf(), visibleCategories(), valuesAt(), describeStep() and
+ * tableHtml() are pure and
  * exported for node --test.
  */
 (function (root) {
@@ -52,6 +54,28 @@
             });
         });
         return out;
+    }
+
+    /**
+     * The categories inside a zoomed or range-clamped axis ({type, range,
+     * autorange} from _fullLayout), so the keyboard never reads values the
+     * figure does not show. An autoranged axis keeps them all.
+     */
+    function visibleCategories(cats, axis) {
+        if (!axis || axis.autorange !== false || !Array.isArray(axis.range)) return cats;
+        var lo = Math.min.apply(null, axis.range.map(numeric));
+        var hi = Math.max.apply(null, axis.range.map(numeric));
+        if (axis.type === 'category') {
+            return cats.filter(function (c, i) { return i >= lo && i <= hi; });
+        }
+        return cats.filter(function (c) {
+            var v = axis.type === 'date' ? Date.parse(c) : Number(c);
+            return isNaN(v) || (v >= lo && v <= hi);
+        });
+
+        function numeric(r) {
+            return axis.type === 'date' && typeof r === 'string' ? Date.parse(r.replace(' ', 'T') + (/[zZ]|[+-]\d\d:?\d\d$/.test(r) ? '' : 'Z')) : Number(r);
+        }
     }
 
     /** [{curveNumber, pointNumber, name, value}] of every shown trace at `category`. */
@@ -126,7 +150,7 @@
     }
 
     var api = {
-        categoriesOf: categoriesOf, valuesAt: valuesAt, describeStep: describeStep,
+        categoriesOf: categoriesOf, visibleCategories: visibleCategories, valuesAt: valuesAt, describeStep: describeStep,
         tableHtml: tableHtml, reducedMotion: reducedMotion, motionMs: motionMs,
     };
 
@@ -184,7 +208,9 @@
         var div = container.querySelector('.js-plotly-plot');
         if (!div || !div._fullData || !root.Plotly) return;
         var traces = div._fullData;
-        var cats = categoriesOf(traces);
+        var horizontal = traces.some(function (t) { return t.orientation === 'h'; });
+        var axis = div._fullLayout && div._fullLayout[horizontal ? 'yaxis' : 'xaxis'];
+        var cats = visibleCategories(categoriesOf(traces), axis);
         if (!cats.length) return;
         var i = steps.has(container) ? steps.get(container) : -1;
         switch (event.key) {
