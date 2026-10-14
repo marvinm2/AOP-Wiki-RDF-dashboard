@@ -66,6 +66,16 @@ test('a drawn figure is labelled and can be read with the keyboard', async ({ pa
     await expect(page.locator('#plot-announcer')).toHaveText(`${asc[asc.length - 1]}: A ${10 + 36}, B ${5 + 12}.`);
     await page.keyboard.press('Escape');
     await expect(plot.locator('.hoverlayer .hovertext')).toHaveCount(0);
+
+    // With a snapshot range set, the keys stay inside it.
+    await page.goto(`/trends?start=${VERSIONS[5]}&end=${VERSIONS[1]}`);
+    await expect(plot.locator('.js-plotly-plot')).toBeVisible();
+    await expect.poll(() => plot.locator('.js-plotly-plot').evaluate((gd) => gd.layout.xaxis.autorange)).toBe(false);
+    await plot.focus();
+    await page.keyboard.press('Home');
+    await expect(page.locator('#plot-announcer')).toHaveText(new RegExp(`^${VERSIONS[5]}:`));
+    await page.keyboard.press('End');
+    await expect(page.locator('#plot-announcer')).toHaveText(new RegExp(`^${VERSIONS[1]}:`));
     expect(page.errors).toEqual([]);
 });
 
