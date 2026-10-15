@@ -51,6 +51,7 @@ Author:
     Marvin Martens
 """
 
+import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -546,6 +547,179 @@ def plot_entity_cumulative_removed() -> tuple[str, pd.DataFrame]:
             create_fallback_plot("Cumulative Removed Entities", str(e)),
             pd.DataFrame(),
         )
+
+
+# --- Entity lifeline (#183) -------------------------------------------------
+
+# Page on aopwiki.org for each entity namespace (identifiers.org IRIs).
+_AOPWIKI_PAGES = {
+    "https://identifiers.org/aop/": "https://aopwiki.org/aops/",
+    "https://identifiers.org/aop.events/": "https://aopwiki.org/events/",
+    "https://identifiers.org/aop.relationships/": "https://aopwiki.org/relationships/",
+    "https://identifiers.org/aop.stressor/": "https://aopwiki.org/stressors/",
+}
+_LIFELINE_SHORT = {"AOPs": "AOP", "KEs": "KE", "KERs": "KER", "Stressors": "Stressor"}
+LIFELINE_STATUSES = ("always present", "added", "returned", "removed")
+
+
+def aopwiki_page(uri: str) -> str:
+    """The aopwiki.org page of an entity IRI, or '' for an unknown namespace."""
+    for prefix, page in _AOPWIKI_PAGES.items():
+        if uri.startswith(prefix):
+            return page + uri[len(prefix):]
+    return ""
+
+
+# Presence strings use "x" (present) and "-" (absent), oldest version first:
+# text a spreadsheet keeps as it is, unlike a 0/1 string that loses its
+# leading zeros.
+PRESENT, ABSENT = "x", "-"
+
+
+def lifeline_status(presence: str) -> tuple[str, int]:
+    """(status, returns) for a presence string over the versions, oldest first.
+
+    ``returns`` counts the gaps between the first and last appearance. The
+    status is "removed" when the entity is missing from the latest version,
+    else "returned" when it had a gap, else "added" when it was missing from
+    the first version, else "always present".
+    """
+    first, last = presence.index(PRESENT), presence.rindex(PRESENT)
+    returns = len([run for run in presence[first:last + 1].split(PRESENT) if run])
+    if last < len(presence) - 1:
+        return "removed", returns
+    if returns:
+        return "returned", returns
+    return ("added" if first > 0 else "always present"), returns
+
+
+def lifeline_rows(entity_type: str, uris_by_version: dict, versions: list,
+                  labels: dict) -> list[dict]:
+    """One row per entity ever seen: when it appears, vanishes and returns.
+
+    Rows are ordered by first appearance, then longest-lived first, then
+    number, so the lifeline reads as a staircase of arrivals.
+    """
+    ever = set().union(*uris_by_version.values()) if uris_by_version else set()
+    short = _LIFELINE_SHORT[entity_type]
+    rows = []
+    for uri in ever:
+        presence = "".join(PRESENT if uri in uris_by_version.get(v, ()) else ABSENT for v in versions)
+        status, returns = lifeline_status(presence)
+        number = uri.rsplit("/", 1)[-1]
+        first, last = presence.index(PRESENT), presence.rindex(PRESENT)
+        rows.append({
+            "entity_type": entity_type,
+            "id": f"{short} {number}",
+            "label": labels.get(uri, ""),
+            "first_seen": versions[first],
+            "last_seen": versions[last],
+            "snapshots_present": presence.count(PRESENT),
+            "returns": returns,
+            "status": status,
+            "presence": presence,
+            "uri": uri,
+            "aopwiki_url": aopwiki_page(uri),
+            "_order": (first, -last, int(number) if number.isdigit() else 0),
+        })
+    rows.sort(key=lambda r: r["_order"])
+    for r in rows:
+        del r["_order"]
+    return rows
+
+
+def _lifeline_labels(entity_type: str) -> dict:
+    """IRI -> label: the newest dc:title (KERs: their upstream and downstream KE)."""
+    cls = ENTITY_TYPE_CLASSES[entity_type]
+    if entity_type == "KERs":
+        query = f"""
+        SELECT ?e ?up ?down (MAX(STR(?graph)) AS ?last)
+        WHERE {{
+            GRAPH ?graph {{
+                ?e a {cls} ;
+                   aopo:has_upstream_key_event ?up ;
+                   aopo:has_downstream_key_event ?down .
+            }}
+            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }}
+        GROUP BY ?e ?up ?down
+        """
+        value = lambda r: (f"KE {r['up']['value'].rsplit('/', 1)[-1]} → "
+                           f"KE {r['down']['value'].rsplit('/', 1)[-1]}")
+    else:
+        query = f"""
+        SELECT ?e ?title (MAX(STR(?graph)) AS ?last)
+        WHERE {{
+            GRAPH ?graph {{ ?e a {cls} ; dc:title ?title . }}
+            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }}
+        GROUP BY ?e ?title
+        """
+        value = lambda r: " ".join(r['title']['value'].split())
+    newest: dict = {}
+    for r in run_sparql_query_with_retry(query):
+        uri, last = r['e']['value'], r['last']['value']
+        if uri not in newest or last > newest[uri][0]:
+            newest[uri] = (last, value(r))
+    return {uri: label for uri, (_, label) in newest.items()}
+
+
+def plot_entity_lifeline() -> tuple[str, pd.DataFrame]:
+    """When each AOP, KE, KER and stressor appears, vanishes and comes back (#183).
+
+    The page draws this with a canvas view (static/js/viz/lifeline.js) from
+    /api/v2/data; the Plotly figure here is the same picture as a heatmap, for
+    the PNG/SVG downloads and /api/v2/figure. Presence comes from the bulk
+    per-graph entity query shared with the birth/death plots.
+
+    Returns:
+        tuple[str, pd.DataFrame]: the heatmap HTML, and one row per entity
+        ever seen (see ``lifeline_rows``).
+    """
+    global _plot_data_cache, _plot_figure_cache
+
+    try:
+        versions = sorted({v['version'] for v in get_all_versions()})
+        if not versions:
+            return create_fallback_plot("Entity Lifeline", "No versions"), pd.DataFrame()
+        rows = []
+        for entity_type in ENTITY_TYPE_CLASSES:
+            uris = fetch_entity_uris_by_version(entity_type, versions)
+            rows.extend(lifeline_rows(entity_type, uris, versions, _lifeline_labels(entity_type)))
+        df = pd.DataFrame(rows)
+
+        colors = dict(zip(ENTITY_TYPE_CLASSES, BRAND_COLORS['palette'][:4]))
+        fig = go.Figure()
+        offset = 0
+        for entity_type in ENTITY_TYPE_CLASSES:
+            sub = df[df['entity_type'] == entity_type]
+            if sub.empty:
+                continue
+            z = np.array([[c == PRESENT for c in p] for p in sub['presence']], dtype=np.int8)
+            fig.add_heatmap(
+                z=z, x=versions, y=np.arange(offset, offset + len(sub)),
+                colorscale=[[0, '#f0f0f0'], [1, colors[entity_type]]], zmin=0, zmax=1,
+                showscale=False, name=entity_type,
+                hovertemplate=f'{entity_type}<br>%{{x}}<extra></extra>',
+            )
+            fig.add_annotation(x=0, xref='paper', xanchor='right', y=offset + len(sub) / 2,
+                               text=f"{entity_type} ({len(sub)})", showarrow=False)
+            offset += len(sub) + 40  # a gap between the entity blocks
+        fig.update_yaxes(autorange='reversed', showticklabels=False, showgrid=False, zeroline=False)
+        fig.update_xaxes(showgrid=False)
+        apply_snapshot_xaxis(fig)
+        fig.update_layout(height=640, margin=dict(l=130, r=20, t=40, b=60),
+                          hovermode='closest')
+
+        _plot_data_cache['entity_lifeline'] = df
+        _plot_figure_cache['entity_lifeline'] = fig
+        return render_plot_html(fig), df
+
+    except SparqlUnavailable:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to generate entity lifeline: {e}")
+        return create_fallback_plot("Entity Lifeline", str(e)), pd.DataFrame()
 
 
 def plot_oecd_status_distribution() -> tuple[str, str, pd.DataFrame]:

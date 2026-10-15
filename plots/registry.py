@@ -93,6 +93,9 @@ SPECS: tuple[PlotSpec, ...] = (
     *trend('entity_cumulative_removed', 'plot_entity_cumulative_removed', note='entity_cumulative_removed', outputs={
         'entity_cumulative_removed': (0, ('trends-all', 'trends-main', 'all')),
     }),
+    *trend('entity_lifeline', 'plot_entity_lifeline', note='entity_lifeline', outputs={
+        'entity_lifeline': (0, ('trends-all', 'trends-main', 'all')),
+    }),
     *trend('oecd_status_distribution', 'plot_oecd_status_distribution', note='oecd_status_distribution', outputs={
         'oecd_status_distribution_absolute': (0, ()),
         'oecd_status_distribution_percentage': (1, ()),

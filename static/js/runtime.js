@@ -16,7 +16,9 @@
  *   figure /api/v2/figure returns with the dashboard's template and config
  *   (/api/v2/plotly); `delta` draws a trend plot's quarter-over-quarter view
  *   from its absolute figure (window.DELTA_VIEWS), sharing that request.
- *   A page picks its default with window.DEFAULT_RENDERER.
+ *   A page picks its default with window.DEFAULT_RENDERER; a container picks
+ *   its own with data-renderer. Views in static/js/viz/ add renderers with
+ *   PlotRuntime.registerRenderer(name, renderer) (e.g. d3-lifeline, #183).
  * - After every draw the container dispatches a bubbling `plot:rendered`
  *   event ({plotName, url}); page code hooks that instead of watching the DOM.
  */
@@ -134,6 +136,7 @@ class PlotRuntime {
             'legacy-html': legacyHtmlRenderer,
             'plotly-json': plotlyJsonRenderer,
             'delta': deltaRenderer,
+            ...PlotRuntime.extraRenderers,
         };
         this.shared = new Map();     // url -> promise of {ok, status, data}, for shared renderers
 
@@ -381,6 +384,14 @@ class PlotRuntime {
         this.load(element);
     }
 }
+
+/** Renderers added by view modules, by name (see registerRenderer). */
+PlotRuntime.extraRenderers = {};
+/** Add a renderer ({endpoint, mount, update, destroy}) under `name`. */
+PlotRuntime.registerRenderer = (name, renderer) => {
+    PlotRuntime.extraRenderers[name] = renderer;
+    if (window.plotLoader) window.plotLoader.renderers[name] = renderer;
+};
 
 /** Cap on in-flight /api/plot requests. */
 PlotRuntime.MAX_CONCURRENT = 4;

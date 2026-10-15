@@ -225,6 +225,11 @@ records the version or range and the settings. `static/js/viz/a11y.js` makes eac
 focusable element (arrow keys, Home and End step through its values and read them out) and loads the
 "Show Raw Data" tables from `/api/v2/data` for the same selection as the figure.
 
+Views that Plotly has no form for live in `static/js/viz/` and register a renderer with
+`PlotRuntime.registerRenderer(name, renderer)`; a container picks one with `data-renderer`. The version
+scrubber (`scrubber.js`) and the entity lifeline (`lifeline.js`, renderer `d3-lifeline`, drawn on canvas
+from `/api/v2/data/entity_lifeline`) use D3, vendored in `static/vendor/`.
+
 ```bash
 npm ci && npx playwright install chromium
 npm run test:js     # node --test: state, figure, export and a11y modules

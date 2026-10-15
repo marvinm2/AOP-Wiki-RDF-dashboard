@@ -900,5 +900,30 @@
                 "query": "SELECT ?graph (COUNT(DISTINCT ?aop) AS ?count)\nWHERE {\n  GRAPH ?graph {\n    ?aop a aopo:AdverseOutcomePathway ;\n         nci:C25688 ?status .\n  }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph\nORDER BY ?graph"
             }
         ]
+    },
+    "entity_lifeline": {
+        "title": "Entity Lifeline",
+        "description": "One row per AOP, Key Event, Key Event Relationship or stressor that has ever been in a snapshot, one column per snapshot. A filled cell means the entity is in that snapshot. Rows are ordered by first appearance, so arrivals read as a staircase; gaps show entities that vanished and came back, and rows that stop before the right edge are entities no longer in the database.",
+        "data_source": "For each entity class, one query lists every (graph, entity) pair across all snapshot graphs (the same query the birth/death plots use). Labels are the newest dc:title an entity has had; KERs have no title, so they are labelled by their upstream and downstream Key Events.",
+        "method_steps": [
+            "<strong>Presence.</strong> For each entity ever seen, a string with one character per snapshot, oldest first: <code>x</code> present, <code>-</code> absent.",
+            "<strong>Status.</strong> <em>removed</em>: not in the latest snapshot. <em>returned</em>: in the latest snapshot after at least one gap (<em>returns</em> counts the gaps). <em>added</em>: missing from the first snapshot, then present without a gap. <em>always present</em>: in every snapshot.",
+            "<strong>Selection.</strong> Drag over the rows (or use the arrow keys on the chart) to list the selected entities in the table below it, with links to their AOP-Wiki pages."
+        ],
+        "limitations": "An entity is identified by its AOP-Wiki number; a merge or split in AOP-Wiki shows up as one entity removed and another added, because the RDF has no replacement predicate. The first snapshot (2018-04-01) is the first RDF release, so \"always present\" means present since then, not since the entity was created. A removal can also be an RDF conversion change rather than a curation decision.",
+        "queries": [
+            {
+                "caption": "Every (snapshot, Key Event) pair; the same query runs for aopo:AdverseOutcomePathway, aopo:KeyEventRelationship and nci:C54571",
+                "query": "SELECT ?graph ?e\nWHERE {\n  GRAPH ?graph { ?e a aopo:KeyEvent . }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}"
+            },
+            {
+                "caption": "Titles with the newest snapshot that has each one (AOPs, KEs and stressors)",
+                "query": "SELECT ?e ?title (MAX(STR(?graph)) AS ?last)\nWHERE {\n  GRAPH ?graph { ?e a aopo:KeyEvent ; dc:title ?title . }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?e ?title"
+            },
+            {
+                "caption": "KER labels: upstream and downstream Key Events",
+                "query": "SELECT ?e ?up ?down (MAX(STR(?graph)) AS ?last)\nWHERE {\n  GRAPH ?graph {\n    ?e a aopo:KeyEventRelationship ;\n       aopo:has_upstream_key_event ?up ;\n       aopo:has_downstream_key_event ?down .\n  }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?e ?up ?down"
+            }
+        ]
     }
 }

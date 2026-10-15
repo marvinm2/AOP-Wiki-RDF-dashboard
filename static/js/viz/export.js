@@ -75,6 +75,7 @@
     }
 
     function addItems(container) {
+        if (!figureOf(container)) return;  // not a Plotly figure (e.g. the canvas lifeline)
         var menu = menuFor(container);
         var name = container.dataset.plotName;
         if (!menu || menu.querySelector('[data-export-format]')) return;

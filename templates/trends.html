@@ -1074,6 +1074,34 @@
         {{ data_table_toggle('entity_birth_death') }}
     </div>
 
+    <!-- Entity Lifeline (#183): canvas view of /api/v2/data, static/js/viz/lifeline.js -->
+    <div class="plot-box full-width" id="entity-lifeline">
+        <div class="plot-header">
+            <h3>Entity Lifeline</h3>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/entity_lifeline?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/entity_lifeline?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/entity_lifeline?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <p class="plot-description">
+            Every AOP, Key Event, KER and stressor that has ever been in a snapshot, one row each, with a
+            filled cell for every snapshot it is in. Gaps are entities that vanished and came back; rows
+            that stop early are entities no longer in the database. Drag over rows to list them below,
+            with links to AOP-Wiki.
+        </p>
+        {{ methodology_note(methodology_notes, 'entity_lifeline') }}
+        <div class="lazy-plot lazy-plot--lifeline" data-plot-name="entity_lifeline" data-renderer="d3-lifeline">
+            <!-- Drawn by static/js/viz/lifeline.js -->
+        </div>
+        {{ data_table_toggle('entity_lifeline') }}
+    </div>
+
     <!-- Cumulative Removed Entities (#72) -->
     <div class="plot-box full-width" id="entity-cumulative-removed">
         <div class="plot-header">
