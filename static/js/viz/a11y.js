@@ -239,6 +239,7 @@
     document.addEventListener('plot:rendered', function (event) {
         var container = event.target;
         if (!container || !container.dataset || !container.dataset.plotName) return;
+        if (container.dataset.a11y === 'self') return;  // the view labels itself (lifeline.js)
         label(container);
         steps.delete(container);
         if (!container.dataset.a11yKeys) {

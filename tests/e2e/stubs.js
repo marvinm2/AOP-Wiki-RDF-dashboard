@@ -73,7 +73,44 @@ async function installStubs(page, { minDelay = 20, maxDelay = 400 } = {}) {
             data: { label: Array.from({ length: rows }, (_, i) => (i === 0 ? label : `row ${i}`)), n: Array.from({ length: rows }, (_, i) => i) },
         } });
     });
+    // The entity lifeline (#183): realistic sizes (2,907 KERs), presence over the stub versions.
+    await page.route('**/api/v2/data/entity_lifeline*', (route) => {
+        stats.requests.push(route.request().url());
+        return route.fulfill({ json: lifelineData() });
+    });
     return stats;
+}
+
+const LIFELINE_SIZES = { AOPs: 60, KEs: 300, KERs: 2907, Stressors: 80 };
+const STATUS_OF = (p) => (p.endsWith('-') ? 'removed' : /x-+x/.test(p) ? 'returned' : p.startsWith('x') ? 'always present' : 'added');
+
+function lifelineData() {
+    const n = VERSIONS.length;
+    const cols = { entity_type: [], id: [], label: [], first_seen: [], last_seen: [], snapshots_present: [],
+        returns: [], status: [], presence: [], uri: [], aopwiki_url: [] };
+    const asc = VERSIONS.slice().reverse();
+    Object.entries(LIFELINE_SIZES).forEach(([type, size]) => {
+        for (let i = 0; i < size; i++) {
+            const first = i % n;
+            let p = '-'.repeat(first) + 'x'.repeat(n - first);
+            if (i % 7 === 3) p = p.slice(0, n - 1) + '-';           // removed
+            if (i % 11 === 5 && first < n - 3) p = p.slice(0, first + 1) + '-' + p.slice(first + 2);  // returned
+            const number = i + 1;
+            cols.entity_type.push(type);
+            cols.id.push(`${type.replace(/s$/, '')} ${number}`);
+            cols.label.push(`${type} number ${number}`);
+            cols.first_seen.push(asc[p.indexOf('x')]);
+            cols.last_seen.push(asc[p.lastIndexOf('x')]);
+            cols.snapshots_present.push(p.split('x').length - 1);
+            cols.returns.push((p.slice(p.indexOf('x'), p.lastIndexOf('x') + 1).match(/-+/g) || []).length);
+            cols.status.push(STATUS_OF(p));
+            cols.presence.push(p);
+            cols.uri.push(`https://identifiers.org/aop.events/${number}`);
+            cols.aopwiki_url.push(`https://aopwiki.org/events/${number}`);
+        }
+    });
+    const columns = Object.keys(cols).map((name) => ({ name, type: 'string' }));
+    return { meta: { id: 'entity_lifeline', rows: cols.id.length, columns }, data: cols };
 }
 
 /**
