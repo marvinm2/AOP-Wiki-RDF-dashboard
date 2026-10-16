@@ -78,7 +78,41 @@ async function installStubs(page, { minDelay = 20, maxDelay = 400 } = {}) {
         stats.requests.push(route.request().url());
         return route.fulfill({ json: lifelineData() });
     });
+    // The organ-system UpSet (#184): ~600 AOPs over the 13 buckets, more than 25 combinations.
+    await page.route('**/api/v2/data/latest_organ_upset*', (route) => {
+        stats.requests.push(route.request().url());
+        return route.fulfill({ json: upsetData(new URL(route.request().url()).searchParams.get('version')) });
+    });
     return stats;
+}
+
+const BUCKETS = ['Nervous', 'Cardiovascular', 'Respiratory', 'Digestive', 'Hepatobiliary', 'Renal/Urinary',
+    'Reproductive', 'Endocrine', 'Immune/Haematopoietic', 'Integumentary', 'Musculoskeletal', 'Sensory'];
+
+/** Deterministic AOP bucket sets; a fifth of the AOPs have no signal. The version shifts the counts. */
+function upsetData(version) {
+    const n = 600 - (version ? VERSIONS.indexOf(version) * 40 : 0);
+    const cols = { aop: [], aop_id: [], title: [], systems_all_kes: [], systems_apical_kes: [],
+        systems_adverse_outcome: [], n_systems_all_kes: [], version: [] };
+    for (let i = 1; i <= n; i++) {
+        let sets = [];
+        if (i % 5 !== 0) {
+            sets.push(BUCKETS[i % 7]);
+            if (i % 3 === 0) sets.push(BUCKETS[7 + (i % 5)]);
+            if (i % 17 === 0) sets.push(BUCKETS[(i % 4) + 1]);
+            sets = [...new Set(sets)].sort((a, b) => BUCKETS.indexOf(a) - BUCKETS.indexOf(b));
+        }
+        cols.aop.push(`https://identifiers.org/aop/${i}`);
+        cols.aop_id.push(`AOP ${i}`);
+        cols.title.push(`AOP number ${i}`);
+        cols.systems_all_kes.push(sets.join('; '));
+        cols.systems_apical_kes.push(sets.slice(0, 1).join('; '));
+        cols.systems_adverse_outcome.push(i % 2 ? sets.slice(0, 1).join('; ') : '');
+        cols.n_systems_all_kes.push(sets.length);
+        cols.version.push(version || VERSIONS[0]);
+    }
+    const columns = Object.keys(cols).map((name) => ({ name, type: name === 'n_systems_all_kes' ? 'integer' : 'string' }));
+    return { meta: { id: 'latest_organ_upset', rows: n, columns }, data: cols };
 }
 
 const LIFELINE_SIZES = { AOPs: 60, KEs: 300, KERs: 2907, Stressors: 80 };
@@ -125,4 +159,4 @@ async function pickVersion(page, version) {
     await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
 }
 
-module.exports = { installStubs, labelFor, pickVersion, VERSIONS };
+module.exports = { installStubs, labelFor, pickVersion, upsetData, VERSIONS };

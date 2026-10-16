@@ -2330,3 +2330,95 @@ body:has(.sticky-controls) .section-block {
 .lifeline-rows td {
     white-space: normal;
 }
+
+/* ==========================================================================
+   Organ-system UpSet (#184): static/js/viz/upset.js
+   ========================================================================== */
+
+.lazy-plot--upset {
+    min-height: 420px;
+}
+
+.upset-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.upset-summary {
+    margin: 4px 0 8px;
+    font-size: 14px;
+    color: var(--color-primary);
+}
+
+.upset-show-all {
+    border: 1px solid var(--color-blue-ui);
+    border-radius: 6px;
+}
+
+/* The chart keeps a readable column width; on narrow screens it scrolls
+   sideways inside its card, never the page. */
+.upset-scroll {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.upset-chart {
+    display: inline-block;
+    border-radius: 4px;
+}
+
+.upset-chart:focus-visible {
+    outline: 3px solid var(--color-magenta);
+    outline-offset: 2px;
+}
+
+.upset-svg {
+    display: block;
+}
+
+.upset-hint,
+.upset-note {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+}
+
+.upset-rows caption {
+    caption-side: top;
+    text-align: left;
+    padding: 6px 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-primary);
+}
+
+.upset-rows td {
+    white-space: normal;
+}
+
+/* The organ-system panels the UpSet replaces, collapsed for one release. */
+.legacy-panels {
+    margin-top: 18px;
+    border-top: 1px solid var(--color-border-light);
+    padding-top: 10px;
+}
+
+.legacy-panels > summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--color-primary);
+}
+
+.legacy-panels-note {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+}
+
+.legacy-panels .plot-box {
+    box-shadow: none;
+    border: 1px solid var(--color-border-light);
+    margin: 10px 0;
+    max-width: 100%;
+}

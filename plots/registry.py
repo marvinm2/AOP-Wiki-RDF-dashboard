@@ -216,6 +216,7 @@ SPECS: tuple[PlotSpec, ...] = (
     snapshot('latest_organ_coverage_unified', 'plot_latest_organ_coverage_unified', params=('scope', 'view')),
     snapshot('latest_organ_coverage_pie', 'plot_latest_organ_coverage_pie', note='latest_organ_coverage_unified', params=('scope',)),
     snapshot('latest_multi_organ_aops', 'plot_latest_multi_organ_aops'),
+    snapshot('latest_organ_upset', 'plot_latest_organ_upset', params=('scope',)),
     snapshot('latest_life_stage', 'plot_latest_life_stage'),
     snapshot('latest_ke_mmo_coverage', 'plot_latest_ke_mmo_coverage', precompute=True),
     snapshot('latest_aop_aop_overlap', 'plot_latest_aop_aop_overlap', precompute=True, params=('min_jaccard', 'min_shared_kes')),

@@ -7,6 +7,10 @@
  * browser. The server's PNG/SVG links stay as they are (a fixed-size render
  * of the full figure; whether to keep Kaleido is decided in #191).
  *
+ * A D3 view that draws one SVG with its colours as attributes marks it
+ * svg[data-export="svg"] (e.g. the organ-system UpSet, #184); that SVG is
+ * saved as it is, or drawn onto a canvas for PNG.
+ *
  * The file name says what the figure shows: the plot, then its version or
  * snapshot range, then its settings, e.g.
  *   latest_ontology_coverage_2026-01-01_scope-ke.png
@@ -59,6 +63,60 @@
         return container.querySelector('.js-plotly-plot');
     }
 
+    function svgOf(container) {
+        return container.querySelector('svg[data-export="svg"]');
+    }
+
+    /** Standalone SVG text of a drawn D3 view, without its pointer hit areas. */
+    function svgText(svg) {
+        var copy = svg.cloneNode(true);
+        copy.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        copy.removeAttribute('aria-hidden');
+        Array.prototype.forEach.call(copy.querySelectorAll('.upset-hits, title'), function (n) { n.remove(); });
+        var bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        bg.setAttribute('width', '100%');
+        bg.setAttribute('height', '100%');
+        bg.setAttribute('fill', '#FFFFFF');
+        copy.insertBefore(bg, copy.firstChild);
+        return new XMLSerializer().serializeToString(copy);
+    }
+
+    function save(href, file) {
+        var a = document.createElement('a');
+        a.href = href;
+        a.download = file;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+    }
+
+    function downloadSvg(svg, format, file) {
+        var text = svgText(svg);
+        var url = URL.createObjectURL(new Blob([text], { type: 'image/svg+xml' }));
+        if (format === 'svg') {
+            save(url, file + '.svg');
+            setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+            return Promise.resolve(true);
+        }
+        return new Promise(function (resolve, reject) {
+            var img = new Image();
+            img.onload = function () {
+                var scale = 2;
+                var canvas = document.createElement('canvas');
+                canvas.width = svg.width.baseVal.value * scale;
+                canvas.height = svg.height.baseVal.value * scale;
+                var ctx = canvas.getContext('2d');
+                ctx.scale(scale, scale);
+                ctx.drawImage(img, 0, 0);
+                URL.revokeObjectURL(url);
+                save(canvas.toDataURL('image/png'), file + '.png');
+                resolve(true);
+            };
+            img.onerror = function (e) { URL.revokeObjectURL(url); reject(e); };
+            img.src = url;
+        });
+    }
+
     /** The download menu in the container's card whose links export this plot. */
     function menuFor(container) {
         var box = container.closest('.plot-box') || container.parentElement;
@@ -75,7 +133,7 @@
     }
 
     function addItems(container) {
-        if (!figureOf(container)) return;  // not a Plotly figure (e.g. the canvas lifeline)
+        if (!figureOf(container) && !svgOf(container)) return;  // nothing to save as drawn (e.g. the canvas lifeline)
         var menu = menuFor(container);
         var name = container.dataset.plotName;
         if (!menu || menu.querySelector('[data-export-format]')) return;
@@ -98,9 +156,16 @@
     /** Save the drawn figure of `container` as `format`. Resolves once handed to the browser. */
     function download(container, format) {
         var div = figureOf(container);
-        if (!div || !root.Plotly) return Promise.resolve(false);
         var name = container.dataset.plotName;
         var Runtime = root.PlotRuntime;
+        var svg = div ? null : svgOf(container);
+        if (svg) {
+            return downloadSvg(svg, format, filename(name, stateNow(), {
+                versioned: Runtime ? Runtime.isVersioned(name) : false,
+                params: Runtime ? Runtime.paramsOf(name) : [],
+            }));
+        }
+        if (!div || !root.Plotly) return Promise.resolve(false);
         var xaxis = (div.layout && div.layout.xaxis) || {};
         var file = filename(name, stateNow(), {
             versioned: Runtime ? Runtime.isVersioned(name) : false,

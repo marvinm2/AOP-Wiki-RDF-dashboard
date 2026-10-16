@@ -68,11 +68,15 @@ test('ARIA snapshot: the snapshot controls are labelled', async ({ page }) => {
     `);
     await expect(page.getByRole('slider', { name: 'Snapshot version' }))
         .toHaveAttribute('aria-valuetext', `${VERSIONS[0]} (current)`);
-    await expect(page.locator('.coverage-toggle')).toMatchAriaSnapshot(`
+    await expect(page.locator('.coverage-toggle').first()).toMatchAriaSnapshot(`
       - group "Coverage scope":
         - button "All KEs" [pressed]
         - button "Apical KEs only"
         - button "Adverse Outcome only"
+    `);
+    // The view toggle belongs to the older organ-system panels, collapsed (#184).
+    await page.locator('details.legacy-panels > summary').click();
+    await expect(page.locator('.coverage-toggle--view')).toMatchAriaSnapshot(`
       - group "Coverage view":
         - button "Absolute" [pressed]
         - button "Percentage"
@@ -149,12 +153,14 @@ test('downloads and settings follow the URL-backed state', async ({ page }) => {
     await expect(overlap.locator('[data-label]')).toHaveAttribute('data-label',
         `latest_aop_aop_overlap|${VERSIONS[2]}|min_jaccard=0.5`);
 
-    // Coverage scope: pressed state and request both follow.
+    // Coverage scope: pressed state and request both follow (the bar sits in the collapsed older panels, #184).
+    await page.locator('details.legacy-panels > summary').click();
     const bar = page.locator('.lazy-plot[data-plot-name="latest_organ_coverage_unified"]');
     await bar.scrollIntoViewIfNeeded();
     await page.getByRole('button', { name: 'Adverse Outcome only' }).click();
     await expect(page).toHaveURL(/scope=ao/);
     await expect(page.getByRole('button', { name: 'Adverse Outcome only' })).toHaveAttribute('aria-pressed', 'true');
+    await bar.scrollIntoViewIfNeeded();  // the scope buttons sit above the overlap chart, away from the bar
     await expect(bar.locator('[data-label]')).toHaveAttribute('data-label',
         `latest_organ_coverage_unified|${VERSIONS[2]}|scope=ao`);
 
