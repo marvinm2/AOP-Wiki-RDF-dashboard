@@ -352,14 +352,25 @@
 <section class="section-block" id="coverage-analysis">
     <h2 class="section-header">Coverage Analysis</h2>
     <div class="plot-grid">
-        <div class="plot-box full-width coverage-pair">
+        <!-- Organ-system UpSet (#184): drawn by static/js/viz/upset.js from /api/v2/data -->
+        <div class="plot-box full-width" id="organ-upset">
             <div class="plot-header">
-                <h3>AOP Coverage of Organ Systems</h3>
+                <h3>Organ-System Overlap</h3>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download &#x25BC;</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/latest/organ_upset?format=csv" class="dropdown-item">CSV (every AOP, all scopes)</a>
+                        <a href="/download/latest/organ_upset?format=png" class="dropdown-item">PNG</a>
+                        <a href="/download/latest/organ_upset?format=svg" class="dropdown-item">SVG</a>
+                    </div>
+                </div>
             </div>
             <p class="plot-description">
-                AOP coverage of 13 high-level organ systems, classified per AOP from curated
-                anatomy, biological-process, and title signals. Use the toggles below to change
-                which Key Events count and to switch between absolute counts and share of AOPs.
+                AOPs are classified into 13 high-level organ systems from curated anatomy, biological-process
+                and title signals, and one AOP can be in several. Each column is one exact combination of
+                organ systems with the number of AOPs that have exactly that combination; the dots below show
+                which systems it holds, and the bars on the left give each system's total. Click a column or a
+                system to list its AOPs. The scope sets which Key Events count.
                 See <strong>Methodology</strong> for how each signal is derived and what the CSV contains.
             </p>
             <div class="coverage-toggle" data-scope="all" data-view="absolute">
@@ -371,75 +382,93 @@
                         <button type="button" class="segmented-button" data-toggle-scope="ao" aria-pressed="false">Adverse Outcome only</button>
                     </div>
                 </div>
-                <div class="coverage-toggle-row">
-                    <span class="coverage-toggle-label">View:</span>
-                    <div class="segmented-control" role="group" aria-label="Coverage view">
-                        <button type="button" class="segmented-button" data-toggle-view="absolute" aria-pressed="true">Absolute</button>
-                        <button type="button" class="segmented-button" data-toggle-view="percentage" aria-pressed="false">Percentage</button>
+            </div>
+            {{ methodology_note(methodology_notes, 'latest_organ_upset') }}
+            <div class="lazy-plot lazy-plot--upset" data-plot-name="latest_organ_upset" data-renderer="d3-upset">
+                <!-- Drawn by static/js/viz/upset.js -->
+            </div>
+            {{ data_table_toggle('latest_organ_upset') }}
+
+            <details class="legacy-panels">
+                <summary>Previous organ-system panels (coverage bars, bucket totals, multi-organ AOPs), kept for this release</summary>
+                <p class="legacy-panels-note">These three panels are replaced by the overlap chart above and will be removed in the next release.
+                    The coverage bars and bucket totals follow the scope above; the multi-organ histogram always counts all KEs.</p>
+                <div class="coverage-toggle coverage-toggle--view">
+                    <div class="coverage-toggle-row">
+                        <span class="coverage-toggle-label">View:</span>
+                        <div class="segmented-control" role="group" aria-label="Coverage view">
+                            <button type="button" class="segmented-button" data-toggle-view="absolute" aria-pressed="true">Absolute</button>
+                            <button type="button" class="segmented-button" data-toggle-view="percentage" aria-pressed="false">Percentage</button>
+                        </div>
                     </div>
                 </div>
-            </div>
-            {{ methodology_note(methodology_notes, 'latest_organ_coverage_unified') }}
-            <div class="coverage-pair-grid">
-                <div class="coverage-pair-cell">
-                    <div class="coverage-pair-cell-header">
-                        <h4>Bar view</h4>
+                <div class="plot-box full-width coverage-pair">
+                    <div class="plot-header">
+                        <h3>AOP Coverage of Organ Systems</h3>
+                    </div>
+                    {{ methodology_note(methodology_notes, 'latest_organ_coverage_unified') }}
+                    <div class="coverage-pair-grid">
+                        <div class="coverage-pair-cell">
+                            <div class="coverage-pair-cell-header">
+                                <h4>Bar view</h4>
+                                <div class="download-dropdown">
+                                    <button class="download-button dropdown-toggle">Download &#x25BC;</button>
+                                    <div class="dropdown-menu">
+                                        <a href="/download/latest/organ_coverage_unified?format=csv" class="dropdown-item">CSV (current view)</a>
+                                        <a href="/download/latest/organ_coverage_unified?format=png" class="dropdown-item">PNG (current view)</a>
+                                        <a href="/download/latest/organ_coverage_unified?format=svg" class="dropdown-item">SVG (current view)</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="lazy-plot" data-plot-name="latest_organ_coverage_unified">
+                                <!-- Plot will be loaded here via JavaScript -->
+                            </div>
+                            {{ data_table_toggle('latest_organ_coverage_unified') }}
+                        </div>
+                        <div class="coverage-pair-cell">
+                            <div class="coverage-pair-cell-header">
+                                <h4>Bucket totals</h4>
+                                <div class="download-dropdown">
+                                    <button class="download-button dropdown-toggle">Download &#x25BC;</button>
+                                    <div class="dropdown-menu">
+                                        <a href="/download/latest/organ_coverage_pie?format=csv" class="dropdown-item">CSV (current scope)</a>
+                                        <a href="/download/latest/organ_coverage_pie?format=png" class="dropdown-item">PNG (current scope)</a>
+                                        <a href="/download/latest/organ_coverage_pie?format=svg" class="dropdown-item">SVG (current scope)</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="lazy-plot" data-plot-name="latest_organ_coverage_pie">
+                                <!-- Plot will be loaded here via JavaScript -->
+                            </div>
+                            {{ data_table_toggle('latest_organ_coverage_pie') }}
+                        </div>
+                    </div>
+                </div>
+                <div class="plot-box full-width">
+                    <div class="plot-header">
+                        <h3>Multi-organ AOPs</h3>
                         <div class="download-dropdown">
                             <button class="download-button dropdown-toggle">Download &#x25BC;</button>
                             <div class="dropdown-menu">
-                                <a href="/download/latest/organ_coverage_unified?format=csv" class="dropdown-item">CSV (current view)</a>
-                                <a href="/download/latest/organ_coverage_unified?format=png" class="dropdown-item">PNG (current view)</a>
-                                <a href="/download/latest/organ_coverage_unified?format=svg" class="dropdown-item">SVG (current view)</a>
+                                <a href="/download/latest/multi_organ_aops?format=csv" class="dropdown-item">CSV</a>
+                                <a href="/download/latest/multi_organ_aops?format=png" class="dropdown-item">PNG</a>
+                                <a href="/download/latest/multi_organ_aops?format=svg" class="dropdown-item">SVG</a>
                             </div>
                         </div>
                     </div>
-                    <div class="lazy-plot" data-plot-name="latest_organ_coverage_unified">
+                    <p class="plot-description">
+                        How many distinct organ systems each AOP classifies into across Signals A, A&prime;, B and C.
+                        Single-organ AOPs sit in the &ldquo;1&rdquo; column; multi-organ pathways pile into 2, 3, &hellip;.
+                        The raw-data toggle lists every multi-organ AOP with its full bucket set; the CSV download
+                        gives the same per-AOP detail.
+                    </p>
+                    {{ methodology_note(methodology_notes, 'latest_multi_organ_aops') }}
+                    <div class="lazy-plot" data-plot-name="latest_multi_organ_aops">
                         <!-- Plot will be loaded here via JavaScript -->
                     </div>
-                    {{ data_table_toggle('latest_organ_coverage_unified') }}
+                    {{ data_table_toggle('latest_multi_organ_aops') }}
                 </div>
-                <div class="coverage-pair-cell">
-                    <div class="coverage-pair-cell-header">
-                        <h4>Bucket totals</h4>
-                        <div class="download-dropdown">
-                            <button class="download-button dropdown-toggle">Download &#x25BC;</button>
-                            <div class="dropdown-menu">
-                                <a href="/download/latest/organ_coverage_pie?format=csv" class="dropdown-item">CSV (current scope)</a>
-                                <a href="/download/latest/organ_coverage_pie?format=png" class="dropdown-item">PNG (current scope)</a>
-                                <a href="/download/latest/organ_coverage_pie?format=svg" class="dropdown-item">SVG (current scope)</a>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="lazy-plot" data-plot-name="latest_organ_coverage_pie">
-                        <!-- Plot will be loaded here via JavaScript -->
-                    </div>
-                    {{ data_table_toggle('latest_organ_coverage_pie') }}
-                </div>
-            </div>
-        </div>
-        <div class="plot-box">
-            <div class="plot-header">
-                <h3>Multi-organ AOPs</h3>
-                <div class="download-dropdown">
-                    <button class="download-button dropdown-toggle">Download &#x25BC;</button>
-                    <div class="dropdown-menu">
-                        <a href="/download/latest/multi_organ_aops?format=csv" class="dropdown-item">CSV</a>
-                        <a href="/download/latest/multi_organ_aops?format=png" class="dropdown-item">PNG</a>
-                        <a href="/download/latest/multi_organ_aops?format=svg" class="dropdown-item">SVG</a>
-                    </div>
-                </div>
-            </div>
-            <p class="plot-description">
-                How many distinct organ systems each AOP classifies into across Signals A, A&prime;, B and C.
-                Single-organ AOPs sit in the &ldquo;1&rdquo; column; multi-organ pathways pile into 2, 3, &hellip;.
-                The raw-data toggle lists every multi-organ AOP with its full bucket set; the CSV download
-                gives the same per-AOP detail.
-            </p>
-            {{ methodology_note(methodology_notes, 'latest_multi_organ_aops') }}
-            <div class="lazy-plot" data-plot-name="latest_multi_organ_aops">
-                <!-- Plot will be loaded here via JavaScript -->
-            </div>
-            {{ data_table_toggle('latest_multi_organ_aops') }}
+            </details>
         </div>
         <div class="plot-box">
             <div class="plot-header">
@@ -958,6 +987,7 @@ window.TIMELINE_EVENTS = {{ timeline_events|tojson }};
 </script>
 <script src="{{ url_for('static', filename='js/version-selector.js') }}"></script>
 <script src="{{ url_for('static', filename='js/viz/scrubber.js') }}"></script>
+<script src="{{ url_for('static', filename='js/viz/upset.js') }}"></script>
 <script src="{{ url_for('static', filename='js/snapshot-controls.js') }}"></script>
 <script>
 // EXPL-04: clicking a KE in the KE-reuse plot opens it on AOP-Wiki. Every

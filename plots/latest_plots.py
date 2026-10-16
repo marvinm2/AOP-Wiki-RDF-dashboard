@@ -3466,6 +3466,177 @@ def plot_latest_multi_organ_aops(version: str = None) -> str:
     _plot_figure_cache[cache_key] = fig
     return render_plot_html(fig)
 
+# ---------------------------------------------------------------------------
+# Organ-system UpSet (#184). One row per AOP with its organ-system set under
+# each scope, so the data (and CSV) does not depend on the scope toggle; the
+# scope only picks which column the figure counts.
+# ---------------------------------------------------------------------------
+
+ORGAN_SET_SEPARATOR = "; "
+UPSET_SCOPE_COLUMNS: dict[str, str] = {
+    "all": "systems_all_kes",
+    "apical": "systems_apical_kes",
+    "ao": "systems_adverse_outcome",
+}
+UPSET_TOP = 25  # intersections in the server figure (the page can show all)
+
+
+def _organ_sets(granular: pd.DataFrame, aop_universe: dict, scope: str) -> dict[str, tuple]:
+    """AOP IRI -> its organ-system buckets under ``scope``, in bucket order."""
+    per_pair = _aggregate_per_aop(granular, aop_universe, scope=scope)
+    real = per_pair[
+        (per_pair["Organ System"] != NO_ANNOTATION_BUCKET) & per_pair["Best Signal"].notna()
+    ]
+    order = {b: i for i, b in enumerate(ORGAN_SYSTEM_BUCKETS)}
+    return {
+        aop: tuple(sorted(set(s), key=lambda b: order.get(b, len(order))))
+        for aop, s in real.groupby("AOP")["Organ System"]
+    }
+
+
+def organ_upset_rows(sets_by_scope: dict[str, dict], aop_universe: dict, version_label: str) -> pd.DataFrame:
+    """The UpSet's data: one row per AOP in the snapshot, ordered by AOP number.
+
+    ``sets_by_scope`` maps a scope to {AOP IRI: buckets}. An AOP with no signal
+    under a scope gets an empty string there (and 0 systems).
+    """
+    def number(iri: str) -> int:
+        tail = iri.rstrip("/").rsplit("/", 1)[-1]
+        return int(tail) if tail.isdigit() else 0
+
+    rows = []
+    for aop in sorted(aop_universe, key=lambda a: (number(a), a)):
+        row = {
+            "aop": aop,
+            "aop_id": f"AOP {number(aop)}",
+            "title": " ".join(str(aop_universe.get(aop) or "").split()),
+        }
+        for scope, column in UPSET_SCOPE_COLUMNS.items():
+            buckets = sets_by_scope.get(scope, {}).get(aop, ())
+            row[column] = ORGAN_SET_SEPARATOR.join(buckets)
+        row["n_systems_all_kes"] = len(sets_by_scope.get("all", {}).get(aop, ()))
+        row["version"] = version_label
+        rows.append(row)
+    return pd.DataFrame(rows, columns=[
+        "aop", "aop_id", "title", *UPSET_SCOPE_COLUMNS.values(), "n_systems_all_kes", "version",
+    ])
+
+
+def organ_intersections(df: pd.DataFrame, scope: str) -> list[tuple[tuple, int]]:
+    """Exclusive intersections under ``scope``: (buckets, AOPs), largest first.
+
+    Each AOP counts once, in the intersection that is exactly its bucket set
+    (the UpSet convention). AOPs with no signal are left out.
+    """
+    column = UPSET_SCOPE_COLUMNS[scope]
+    counts: dict[tuple, int] = {}
+    for value in df[column]:
+        if value:
+            key = tuple(value.split(ORGAN_SET_SEPARATOR))
+            counts[key] = counts.get(key, 0) + 1
+    # Ties: fewer systems first, then by name, as static/js/viz/upset.js orders them.
+    return sorted(counts.items(), key=lambda kv: (-kv[1], len(kv[0]), ORGAN_SET_SEPARATOR.join(kv[0])))
+
+
+def organ_set_sizes(df: pd.DataFrame, scope: str) -> list[tuple[str, int]]:
+    """(bucket, AOPs in it) under ``scope``, largest first; empty buckets left out."""
+    sizes: dict[str, int] = {}
+    for value in df[UPSET_SCOPE_COLUMNS[scope]]:
+        for b in (value.split(ORGAN_SET_SEPARATOR) if value else ()):
+            sizes[b] = sizes.get(b, 0) + 1
+    return sorted(sizes.items(), key=lambda kv: (-kv[1], kv[0]))
+
+
+def _render_organ_upset(df: pd.DataFrame, scope: str, version_label: str):
+    """Plotly UpSet: intersection sizes on top, the membership matrix below,
+    set sizes on the left. Brand colours only; one chart, no facets."""
+    from plotly.subplots import make_subplots
+
+    column = UPSET_SCOPE_COLUMNS[scope]
+    inter = organ_intersections(df, scope)
+    shown = inter[:UPSET_TOP]
+    set_sizes = dict(organ_set_sizes(df, scope))
+    sets = list(set_sizes)  # largest first, top row of the matrix
+    total = len(df)
+    classified = int((df[column] != "").sum())
+    xs = list(range(len(shown)))
+    names = [" + ".join(k) for k, _ in shown]
+
+    fig = make_subplots(
+        rows=2, cols=2, column_widths=[0.22, 0.78], row_heights=[0.55, 0.45],
+        shared_xaxes="columns", shared_yaxes="rows",
+        horizontal_spacing=0.01, vertical_spacing=0.02,
+    )
+    fig.add_trace(go.Bar(
+        x=xs, y=[n for _, n in shown], text=[n for _, n in shown], textposition="outside",
+        marker_color=BRAND_COLORS["primary"], customdata=names, cliponaxis=False,
+        hovertemplate="%{customdata}<br>%{y} AOPs<extra></extra>", showlegend=False,
+    ), row=1, col=2)
+    # Matrix: every cell a light dot, member cells dark and joined by a line.
+    fig.add_trace(go.Scatter(
+        x=[x for x in xs for _ in sets], y=[b for _ in xs for b in sets], mode="markers",
+        marker=dict(size=9, color="#E6E6E6"), hoverinfo="skip", showlegend=False,
+    ), row=2, col=2)
+    for x, (key, n) in zip(xs, shown):
+        fig.add_trace(go.Scatter(
+            x=[x] * len(key), y=list(key), mode="markers+lines",
+            marker=dict(size=9, color=BRAND_COLORS["primary"]),
+            line=dict(color=BRAND_COLORS["primary"], width=2),
+            hovertemplate=f"{' + '.join(key)}<br>{n} AOPs<extra></extra>", showlegend=False,
+        ), row=2, col=2)
+    fig.add_trace(go.Bar(
+        x=[set_sizes[b] for b in sets], y=sets, orientation="h", text=[set_sizes[b] for b in sets],
+        textposition="outside", marker_color=BRAND_COLORS["blue"], cliponaxis=False,
+        hovertemplate="%{y}: %{x} AOPs in total<extra></extra>", showlegend=False,
+    ), row=2, col=1)
+
+    more = f" (largest {len(shown)} of {len(inter)} shown)" if len(inter) > len(shown) else ""
+    subtitle = (f"{_SCOPE_LABELS.get(scope, scope)} · {classified}/{total} AOPs with an organ-system "
+                f"signal · {len(inter)} distinct combinations{more}")
+    fig.update_layout(
+        title={"text": f"Organ-system overlap of AOPs ({version_label})<br><sub>{subtitle}</sub>"},
+        height=640, margin=dict(l=20, r=20, t=90, b=20), bargap=0.25,
+    )
+    fig.update_xaxes(visible=False, row=1, col=2)
+    fig.update_xaxes(visible=False, row=2, col=2)
+    # Reversed, with headroom so the outside labels clear the bucket names.
+    fig.update_xaxes(range=[max(set_sizes.values(), default=1) * 1.3, 0], title_text="AOPs per organ system", row=2, col=1)
+    fig.update_yaxes(title_text="AOPs with exactly this combination", row=1, col=2)
+    fig.update_yaxes(categoryorder="array", categoryarray=list(reversed(sets)), row=2, col=1)
+    fig.update_yaxes(side="right", showticklabels=False, row=2, col=2)
+    fig.update_xaxes(visible=False, row=1, col=1)
+    fig.update_yaxes(visible=False, row=1, col=1)
+    return fig
+
+
+@resolves_version
+def plot_latest_organ_upset(version: str = None, scope: str = "all") -> str:
+    """Organ-system UpSet chart (#184): how the 13 non-exclusive buckets overlap.
+
+    The data is the same for every scope (one row per AOP, a column per
+    scope); ``scope`` picks what the server figure counts. The page draws the
+    chart itself from /api/v2/data (static/js/viz/upset.js).
+    """
+    global _plot_data_cache, _plot_figure_cache
+
+    if scope not in UPSET_SCOPE_COLUMNS:
+        scope = "all"
+    result = _get_coverage_dataframe(version)
+    if result is None:
+        return create_fallback_plot("Organ-system overlap", "No AOP data in this snapshot")
+    granular, aop_universe, version_label = result
+    sets_by_scope = {s: _organ_sets(granular, aop_universe, s) for s in UPSET_SCOPE_COLUMNS}
+    df = organ_upset_rows(sets_by_scope, aop_universe, version_label)
+    if df.empty:
+        return create_fallback_plot("Organ-system overlap", "No AOP data in this snapshot")
+
+    cache_key = f"latest_organ_upset_{version or 'latest'}"
+    _plot_data_cache[cache_key] = df
+    fig = _render_organ_upset(df, scope, version_label)
+    _plot_figure_cache[cache_key] = fig
+    return render_plot_html(fig)
+
+
 @resolves_version
 def plot_latest_ke_mmo_coverage(version: str = None) -> str:
     """KE measurement-method (obo:MMO_0000000) coverage for the current snapshot.

@@ -31,8 +31,10 @@
     function wireCoverageToggles() {
         const root = document.querySelector('.coverage-toggle');
         if (!root) return;
-        const scopeButtons = Array.from(root.querySelectorAll('[data-toggle-scope]'));
-        const viewButtons = Array.from(root.querySelectorAll('[data-toggle-view]'));
+        // The scope row sits above the organ-system overlap chart, the view row
+        // with the older panels below it (#184), so look across the page.
+        const scopeButtons = Array.from(document.querySelectorAll('[data-toggle-scope]'));
+        const viewButtons = Array.from(document.querySelectorAll('[data-toggle-view]'));
         const defaults = { scope: root.dataset.scope || 'all', view: root.dataset.view || 'absolute' };
 
         const show = () => {

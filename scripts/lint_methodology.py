@@ -19,7 +19,9 @@ LINT-04  (soft warn this phase, see D2 in 11-CONTEXT.md) Plot function issues
          more SPARQL calls than the methodology entry discloses. Detected
          purely via AST scan of ``plots/*.py`` — the file is never imported.
 LINT-05  Endpoint-call budget guard: refuse to start when the methodology JSON
-         has more entries than the configured budget (default 50).
+         has more entries than the configured budget (default 100). An entry
+         whose every query repeats an earlier entry's costs no call (each
+         distinct query is sent once per run) and does not count.
 LINT-06  Deterministic PR-comment / JSON-report formatting (no severity; this
          is a presentation contract, not a check that emits findings).
 
@@ -219,6 +221,37 @@ def _bindings_drift_empty(bindings: list) -> bool:
     return numeric_values_seen
 
 
+def _classify(name: str, endpoint: str, http, wrapped: str, timeout: int) -> tuple[int, str, bool]:
+    """POST one wrapped query: (status, first line of an error body, no usable rows).
+
+    Raises ``InfraError`` for an unreachable endpoint, a 5xx or a non-JSON 200.
+    """
+    try:
+        response = http.post(
+            endpoint,
+            data={"query": wrapped},
+            headers={"Accept": "application/sparql-results+json"},
+            timeout=timeout,
+        )
+    except (requests.Timeout, requests.ConnectionError) as exc:
+        raise InfraError(f"{name}: endpoint unreachable: {exc}") from exc
+
+    if response.status_code >= 500:
+        raise InfraError(
+            f"{name}: endpoint returned {response.status_code}: "
+            f"{(response.text or '').splitlines()[:1]}"
+        )
+    if response.status_code >= 400:
+        first_line = response.text.splitlines()[0] if response.text else ""
+        return response.status_code, first_line, False
+    try:
+        payload = response.json()
+    except ValueError as exc:
+        raise InfraError(f"{name}: non-JSON 200 response: {exc}") from exc
+    bindings = payload.get("results", {}).get("bindings", [])
+    return response.status_code, "", _bindings_drift_empty(bindings)
+
+
 def check_lint_01_02(
     name: str,
     entry: dict,
@@ -227,6 +260,7 @@ def check_lint_01_02(
     endpoint: str = DEFAULT_ENDPOINT,
     session: Optional[requests.Session] = None,
     timeout: int = DEFAULT_TIMEOUT,
+    cache: Optional[dict] = None,
 ) -> list[dict]:
     """Wrap-then-classify endpoint round-trip covering LINT-01 + LINT-02.
 
@@ -236,51 +270,34 @@ def check_lint_01_02(
     ``SELECT * WHERE { { <inner> } } LIMIT 1`` (preserves projection-list
     semantics so SP031-class errors still fire), POSTs, classifies.
 
+    ``cache`` (shared across a run) maps a wrapped query to its classified
+    outcome, so a query several notes disclose is sent once; each note still
+    gets its own findings.
+
     Returns a list of findings (empty when every query passes).
     """
     http = session or requests
+    cache = {} if cache is None else cache
     findings: list[dict] = []
     queries = list(_iter_queries(entry))
     total = len(queries)
     for _, caption, query in queries:
         substituted = query.replace("__GRAPH_URI__", f"<{latest_graph_uri}>")
         wrapped = "SELECT * WHERE { { " + substituted + " } } LIMIT 1"
-        try:
-            response = http.post(
-                endpoint,
-                data={"query": wrapped},
-                headers={"Accept": "application/sparql-results+json"},
-                timeout=timeout,
-            )
-        except (requests.Timeout, requests.ConnectionError) as exc:
-            raise InfraError(f"{name}: endpoint unreachable: {exc}") from exc
-
-        if response.status_code >= 500:
-            raise InfraError(
-                f"{name}: endpoint returned {response.status_code}: "
-                f"{(response.text or '').splitlines()[:1]}"
-            )
+        if wrapped not in cache:
+            cache[wrapped] = _classify(name, endpoint, http, wrapped, timeout)
+        status, first_line, empty = cache[wrapped]
 
         finding_name = _finding_name(name, caption, total)
-        if response.status_code >= 400:
-            first_line = ""
-            if response.text:
-                first_line = response.text.splitlines()[0]
+        if status >= 400:
             findings.append({
                 "name": finding_name,
                 "check": "LINT-01",
                 "severity": "fail",
-                "message": f"{response.status_code}: {first_line}",
+                "message": f"{status}: {first_line}",
             })
             continue
-
-        try:
-            payload = response.json()
-        except ValueError as exc:
-            raise InfraError(f"{name}: non-JSON 200 response: {exc}") from exc
-
-        bindings = payload.get("results", {}).get("bindings", [])
-        if _bindings_drift_empty(bindings):
+        if empty:
             if entry.get("may_be_empty") is True:
                 continue
             findings.append({
@@ -489,6 +506,22 @@ def check_lint_04(
 # ---------------------------------------------------------------------------
 
 
+def billable_entries(entries: dict) -> int:
+    """Entries that need at least one endpoint call of their own.
+
+    An entry with no disclosed query still counts (as before); one whose every
+    query an earlier entry already disclosed does not.
+    """
+    seen: set = set()
+    count = 0
+    for entry in entries.values():
+        queries = [q for _, _, q in _iter_queries(entry)] if isinstance(entry, dict) else []
+        if not queries or not all(q in seen for q in queries):
+            count += 1
+        seen.update(queries)
+    return count
+
+
 def enforce_call_budget(
     entries: dict,
     *,
@@ -498,7 +531,9 @@ def enforce_call_budget(
     """Refuse to start when the entry count exceeds the endpoint-call budget.
 
     Each entry costs one wrapped round-trip for LINT-01/02, plus one shared
-    latest-graph resolution call per run. With ``budget=60`` (canary value)
+    latest-graph resolution call per run. Entries whose every disclosed query
+    repeats an earlier entry's cost nothing (run_lint sends each distinct
+    query once) and are not counted. With ``budget=60`` (canary value)
     and 56 real entries as of 2026-05, a 30s per-call timeout keeps total
     run-time well under the LINT-05 "<2 minutes" target.
 
@@ -507,10 +542,10 @@ def enforce_call_budget(
     """
     if no_network:
         return
-    count = len(entries)
+    count = billable_entries(entries)
     if count > budget:
         raise BudgetExceeded(
-            f"methodology JSON has {count} entries but the endpoint-call "
+            f"methodology JSON has {count} entries needing endpoint calls but the endpoint-call "
             f"budget is {budget} (LINT-05). Either batch the per-entry "
             "round-trip, raise the budget with --call-budget, or split the "
             "methodology file."
@@ -679,6 +714,7 @@ def run_lint(
         note_producers = load_note_producers(plots_dir)
 
     findings: list[dict] = []
+    query_cache: dict = {}  # wrapped query -> outcome: a query several notes share is sent once
     session: Optional[requests.Session] = None
     latest_graph_uri: Optional[str] = None
     if not no_network:
@@ -715,6 +751,7 @@ def run_lint(
                 latest_graph_uri,
                 endpoint=endpoint,
                 session=session,
+                cache=query_cache,
             )
         )
     return findings

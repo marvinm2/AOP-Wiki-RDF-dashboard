@@ -366,7 +366,7 @@ def test_lint04_now_fails_exit_code(fixtures_dir, tmp_path):
 
 
 def _fake_entries(n: int) -> dict:
-    return {f"entry_{i}": {"sparql": "SELECT 1"} for i in range(n)}
+    return {f"entry_{i}": {"sparql": f"SELECT {i}"} for i in range(n)}
 
 
 def test_lint05_call_budget_guard():
@@ -381,8 +381,32 @@ def test_lint05_call_budget_guard():
     lint_methodology.enforce_call_budget(entries, budget=100, no_network=False)
 
 
+def test_lint05_entries_repeating_earlier_queries_are_not_counted():
+    entries = _fake_entries(50)
+    entries["shared_view"] = {"sparql": "SELECT 3"}                     # all repeated: free
+    entries["partly_new"] = {"queries": [{"query": "SELECT 4"}, {"query": "SELECT new"}]}
+    entries["no_query"] = {"title": "static only"}                      # counted, as before
+    assert lint_methodology.billable_entries(entries) == 52
+    lint_methodology.enforce_call_budget(entries, budget=52, no_network=False)
+    with pytest.raises(lint_methodology.BudgetExceeded):
+        lint_methodology.enforce_call_budget(entries, budget=51, no_network=False)
+
+
+@responses.activate
+def test_lint01_02_sends_a_shared_query_once_but_reports_each_entry(endpoint_url):
+    responses.add(responses.POST, endpoint_url, json={"results": {"bindings": []}}, status=200)
+    cache: dict = {}
+    for name in ("first_note", "second_note"):
+        findings = lint_methodology.check_lint_01_02(
+            name, {"sparql": "SELECT ?x WHERE { GRAPH __GRAPH_URI__ { ?x ?p ?o } }"},
+            "http://aopwiki.org/graph/2026-04-01", endpoint=endpoint_url, cache=cache,
+        )
+        assert [(f["name"], f["check"]) for f in findings] == [(name, "LINT-02")]
+    assert len(responses.calls) == 1
+
+
 def test_lint05_real_methodology_under_budget():
-    """Regression guard: when someone adds a 61st entry, this test fails.
+    """Regression guard: when a 61st entry needing its own calls arrives, this test fails.
 
     Canary was originally pinned at 50 (file then had 46 entries). The
     2026-05 plot expansion (organ-coverage variants, AOP-AOP overlap,
@@ -391,6 +415,11 @@ def test_lint05_real_methodology_under_budget():
     was raised to 60 with ~4 entries of headroom. If we keep growing,
     the next move should be batching the per-entry round-trip in
     ``lint_methodology.py`` rather than another bump.
+
+    2026-10 (#184): the first step of that batching is in. Each distinct
+    query is sent once per run, and an entry whose every query repeats an
+    earlier entry's (e.g. a view sharing its data with older panels) is
+    not counted.
     """
     repo_root = pathlib.Path(__file__).resolve().parent.parent
     real_json = repo_root / "static" / "data" / "methodology_notes.json"

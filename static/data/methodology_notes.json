@@ -752,6 +752,41 @@
             }
         ]
     },
+    "latest_organ_upset": {
+        "title": "Organ-System Overlap (UpSet)",
+        "description": "The 13 organ-system buckets are not exclusive: an AOP whose Key Events touch the liver and the immune system is in both. This UpSet chart shows how they overlap. Each column is an exclusive intersection, the AOPs whose bucket set is exactly that combination, so every classified AOP is counted in one column only and the columns add up to the classified AOPs. The dots under a column show its buckets. The bars on the left are each bucket's total, the AOPs in it alone or with others, which is what the older 'Bucket totals' panel showed. The scope toggle (all KEs, apical KEs, adverse outcome) decides which Key Events count, as for the coverage bars.",
+        "data_source": "Reuses the same SPARQL pull and ontology resolution as the AOP Coverage plot. For each AOP we count the number of distinct organ-system buckets it lands in via any of the four signals.",
+        "method_steps": [
+            "Classify every AOP in the snapshot into organ-system buckets with the same per-AOP hybrid classifier as the coverage bars (Signals A, A', B on Key Events, Signal C on the AOP title), once per scope.",
+            "Give each AOP its bucket set under each scope; an AOP with no signal under a scope has an empty set there and is left out of the chart (the summary line counts them).",
+            "Group the AOPs by their exact bucket set: one column per distinct set, sorted by size, then by fewer buckets, then by name. The 25 largest columns are shown by default; 'Show all' shows every one.",
+            "Count each bucket's AOPs across all sets for the bars on the left, largest bucket on top.",
+            "Clicking a column lists the AOPs with exactly that set; clicking a bucket lists every AOP in it."
+        ],
+        "limitations": "The classifier is deliberately generous (editorial overrides such as blood counted as both Cardiovascular and Immune/Haematopoietic, GO via RO:0002296, and a title regex), so overlaps partly reflect those choices rather than biology; it is not a domain scope (see the domain lens). Signal C is regex on free-text titles. The 13 buckets are coarse. Columns with one AOP are common (about a third of the combinations in 2026-10-01), so the 'Show all' view is long-tailed. The server PNG/SVG shows the 25 largest columns for the scope it last drew; 'PNG/SVG (as shown)' saves the chart as it is on the page.",
+        "csv_download": "One row per AOP in the snapshot, for every scope at once, so the file does not depend on the scope toggle. Columns: aop (identifiers.org IRI), aop_id, title, systems_all_kes, systems_apical_kes, systems_adverse_outcome (the AOP's buckets under that scope, separated by '; ', empty when it has no signal), n_systems_all_kes, version. Grouping a systems column by value gives the chart's columns.",
+        "curated_mapping_url": "/api/organ-system-buckets",
+        "sparql": "SELECT ?aop ?aop_title ?ao ?ke ?organ ?cell ?obj ?proc\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    ?aop a aopo:AdverseOutcomePathway ;\n         <http://purl.org/dc/elements/1.1/title> ?aop_title ;\n         aopo:has_key_event ?ke .\n    OPTIONAL { ?aop aopo:has_adverse_outcome ?ao . }\n    OPTIONAL { ?ke aopo:OrganContext ?organ . }\n    OPTIONAL { ?ke aopo:CellTypeContext ?cell . }\n    OPTIONAL {\n      ?ke aopo:hasBiologicalEvent ?be .\n      OPTIONAL { ?be aopo:hasObject ?obj . }\n      OPTIONAL { ?be aopo:hasProcess ?proc . }\n    }\n  }\n}",
+        "sparql_label": "Consolidated query (all signals in one pull)",
+        "additional_queries": [
+            {
+                "label": "Signal A — curated anatomy on KEs",
+                "query": "# Signal A only — curated anatomy directly on Key Events\nSELECT ?aop ?ke ?organ_or_cell\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    ?aop a aopo:AdverseOutcomePathway ;\n         aopo:has_key_event ?ke .\n    { ?ke aopo:OrganContext   ?organ_or_cell . }\n    UNION\n    { ?ke aopo:CellTypeContext ?organ_or_cell . }\n  }\n}"
+            },
+            {
+                "label": "Signal A' — UBERON/CL via hasObject",
+                "query": "# Signal A' only — UBERON / CL appearing as hasObject inside a biological event\nSELECT ?aop ?ke ?obj\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    ?aop a aopo:AdverseOutcomePathway ;\n         aopo:has_key_event ?ke .\n    ?ke  aopo:hasBiologicalEvent ?be .\n    ?be  aopo:hasObject ?obj .\n    FILTER( STRSTARTS(STR(?obj), \"http://purl.obolibrary.org/obo/UBERON_\")\n         || STRSTARTS(STR(?obj), \"http://purl.obolibrary.org/obo/CL_\") )\n  }\n}"
+            },
+            {
+                "label": "Signal B — GO biological-process terms",
+                "query": "# Signal B only — GO biological-process terms (bridged to buckets in Python)\nSELECT ?aop ?ke ?proc\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    ?aop a aopo:AdverseOutcomePathway ;\n         aopo:has_key_event ?ke .\n    ?ke  aopo:hasBiologicalEvent ?be .\n    ?be  aopo:hasProcess ?proc .\n    FILTER( STRSTARTS(STR(?proc), \"http://purl.obolibrary.org/obo/GO_\") )\n  }\n}"
+            },
+            {
+                "label": "Signal C — fetch titles for Python regex",
+                "query": "# Signal C precursor — fetch AOP and AO titles (Signal C runs as regex in\n# Python against these literals; the curated patterns are listed at\n# /api/organ-system-buckets under \"keyword_patterns\").\nSELECT ?aop ?aop_title ?ao ?ao_title\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    ?aop a aopo:AdverseOutcomePathway ;\n         <http://purl.org/dc/elements/1.1/title> ?aop_title .\n    OPTIONAL {\n      ?aop aopo:has_adverse_outcome ?ao .\n      OPTIONAL { ?ao <http://purl.org/dc/elements/1.1/title> ?ao_title . }\n    }\n  }\n}"
+            }
+        ]
+    },
     "latest_organ_coverage_unified": {
         "title": "AOP Coverage of Organ Systems (toggle)",
         "description": "Same per-AOP hybrid classification as before, but with two toggles. Scope picks which Key Events count toward Signals A, A' and B: all KEs (broadest), Apical KEs only (Tissue/Organ/Individual/Population), or just the Adverse Outcome (regulatory endpoint). Signal C (AOP title regex) is kept regardless of scope. View switches between absolute AOP counts and share of all AOPs in the snapshot. The four legacy panels collapse into this single view; the bar below mirrors the same scope so you read one coherent slice across the section.",
