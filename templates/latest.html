@@ -1016,8 +1016,9 @@ window.TIMELINE_EVENTS = {{ timeline_events|tojson }};
 <script src="{{ url_for('static', filename='js/viz/overlap.js') }}"></script>
 <script src="{{ url_for('static', filename='js/snapshot-controls.js') }}"></script>
 <script>
-// EXPL-04: clicking a KE in the KE-reuse plot opens it on AOP-Wiki. Every
-// render (each version switch) draws a new figure, which needs its own handler.
+// EXPL-04: clicking a KE in the KE-reuse plot opens its identifiers.org IRI,
+// which resolves to the AOP-Wiki page (#240). Every render (each version
+// switch) draws a new figure, which needs its own handler.
 document.addEventListener('plot:rendered', function (event) {
     if (event.detail.plotName !== 'latest_ke_reuse') return;
     var plotlyDiv = event.target.querySelector('.js-plotly-plot');
@@ -1025,7 +1026,7 @@ document.addEventListener('plot:rendered', function (event) {
     plotlyDiv.on('plotly_click', function (eventData) {
         var point = eventData && eventData.points && eventData.points[0];
         var url = point && point.customdata && point.customdata[0];
-        if (url && url.startsWith('https://aopwiki.org/')) window.open(url, '_blank');
+        if (url && url.startsWith('https://identifiers.org/')) window.open(url, '_blank', 'noopener');
     });
 });
 </script>
