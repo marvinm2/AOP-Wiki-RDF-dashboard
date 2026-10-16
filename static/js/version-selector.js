@@ -44,10 +44,14 @@
         selector.addEventListener('change', () => {
             state.set({ version: selector.value === latest ? null : selector.value });
         });
+        const settings = new Set([].concat(...Object.values(window.PLOT_PARAMS || {})));
         state.subscribe((changed) => {
-            if (!changed.includes('version')) return;
-            selector.value = state.get('version') || latest;
-            applyVersion();
+            if (changed.includes('version')) {
+                selector.value = state.get('version') || latest;
+                applyVersion();
+            } else if (changed.some((k) => settings.has(k))) {
+                updateDownloadLinks(state.get('version'));
+            }
         });
         applyVersion();
     }
@@ -65,8 +69,13 @@
         updateMethodologyQueryUris(version || latest);
     }
 
-    /** Point every snapshot download link (per-plot and bulk) at the selected version. */
+    /**
+     * Point every snapshot download link (per-plot and bulk) at the selected
+     * version, and a plot's own links at its settings (scope, min_jaccard, ...),
+     * so a download holds what the page shows (#185).
+     */
     function updateDownloadLinks(version) {
+        const params = window.PLOT_PARAMS || {};
         document.querySelectorAll('a[href^="/download/"]').forEach((link) => {
             const url = new URL(link.getAttribute('href'), window.location.origin);
             const isSnapshot = url.pathname.startsWith('/download/latest')
@@ -74,6 +83,13 @@
             if (!isSnapshot) return;
             if (version) url.searchParams.set('version', version);
             else url.searchParams.delete('version');
+            const plot = url.pathname.startsWith('/download/latest/')
+                ? `latest_${url.pathname.slice('/download/latest/'.length)}` : null;
+            (params[plot] || []).forEach((key) => {
+                const value = state.get(key);
+                if (value) url.searchParams.set(key, value);
+                else url.searchParams.delete(key);
+            });
             link.setAttribute('href', url.pathname + url.search);
         });
     }

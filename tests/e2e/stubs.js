@@ -83,7 +83,74 @@ async function installStubs(page, { minDelay = 20, maxDelay = 400 } = {}) {
         stats.requests.push(route.request().url());
         return route.fulfill({ json: upsetData(new URL(route.request().url()).searchParams.get('version')) });
     });
+    // The AOP-AOP overlap (#185): pairs by cluster; the threshold drops the weakest.
+    await page.route('**/api/v2/data/latest_aop_aop_overlap*', (route) => {
+        const u = new URL(route.request().url());
+        stats.requests.push(u.href);
+        return route.fulfill({ json: overlapData(u.searchParams.get('version'), u.searchParams.get('min_jaccard')) });
+    });
     return stats;
+}
+
+const OVERLAP_SIZES = [8, 6, 4, 3, 2, 2, 2];
+
+/**
+ * Overlap rows as the server sends them: clusters of OVERLAP_SIZES AOPs, each
+ * a chain plus a link from its first AOP to every third one, in matrix order.
+ * The first pair of each cluster is identical. A threshold above 0.34 drops
+ * the last cluster; the version shifts the AOP numbers.
+ */
+function overlapData(version, minJaccard) {
+    const sizes = Number(minJaccard || 0.34) > 0.34 ? OVERLAP_SIZES.slice(0, -1) : OVERLAP_SIZES;
+    const shift = version ? VERSIONS.indexOf(version) * 100 : 0;
+    const cols = { cluster_id: [], cluster_size: [], aop1: [], aop1_id: [], aop1_title: [], n_kes_aop1: [],
+        aop2: [], aop2_id: [], aop2_title: [], n_kes_aop2: [], jaccard: [], shared_kes: [],
+        identical_ke_set: [], matrix_row: [], matrix_col: [], Version: [] };
+    let start = 0;
+    sizes.forEach((size, k) => {
+        const pairs = [];
+        for (let i = 0; i + 1 < size; i++) pairs.push([i, i + 1]);
+        for (let i = 3; i < size; i += 3) pairs.push([0, i]);
+        pairs.sort((a, b) => a[0] - b[0] || a[1] - b[1]).forEach(([a, b], n) => {
+            const pa = start + a, pb = start + b;
+            const na = 10 + pa + shift, nb = 10 + pb + shift;
+            cols.cluster_id.push(k + 1);
+            cols.cluster_size.push(size);
+            cols.aop1.push(`https://identifiers.org/aop/${na}`);
+            cols.aop1_id.push(`AOP ${na}`);
+            cols.aop1_title.push(`AOP number ${na}`);
+            cols.n_kes_aop1.push(4 + (pa % 5));
+            cols.aop2.push(`https://identifiers.org/aop/${nb}`);
+            cols.aop2_id.push(`AOP ${nb}`);
+            cols.aop2_title.push(`AOP number ${nb}`);
+            cols.n_kes_aop2.push(4 + (pb % 5));
+            cols.jaccard.push(n === 0 ? 1 : 0.4 + ((pa + pb) % 5) / 10);
+            cols.shared_kes.push(3);
+            cols.identical_ke_set.push(n === 0);
+            cols.matrix_row.push(pa);
+            cols.matrix_col.push(pb);
+            cols.Version.push(version || VERSIONS[0]);
+        });
+        start += size;
+    });
+    const types = { cluster_id: 'integer', cluster_size: 'integer', n_kes_aop1: 'integer', n_kes_aop2: 'integer',
+        jaccard: 'number', shared_kes: 'integer', identical_ke_set: 'boolean', matrix_row: 'integer', matrix_col: 'integer' };
+    const columns = Object.keys(cols).map((name) => ({ name, type: types[name] || 'string' }));
+    return { meta: { id: 'latest_aop_aop_overlap', rows: cols.aop1.length, columns }, data: cols };
+}
+
+/** A Plotly heatmap of overlap rows, as plot_latest_aop_aop_overlap draws it, as /api/plot HTML. */
+function overlapMatrixHtml(payload) {
+    const d = payload.data;
+    const n = Math.max(...d.matrix_col) + 1;
+    const labels = Array(n).fill('');
+    d.matrix_row.forEach((r, i) => { labels[r] = d.aop1_id[i]; labels[d.matrix_col[i]] = d.aop2_id[i]; });
+    const z = Array.from({ length: n }, () => Array(n).fill(null));
+    d.matrix_row.forEach((r, i) => { const c = d.matrix_col[i]; z[r][c] = z[c][r] = d.jaccard[i]; });
+    const fig = { data: [{ type: 'heatmap', x: labels, y: labels, z, zmin: 0.34, zmax: 1, hoverongaps: false }],
+        layout: { height: 420, xaxis: { type: 'category', constrain: 'domain' }, yaxis: { type: 'category', autorange: 'reversed', scaleanchor: 'x', constrain: 'domain' } } };
+    return `<div id="overlap-matrix" class="plotly-graph-div" style="height:420px;width:100%"></div>`
+        + `<script>Plotly.newPlot("overlap-matrix", ${JSON.stringify(fig.data)}, ${JSON.stringify(fig.layout)}, {displayModeBar:false});</script>`;
 }
 
 const BUCKETS = ['Nervous', 'Cardiovascular', 'Respiratory', 'Digestive', 'Hepatobiliary', 'Renal/Urinary',
@@ -158,4 +225,4 @@ async function pickVersion(page, version) {
     await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
 }
 
-module.exports = { installStubs, labelFor, pickVersion, upsetData, VERSIONS };
+module.exports = { installStubs, labelFor, overlapData, overlapMatrixHtml, pickVersion, upsetData, VERSIONS };

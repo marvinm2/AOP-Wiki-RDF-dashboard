@@ -138,7 +138,7 @@ test('downloads and settings follow the URL-backed state', async ({ page }) => {
     for (const h of hrefs) expect(h).toContain(`version=${VERSIONS[2]}`);
 
     // A setting goes into the URL and survives a reload.
-    const overlap = page.locator('.lazy-plot[data-plot-name="latest_aop_aop_overlap"]');
+    const overlap = page.locator('.overlap-panel--matrix .lazy-plot');  // the matrix tab (#185)
     await overlap.scrollIntoViewIfNeeded();
     await page.locator('#aop-aop-threshold-slider').fill('0.5');
     await page.locator('#aop-aop-threshold-slider').dispatchEvent('change');

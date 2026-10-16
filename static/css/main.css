@@ -2422,3 +2422,81 @@ body:has(.sticky-controls) .section-block {
     margin: 10px 0;
     max-width: 100%;
 }
+
+/* ---- AOP-AOP overlap: matrix and graph tabs (#185) ---------------------- */
+
+.overlap-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 20px;
+    margin: 8px 0 12px;
+}
+
+.overlap-cluster-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--color-primary);
+}
+
+.overlap-cluster {
+    max-width: 260px;
+    padding: 4px 6px;
+    font-size: 13px;
+}
+
+.overlap-tabs [role="tab"]:focus-visible,
+.overlap-graph-tools button:focus-visible {
+    outline: 3px solid var(--color-magenta);
+    outline-offset: 2px;
+}
+
+.overlap-graph {
+    position: relative;
+}
+
+.overlap-graph-canvas {
+    width: 100%;
+    height: 640px;
+    border: 1px solid #E6E6E6;
+    border-radius: 4px;
+    background: #FFFFFF;
+}
+
+.overlap-graph-tools {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 2;
+    display: inline-flex;
+    border: 1px solid var(--color-blue-ui);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.overlap-hint {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+}
+
+.overlap-rows caption {
+    caption-side: top;
+    text-align: left;
+    padding: 6px 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-primary);
+}
+
+.overlap-rows td {
+    white-space: normal;
+}
+
+@media (max-width: 600px) {
+    .overlap-graph-canvas {
+        height: 420px;
+    }
+}

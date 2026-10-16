@@ -229,9 +229,15 @@ Views that Plotly has no form for live in `static/js/viz/` and register a render
 `PlotRuntime.registerRenderer(name, renderer)`; a container picks one with `data-renderer`. The version
 scrubber (`scrubber.js`), the entity lifeline (`lifeline.js`, renderer `d3-lifeline`, drawn on canvas
 from `/api/v2/data/entity_lifeline`) and the organ-system UpSet chart (`upset.js`, renderer `d3-upset`,
-from `/api/v2/data/latest_organ_upset`) use D3, vendored in `static/vendor/`. A view that draws one SVG
-with its colours as attributes marks it `svg[data-export="svg"]`, and its download menu gets
-"PNG/SVG (as shown)" like the Plotly figures.
+from `/api/v2/data/latest_organ_upset`) use D3, vendored in `static/vendor/`. The AOP-AOP overlap
+(`overlap.js`) shows the server's cluster-ordered matrix in one tab and the same pairs as a Cytoscape
+graph in another (renderer `cytoscape-overlap`, from `/api/v2/data/latest_aop_aop_overlap`; Cytoscape
+loads when the tab is first opened), with one cluster picker and pair table for both. A view that draws
+one SVG with its colours as attributes marks it `svg[data-export="svg"]`, or builds one on request with
+`container.exportSvg()`, and its download menu gets "PNG/SVG (as shown)" like the Plotly figures.
+
+Snapshot downloads (`/download/latest/<plot>`) take the plot's settings as query parameters, as
+`/api/v2/data` does, and the page adds them to every download link, so a file holds what is shown.
 
 ```bash
 npm ci && npx playwright install chromium

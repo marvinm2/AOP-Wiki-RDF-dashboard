@@ -39,7 +39,7 @@ test('snapshot export: named with the version and settings', async ({ page }) =>
     await installStubs(page);
     await page.goto(`/snapshot?version=${VERSIONS[2]}&min_jaccard=0.5`);
     const name = 'latest_aop_aop_overlap';
-    const plot = page.locator(`.lazy-plot[data-plot-name="${name}"]`);
+    const plot = page.locator('.overlap-panel--matrix .lazy-plot');  // the matrix tab (#185)
     await plot.scrollIntoViewIfNeeded();
     await expect(plot.locator('.js-plotly-plot')).toBeVisible();
     expect((await exportFrom(page, name, 'png')).suggestedFilename())
