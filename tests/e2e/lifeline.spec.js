@@ -67,7 +67,7 @@ test('brushing rows lists them with links to AOP-Wiki; hover names a cell', asyn
     const caption = view.locator('.lifeline-rows caption');
     await expect(caption).toHaveText(/^\d+ KEs selected \(rows 1 to \d+ of 300\)$/);
     const first = view.locator('.lifeline-rows tbody tr').first();
-    await expect(first.getByRole('link')).toHaveAttribute('href', /^https:\/\/aopwiki\.org\/events\/\d+$/);
+    await expect(first.getByRole('link')).toHaveAttribute('href', /^https:\/\/identifiers\.org\/aop\.events\/\d+$/);
 
     await page.mouse.move(box.x + box.width * 0.95, box.y + box.height * 0.5);
     await expect(view.locator('.lifeline-tip')).toBeVisible();

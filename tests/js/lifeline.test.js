@@ -53,3 +53,10 @@ test('100K cells paint well under the render budget', () => {
     L.fillPixels(new Uint8ClampedArray(2907 * 35 * 4), rows, [1, 2, 3], [4, 5, 6]);
     assert.ok(performance.now() - t0 < 100);
 });
+
+test('only identifiers.org IRIs become links', () => {
+    assert.equal(L.linkable('https://identifiers.org/aop.events/54'), true);
+    assert.equal(L.linkable('javascript:alert(1)'), false);
+    assert.equal(L.linkable('http://example.org/x'), false);
+    assert.equal(L.linkable(undefined), false);
+});

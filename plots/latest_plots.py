@@ -1775,7 +1775,7 @@ def plot_latest_ke_reuse(version: str = None) -> str:
         # Truncate title for readability
         title_display = title[:50] + "..." if len(title) > 50 else title
         label = f"KE {ke_id}: {title_display}"
-        wiki_url = f"https://aopwiki.org/events/{ke_id}"
+        wiki_url = ke_uri  # identifiers.org IRI, resolves to the AOP-Wiki page
         data.append({
             "KE": label,
             "KE ID": ke_id,

@@ -552,22 +552,8 @@ def plot_entity_cumulative_removed() -> tuple[str, pd.DataFrame]:
 # --- Entity lifeline (#183) -------------------------------------------------
 
 # Page on aopwiki.org for each entity namespace (identifiers.org IRIs).
-_AOPWIKI_PAGES = {
-    "https://identifiers.org/aop/": "https://aopwiki.org/aops/",
-    "https://identifiers.org/aop.events/": "https://aopwiki.org/events/",
-    "https://identifiers.org/aop.relationships/": "https://aopwiki.org/relationships/",
-    "https://identifiers.org/aop.stressor/": "https://aopwiki.org/stressors/",
-}
 _LIFELINE_SHORT = {"AOPs": "AOP", "KEs": "KE", "KERs": "KER", "Stressors": "Stressor"}
 LIFELINE_STATUSES = ("always present", "added", "returned", "removed")
-
-
-def aopwiki_page(uri: str) -> str:
-    """The aopwiki.org page of an entity IRI, or '' for an unknown namespace."""
-    for prefix, page in _AOPWIKI_PAGES.items():
-        if uri.startswith(prefix):
-            return page + uri[len(prefix):]
-    return ""
 
 
 # Presence strings use "x" (present) and "-" (absent), oldest version first:
@@ -619,7 +605,6 @@ def lifeline_rows(entity_type: str, uris_by_version: dict, versions: list,
             "status": status,
             "presence": presence,
             "uri": uri,
-            "aopwiki_url": aopwiki_page(uri),
             "_order": (first, -last, int(number) if number.isdigit() else 0),
         })
     rows.sort(key=lambda r: r["_order"])

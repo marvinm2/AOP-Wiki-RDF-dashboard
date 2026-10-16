@@ -13,7 +13,7 @@
  * - One entity type at a time (buttons), optionally one status (select); both
  *   live in the page state (?entity=, ?status=).
  * - Selecting rows (a y-brush, or the arrow keys on the focused chart) lists
- *   them in a table below, with links to AOP-Wiki. Shift with the arrows
+ *   them in a table below, with each ID linked to its identifiers.org IRI (which resolves to AOP-Wiki). Shift with the arrows
  *   resizes the selection, Page Up/Down moves it by its own height, Escape
  *   clears it. Hovering a cell names the entity and the snapshot.
  * - Colours: the entity type's brand colour from static/data/tokens.json, in
@@ -107,7 +107,13 @@
             + counts.map(([s, c]) => `${fmt(c)} ${s}`).join(', ') + '.';
     }
 
-    const api = { TYPES, STATUSES, rowsFor, rowSpan, moveWindow, rgb, fillPixels, summary };
+    // The table links each entity's own IRI; identifiers.org resolves it to
+    // the AOP-Wiki page. Anything else stays plain text.
+    function linkable(uri) {
+        return typeof uri === 'string' && uri.startsWith('https://identifiers.org/');
+    }
+
+    const api = { TYPES, STATUSES, rowsFor, linkable, rowSpan, moveWindow, rgb, fillPixels, summary };
     if (typeof module !== 'undefined' && module.exports) {
         module.exports = api;
         return;
@@ -277,7 +283,7 @@
                     <caption>${picked.length.toLocaleString('en-US')} ${type} selected (rows ${a + 1} to ${b} of ${rows.length.toLocaleString('en-US')})</caption>
                     <thead><tr><th scope="col">ID</th><th scope="col">Name</th><th scope="col">First seen</th><th scope="col">Last seen</th><th scope="col">Snapshots</th><th scope="col">Returns</th><th scope="col">Status</th></tr></thead>
                     <tbody>${shown.map((i) => `<tr>
-                        <td>${data.aopwiki_url[i] ? `<a href="${escapeHtml(data.aopwiki_url[i])}" target="_blank" rel="noopener">${cell('id', i)}</a>` : cell('id', i)}</td>
+                        <td>${linkable(data.uri[i]) ? `<a href="${escapeHtml(data.uri[i])}" target="_blank" rel="noopener">${cell('id', i)}</a>` : cell('id', i)}</td>
                         <td>${cell('label', i)}</td><td>${cell('first_seen', i)}</td><td>${cell('last_seen', i)}</td>
                         <td>${cell('snapshots_present', i)}</td><td>${cell('returns', i)}</td><td>${cell('status', i)}</td></tr>`).join('')}
                     </tbody></table></div>

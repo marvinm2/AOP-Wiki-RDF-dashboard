@@ -557,7 +557,7 @@
         "title": "Most Reused Key Events",
         "description": "Shows the top 30 Key Events that appear in the most AOPs, revealing shared biology across adverse outcome pathways. Clicking a bar opens the corresponding KE page on AOP-Wiki.",
         "data_source": "SPARQL query counts distinct AOPs per Key Event via aopo:has_key_event relationships. Only KEs appearing in more than one AOP are shown. KE titles are retrieved via dc:title.",
-        "limitations": "Limited to the top 30 most reused KEs. KE titles may be truncated for readability. The count reflects explicit aopo:has_key_event declarations in the RDF data. Entity links open https://aopwiki.org/events/{id} in a new tab.",
+        "limitations": "Limited to the top 30 most reused KEs. KE titles may be truncated for readability. The count reflects explicit aopo:has_key_event declarations in the RDF data. Entity links open the KE's identifiers.org IRI (https://identifiers.org/aop.events/{id}), which resolves to its AOP-Wiki page, in a new tab.",
         "queries": [
             {
                 "caption": "Identify latest graph (AOP anchor)",
