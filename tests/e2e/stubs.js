@@ -87,7 +87,7 @@ const STATUS_OF = (p) => (p.endsWith('-') ? 'removed' : /x-+x/.test(p) ? 'return
 function lifelineData() {
     const n = VERSIONS.length;
     const cols = { entity_type: [], id: [], label: [], first_seen: [], last_seen: [], snapshots_present: [],
-        returns: [], status: [], presence: [], uri: [], aopwiki_url: [] };
+        returns: [], status: [], presence: [], uri: [] };
     const asc = VERSIONS.slice().reverse();
     Object.entries(LIFELINE_SIZES).forEach(([type, size]) => {
         for (let i = 0; i < size; i++) {
@@ -106,7 +106,6 @@ function lifelineData() {
             cols.status.push(STATUS_OF(p));
             cols.presence.push(p);
             cols.uri.push(`https://identifiers.org/aop.events/${number}`);
-            cols.aopwiki_url.push(`https://aopwiki.org/events/${number}`);
         }
     });
     const columns = Object.keys(cols).map((name) => ({ name, type: 'string' }));

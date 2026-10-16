@@ -8,7 +8,7 @@ import pandas as pd
 import pytest
 
 from plots import data_api, shared
-from plots.trends_plots import aopwiki_page, lifeline_rows, lifeline_status
+from plots.trends_plots import lifeline_rows, lifeline_status
 
 V = ["2024-01-01", "2024-04-01", "2024-07-01", "2024-10-01"]
 KE = "https://identifiers.org/aop.events/"
@@ -40,14 +40,8 @@ def test_rows_order_by_arrival_then_lifetime_then_number():
     assert nine["presence"] == "xx-x" and nine["status"] == "returned" and nine["returns"] == 1
     assert nine["first_seen"] == V[0] and nine["last_seen"] == V[3] and nine["snapshots_present"] == 3
     assert rows[2]["label"] == "Increase, X" and rows[2]["status"] == "added"
-    assert nine["aopwiki_url"] == "https://aopwiki.org/events/9"
+    assert nine["uri"] == KE + "9" and "aopwiki_url" not in nine
 
-
-def test_aopwiki_pages():
-    assert aopwiki_page("https://identifiers.org/aop/12") == "https://aopwiki.org/aops/12"
-    assert aopwiki_page("https://identifiers.org/aop.relationships/5") == "https://aopwiki.org/relationships/5"
-    assert aopwiki_page("https://identifiers.org/aop.stressor/7") == "https://aopwiki.org/stressors/7"
-    assert aopwiki_page("http://example.org/x") == ""
 
 
 def test_csv_download_equals_the_v2_data(monkeypatch):
