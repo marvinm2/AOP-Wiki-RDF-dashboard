@@ -674,8 +674,25 @@ def _export_response(plot_name, *, filename_base=None, version=None, start=None,
 
 @app.route("/download/latest/<plot_name>")
 def download_latest_generic(plot_name):
-    """Snapshot plot download by suffix: /download/latest/ke_reuse -> latest_ke_reuse."""
-    return _export_response(f'latest_{plot_name}', version=request.args.get('version'))
+    """Snapshot plot download by suffix: /download/latest/ke_reuse -> latest_ke_reuse.
+
+    A plot with settings (scope, min_jaccard, ...) is rendered for the settings
+    in the query string, as /api/v2/data does, so the file holds what the page
+    shows rather than whichever setting this worker rendered last (#185).
+    """
+    name = f'latest_{plot_name}'
+    version = request.args.get('version')
+    spec = registry.BY_ID.get(registry.DOWNLOAD_ALIASES.get(name, name))
+    if spec is None or not spec.params:
+        return _export_response(name, version=version)
+    settings = {k: request.args[k] for k in spec.params if request.args.get(k)}
+    with _capture_lock(spec.id):
+        try:
+            _capture_plot(spec, version, settings)
+        except Exception as e:
+            logger.error(f"Download render of {name} failed: {e}")
+            return "Download failed: the plot could not be rendered", 500
+        return _export_response(name, version=version)
 
 
 @app.route("/download/trend/<plot_name>")
@@ -919,9 +936,15 @@ def api_v2_manifest():
 
 # One render at a time per plot: the data and figure caches are keyed by plot
 # and version but not by setting, so two concurrent renders of one plot with
-# different settings would race on the same cache entry.
+# different settings would race on the same cache entry. Re-entrant, so a
+# download can hold it across the render and the export that reads it back.
 _capture_locks: dict = {}
 _capture_locks_guard = threading.Lock()
+
+
+def _capture_lock(plot_id):
+    with _capture_locks_guard:
+        return _capture_locks.setdefault(plot_id, threading.RLock())
 
 
 def _capture_plot(spec, version, settings):
@@ -939,9 +962,7 @@ def _capture_plot(spec, version, settings):
 
     resolved = plots.resolve_version(version)
     key = plot_cache_key(spec.id, resolved)
-    with _capture_locks_guard:
-        lock = _capture_locks.setdefault(spec.id, threading.Lock())
-    with lock:
+    with _capture_lock(spec.id):
         if settings or key not in _plot_data_cache or spec.params:
             LATEST_PLOT_FUNCTIONS[spec.id](resolved, **settings)
         return _plot_data_cache.get(key), _plot_figure_cache.get(key), resolved

@@ -63,8 +63,16 @@
         return container.querySelector('.js-plotly-plot');
     }
 
+    /** The SVG of a drawn D3 view, or one a view builds on request (exportSvg, e.g. the overlap graph). */
     function svgOf(container) {
+        if (typeof container.exportSvg === 'function') return container.exportSvg();
         return container.querySelector('svg[data-export="svg"]');
+    }
+
+    /** The container a menu item exports: the one on screen when a plot has two (tabs, #185). */
+    function containerFor(name) {
+        var all = Array.prototype.slice.call(document.querySelectorAll('.lazy-plot[data-plot-name="' + name + '"]'));
+        return all.filter(function (el) { return el.offsetParent !== null; })[0] || all[0] || null;
     }
 
     /** Standalone SVG text of a drawn D3 view, without its pointer hit areas. */
@@ -133,7 +141,7 @@
     }
 
     function addItems(container) {
-        if (!figureOf(container) && !svgOf(container)) return;  // nothing to save as drawn (e.g. the canvas lifeline)
+        if (!figureOf(container) && typeof container.exportSvg !== 'function' && !svgOf(container)) return;  // nothing to save as drawn (e.g. the canvas lifeline)
         var menu = menuFor(container);
         var name = container.dataset.plotName;
         if (!menu || menu.querySelector('[data-export-format]')) return;
@@ -188,7 +196,7 @@
         document.addEventListener('click', function (event) {
             var item = event.target && event.target.closest && event.target.closest('[data-export-format]');
             if (!item) return;
-            var container = document.querySelector('.lazy-plot[data-plot-name="' + item.dataset.exportFor + '"]');
+            var container = containerFor(item.dataset.exportFor);
             if (!container) return;
             download(container, item.dataset.exportFormat).catch(function (e) {
                 console.error('Export of ' + item.dataset.exportFor + ' failed:', e);

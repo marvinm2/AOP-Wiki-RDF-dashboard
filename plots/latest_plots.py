@@ -3765,41 +3765,206 @@ def score_ke_set_similarity(ke_sets: dict, min_jaccard: float = 0.34,
     return scored
 
 
+def _aop_number(iri: str) -> int:
+    """The number at the end of an AOP IRI (0 if there is none), for ordering."""
+    tail = iri.rstrip("/").rsplit("/", 1)[-1]
+    return int(tail) if tail.isdigit() else 0
+
+
+def _jaccard(a: set, b: set) -> float:
+    union = len(a | b)
+    return len(a & b) / union if union else 0.0
+
+
+def overlap_clusters(scored: list) -> list:
+    """Clusters of the thresholded pair graph, largest first (#185).
+
+    Connected components (single linkage), each a list of AOP IRIs in AOP
+    number order; ties between equal-sized clusters go to the lowest AOP
+    number, so a cluster keeps its place between renders (#220).
+    """
+    import networkx as nx
+    G = nx.Graph()
+    G.add_edges_from((a, b) for _, _, a, b in scored)
+    comps = [sorted(c, key=lambda n: (_aop_number(n), n)) for c in nx.connected_components(G)]
+    return sorted(comps, key=lambda c: (-len(c), _aop_number(c[0]), c[0]))
+
+
+def overlap_order(clusters: list, ke_sets: dict) -> list:
+    """The matrix order (#185): clusters one after another, largest first.
+
+    Inside a cluster of three or more, AOPs follow the leaf order of an
+    average-linkage tree on Jaccard distance (with optimal leaf ordering), so
+    the most similar AOPs sit next to each other and a cluster's sub-families
+    show as darker sub-blocks. The tree uses every pair in the cluster, also
+    those below the threshold that single linkage chained through.
+    """
+    import numpy as np
+    from scipy.cluster.hierarchy import leaves_list, linkage
+    from scipy.spatial.distance import squareform
+
+    order = []
+    for nodes in clusters:
+        if len(nodes) > 2:
+            n = len(nodes)
+            dist = np.zeros((n, n))
+            for i in range(n):
+                for j in range(i + 1, n):
+                    dist[i, j] = dist[j, i] = 1.0 - _jaccard(ke_sets[nodes[i]], ke_sets[nodes[j]])
+            tree = linkage(squareform(dist, checks=False), method="average", optimal_ordering=True)
+            nodes = [nodes[i] for i in leaves_list(tree)]
+        order.extend(nodes)
+    return order
+
+
+OVERLAP_COLUMNS = [
+    "cluster_id", "cluster_size", "aop1", "aop1_id", "aop1_title", "n_kes_aop1",
+    "aop2", "aop2_id", "aop2_title", "n_kes_aop2", "jaccard", "shared_kes",
+    "identical_ke_set", "matrix_row", "matrix_col", "Version",
+]
+
+
+def overlap_rows(scored: list, ke_sets: dict, titles: dict, version_label: str) -> pd.DataFrame:
+    """One row per AOP pair at or above the threshold: the matrix's coloured cells (#185).
+
+    ``matrix_row`` < ``matrix_col`` are the pair's positions in the matrix
+    order, and aop1 is the earlier of the two, so the rows rebuild the drawn
+    matrix exactly. Rows come in matrix order, which keeps a cluster's pairs
+    together, largest cluster first.
+    """
+    clusters = overlap_clusters(scored)
+    position = {n: i for i, n in enumerate(overlap_order(clusters, ke_sets))}
+    cluster_of = {n: (k + 1, len(c)) for k, c in enumerate(clusters) for n in c}
+    rows = []
+    for jaccard, shared, a, b in scored:
+        if position[a] > position[b]:
+            a, b = b, a
+        rows.append({
+            "cluster_id": cluster_of[a][0],
+            "cluster_size": cluster_of[a][1],
+            "aop1": a, "aop1_id": f"AOP {_aop_number(a)}", "aop1_title": titles.get(a, ""),
+            "n_kes_aop1": len(ke_sets.get(a, ())),
+            "aop2": b, "aop2_id": f"AOP {_aop_number(b)}", "aop2_title": titles.get(b, ""),
+            "n_kes_aop2": len(ke_sets.get(b, ())),
+            "jaccard": round(jaccard, 4),
+            "shared_kes": shared,
+            "identical_ke_set": jaccard >= 1.0,
+            "matrix_row": position[a],
+            "matrix_col": position[b],
+            "Version": version_label,
+        })
+    df = pd.DataFrame(rows, columns=OVERLAP_COLUMNS)
+    return df.sort_values(["matrix_row", "matrix_col"]).reset_index(drop=True)
+
+
+OVERLAP_PAIR_GREY = "#B8B8B8"
+
+
+def overlap_cluster_colours(df: pd.DataFrame) -> dict:
+    """{cluster_id: colour}: palette colours for clusters of 3+, grey for pairs.
+
+    Large clusters come first, so the most distinct hues land on the biggest
+    families. Magenta is left out: it marks identical KE sets. The graph tab
+    (static/js/viz/overlap.js) applies the same rule.
+    """
+    palette = [c for c in BRAND_COLORS["palette"] if c != BRAND_COLORS["magenta"]]
+    colours, k = {}, 0
+    sizes = df.groupby("cluster_id")["cluster_size"].first().sort_index()
+    for cid, size in sizes.items():
+        if size >= 3:
+            colours[int(cid)] = palette[k % len(palette)]
+            k += 1
+        else:
+            colours[int(cid)] = OVERLAP_PAIR_GREY
+    return colours
+
+
+def _render_overlap_matrix(df: pd.DataFrame, min_jaccard: float, version_label: str,
+                           cap_note: str = "") -> go.Figure:
+    """The cluster-ordered adjacency matrix, drawn from the rows alone (#185)."""
+    n = int(df["matrix_col"].max()) + 1
+    labels = [""] * n
+    for pos, aop_id in list(zip(df["matrix_row"], df["aop1_id"])) + list(zip(df["matrix_col"], df["aop2_id"])):
+        labels[int(pos)] = aop_id
+    z = [[None] * n for _ in range(n)]
+    for r, c, j in zip(df["matrix_row"], df["matrix_col"], df["jaccard"]):
+        z[int(r)][int(c)] = z[int(c)][int(r)] = float(j)
+
+    blue_scale = [[0.0, BRAND_COLORS["sky_blue"]], [0.5, BRAND_COLORS["blue"]], [1.0, BRAND_COLORS["primary"]]]
+    traces = [go.Heatmap(
+        x=labels, y=labels, z=z, zmin=min_jaccard, zmax=1.0, colorscale=blue_scale,
+        hoverongaps=False, xgap=0, ygap=0,
+        colorbar=dict(title=dict(text="Jaccard"), thickness=12, len=0.5),
+        hovertemplate="%{y} × %{x}<br>Jaccard %{z:.2f}<extra></extra>",
+    )]
+    same = df[df["identical_ke_set"]]
+    if not same.empty:
+        traces.append(go.Scatter(
+            x=list(same["aop2_id"]) + list(same["aop1_id"]),
+            y=list(same["aop1_id"]) + list(same["aop2_id"]),
+            mode="markers", name="Identical KE set",
+            marker=dict(symbol="square-open", size=7, color=BRAND_COLORS["magenta"], line=dict(width=1.5)),
+            hovertemplate="%{y} × %{x}<br>Identical Key Event sets<extra></extra>",
+        ))
+
+    colours = overlap_cluster_colours(df)
+    spans = df.groupby("cluster_id").agg(lo=("matrix_row", "min"), hi=("matrix_col", "max"),
+                                          size=("cluster_size", "first"))
+    shapes = [
+        dict(type="rect", xref="x", yref="y", x0=lo - 0.5, x1=hi + 0.5, y0=lo - 0.5, y1=hi + 0.5,
+             line=dict(color=colours[int(cid)], width=1.5), fillcolor="rgba(0,0,0,0)")
+        for cid, (lo, hi, size) in spans.iterrows() if size >= 3
+    ]
+    n_clusters = len(spans)
+    big = int((spans["size"] >= 3).sum())
+    n_same = len(same)
+    same_note = f" Magenta squares: {n_same} pair(s) with identical KE sets." if n_same else ""
+    axis = dict(type="category", showgrid=False, zeroline=False, ticks="", tickfont=dict(size=8),
+                constrain="domain")
+    fig = go.Figure(data=traces)
+    fig.update_layout(
+        title={"text": f"AOP-AOP overlap: {n} AOPs in {n_clusters} clusters<br><sub>"
+                       f"Jaccard ≥{min_jaccard:.2f} on Key Event sets, {len(df)} pairs, v{version_label}. "
+                       f"Ordered by cluster, largest first.<br>"
+                       f"Outlines: the {big} clusters of 3+ AOPs.{same_note}{cap_note}</sub>"},
+        xaxis=dict(axis, tickangle=-90),
+        yaxis=dict(axis, autorange="reversed", scaleanchor="x", scaleratio=1),
+        shapes=shapes,
+        plot_bgcolor="#FFFFFF",
+        margin=dict(l=70, r=30, t=110, b=70),
+        height=820,
+        showlegend=False,
+        hovermode="closest",
+    )
+    return fig
+
+
 @resolves_version
 def plot_latest_aop_aop_overlap(version: str = None, min_jaccard: float = 0.34,
                                 min_shared_kes: int = 2, max_pairs: int = 1000) -> str:
-    """AOP-AOP overlap network: nodes=AOPs, edges=Jaccard on KE sets (#67, #152).
+    """AOP-AOP overlap as a cluster-ordered adjacency matrix (#67, #152, #185).
 
-    Renders a force-directed graph of AOP pairs that reuse the same Key
-    Event records. Similarity is the Jaccard index over each AOP's set of
-    KE URIs — |A n B| / |A u B| — rather than the raw shared-KE count used
-    before #152. Raw counts are biased toward large AOPs: two 30-KE AOPs
-    sharing 5 KEs scored the same as two 6-KE AOPs sharing 5, though only
-    the latter pair is plausibly the same pathway written twice.
+    Similarity is the Jaccard index over each AOP's set of KE URIs,
+    |A n B| / |A u B|, rather than a raw shared-KE count: raw counts favour
+    large AOPs (two 30-KE AOPs sharing 5 KEs would score the same as two
+    6-KE AOPs sharing 5, though only the latter is plausibly the same pathway
+    written twice).
 
     Clusters are the connected components of the thresholded pair graph
-    (single-linkage). Node size = #KEs in the AOP; colour = cluster.
+    (single linkage). The matrix puts them on the diagonal, largest first,
+    with each cluster's AOPs in average-linkage leaf order. Every coloured
+    cell is a row of the CSV, which the page's graph tab draws as a network.
 
     Args:
-        version: Optional snapshot date string. Defaults to latest.
-        min_jaccard: Similarity threshold for drawing an edge. Default
-            0.34, clamped to [0.30, 0.60]. The floor is not cosmetic:
-            single-linkage chaining collapses the graph below it (at 0.20
-            one component swallows 227 of the 537 AOPs, at 0.25 it is 123,
-            at 0.30 it is 41). The slider above the plot drives this.
+        version: Snapshot date. Defaults to the latest.
+        min_jaccard: Similarity threshold for a pair. Default 0.34, clamped
+            to [0.30, 0.60]. The floor is not cosmetic: single linkage chains
+            below it (at 0.20 one cluster swallows 227 of 537 AOPs, at 0.25
+            it is 123, at 0.30 it is 41). The slider above the plot sets it.
         min_shared_kes: Absolute floor on the intersection size, so a pair
             of tiny AOPs cannot reach a high Jaccard on a single shared KE.
-            Currently inert on real snapshots (no pair at 0.34 involves a
-            1-KE AOP) — kept as a guard for future data.
-        max_pairs: Hard cap on edges rendered to protect Plotly perf.
+        max_pairs: Cap on pairs drawn, strongest first.
     """
-    import math
-    from collections import defaultdict
-    try:
-        import networkx as nx
-    except ImportError:
-        return create_fallback_plot("AOP-AOP Overlap Network", "networkx not installed")
-
     try:
         min_jaccard = max(0.30, min(0.60, float(min_jaccard)))
     except (TypeError, ValueError):
@@ -3809,28 +3974,12 @@ def plot_latest_aop_aop_overlap(version: str = None, min_jaccard: float = 0.34,
     except (TypeError, ValueError):
         min_shared_kes = 2
 
-    # Resolve target graph explicitly (we need it for follow-on title/status queries).
-    if version:
-        graph_uri = f"http://aopwiki.org/graph/{version}"
-    else:
-        latest_q = """
-        SELECT ?graph WHERE {
-            GRAPH ?graph { ?s a aopo:AdverseOutcomePathway . }
-            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-        } GROUP BY ?graph ORDER BY DESC(?graph) LIMIT 1
-        """
-        res = run_sparql_query(latest_q)
-        if not res:
-            return create_fallback_plot("AOP-AOP Overlap Network", "No data")
-        graph_uri = res[0]['graph']['value']
+    graph_uri = f"http://aopwiki.org/graph/{version}"
+    cache_key = f"latest_aop_aop_overlap_{version}"
 
-    version_str = graph_uri.rsplit('/', 1)[-1]
-
-    # Pull every (AOP, KE) membership once and score in Python. Doing the
-    # pairwise comparison in SPARQL (a self-join with HAVING) can only
-    # threshold on the raw intersection size — Jaccard needs each AOP's set
-    # size too, so one flat pull plus arithmetic here is both cheaper and
-    # more expressive. ~3.7k rows for 537 AOPs on the 2026-07-01 snapshot.
+    # Pull every (AOP, KE) membership once and score in Python. A SPARQL
+    # self-join can only threshold on the raw intersection size; Jaccard
+    # needs each AOP's set size too. ~3.7k rows for 537 AOPs (2026-07-01).
     ke_q = f"""
     SELECT ?aop ?ke
     WHERE {{
@@ -3841,7 +3990,7 @@ def plot_latest_aop_aop_overlap(version: str = None, min_jaccard: float = 0.34,
     """
     ke_rows = run_sparql_query(ke_q)
     if not ke_rows:
-        return create_fallback_plot("AOP-AOP Overlap Network", "No Key Event data")
+        return create_fallback_plot("AOP-AOP Overlap", "No Key Event data")
 
     ke_sets: dict = defaultdict(set)
     for r in ke_rows:
@@ -3849,227 +3998,43 @@ def plot_latest_aop_aop_overlap(version: str = None, min_jaccard: float = 0.34,
 
     scored = score_ke_set_similarity(ke_sets, min_jaccard, min_shared_kes)
     if not scored:
+        # Cache the empty table, so the graph tab and CSV say "no pairs" for
+        # this threshold rather than showing another threshold's.
+        _plot_data_cache[cache_key] = pd.DataFrame(columns=OVERLAP_COLUMNS)
+        _plot_figure_cache[cache_key] = None
         return create_fallback_plot(
-            "AOP-AOP Overlap Network",
-            f"No AOP pairs reach Jaccard {min_jaccard:.2f} in this snapshot."
-        )
+            "AOP-AOP Overlap", f"No AOP pairs reach Jaccard {min_jaccard:.2f} in this snapshot.")
 
-    # score_ke_set_similarity returns strongest-first, so the cap (if it binds)
-    # keeps the most meaningful edges rather than an arbitrary slice.
-    truncated = len(scored) > max_pairs
-    edges = scored[:max_pairs]
+    # Strongest first, so the cap (if it binds) keeps the most meaningful pairs.
+    cap_note = (f"<br>Showing the {max_pairs} strongest of {len(scored)} pairs."
+                if len(scored) > max_pairs else "")
+    scored = scored[:max_pairs]
 
-    # Per-AOP metadata for nodes that appear in any edge.
-    aop_uris = sorted({e[2] for e in edges} | {e[3] for e in edges})
-
-    # Fetch labels in chunks. The shared SPARQL helper issues GET, so a single
-    # VALUES block covering every node silently overruns the URL length limit
-    # and Virtuoso rejects the truncated query (SP030, "Bad character '%'").
-    # That bit once the edge cap was raised and the node count passed ~200.
+    # Titles in chunks: the shared helper issues GET, and one VALUES block over
+    # every AOP overruns the URL limit (Virtuoso SP030) past ~200 AOPs.
+    aop_uris = sorted({e[2] for e in scored} | {e[3] for e in scored})
+    titles = {}
     META_CHUNK = 100
-    meta = []
     for start in range(0, len(aop_uris), META_CHUNK):
         values_block = ' '.join(f'<{u}>' for u in aop_uris[start:start + META_CHUNK])
-        # KE counts come from ke_sets above — this query only needs the labels.
         meta_q = f"""
-        SELECT ?aop ?title ?status
+        SELECT ?aop ?title
         WHERE {{
             GRAPH <{graph_uri}> {{
                 VALUES ?aop {{ {values_block} }}
                 ?aop a aopo:AdverseOutcomePathway .
                 OPTIONAL {{ ?aop <http://purl.org/dc/elements/1.1/title> ?title }}
-                OPTIONAL {{ ?aop <http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25688> ?s . BIND(STR(?s) AS ?status) }}
             }}
         }}
         """
-        meta.extend(run_sparql_query(meta_q) or [])
+        for r in run_sparql_query(meta_q) or []:
+            uri = r.get('aop', {}).get('value', '')
+            titles[uri] = " ".join(r.get('title', {}).get('value', '').split())
 
-    meta_by_uri = {}
-    for r in meta:
-        uri = r.get('aop', {}).get('value', '')
-        meta_by_uri[uri] = {
-            'title': r.get('title', {}).get('value', uri.rsplit('/', 1)[-1]),
-            'ke_count': len(ke_sets.get(uri, ())),
-            'status': r.get('status', {}).get('value', 'No Status'),
-        }
-
-    # Build graph.
-    G = nx.Graph()
-    for u in aop_uris:
-        info = meta_by_uri.get(u, {'title': u.rsplit('/', 1)[-1],
-                                   'ke_count': len(ke_sets.get(u, ())),
-                                   'status': 'No Status'})
-        G.add_node(u, **info)
-    for jaccard, shared, a, b in edges:
-        G.add_edge(a, b, jaccard=jaccard, shared_kes=shared,
-                   identical=(jaccard >= 1.0))
-
-    # Detect connected components (each is a cluster of mutually-overlapping
-    # AOPs) and lay them out separately so the picture reads as discrete
-    # families rather than one entangled hairball.
-    # Ties broken by AOP so equal-sized components keep their grid cell (#220).
-    components = sorted(nx.connected_components(G), key=lambda c: (-len(c), min(c)))
-    comp_size: dict = {n: len(comp) for comp in components for n in comp}
-    pos: dict = {}
-    n_cols = max(1, int(math.ceil(math.sqrt(len(components)))))
-    for i, comp in enumerate(components):
-        # A subgraph view iterates its nodes in set order, which changes per
-        # process; spring_layout seeds from that order, so rebuild it sorted (#220).
-        sub = nx.Graph()
-        sub.add_nodes_from(sorted(comp))
-        sub.add_edges_from(sorted(tuple(sorted(e)) for e in G.subgraph(comp).edges()))
-        # Stronger repulsion (larger k) + more iterations so nodes inside the
-        # dense clusters spread out instead of piling on top of each other (#plot-review).
-        sub_pos = nx.spring_layout(
-            sub, k=2.6 / math.sqrt(max(1, len(sub))), iterations=120, seed=42,
-        )
-        # Tile components on a square grid; centre each on its grid cell.
-        col, row = i % n_cols, i // n_cols
-        for n, (x, y) in sub_pos.items():
-            pos[n] = (x + col * 3.6, y - row * 3.6)
-
-    # Colour only carries meaning for the multi-AOP clusters: give clusters of
-    # 3+ AOPs a saturated palette colour (large clusters first, so the most
-    # distinct hues land on the biggest families) and grey out the many 2-AOP
-    # pairs. This avoids promising 45 distinguishable hues the palette can't
-    # deliver (#plot-review).
-    palette = BRAND_COLORS['palette']
-    PAIR_GREY = '#B8B8B8'
-    cluster_color: dict = {}
-    big_idx = 0
-    for comp in components:
-        if len(comp) >= 3:
-            c = palette[big_idx % len(palette)]
-            big_idx += 1
-        else:
-            c = PAIR_GREY
-        for n in comp:
-            cluster_color[n] = c
-
-    # Two edge traces. Pairs whose KE sets are *identical* (Jaccard 1.0) are
-    # the actionable curator finding — the same pathway entered twice — so
-    # they get their own heavier, saturated trace instead of blending into
-    # the general overlap mesh.
-    edge_x, edge_y = [], []
-    dup_x, dup_y = [], []
-    for a, b, attrs in G.edges(data=True):
-        x0, y0 = pos[a]; x1, y1 = pos[b]
-        if attrs.get('identical'):
-            dup_x += [x0, x1, None]
-            dup_y += [y0, y1, None]
-        else:
-            edge_x += [x0, x1, None]
-            edge_y += [y0, y1, None]
-    edge_trace = go.Scatter(
-        x=edge_x, y=edge_y,
-        mode='lines',
-        line=dict(color='rgba(50,50,80,0.25)', width=1),
-        hoverinfo='none',
-        showlegend=False,
-    )
-    dup_trace = go.Scatter(
-        x=dup_x, y=dup_y,
-        mode='lines',
-        line=dict(color=BRAND_COLORS['magenta'], width=3),
-        hoverinfo='none',
-        name='Identical KE set (outlined)',
-        showlegend=bool(dup_x),
-    )
-
-    # Nodes with an identical twin get a magenta outline. Inside the dense
-    # clusters the two AOPs of such a pair are laid out almost on top of each
-    # other, so the magenta *edge* between them is close to zero-length and
-    # invisible; the outline survives that.
-    duplicate_nodes = {n for a, b, attrs in G.edges(data=True)
-                       if attrs.get('identical') for n in (a, b)}
-
-    # Single node trace. Print AOP-ID labels only in the smaller clusters; in the
-    # dense clusters labels overprint into an unreadable smudge, so those surface
-    # their AOP ID on hover instead (#plot-review).
-    LABEL_MAX_CLUSTER = 5
-    xs, ys, texts, hovers, sizes, colors = [], [], [], [], [], []
-    outline_colors, outline_widths = [], []
-    for n, d in G.nodes(data=True):
-        x, y = pos[n]
-        xs.append(x); ys.append(y)
-        short = n.rsplit('/', 1)[-1]
-        texts.append(short if comp_size.get(n, 1) <= LABEL_MAX_CLUSTER else "")
-        is_dup = n in duplicate_nodes
-        dup_line = "<br><b>Identical KE set to another AOP</b>" if is_dup else ""
-        hovers.append(f"<b>AOP {short}</b><br>{d['title']}<br>KEs: {d['ke_count']}"
-                      f"<br>OECD: {d['status']}{dup_line}")
-        sizes.append(10 + math.sqrt(max(1, d['ke_count'])) * 2.5)
-        colors.append(cluster_color.get(n, palette[0]))
-        outline_colors.append(BRAND_COLORS['magenta'] if is_dup else 'white')
-        outline_widths.append(3 if is_dup else 1)
-    node_trace = go.Scatter(
-        x=xs, y=ys,
-        mode='markers+text',
-        marker=dict(size=sizes, color=colors,
-                    line=dict(color=outline_colors, width=outline_widths)),
-        text=texts,
-        textposition='top center',
-        textfont=dict(size=9, color=BRAND_COLORS['primary']),
-        hovertext=hovers,
-        hoverinfo='text',
-        showlegend=False,
-    )
-
-    n_identical = sum(1 for _, _, a in G.edges(data=True) if a.get('identical'))
-    dup_note = (f" {n_identical} pair(s) have identical KE sets — outlined in magenta."
-                if n_identical else "")
-    cap_note = (f" Showing the {max_pairs} strongest of {len(scored)} pairs."
-                if truncated else "")
-    # Duplicate-pair edges are drawn last, i.e. on top of the node markers.
-    # Inside the dense clusters these edges are short and would otherwise sit
-    # underneath the nodes they connect, hiding the one finding on this chart
-    # a curator can act on directly.
-    fig = go.Figure(data=[edge_trace, node_trace, dup_trace])
-    fig.update_layout(
-        # Subtitle wrapped onto two <sub> lines so it doesn't run off the right
-        # canvas edge (#plot-review).
-        title={"text": f"AOP-AOP overlap network — {len(components)} cluster(s)<br><sub>"
-                       f"{G.number_of_nodes()} AOPs reach Jaccard ≥{min_jaccard:.2f} on their "
-                       f"Key Event sets ({G.number_of_edges()} edges, v{version_str}).{cap_note}<br>"
-                       f"Saturated colour = a 3+ AOP cluster, grey = a 2-AOP pair; "
-                       f"labels shown for smaller clusters, hover any node for its AOP ID.{dup_note}</sub>"},
-        xaxis=dict(visible=False),
-        yaxis=dict(visible=False, scaleanchor='x', scaleratio=1),
-        margin=dict(l=30, r=30, t=95, b=30),
-        height=700,
-        hovermode='closest',
-    )
-
-    # Cache. The per-edge frame carries the cluster assignment so the CSV is a
-    # curator-actionable list ("these N AOPs are the same pathway") rather than
-    # something you have to re-cluster by hand from the drawn picture (#152).
-    cluster_id = {n: i + 1 for i, comp in enumerate(components) for n in comp}
-    edge_df = pd.DataFrame([
-        {
-            'cluster_id': cluster_id.get(a, 0),
-            'cluster_size': comp_size.get(a, 1),
-            'aop1': a,
-            'aop2': b,
-            'aop1_title': meta_by_uri.get(a, {}).get('title', ''),
-            'aop2_title': meta_by_uri.get(b, {}).get('title', ''),
-            'jaccard': round(attrs['jaccard'], 4),
-            'shared_kes': attrs['shared_kes'],
-            'n_kes_aop1': len(ke_sets.get(a, ())),
-            'n_kes_aop2': len(ke_sets.get(b, ())),
-            'identical_ke_set': bool(attrs.get('identical')),
-            'Version': version_str,
-        }
-        for a, b, attrs in G.edges(data=True)
-    ])
-    if not edge_df.empty:
-        edge_df = edge_df.sort_values(
-            ['cluster_size', 'cluster_id', 'jaccard'],
-            ascending=[False, True, False],
-        ).reset_index(drop=True)
-    cache_key = f"latest_aop_aop_overlap_{version or 'latest'}"
-    _plot_data_cache[cache_key] = edge_df
+    df = overlap_rows(scored, ke_sets, titles, version)
+    fig = _render_overlap_matrix(df, min_jaccard, version, cap_note)
+    _plot_data_cache[cache_key] = df
     _plot_figure_cache[cache_key] = fig
-
     return render_plot_html(fig)
 
 

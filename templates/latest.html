@@ -127,10 +127,10 @@
             </div>
             {{ data_table_toggle('latest_aop_connectivity') }}
         </div>
-        <!-- AOP-AOP Overlap Network (#67) -->
+        <!-- AOP-AOP overlap: cluster-ordered matrix and graph (#67, #185) -->
         <div class="plot-box full-width" id="latest-aop-aop-overlap">
             <div class="plot-header">
-                <h3>AOP-AOP Overlap Network</h3>
+                <h3>AOP-AOP Overlap</h3>
                 <div class="aop-aop-threshold-control">
                     <label for="aop-aop-threshold-slider">
                         Min Jaccard similarity: <span id="aop-aop-threshold-value">0.34</span>
@@ -143,23 +143,48 @@
                     <button class="download-button dropdown-toggle">Download &#x25BC;</button>
                     <div class="dropdown-menu">
                         <a href="/download/latest/aop_aop_overlap?format=csv" class="dropdown-item">CSV</a>
-                        <a href="/download/latest/aop_aop_overlap?format=png" class="dropdown-item">PNG</a>
-                        <a href="/download/latest/aop_aop_overlap?format=svg" class="dropdown-item">SVG</a>
+                        <a href="/download/latest/aop_aop_overlap?format=png" class="dropdown-item">PNG (matrix)</a>
+                        <a href="/download/latest/aop_aop_overlap?format=svg" class="dropdown-item">SVG (matrix)</a>
                     </div>
                 </div>
             </div>
             <p class="plot-description">
-                Force-directed network where nodes are AOPs and edges connect AOP pairs that reuse the
-                same Key Event records. Similarity is the Jaccard index on each AOP's KE set, so overlap
-                is judged relative to how large the two AOPs are rather than by raw shared-KE count. Use
-                the slider above to adjust the threshold (range 0.30-0.60, default 0.34). Node colour =
-                cluster, node size = #KEs in the AOP; magenta edges mark pairs whose KE sets are
-                <em>identical</em> — the same pathway entered twice. Hover a node for its title and
-                metadata.
+                AOP pairs that reuse the same Key Event records. Similarity is the Jaccard index on each
+                AOP's KE set, so overlap is judged relative to how large the two AOPs are rather than by a
+                raw shared-KE count. Pairs at or above the threshold (slider, 0.30-0.60, default 0.34) form
+                clusters. The <em>matrix</em> puts the clusters on its diagonal, largest first, with each
+                cluster's most similar AOPs next to each other; the <em>graph</em> draws the same pairs as a
+                network. Magenta marks pairs whose KE sets are <em>identical</em>: the same pathway entered
+                twice. Pick a cluster, or click a cell or an AOP, to list its pairs.
             </p>
             {{ methodology_note(methodology_notes, 'latest_aop_aop_overlap') }}
-            <div class="lazy-plot" data-plot-name="latest_aop_aop_overlap">
-                <!-- Plot will be loaded here via JavaScript -->
+            <div class="overlap-view">
+                <div class="overlap-toolbar">
+                    <div class="segmented-control overlap-tabs" role="tablist" aria-label="Overlap view">
+                        <button type="button" role="tab" class="segmented-button is-active" data-tab="matrix"
+                                id="overlap-tab-matrix" aria-controls="overlap-panel-matrix" aria-selected="true">Matrix</button>
+                        <button type="button" role="tab" class="segmented-button" data-tab="graph" tabindex="-1"
+                                id="overlap-tab-graph" aria-controls="overlap-panel-graph" aria-selected="false">Graph</button>
+                    </div>
+                    <label class="overlap-cluster-label">Cluster
+                        <select class="overlap-cluster" disabled><option value="">All clusters</option></select>
+                    </label>
+                </div>
+                <div class="overlap-panel overlap-panel--matrix" role="tabpanel" id="overlap-panel-matrix"
+                     aria-labelledby="overlap-tab-matrix">
+                    <div class="lazy-plot" data-plot-name="latest_aop_aop_overlap" data-a11y="self">
+                        <!-- Plot will be loaded here via JavaScript -->
+                    </div>
+                </div>
+                <div class="overlap-panel overlap-panel--graph" role="tabpanel" id="overlap-panel-graph"
+                     aria-labelledby="overlap-tab-graph" hidden>
+                    <div class="lazy-plot overlap-graph" data-plot-name="latest_aop_aop_overlap"
+                         data-renderer="cytoscape-overlap"
+                         data-lib-src="{{ url_for('static', filename=vendor['cytoscape'].path) }}"
+                         data-lib-integrity="{{ vendor['cytoscape'].integrity }}"></div>
+                </div>
+                <p class="sr-only overlap-live" aria-live="polite"></p>
+                <div class="overlap-table"></div>
             </div>
             {{ data_table_toggle('latest_aop_aop_overlap') }}
         </div>
@@ -988,6 +1013,7 @@ window.TIMELINE_EVENTS = {{ timeline_events|tojson }};
 <script src="{{ url_for('static', filename='js/version-selector.js') }}"></script>
 <script src="{{ url_for('static', filename='js/viz/scrubber.js') }}"></script>
 <script src="{{ url_for('static', filename='js/viz/upset.js') }}"></script>
+<script src="{{ url_for('static', filename='js/viz/overlap.js') }}"></script>
 <script src="{{ url_for('static', filename='js/snapshot-controls.js') }}"></script>
 <script>
 // EXPL-04: clicking a KE in the KE-reuse plot opens it on AOP-Wiki. Every
