@@ -232,7 +232,11 @@ from `/api/v2/data/entity_lifeline`) and the organ-system UpSet chart (`upset.js
 from `/api/v2/data/latest_organ_upset`) use D3, vendored in `static/vendor/`. The AOP-AOP overlap
 (`overlap.js`) shows the server's cluster-ordered matrix in one tab and the same pairs as a Cytoscape
 graph in another (renderer `cytoscape-overlap`, from `/api/v2/data/latest_aop_aop_overlap`; Cytoscape
-loads when the tab is first opened), with one cluster picker and pair table for both. A view that draws
+loads when the tab is first opened), with one cluster picker and pair table for both. The AOP
+completeness beeswarm (`beeswarm.js`, renderer `plotly-beeswarm`, from
+`/api/v2/data/aop_completeness_beeswarm`) is Plotly: one dot per AOP for the snapshot at the end of the
+/trends range, with the AOP IRI as the dot's id so `Plotly.animate` slides each AOP to its new score
+when the range end moves (it jumps instead under `prefers-reduced-motion`). A view that draws
 one SVG with its colours as attributes marks it `svg[data-export="svg"]`, or builds one on request with
 `container.exportSvg()`, and its download menu gets "PNG/SVG (as shown)" like the Plotly figures.
 

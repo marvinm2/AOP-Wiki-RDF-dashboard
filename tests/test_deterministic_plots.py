@@ -84,6 +84,7 @@ STUBS = textwrap.dedent('''
     trends_plots.get_all_versions = lambda: [{"version": v} for v in VERSIONS]
     trends_plots._query_boxplot_version = box_version
     trends_plots._query_boxplot_entity_props = box_entity_props
+    trends_plots._query_aop_titles = lambda v: {f"{AOP}{a}": f"AOP title {a}" for a in MEMBERS}
     trends_plots.ThreadPoolExecutor = Pool
     # Finishing order varies run to run; tie it to the hash seed so it varies here too.
     trends_plots.as_completed = lambda futures: sorted(futures, key=lambda f: hash(futures[f]))
@@ -92,7 +93,8 @@ STUBS = textwrap.dedent('''
     case = sys.argv[1]
     if case == "boxplot":
         out = trends_plots.plot_aop_completeness_boxplot()
-        out = "".join(out) + trends_plots._plot_data_cache.get("aop_completeness_boxplot").to_csv()
+        out = ("".join(out) + trends_plots._plot_data_cache.get("aop_completeness_boxplot").to_csv()
+               + trends_plots._plot_data_cache.get("aop_completeness_beeswarm").to_csv())
     elif case == "overlap":
         out = plots.plot_latest_aop_aop_overlap("2026-10-01", min_jaccard=0.3, min_shared_kes=1)
     else:

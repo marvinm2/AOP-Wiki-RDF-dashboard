@@ -56,6 +56,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import logging
+import re
 from functools import reduce
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from .shared import (
@@ -3029,8 +3030,114 @@ def _query_boxplot_entity_props(version_info, aop_props, ke_props, ker_props,
         raise SparqlUnavailable(f"{type(e).__name__}: {e}") from e
 
 
-def plot_aop_completeness_boxplot(label_file="property_labels.csv") -> tuple[str, str]:
-    """Render two side-by-side composite-completeness boxplots: optional-only and all-properties.
+# --- AOP completeness beeswarm (#186) ------------------------------------------
+
+BEESWARM_COLUMNS = ["version", "aop", "aop_id", "aop_title",
+                    "completeness_optional", "completeness_all", "entity_count"]
+BEESWARM_RADIUS = 4.5    # dot radius in px (static/js/viz/beeswarm.js uses the same)
+BEESWARM_WIDTH = 1000    # plot-area width in px the server figure is laid out for
+
+
+def _query_aop_titles(version_info) -> dict[str, str]:
+    """AOP IRI -> title in one snapshot (the newest), for the beeswarm's hover."""
+    query = f"""
+    SELECT ?aop ?title
+    WHERE {{
+      GRAPH <{version_info["graph_uri"]}> {{
+        ?aop a aopo:AdverseOutcomePathway ;
+             dc:title ?title .
+      }}
+    }}
+    """
+    rows = run_sparql_query_with_retry(query, max_retries=2)
+    return {r["aop"]["value"]: r["title"]["value"] for r in rows}
+
+
+def _aop_sort_number(iri: str) -> int:
+    m = re.search(r"(\d+)$", iri)
+    return int(m.group(1)) if m else 10**9
+
+
+def beeswarm_rows(df_optional: pd.DataFrame, df_all: pd.DataFrame,
+                  titles: dict[str, str]) -> pd.DataFrame:
+    """One row per AOP per snapshot with both cohorts' scores (#186).
+
+    The beeswarm keys its dots on ``aop``, so the same AOP is the same dot in
+    every snapshot. Rows are in snapshot order, then AOP number.
+    """
+    key = ["version", "aop_uri"]
+    opt = df_optional[key + ["completeness"]].rename(columns={"completeness": "completeness_optional"})
+    full = df_all[key + ["completeness", "entity_count"]].rename(columns={"completeness": "completeness_all"})
+    df = opt.merge(full, on=key, how="outer").rename(columns={"aop_uri": "aop"})
+    df["aop_id"] = df["aop"].map(lambda iri: f"AOP {_aop_sort_number(iri)}")
+    df["aop_title"] = df["aop"].map(lambda iri: titles.get(iri, ""))
+    for col in ("completeness_optional", "completeness_all"):
+        df[col] = df[col].round(2)
+    df["entity_count"] = df["entity_count"].fillna(0).astype(int)
+    df["_n"] = df["aop"].map(_aop_sort_number)
+    df = df.sort_values(["version", "_n", "aop"], kind="mergesort").drop(columns="_n")
+    return df[BEESWARM_COLUMNS].reset_index(drop=True)
+
+
+def swarm_offsets(xs, radius: float) -> list[float]:
+    """Vertical offsets for dots at pixel positions ``xs`` so that none overlap.
+
+    Each dot, taken left to right (ties in input order), goes as close to the
+    axis as it can without touching a dot already placed: the classic
+    "dodge" beeswarm. static/js/viz/beeswarm.js has the same function, so the
+    server figure and the page agree.
+    """
+    order = sorted(range(len(xs)), key=lambda i: (xs[i], i))
+    placed: list[tuple[float, float]] = []   # (x, y), in placing order (x ascending)
+    out = [0.0] * len(xs)
+    d = 2 * radius
+    start = 0
+    for i in order:
+        x = xs[i]
+        while start < len(placed) and placed[start][0] < x - d:
+            start += 1
+        near = placed[start:]
+        candidates = [0.0]
+        for px, py in near:
+            dy = (d * d - (x - px) ** 2) ** 0.5
+            candidates += [py + dy, py - dy]
+        candidates.sort(key=lambda y: (abs(y), -y))
+        for y in candidates:
+            if all((x - px) ** 2 + (y - py) ** 2 >= d * d - 1e-6 for px, py in near):
+                break
+        out[i] = y
+        placed.append((x, y))
+    return out
+
+
+def _render_beeswarm(df: pd.DataFrame, version: str, column: str, y_title: str) -> go.Figure:
+    """The beeswarm of one snapshot, for the PNG/SVG downloads and /api/v2/figure."""
+    rows = df[df["version"] == version].dropna(subset=[column])
+    xs = [v / 100 * BEESWARM_WIDTH for v in rows[column]]
+    ys = swarm_offsets(xs, BEESWARM_RADIUS)
+    reach = max([abs(y) for y in ys] + [0]) + 2 * BEESWARM_RADIUS
+    fig = go.Figure(go.Scatter(
+        x=rows[column], y=ys, mode="markers", ids=rows["aop"],
+        customdata=rows[["aop", "aop_id", "aop_title"]].values,
+        marker=dict(size=2 * BEESWARM_RADIUS, color=BRAND_COLORS["primary"], opacity=0.75,
+                    line=dict(width=0.5, color="white")),
+        hovertemplate="<b>%{customdata[1]}</b> %{customdata[2]}<br>%{x:.1f}%<extra></extra>",
+    ))
+    median = rows[column].median() if len(rows) else 0
+    fig.update_layout(
+        title=dict(text=f"{len(rows)} AOPs in {version}, median {median:.1f}%", x=0.01),
+        # One y unit is one pixel, so the dots stay round and apart.
+        height=max(240, int(2 * reach) + 110), margin=dict(l=20, r=20, t=50, b=60), showlegend=False,
+        xaxis=dict(title=y_title, range=[-2, 102], zeroline=False),
+        yaxis=dict(visible=False, range=[-reach, reach], fixedrange=True),
+        hovermode="closest",
+    )
+    return fig
+
+
+def plot_aop_completeness_boxplot(label_file="property_labels.csv") -> tuple[str, str, str]:
+    """Render two side-by-side composite-completeness boxplots (optional-only and
+    all-properties), and the AOP-by-AOP beeswarm built from the same scores (#186).
 
     The composite score per AOP is the flat average of the AOP entity's own
     property completeness with the completeness of every KE and KER it links
@@ -3053,8 +3160,12 @@ def plot_aop_completeness_boxplot(label_file="property_labels.csv") -> tuple[str
     Args:
         label_file: Path to CSV file containing property labels and types.
 
+    The beeswarm (``aop_completeness_beeswarm``) has one row per AOP per
+    snapshot with both cohorts' scores; the page draws it from /api/v2/data
+    (static/js/viz/beeswarm.js), the figure here is the newest snapshot.
+
     Returns:
-        Tuple of (html_optional, html_all).
+        Tuple of (html_optional, html_all, html_beeswarm).
     """
     global _plot_data_cache, _plot_figure_cache
 
@@ -3066,7 +3177,8 @@ def plot_aop_completeness_boxplot(label_file="property_labels.csv") -> tuple[str
     df_labels = safe_read_csv(label_file, default_properties)
 
     if df_labels.empty:
-        return create_fallback_plot("Composite AOP Completeness Distribution", "No property labels available")
+        fallback = create_fallback_plot("Composite AOP Completeness Distribution", "No property labels available")
+        return fallback, fallback, fallback
 
     # Load properties for each entity type from CSV
     aop_properties_df = df_labels[df_labels['applies_to'].str.contains('AOP', na=False)]
@@ -3082,12 +3194,14 @@ def plot_aop_completeness_boxplot(label_file="property_labels.csv") -> tuple[str
     all_props = aop_props_all | ke_props_all | ker_props_all
 
     if not all_props:
-        return create_fallback_plot("Composite AOP Completeness Distribution", "No properties found")
+        fallback = create_fallback_plot("Composite AOP Completeness Distribution", "No properties found")
+        return fallback, fallback, fallback
 
     # Get all versions for per-version parallel queries
     versions = get_all_versions()
     if not versions:
-        return create_fallback_plot("Composite AOP Completeness Distribution", "No versions available")
+        fallback = create_fallback_plot("Composite AOP Completeness Distribution", "No versions available")
+        return fallback, fallback, fallback
 
     logger.info(f"Boxplot: querying {len(versions)} versions in parallel for property filtering")
 
@@ -3174,7 +3288,7 @@ def plot_aop_completeness_boxplot(label_file="property_labels.csv") -> tuple[str
 
     if aop_prop_count == 0 and ke_prop_count == 0 and ker_prop_count == 0:
         fallback = create_fallback_plot("Composite AOP Completeness Distribution", "All properties are 100% present")
-        return fallback, fallback
+        return fallback, fallback, fallback
 
     # Property counts for the unfiltered "all-properties" cohort (parallel pass below).
     aop_prop_count_all = len(aop_props_all)
@@ -3311,7 +3425,7 @@ def plot_aop_completeness_boxplot(label_file="property_labels.csv") -> tuple[str
 
         if df_optional is None or df_all is None:
             fallback = create_fallback_plot("Composite AOP Completeness Distribution", "No completeness data available")
-            return fallback, fallback
+            return fallback, fallback, fallback
 
         _plot_data_cache['aop_completeness_boxplot'] = df_optional.copy()
         _plot_data_cache['aop_completeness_boxplot_all'] = df_all.copy()
@@ -3322,12 +3436,21 @@ def plot_aop_completeness_boxplot(label_file="property_labels.csv") -> tuple[str
         _plot_figure_cache['aop_completeness_boxplot'] = fig_optional
         _plot_figure_cache['aop_completeness_boxplot_all'] = fig_all
 
-        return render_plot_html(fig_optional), render_plot_html(fig_all)
+        newest = max(versions, key=lambda v: v["version"])
+        df_swarm = beeswarm_rows(df_optional, df_all, _query_aop_titles(newest))
+        fig_swarm = _render_beeswarm(df_swarm, df_swarm["version"].max(), "completeness_optional",
+                                     "Optional-property composite completeness (%)")
+        _plot_data_cache['aop_completeness_beeswarm'] = df_swarm
+        _plot_figure_cache['aop_completeness_beeswarm'] = fig_swarm
 
+        return render_plot_html(fig_optional), render_plot_html(fig_all), render_plot_html(fig_swarm)
+
+    except SparqlUnavailable:
+        raise
     except Exception as e:
         logger.error(f"Error creating composite AOP completeness boxplot: {str(e)}")
         fallback = create_fallback_plot("Composite AOP Completeness Distribution", f"Error: {str(e)}")
-        return fallback, fallback
+        return fallback, fallback, fallback
 
 
 def plot_oecd_completeness_trend(label_file="property_labels.csv") -> str:
