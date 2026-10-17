@@ -132,6 +132,7 @@ TREND_PLOTS = [
     "entity_completeness_trends",
     "aop_completeness_boxplot",
     "aop_completeness_boxplot_all",
+    "aop_completeness_beeswarm",
     "oecd_completeness_trend",
     "ontology_term_growth_absolute",
     "ontology_term_growth_delta",
