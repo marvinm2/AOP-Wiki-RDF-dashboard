@@ -2571,3 +2571,26 @@ body:has(.sticky-controls) .section-block {
     font-weight: 700;
     background: rgba(230, 0, 126, 0.08);
 }
+
+/* ==========================================================================
+   Property x snapshot heatmap (#187): static/js/viz/property-heatmap.js
+   ========================================================================== */
+.props-tabs {
+    margin: 8px 0 12px;
+}
+
+/* 35 snapshot columns next to the property names need room: on narrow screens
+   the chart scrolls sideways inside its card, never the page (as the UpSet). */
+.props-scroll {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.props-scroll .lazy-plot {
+    min-width: 680px;
+}
+
+.props-panel .lazy-plot:focus-visible {
+    outline: 3px solid var(--color-magenta);
+    outline-offset: 2px;
+}

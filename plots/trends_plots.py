@@ -2355,8 +2355,92 @@ PROPERTY_PRESENCE_ENTITIES = {
 }
 
 
-def plot_property_presence(entity: str, label_file="property_labels.csv") -> tuple[str, str]:
-    """Property presence over time for one entity type, as count and percentage views.
+RDF_TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
+PROPERTY_HEATMAP_COLUMNS = ["version", "property", "label", "type", "filled", "total",
+                            "percentage", "first_filled"]
+# Absent stays white; anything above 0% starts at the lightest brand blue, so a
+# rarely used field never looks the same as an unused one.
+PROPERTY_HEATMAP_SCALE = [[0.0, "#FFFFFF"], [1e-6, BRAND_COLORS["sky_blue"]],
+                          [0.5, BRAND_COLORS["blue"]], [1.0, BRAND_COLORS["primary"]]]
+
+
+def property_heatmap_rows(df_props: pd.DataFrame, df_total: pd.DataFrame,
+                          df_labels: pd.DataFrame) -> pd.DataFrame:
+    """One row per (snapshot, property): how many entities fill the property in.
+
+    Unlike the presence lines, properties at 100% are kept, since "always there"
+    answers the heatmap's question too; only rdf:type is left out. A property
+    missing from a snapshot is a 0 row, and ``first_filled`` is the first
+    snapshot where any entity has it. Rows are in display order: by property
+    type (``PROPERTY_TYPE_ORDER``, unlabelled last), then label, then snapshot.
+    """
+    from .shared import PROPERTY_TYPE_ORDER
+
+    props = sorted(set(df_props["property"]) - {RDF_TYPE})
+    versions = sorted(df_total["version"])
+    if not props or not versions:
+        return pd.DataFrame(columns=PROPERTY_HEATMAP_COLUMNS)
+    counts = df_props.set_index(["version", "property"])["count"]
+    totals = df_total.set_index("version").iloc[:, 0]
+    labels = {} if df_labels.empty else df_labels.set_index("uri")[["label", "type"]].to_dict("index")
+
+    rows = []
+    for prop in props:
+        meta = labels.get(prop, {})
+        label = meta.get("label") if isinstance(meta.get("label"), str) else humanize_predicate_uri(prop)
+        kind = meta.get("type") if isinstance(meta.get("type"), str) else "Other"
+        first = ""
+        for version in versions:
+            filled = int(counts.get((version, prop), 0))
+            if filled and not first:
+                first = version
+            total = int(totals.get(version, 0))
+            rows.append({"version": version, "property": prop, "label": label, "type": kind,
+                         "filled": filled, "total": total,
+                         "percentage": round(filled / total * 100, 1) if total else 0.0})
+        for row in rows[-len(versions):]:
+            row["first_filled"] = first
+    df = pd.DataFrame(rows, columns=PROPERTY_HEATMAP_COLUMNS)
+    rank = {t: i for i, t in enumerate(PROPERTY_TYPE_ORDER)}
+    df["_k"] = df["type"].map(lambda t: rank.get(t, len(rank)))
+    return df.sort_values(["_k", "label", "version"], kind="stable").drop(columns="_k").reset_index(drop=True)
+
+
+def _render_property_heatmap(df: pd.DataFrame, cfg: dict) -> go.Figure:
+    """Property x snapshot heatmap: rows grouped by property type, colour = % filled in."""
+    order = list(dict.fromkeys(df["label"]))
+    versions = sorted(df["version"].unique())
+    cell = df.set_index(["label", "version"])
+    z = [[cell.loc[(lab, v), "percentage"] for v in versions] for lab in order]
+    text = [[f"{cell.loc[(lab, v), 'filled']} of {cell.loc[(lab, v), 'total']}" for v in versions] for lab in order]
+    meta = df.drop_duplicates("label").set_index("label")
+    custom = [[[meta.loc[lab, "type"], meta.loc[lab, "first_filled"] or "never"] for _ in versions] for lab in order]
+
+    fig = go.Figure(go.Heatmap(
+        x=versions, y=order, z=z, text=text, customdata=custom,
+        zmin=0, zmax=100, xgap=1, ygap=1, colorscale=PROPERTY_HEATMAP_SCALE,
+        colorbar=dict(title=dict(text="% filled in", side="right"), ticksuffix="%", thickness=12, len=0.8),
+        hovertemplate=("<b>%{y}</b> (%{customdata[0]})<br>%{x}: %{z:.1f}% of "
+                       + cfg["short"] + " (%{text})<br>First filled in: %{customdata[1]}<extra></extra>"),
+    ))
+    # A line between property types, so the groups read without a legend.
+    kinds = list(meta.loc[order, "type"])
+    shapes = [dict(type="line", xref="paper", x0=0, x1=1, yref="y", y0=i - 0.5, y1=i - 0.5,
+                   line=dict(color=BRAND_COLORS["primary"], width=1.5))
+              for i in range(1, len(kinds)) if kinds[i] != kinds[i - 1]]
+    apply_snapshot_xaxis(fig)
+    fig.update_yaxes(autorange="reversed", title_text=None, ticks="", automargin=True)
+    fig.update_layout(
+        title=dict(text=f"{len(order)} {cfg['short']} properties across {len(versions)} snapshots"),
+        height=max(260, 22 * len(order) + 150), shapes=shapes,
+        margin=dict(l=10, r=10, t=60, b=60), plot_bgcolor="white",
+    )
+    return fig
+
+
+def plot_property_presence(entity: str, label_file="property_labels.csv") -> tuple[str, str, str]:
+    """Property presence over time for one entity type: count and percentage lines,
+    plus a property x snapshot heatmap (#187).
 
     One function for AOPs, KEs, KERs and Stressors (#178); ``entity`` is a key
     of ``PROPERTY_PRESENCE_ENTITIES``. Uses marker shapes to differentiate
@@ -2372,7 +2456,8 @@ def plot_property_presence(entity: str, label_file="property_labels.csv") -> tup
     def fallback(message):
         return (
             create_fallback_plot(f"{title} (Count)", message),
-            create_fallback_plot(f"{title} (Percentage)", message)
+            create_fallback_plot(f"{title} (Percentage)", message),
+            create_fallback_plot(f"{cfg['label']} Properties by Snapshot", message),
         )
 
     try:
@@ -2409,6 +2494,9 @@ def plot_property_presence(entity: str, label_file="property_labels.csv") -> tup
 
         if df_props.empty or df_total.empty:
             return fallback("No data available")
+
+        # The heatmap keeps every property, so it is built before the 100% filter.
+        df_heat = property_heatmap_rows(df_props, df_total, safe_read_csv(label_file, []))
 
         df = df_props.merge(df_total, on="version", how="left")
         # Guard against division by zero in percentage calculation
@@ -2471,11 +2559,18 @@ def plot_property_presence(entity: str, label_file="property_labels.csv") -> tup
         _plot_figure_cache[f'{entity}_property_presence_absolute'] = fig_abs
         _plot_figure_cache[f'{entity}_property_presence_percentage'] = fig_pct
 
+        fig_heat = _render_property_heatmap(df_heat, cfg)
+        _plot_data_cache[f'{entity}_property_heatmap'] = df_heat
+        _plot_figure_cache[f'{entity}_property_heatmap'] = fig_heat
+
         return (
             render_plot_html(fig_abs),
-            render_plot_html(fig_pct)
+            render_plot_html(fig_pct),
+            render_plot_html(fig_heat),
         )
 
+    except SparqlUnavailable:
+        raise
     except Exception as e:
         logger.error(f"Failed to generate {cfg['label']} property presence plots: {str(e)}")
         return fallback(str(e))

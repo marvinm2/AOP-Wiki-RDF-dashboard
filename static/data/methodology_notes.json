@@ -288,9 +288,9 @@
     },
     "aop_property_presence": {
         "title": "AOP Property Presence Over Time",
-        "description": "Tracks which metadata properties are present in AOPs over time. Shows absolute counts of AOPs containing each property per version. Properties that are always 100% present are excluded to highlight meaningful variation in documentation completeness.",
+        "description": "Tracks which metadata properties are present in AOPs over time. Shows absolute counts of AOPs containing each property per version. Properties that are always 100% present are excluded to highlight meaningful variation in documentation completeness. The \"Property Fill-in by Snapshot\" heatmap shows the same counts as one row per property and one column per snapshot, coloured by the share of AOPs that fill the property in, with the snapshot it was first filled in.",
         "data_source": "Properties are defined in property_labels.csv. For each version, SPARQL queries check how many AOPs have each property present. Uses CSV-based property loading and GROUP_CONCAT aggregation for efficiency.",
-        "limitations": "Properties always present (100%) are excluded for clarity. Measures presence only, not quality of property values. Trend data covers only the published RDF release versions available in the SPARQL endpoint; the AOP-Wiki knowledge base predates the earliest RDF release, so earlier activity is not captured.",
+        "limitations": "The line charts leave out properties that are always present (100%); the heatmap keeps them and leaves out only rdf:type. Measures presence only, not quality of property values. Trend data covers only the published RDF release versions available in the SPARQL endpoint; the AOP-Wiki knowledge base predates the earliest RDF release, so earlier activity is not captured.",
         "queries": [
             {
                 "caption": "Count AOPs with each property, per version",
@@ -304,9 +304,9 @@
     },
     "ke_property_presence": {
         "title": "KE Property Presence Over Time",
-        "description": "Tracks which metadata properties are present in Key Events over time. Identifies completeness patterns and annotation trends. Each property is a line, distinguished by colour and marker shape.",
+        "description": "Tracks which metadata properties are present in Key Events over time. Identifies completeness patterns and annotation trends. Each property is a line, distinguished by colour and marker shape. The \"Property Fill-in by Snapshot\" heatmap shows the same counts as one row per property and one column per snapshot, coloured by the share of Key Events that fill the property in, with the snapshot it was first filled in.",
         "data_source": "Properties are defined in property_labels.csv filtered for KE entity type. SPARQL queries check property presence across all Key Events in each version using GROUP_CONCAT aggregation.",
-        "limitations": "Properties always present (100%) are excluded for clarity. Measures presence of each property, not quality or accuracy of the values stored. Trend data covers only the published RDF release versions available in the SPARQL endpoint; the AOP-Wiki knowledge base predates the earliest RDF release, so earlier activity is not captured.",
+        "limitations": "The line charts leave out properties that are always present (100%); the heatmap keeps them and leaves out only rdf:type. Measures presence of each property, not quality or accuracy of the values stored. Trend data covers only the published RDF release versions available in the SPARQL endpoint; the AOP-Wiki knowledge base predates the earliest RDF release, so earlier activity is not captured.",
         "queries": [
             {
                 "caption": "Count KEs with each property, per version",
@@ -320,9 +320,9 @@
     },
     "ker_property_presence": {
         "title": "KER Property Presence Over Time",
-        "description": "Tracks which metadata properties are present in Key Event Relationships over time. Monitors evidence and annotation quality across versions. Each property is a line, distinguished by colour and marker shape.",
+        "description": "Tracks which metadata properties are present in Key Event Relationships over time. Monitors evidence and annotation quality across versions. Each property is a line, distinguished by colour and marker shape. The \"Property Fill-in by Snapshot\" heatmap shows the same counts as one row per property and one column per snapshot, coloured by the share of Key Event Relationships that fill the property in, with the snapshot it was first filled in.",
         "data_source": "Properties are defined in property_labels.csv filtered for KER entity type. SPARQL queries check property presence across all KERs in each version using GROUP_CONCAT aggregation.",
-        "limitations": "Properties always present (100%) are excluded for clarity. Measures presence of each property, not the strength or quality of evidence recorded. Trend data covers only the published RDF release versions available in the SPARQL endpoint; the AOP-Wiki knowledge base predates the earliest RDF release, so earlier activity is not captured.",
+        "limitations": "The line charts leave out properties that are always present (100%); the heatmap keeps them and leaves out only rdf:type. Measures presence of each property, not the strength or quality of evidence recorded. Trend data covers only the published RDF release versions available in the SPARQL endpoint; the AOP-Wiki knowledge base predates the earliest RDF release, so earlier activity is not captured.",
         "queries": [
             {
                 "caption": "Count KERs with each property, per version",
@@ -336,9 +336,9 @@
     },
     "stressor_property_presence": {
         "title": "Stressor Property Presence Over Time",
-        "description": "Tracks which metadata properties are present in Stressors over time. Identifies documentation patterns and completeness trends for stressor entities. Each property is a line, distinguished by colour and marker shape.",
+        "description": "Tracks which metadata properties are present in Stressors over time. Identifies documentation patterns and completeness trends for stressor entities. Each property is a line, distinguished by colour and marker shape. The \"Property Fill-in by Snapshot\" heatmap shows the same counts as one row per property and one column per snapshot, coloured by the share of Stressors that fill the property in, with the snapshot it was first filled in.",
         "data_source": "Properties are defined in property_labels.csv filtered for Stressor entity type. SPARQL queries check property presence across all Stressors in each version using GROUP_CONCAT aggregation.",
-        "limitations": "Properties always present (100%) are excluded for clarity. Stressors are identified by the NCI Thesaurus type (nci:C54571), which may not capture all stressor-related entities in the knowledge base. Trend data covers only the published RDF release versions available in the SPARQL endpoint; the AOP-Wiki knowledge base predates the earliest RDF release, so earlier activity is not captured.",
+        "limitations": "The line charts leave out properties that are always present (100%); the heatmap keeps them and leaves out only rdf:type. Stressors are identified by the NCI Thesaurus type (nci:C54571), which may not capture all stressor-related entities in the knowledge base. Trend data covers only the published RDF release versions available in the SPARQL endpoint; the AOP-Wiki knowledge base predates the earliest RDF release, so earlier activity is not captured.",
         "queries": [
             {
                 "caption": "Count Stressors with each property, per version",

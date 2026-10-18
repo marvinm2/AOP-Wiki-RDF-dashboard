@@ -35,7 +35,8 @@
     function pointsAt(div, snapshot) {
         const points = [];
         (div._fullData || []).forEach((trace, curveNumber) => {
-            if (trace.visible === false || !trace.x) return;
+            // A heatmap cell needs [row, col]; a snapshot alone does not name one.
+            if (trace.visible === false || !trace.x || trace.type === 'heatmap') return;
             const xs = Array.from(trace.x, (x) => String(x).slice(0, 10));
             const pointNumber = xs.indexOf(snapshot);
             if (pointNumber !== -1) points.push({ curveNumber, pointNumber });

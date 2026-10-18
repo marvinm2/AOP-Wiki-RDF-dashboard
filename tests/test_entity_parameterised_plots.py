@@ -62,7 +62,7 @@ def test_property_presence_per_entity(monkeypatch, entity):
     cls, total_col, _, noun = PRESENCE[entity]
     queries = _stub(monkeypatch, trends_plots, _presence_answer)
 
-    absolute, percentage = plots.plot_property_presence(entity)
+    absolute, percentage, heatmap = plots.plot_property_presence(entity)
 
     assert len(queries) == 2 and all(f"?s a {cls}" in q for q in queries)
     df = _plot_data_cache[f"{entity}_property_presence_absolute"]
@@ -70,16 +70,19 @@ def test_property_presence_per_entity(monkeypatch, entity):
     assert list(df["count"]) == [4, 7]
     fig = _plot_figure_cache[f"{entity}_property_presence_absolute"]
     assert fig.layout.yaxis.title.text == f"Number of {noun}"
-    assert "plotly" in absolute and "plotly" in percentage
+    assert "plotly" in absolute and "plotly" in percentage and "plotly" in heatmap
+    # The heatmap comes from the same two queries (#187).
+    assert list(_plot_data_cache[f"{entity}_property_heatmap"]["filled"]) == [4, 7]
 
 
 @pytest.mark.parametrize("entity", PRESENCE)
 def test_property_presence_fallback_names_the_entity(monkeypatch, entity):
     _stub(monkeypatch, trends_plots, lambda q: [])
-    absolute, percentage = plots.plot_property_presence(entity)
+    absolute, percentage, heatmap = plots.plot_property_presence(entity)
     title = f"Property Presence in {PRESENCE[entity][2]} Over Time"
     assert f"{title} (Count)" in absolute
     assert f"{title} (Percentage)" in percentage
+    assert "Properties by Snapshot" in heatmap
 
 
 # --- Completeness by OECD status (snapshot) ----------------------------------
