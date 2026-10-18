@@ -297,6 +297,32 @@
         </div>
     </div>
 
+    <!-- AOP completeness beeswarm (#186): Plotly view of /api/v2/data, static/js/viz/beeswarm.js -->
+    <div class="plot-box full-width" id="aop-completeness-beeswarm">
+        <div class="plot-header">
+            <h3>AOP Completeness, AOP by AOP</h3>
+            <div class="download-dropdown">
+                <button class="download-button dropdown-toggle">Download ▼</button>
+                <div class="dropdown-menu">
+                    <a href="/download/trend/aop_completeness_beeswarm?format=csv" class="dropdown-item">📄 CSV</a>
+                    <a href="/download/trend/aop_completeness_beeswarm?format=png" class="dropdown-item">🖼️ PNG (newest snapshot)</a>
+                    <a href="/download/trend/aop_completeness_beeswarm?format=svg" class="dropdown-item">📐 SVG (newest snapshot)</a>
+                </div>
+            </div>
+        </div>
+        <p class="plot-description">
+            The composite completeness scores behind the boxplots above, one dot per AOP, for the snapshot at the
+            <strong>end of the selected range</strong>. Each AOP keeps its dot: move the end of the range on the
+            timeline, or press <strong>Play</strong>, and the dots slide to their scores in that snapshot, so you can
+            follow individual AOPs as they mature. Pick an AOP to mark it and list its scores in every snapshot.
+        </p>
+        {{ methodology_note(methodology_notes, 'aop_completeness_boxplot') }}
+        <div class="lazy-plot lazy-plot--beeswarm" data-plot-name="aop_completeness_beeswarm" data-renderer="plotly-beeswarm">
+            <!-- Drawn by static/js/viz/beeswarm.js -->
+        </div>
+        {{ data_table_toggle('aop_completeness_beeswarm') }}
+    </div>
+
     <div class="plot-box" id="oecd-completeness-trend">
         <div class="plot-header">
             <h3>Mean AOP Completeness by OECD Status Over Time</h3>

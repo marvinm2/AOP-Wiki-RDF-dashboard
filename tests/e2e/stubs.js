@@ -89,7 +89,38 @@ async function installStubs(page, { minDelay = 20, maxDelay = 400 } = {}) {
         stats.requests.push(u.href);
         return route.fulfill({ json: overlapData(u.searchParams.get('version'), u.searchParams.get('min_jaccard')) });
     });
+    // The completeness beeswarm (#186): every AOP in every snapshot it is in.
+    await page.route('**/api/v2/data/aop_completeness_beeswarm*', (route) => {
+        stats.requests.push(route.request().url());
+        return route.fulfill({ json: beeswarmData() });
+    });
     return stats;
+}
+
+const BEESWARM_AOPS = 40;
+
+/**
+ * Beeswarm rows as the server sends them: AOP k joins at snapshot k % 3 and
+ * gains 5 points a snapshot; AOP 7 is not in the newest snapshot.
+ */
+function beeswarmData() {
+    const asc = VERSIONS.slice().reverse();
+    const cols = { version: [], aop: [], aop_id: [], aop_title: [], completeness_optional: [],
+        completeness_all: [], entity_count: [] };
+    asc.forEach((v, j) => {
+        for (let k = 1; k <= BEESWARM_AOPS; k++) {
+            if (j < k % 3 || (k === 7 && j === asc.length - 1)) continue;
+            cols.version.push(v);
+            cols.aop.push(`https://identifiers.org/aop/${k}`);
+            cols.aop_id.push(`AOP ${k}`);
+            cols.aop_title.push(`AOP number ${k}`);
+            cols.completeness_optional.push(Math.min(100, 5 + k + 5 * (j - k % 3)));
+            cols.completeness_all.push(Math.min(100, 40 + k + 3 * (j - k % 3)));
+            cols.entity_count.push(1 + k % 5);
+        }
+    });
+    const columns = Object.keys(cols).map((name) => ({ name, type: name.startsWith('completeness') ? 'number' : name === 'entity_count' ? 'integer' : 'string' }));
+    return { meta: { id: 'aop_completeness_beeswarm', rows: cols.aop.length, columns }, data: cols };
 }
 
 const OVERLAP_SIZES = [8, 6, 4, 3, 2, 2, 2];
@@ -225,4 +256,4 @@ async function pickVersion(page, version) {
     await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
 }
 
-module.exports = { installStubs, labelFor, overlapData, overlapMatrixHtml, pickVersion, upsetData, VERSIONS };
+module.exports = { beeswarmData, installStubs, labelFor, overlapData, overlapMatrixHtml, pickVersion, upsetData, VERSIONS };

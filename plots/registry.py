@@ -172,6 +172,7 @@ SPECS: tuple[PlotSpec, ...] = (
     *trend('aop_completeness_boxplot', 'plot_aop_completeness_boxplot', note='aop_completeness_boxplot', outputs={
         'aop_completeness_boxplot': (0, ()),
         'aop_completeness_boxplot_all': (1, ()),
+        'aop_completeness_beeswarm': (2, ()),
     }),
     *trend('oecd_completeness_trend', 'plot_oecd_completeness_trend', note='oecd_completeness_trend', outputs={
         'oecd_completeness_trend': (None, ()),

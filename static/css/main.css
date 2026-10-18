@@ -2500,3 +2500,74 @@ body:has(.sticky-controls) .section-block {
         height: 420px;
     }
 }
+
+/* ==========================================================================
+   AOP completeness beeswarm (#186): static/js/viz/beeswarm.js
+   ========================================================================== */
+
+.lazy-plot--beeswarm {
+    min-height: 560px;
+}
+
+.beeswarm-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 18px;
+}
+
+.beeswarm-find {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-primary);
+}
+
+.beeswarm-find label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.beeswarm-find-input {
+    width: 7em;
+    padding: 4px 8px;
+    font: inherit;
+    font-weight: 400;
+    border: 1px solid var(--color-blue-ui);
+    border-radius: 6px;
+    color: var(--color-primary);
+}
+
+.beeswarm-caption,
+.beeswarm-readout {
+    margin: 8px 0 6px;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+}
+
+.beeswarm-chart {
+    border-radius: 4px;
+}
+
+.beeswarm-chart:focus-visible {
+    outline: 3px solid var(--color-magenta);
+    outline-offset: 2px;
+}
+
+.beeswarm-rows caption {
+    caption-side: top;
+    text-align: left;
+    padding: 6px 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-primary);
+}
+
+.beeswarm-current th,
+.beeswarm-current td {
+    font-weight: 700;
+    background: rgba(230, 0, 126, 0.08);
+}
