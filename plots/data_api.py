@@ -106,7 +106,11 @@ def etag_matches(if_none_match: Optional[str], tag: str) -> bool:
 
 
 def disclosed_queries(note: Optional[dict], graph_uri: Optional[str]) -> List[Dict[str, str]]:
-    """The SPARQL a methodology note discloses, with its graph marker filled in."""
+    """The SPARQL a methodology note discloses, with its graph marker filled in.
+
+    Notes write the marker bare (``GRAPH __GRAPH_URI__``), so it becomes ``<iri>``,
+    the same as templates/macros/methodology.html does.
+    """
     if not note:
         return []
     if isinstance(note.get("queries"), list):
@@ -119,5 +123,5 @@ def disclosed_queries(note: Optional[dict], graph_uri: Optional[str]) -> List[Di
         items = []
     if graph_uri:
         for item in items:
-            item["query"] = item["query"].replace("__GRAPH_URI__", graph_uri)
+            item["query"] = item["query"].replace("__GRAPH_URI__", f"<{graph_uri}>")
     return items
