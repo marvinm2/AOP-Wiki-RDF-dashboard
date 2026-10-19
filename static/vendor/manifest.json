@@ -6,6 +6,13 @@
     "bytes": 1298502,
     "source": "https://cdn.plot.ly/plotly-cartesian-2.32.0.min.js"
   },
+  "plotly": {
+    "version": "2.32.0",
+    "path": "vendor/plotly@2.32.0/plotly-2.32.0.min.js",
+    "integrity": "sha384-7TVmlZWH60iKX5Uk7lSvQhjtcgw2tkFjuwLcXoRSR4zXTyWFJRm9aPAguMh7CIra",
+    "bytes": 3632287,
+    "source": "https://cdn.plot.ly/plotly-2.32.0.min.js"
+  },
   "cytoscape": {
     "version": "3.33.1",
     "path": "vendor/cytoscape@3.33.1/cytoscape.min.js",

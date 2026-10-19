@@ -173,14 +173,16 @@
                 params: Runtime ? Runtime.paramsOf(name) : [],
             }));
         }
-        if (!div || !root.Plotly) return Promise.resolve(false);
+        // A view drawn with another Plotly bundle (the full one, status-journey.js) keeps it on the div.
+        var plotly = (div && div._dashPlotly) || root.Plotly;
+        if (!div || !plotly) return Promise.resolve(false);
         var xaxis = (div.layout && div.layout.xaxis) || {};
         var file = filename(name, stateNow(), {
             versioned: Runtime ? Runtime.isVersioned(name) : false,
             params: Runtime ? Runtime.paramsOf(name) : [],
             ranged: xaxis.autorange === false,
         });
-        return root.Plotly.downloadImage(div, {
+        return plotly.downloadImage(div, {
             format: format,
             filename: file,
             width: Math.max(div.clientWidth, 600),

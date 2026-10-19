@@ -186,6 +186,7 @@ from .trends_plots import (
 
     # Organ-system coverage (Signal A/A'/B/C hybrid)
     plot_organ_coverage_trends,
+    plot_oecd_status_journey,
 )
 
 # Import network analysis functions
@@ -326,6 +327,7 @@ __all__ = [
     'plot_oecd_completeness_trend',
     'plot_ontology_term_growth',
     'plot_organ_coverage_trends',
+    'plot_oecd_status_journey',
 
     # Current snapshot functions
     'plot_latest_entity_counts',

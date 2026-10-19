@@ -100,6 +100,9 @@ SPECS: tuple[PlotSpec, ...] = (
         'oecd_status_distribution_absolute': (0, ()),
         'oecd_status_distribution_percentage': (1, ()),
     }),
+    *trend('oecd_status_journey', 'plot_oecd_status_journey', note='oecd_status_journey', outputs={
+        'oecd_status_journey': (None, ()),
+    }),
     *trend('stressor_coverage_growth', 'plot_stressor_coverage_growth', note='stressor_coverage_growth', outputs={
         'stressor_coverage_growth_absolute': (0, ()),
         'stressor_coverage_growth_delta': (1, ()),

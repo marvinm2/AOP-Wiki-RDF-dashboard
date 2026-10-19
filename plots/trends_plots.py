@@ -810,6 +810,197 @@ def plot_oecd_status_distribution() -> tuple[str, str, pd.DataFrame]:
         )
 
 
+# "Included in OECD Work Plan" sits next to a stage (Under Development,
+# WPHA/WNT Endorsed, ...) on the same AOP in every snapshot up to 2024-01-01:
+# it is a flag, not a stage, so the journey uses the stage beside it.
+OECD_WORK_PLAN_FLAG = "Included in OECD Work Plan"
+OECD_JOURNEY_COLUMNS = ["From Snapshot", "To Snapshot", "From Status", "To Status", "AOPs"]
+
+
+def oecd_journey_anchors(versions: list[str]) -> list[str]:
+    """One anchor per year: its January snapshot, but the latest snapshot for
+    the latest year, so the journey ends at the current state. A year without
+    a January snapshot (2021) has no anchor."""
+    ordered = sorted(versions)
+    if not ordered:
+        return []
+    latest = ordered[-1]
+    anchors = [v for v in ordered if v.endswith("-01-01") and v[:4] < latest[:4]]
+    return anchors + [latest]
+
+
+def _oecd_stage(statuses) -> str:
+    """One stage per AOP and snapshot: the work-plan flag only when it is alone."""
+    order = {s: i for i, s in enumerate(BRAND_COLORS["oecd_status"])}
+    stages = sorted(set(statuses) - {OECD_WORK_PLAN_FLAG}, key=lambda s: (order.get(s, len(order)), s))
+    if stages:
+        # Two real stages on one AOP has not happened; take the later one.
+        return stages[-1]
+    return OECD_WORK_PLAN_FLAG if OECD_WORK_PLAN_FLAG in set(statuses) else "No Status"
+
+
+def oecd_status_journey_rows(df: pd.DataFrame, anchors: list[str]) -> tuple[pd.DataFrame, int, int]:
+    """AOP flows between the OECD stages of consecutive yearly anchors (#187).
+
+    ``df`` has one row per (version, aop, status), "No Status" for an AOP
+    without one. Only AOPs whose stage changes at some point across the
+    anchors are kept, so the flows show movement rather than the mass of AOPs
+    that never moved. Returns (link rows, changed AOPs, all AOPs).
+    """
+    sub = df[df["version"].isin(anchors)]
+    stage = sub.groupby(["aop", "version"])["status"].agg(_oecd_stage).unstack("version")
+    stage = stage.reindex(columns=[a for a in anchors if a in stage.columns])
+    changed = stage[stage.apply(lambda row: row.dropna().nunique() > 1, axis=1)]
+    order = {s: i for i, s in enumerate(BRAND_COLORS["oecd_status"])}
+    rows = []
+    cols = list(changed.columns)
+    for a, b in zip(cols, cols[1:]):
+        both = changed[[a, b]].dropna()
+        for (x, y), n in both.groupby([a, b]).size().items():
+            rows.append({"From Snapshot": a, "To Snapshot": b, "From Status": x, "To Status": y, "AOPs": int(n)})
+    # Snapshot order, then the stages in workflow order.
+    rows.sort(key=lambda r: (r["From Snapshot"], order.get(r["From Status"], len(order)), r["From Status"],
+                             order.get(r["To Status"], len(order)), r["To Status"]))
+    return pd.DataFrame(rows, columns=OECD_JOURNEY_COLUMNS), len(changed), len(stage)
+
+
+def _rgba(hex_colour: str, alpha: float) -> str:
+    h = hex_colour.lstrip("#")
+    return f"rgba({int(h[0:2], 16)}, {int(h[2:4], 16)}, {int(h[4:6], 16)}, {alpha})"
+
+
+# Sankey geometry, shared by the node placement and the layout.
+_JOURNEY_HEIGHT, _JOURNEY_TOP, _JOURNEY_BOTTOM, _JOURNEY_PAD = 660, 110, 60, 12
+
+
+def _render_oecd_status_journey(links: pd.DataFrame, changed: int, total: int) -> go.Figure:
+    """A sankey with one column per anchor and one node per stage in it.
+
+    Nodes are placed by hand (one column per anchor, stages top to bottom in
+    workflow order), because the automatic layout would put an AOP's first
+    anchor in the first column whatever its date. A node is as tall as its
+    larger side (flows in or out), as Plotly sizes it, so the stacking below
+    uses Plotly's own scale and nodes do not overlap.
+    """
+    colours = BRAND_COLORS["oecd_status"]
+    order = {s: i for i, s in enumerate(colours)}
+    anchors = sorted(set(links["From Snapshot"]) | set(links["To Snapshot"]))
+    inflow, outflow = {}, {}
+    for r in links.itertuples(index=False):
+        outflow[(r[0], r[2])] = outflow.get((r[0], r[2]), 0) + r[4]
+        inflow[(r[1], r[3])] = inflow.get((r[1], r[3]), 0) + r[4]
+    nodes = sorted(set(inflow) | set(outflow), key=lambda n: (anchors.index(n[0]), order.get(n[1], len(order)), n[1]))
+    size = {n: max(inflow.get(n, 0), outflow.get(n, 0)) for n in nodes}
+
+    plot_h = _JOURNEY_HEIGHT - _JOURNEY_TOP - _JOURNEY_BOTTOM
+    columns = {a: [n for n in nodes if n[0] == a] for a in anchors}
+    ky = min((plot_h - (len(c) - 1) * _JOURNEY_PAD) / sum(size[n] for n in c) for c in columns.values() if c)
+    ys = {}
+    for c in columns.values():
+        y = 0.0
+        for n in c:
+            h = size[n] * ky
+            ys[n] = (y + h / 2) / plot_h
+            y += h + _JOURNEY_PAD
+    last = max(len(anchors) - 1, 1)
+    xs = {n: min(max(anchors.index(n[0]) / last, 0.001), 0.999) for n in nodes}
+    index = {n: i for i, n in enumerate(nodes)}
+
+    def link_text(r):
+        what = "stayed" if r[2] == r[3] else "moved"
+        return f"{r[4]} AOP{'s' if r[4] != 1 else ''} {what}: {r[2]} ({r[0]}) to {r[3]} ({r[1]})"
+
+    fig = go.Figure(go.Sankey(
+        arrangement="fixed",
+        node=dict(
+            label=[n[1] for n in nodes], x=[xs[n] for n in nodes], y=[ys[n] for n in nodes],
+            color=[colours.get(n[1], "#BFBFBF") for n in nodes], pad=_JOURNEY_PAD, thickness=14,
+            line=dict(width=0), customdata=[[n[0], size[n]] for n in nodes],
+            hovertemplate="%{label}, %{customdata[0]}: %{customdata[1]} AOPs<extra></extra>",
+        ),
+        link=dict(
+            source=[index[(r[0], r[2])] for r in links.itertuples(index=False)],
+            target=[index[(r[1], r[3])] for r in links.itertuples(index=False)],
+            value=list(links["AOPs"]),
+            # A move is drawn stronger than a stay, in the colour it leaves.
+            color=[_rgba(colours.get(r[2], "#BFBFBF"), 0.12 if r[2] == r[3] else 0.4)
+                   for r in links.itertuples(index=False)],
+            customdata=[link_text(r) for r in links.itertuples(index=False)],
+            hovertemplate="%{customdata}<extra></extra>",
+        ),
+    ))
+    for i, a in enumerate(anchors):
+        fig.add_annotation(x=i / last, y=1.0, yshift=8, xref="paper", yref="paper", text=a,
+                           showarrow=False, yanchor="bottom", font=dict(size=11))
+    # The 2024-04-01 status wipe falls between the 2024 and 2025 anchors.
+    after = [i for i, a in enumerate(anchors) if a >= "2024-04-01"]
+    if after and after[0] > 0 and anchors[after[0] - 1] < "2024-04-01":
+        x = (after[0] - 0.5) / last
+        fig.add_shape(type="line", xref="paper", yref="paper", x0=x, x1=x, y0=-0.02, y1=1.0,
+                      line=dict(color=BRAND_COLORS["magenta"], width=1.5, dash="dash"))
+        fig.add_annotation(x=x, y=-0.03, xref="paper", yref="paper", yanchor="top", showarrow=False,
+                           text="OECD status wipe (2024-04-01)", font=dict(size=11, color=BRAND_COLORS["magenta"]))
+    fig.update_layout(
+        title=dict(text="OECD Status Journey of AOPs, yearly"
+                        f"<br><sup>{changed} of {total} AOPs changed status at least once across "
+                        f"{len(anchors)} yearly snapshots; AOPs that never changed are left out</sup>"),
+        height=_JOURNEY_HEIGHT,
+        margin=dict(l=20, r=20, t=_JOURNEY_TOP, b=_JOURNEY_BOTTOM),
+        font=dict(size=11),
+    )
+    return fig
+
+
+def plot_oecd_status_journey() -> str:
+    """The OECD status journey of AOPs between yearly anchors, as a sankey (#187).
+
+    One query over the anchor graphs for every AOP's status; the flows are
+    built in Python by ``oecd_status_journey_rows``.
+    """
+    global _plot_data_cache, _plot_figure_cache
+
+    title = "OECD Status Journey"
+    try:
+        graph_of = {v["version"]: v["graph_uri"] for v in get_all_versions()}
+        anchors = oecd_journey_anchors(list(graph_of))
+        if len(anchors) < 2:
+            return create_fallback_plot(title, "Fewer than two yearly snapshots")
+        graphs = " ".join(f"<{graph_of[a]}>" for a in anchors)
+        version_of = {g: v for v, g in graph_of.items()}
+        query = f"""
+        SELECT ?graph ?aop ?status
+        WHERE {{
+            VALUES ?graph {{ {graphs} }}
+            GRAPH ?graph {{
+                ?aop a aopo:AdverseOutcomePathway .
+                OPTIONAL {{ ?aop <http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25688> ?s . }}
+                BIND(COALESCE(STR(?s), "No Status") AS ?status)
+            }}
+        }}
+        """
+        results = run_sparql_query_with_retry(query, use_post=True)
+        if not results:
+            raise SparqlUnavailable("no rows for the OECD status journey")
+        df = pd.DataFrame([{
+            "version": version_of.get(r["graph"]["value"], r["graph"]["value"].rsplit("/", 1)[-1]),
+            "aop": r["aop"]["value"],
+            "status": r["status"]["value"],
+        } for r in results])
+        links, changed, total = oecd_status_journey_rows(df, anchors)
+        if links.empty:
+            return create_fallback_plot(title, "No AOP changed status between the yearly snapshots")
+        fig = _render_oecd_status_journey(links, changed, total)
+        _plot_data_cache["oecd_status_journey"] = links
+        _plot_figure_cache["oecd_status_journey"] = fig
+        return render_plot_html(fig)
+
+    except SparqlUnavailable:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to generate the OECD status journey: {str(e)}")
+        return create_fallback_plot(title, f"Error: {str(e)}")
+
+
 def plot_stressor_coverage_growth() -> tuple[str, str, pd.DataFrame]:
     """Stressor coverage growth (absolute + delta) over snapshots.
 

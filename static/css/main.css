@@ -2590,6 +2590,20 @@ body:has(.sticky-controls) .section-block {
     min-width: 680px;
 }
 
+.journey-scroll {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.journey-scroll .lazy-plot {
+    min-width: 760px;
+}
+
+.journey-scroll .lazy-plot:focus-visible {
+    outline: 3px solid var(--color-magenta);
+    outline-offset: 2px;
+}
+
 .bump-scroll {
     max-width: 100%;
     overflow-x: auto;
