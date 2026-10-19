@@ -4138,6 +4138,49 @@ def find_ontology_coverage_holes(branch_data: dict, used_short_ids) -> list:
     return holes
 
 
+def _used_ontology_terms(version, title):
+    """Short IDs of the ontology terms annotated on KEs in one snapshot.
+
+    Shared by the coverage-holes bars and the coverage map, so both read the
+    same usage. Returns ``(version_str, used_short_ids)``, or a fallback plot's
+    HTML (titled ``title``) when there is nothing to draw.
+    """
+    if version:
+        target_graph = f"http://aopwiki.org/graph/{version}"
+        version_str = version
+    else:
+        version_results = run_sparql_query("""
+        SELECT ?graph WHERE {
+            GRAPH ?graph { ?s a aopo:AdverseOutcomePathway . }
+            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        } GROUP BY ?graph ORDER BY DESC(?graph) LIMIT 1
+        """)
+        if not version_results:
+            return create_fallback_plot(title, "No graphs available")
+        target_graph = version_results[0]["graph"]["value"]
+        version_str = target_graph.rsplit("/", 1)[-1]
+
+    predicate_list = ", ".join(f"<{p}>" for p in _ONTOLOGY_USAGE_PREDICATES)
+    used_query = f"""
+    SELECT DISTINCT ?term
+    WHERE {{
+        GRAPH <{target_graph}> {{
+            ?ke a aopo:KeyEvent ; ?p ?term .
+            FILTER(?p IN ({predicate_list}))
+        }}
+        FILTER(isIRI(?term))
+    }}
+    """
+    used_rows = run_sparql_query(used_query)
+    if not used_rows:
+        return create_fallback_plot(
+            title, f"No ontology annotations found in snapshot {version_str}",
+        )
+    used_short = {r["term"]["value"].rsplit("/", 1)[-1] for r in used_rows}
+
+    return version_str, used_short
+
+
 @resolves_version
 def plot_latest_ontology_coverage_holes(version: str = None,
                                         branch: str = DEFAULT_ONTOLOGY_BRANCH,
@@ -4176,39 +4219,10 @@ def plot_latest_ontology_coverage_holes(version: str = None,
             else sorted(branches)[0]
     branch_data = branches[branch]
 
-    if version:
-        target_graph = f"http://aopwiki.org/graph/{version}"
-        version_str = version
-    else:
-        version_results = run_sparql_query("""
-        SELECT ?graph WHERE {
-            GRAPH ?graph { ?s a aopo:AdverseOutcomePathway . }
-            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-        } GROUP BY ?graph ORDER BY DESC(?graph) LIMIT 1
-        """)
-        if not version_results:
-            return create_fallback_plot("Ontology Coverage Holes", "No graphs available")
-        target_graph = version_results[0]["graph"]["value"]
-        version_str = target_graph.rsplit("/", 1)[-1]
-
-    predicate_list = ", ".join(f"<{p}>" for p in _ONTOLOGY_USAGE_PREDICATES)
-    used_query = f"""
-    SELECT DISTINCT ?term
-    WHERE {{
-        GRAPH <{target_graph}> {{
-            ?ke a aopo:KeyEvent ; ?p ?term .
-            FILTER(?p IN ({predicate_list}))
-        }}
-        FILTER(isIRI(?term))
-    }}
-    """
-    used_rows = run_sparql_query(used_query)
-    if not used_rows:
-        return create_fallback_plot(
-            "Ontology Coverage Holes",
-            f"No ontology annotations found in snapshot {version_str}",
-        )
-    used_short = {r["term"]["value"].rsplit("/", 1)[-1] for r in used_rows}
+    used = _used_ontology_terms(version, "Ontology Coverage Holes")
+    if isinstance(used, str):
+        return used
+    version_str, used_short = used
 
     holes = find_ontology_coverage_holes(branch_data, used_short)
     branch_size = branch_data.get("branch_size", 0)
@@ -4265,4 +4279,214 @@ def plot_latest_ontology_coverage_holes(version: str = None,
     _plot_data_cache[cache_key] = df
     _plot_figure_cache[cache_key] = fig
 
+    return render_plot_html(fig)
+
+
+# ---------------------------------------------------------------------------
+# Ontology coverage map (#187): the whole branch, not only its holes
+# ---------------------------------------------------------------------------
+
+# Status of one block, in legend order. The rule is the one the holes bars use
+# (find_ontology_coverage_holes), so a "Coverage hole" block here is exactly a
+# bar there.
+COVERAGE_MAP_STATUSES = (
+    ("Annotated", BRAND_COLORS["primary"], "#FFFFFF"),
+    ("Contains annotated terms", BRAND_COLORS["blue"], "#FFFFFF"),
+    ("Coverage hole", BRAND_COLORS["magenta"], "#FFFFFF"),
+    ("Inside a hole", BRAND_COLORS["sky_blue"], BRAND_COLORS["primary"]),
+)
+COVERAGE_MAP_COLUMNS = [
+    "Term", "Ontology ID", "Level", "Depth", "Drawn Under", "Other Parents",
+    "Subtree Size", "Status", "Start", "Width", "Branch", "Version",
+]
+COVERAGE_MAP_ROOT_ID = "branch"
+
+
+def ontology_coverage_map_rows(branch_data: dict, used_short_ids, branch: str) -> list:
+    """Lay one branch out as an icicle: a row per drawn block (#187).
+
+    The ontology is a graph, not a tree, so each term is drawn once, under its
+    shallowest parent (ties: the larger subtree, then the ID); the other
+    parents are listed in ``Other Parents``. Each block's width is a share of
+    its parent's, proportional to subtree size. Sibling subtrees overlap when
+    they share terms, so where they add up to more than the parent they are
+    scaled to fit, and where they add up to less the rest stays empty (terms
+    deeper than the cache's depth cap). ``Start`` and ``Width`` are fractions
+    of the whole branch.
+
+    Statuses follow find_ontology_coverage_holes: annotated itself, an
+    ancestor of something annotated, the topmost unannotated node on its path
+    (a hole), or below a hole.
+    """
+    candidates = branch_data.get("candidates", {})
+    ancestors_of = branch_data.get("used_term_ancestors", {})
+    used = set(used_short_ids)
+    touched = {c for c in candidates if c in used}
+    for term in used:
+        touched.update(ancestors_of.get(term, ()))
+    branch_touched = bool(touched)
+
+    def status(short_id):
+        if short_id in used:
+            return "Annotated"
+        if short_id in touched:
+            return "Contains annotated terms"
+        parents = candidates[short_id].get("parents", [])
+        parent_touched = any(p in touched for p in parents) if parents else branch_touched
+        return "Coverage hole" if parent_touched else "Inside a hole"
+
+    def size(short_id):
+        return max(1, int(candidates[short_id].get("subtree_size", 1)))
+
+    drawn_under = {}
+    for short_id, meta in candidates.items():
+        depth = meta.get("depth", 0)
+        options = [p for p in meta.get("parents", [])
+                   if p in candidates and candidates[p].get("depth", 0) < depth]
+        drawn_under[short_id] = min(
+            options, key=lambda p: (candidates[p].get("depth", 0), -size(p), p),
+        ) if options else COVERAGE_MAP_ROOT_ID
+    children = defaultdict(list)
+    for short_id, parent in drawn_under.items():
+        children[parent].append(short_id)
+    for kids in children.values():
+        kids.sort(key=lambda k: (-size(k), candidates[k].get("label", k), k))
+
+    branch_size = max(1, int(branch_data.get("branch_size", 0) or 0))
+    root_ids = branch_data.get("roots", [])
+    rows = [{
+        "Term": ", ".join(branch_data.get("root_labels", [])) or branch,
+        "Ontology ID": "|".join(r.replace("_", ":") for r in root_ids),
+        "Level": 0, "Depth": 0, "Drawn Under": "", "Other Parents": "",
+        "Subtree Size": branch_size,
+        "Status": ("Annotated" if used & set(root_ids) else
+                   "Contains annotated terms" if branch_touched else "Coverage hole"),
+        "Start": 0.0, "Width": 1.0,
+    }]
+
+    def place(parent, own_size, start, width, level):
+        kids = children.get(parent, [])
+        total = sum(size(k) for k in kids)
+        scale = width / max(total, own_size) if kids else 0
+        x = start
+        for k in kids:
+            meta = candidates[k]
+            w = size(k) * scale
+            others = sorted(p for p in meta.get("parents", []) if p != drawn_under[k])
+            rows.append({
+                "Term": meta.get("label", k),
+                "Ontology ID": k.replace("_", ":"),
+                "Level": level, "Depth": meta.get("depth", level),
+                "Drawn Under": "" if drawn_under[k] == COVERAGE_MAP_ROOT_ID
+                               else drawn_under[k].replace("_", ":"),
+                "Other Parents": "|".join(p.replace("_", ":") for p in others),
+                "Subtree Size": size(k), "Status": status(k),
+                "Start": x, "Width": w,
+            })
+            place(k, size(k), x, w, level + 1)
+            x += w
+
+    place(COVERAGE_MAP_ROOT_ID, branch_size, 0.0, 1.0, 1)
+    for row in rows:
+        row["Start"] = round(row["Start"], 6)
+        row["Width"] = round(row["Width"], 6)
+    return rows
+
+
+def _render_ontology_coverage_map(df: pd.DataFrame, title: str) -> go.Figure:
+    """Icicle as horizontal bars: a row per level, a block per term.
+
+    Plotly's own icicle trace is not in the cartesian bundle the pages load,
+    and bars keep server export, hover and zoom (an x range) working.
+    """
+    levels = sorted(df["Level"].unique())
+    level_names = {lv: ("Branch" if lv == 0 else f"Level {lv}") for lv in levels}
+    labels = {r["Ontology ID"]: r["Term"] for _, r in df.iterrows()}
+    fig = go.Figure()
+    for name, colour, text_colour in COVERAGE_MAP_STATUSES:
+        part = df[df["Status"] == name]
+        if part.empty:
+            continue
+        under = [labels.get(u, u) if u else "the branch root" for u in part["Drawn Under"]]
+        more = [f"<br>Also under {len(o.split('|'))} more parent{'s' if len(o.split('|')) > 1 else ''}"
+                if o else "" for o in part["Other Parents"]]
+        fig.add_trace(go.Bar(
+            name=f"{name} ({len(part)})",
+            orientation="h",
+            y=[level_names[lv] for lv in part["Level"]],
+            base=(part["Start"] * 100).round(4).tolist(),
+            x=(part["Width"] * 100).round(4).tolist(),
+            text=part["Term"].tolist(),
+            textposition="inside", insidetextanchor="middle", textangle=0,
+            textfont=dict(color=text_colour),
+            marker=dict(color=colour, line=dict(color="#FFFFFF", width=1)),
+            customdata=list(zip(part["Term"], part["Ontology ID"], part["Status"],
+                                part["Subtree Size"], under, more, part["Drawn Under"],
+                                part["Level"])),
+            hovertemplate=("<b>%{customdata[0]}</b> (%{customdata[1]})<br>%{customdata[2]}"
+                           "<br>%{customdata[3]} terms in its subtree"
+                           "<br>Drawn under %{customdata[4]}%{customdata[5]}<extra></extra>"),
+        ))
+    fig.update_layout(
+        title={"text": title},
+        barmode="overlay", bargap=0.06,
+        xaxis=dict(range=[0, 100], autorange=False, visible=False, fixedrange=False),
+        yaxis=dict(categoryorder="array", categoryarray=[level_names[lv] for lv in levels],
+                   autorange="reversed", title=None, fixedrange=True),
+        uniformtext=dict(minsize=10, mode="hide"),
+        legend=dict(orientation="h", yanchor="top", y=-0.04, x=0),
+        hoverlabel=dict(align="left"),
+        height=85 * len(levels) + 200,
+        margin=dict(l=70, r=20, t=110, b=60),
+    )
+    return fig
+
+
+@resolves_version
+def plot_latest_ontology_coverage_map(version: str = None,
+                                      branch: str = DEFAULT_ONTOLOGY_BRANCH) -> str:
+    """The whole organ-system branch as an icicle, coloured by annotation (#187).
+
+    The coverage-holes bars list what is missing; this shows it in place: the
+    branch root on top, its sub-branches below to depth 3, each block as wide
+    as its subtree. A magenta block is a hole from the bars; light blocks sit
+    inside one; dark ones are annotated or lead to an annotation. Same usage
+    query and branch cache as the holes plot, so the two always agree.
+    """
+    title_plain = "Ontology Coverage Map"
+    cache = _load_ontology_branch_cache()
+    branches = cache.get("branches", {})
+    if not branches:
+        return create_fallback_plot(
+            title_plain,
+            "Ontology branch cache missing — run scripts/build_ontology_branch_cache.py",
+        )
+    if branch not in branches:
+        branch = DEFAULT_ONTOLOGY_BRANCH if DEFAULT_ONTOLOGY_BRANCH in branches \
+            else sorted(branches)[0]
+    branch_data = branches[branch]
+
+    used = _used_ontology_terms(version, title_plain)
+    if isinstance(used, str):
+        return used
+    version_str, used_short = used
+
+    df = pd.DataFrame(ontology_coverage_map_rows(branch_data, used_short, branch))
+    df["Branch"] = branch
+    df["Version"] = version_str
+    df = df[COVERAGE_MAP_COLUMNS]
+
+    branch_size = branch_data.get("branch_size", 0)
+    used_in_branch = len(set(branch_data.get("used_terms_in_branch", [])) & used_short)
+    pct_used = (100.0 * used_in_branch / branch_size) if branch_size else 0.0
+    n_holes = int((df["Status"] == "Coverage hole").sum())
+    title = (f"Ontology coverage map — {branch}<br><sub>{len(df) - 1} sub-branches to depth 3; "
+             f"{n_holes} are holes with no annotation anywhere below them. "
+             f"{used_in_branch} of {branch_size} terms used ({pct_used:.1f}%), v{version_str}.<br>"
+             f"Block width follows subtree size. Click a block to zoom in, double-click to zoom out.</sub>")
+    fig = _render_ontology_coverage_map(df, title)
+
+    cache_key = f"latest_ontology_coverage_map_{version or 'latest'}"
+    _plot_data_cache[cache_key] = df
+    _plot_figure_cache[cache_key] = fig
     return render_plot_html(fig)

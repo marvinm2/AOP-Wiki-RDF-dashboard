@@ -246,6 +246,8 @@ from .latest_plots import (
     score_ke_set_similarity,
     plot_latest_ontology_coverage_holes,
     find_ontology_coverage_holes,
+    plot_latest_ontology_coverage_map,
+    ontology_coverage_map_rows,
     available_ontology_branches,
 )
 
@@ -357,6 +359,8 @@ __all__ = [
     'score_ke_set_similarity',
     'plot_latest_ontology_coverage_holes',
     'find_ontology_coverage_holes',
+    'plot_latest_ontology_coverage_map',
+    'ontology_coverage_map_rows',
     'available_ontology_branches',
 
     # Domain lens functions
