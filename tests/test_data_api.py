@@ -74,8 +74,26 @@ def test_figure_json_drops_the_template():
 
 
 def test_disclosed_queries_fill_the_graph():
-    note = {"queries": [{"caption": "c", "query": "SELECT * { GRAPH <__GRAPH_URI__> {} }"}]}
+    # Notes write the marker bare, as static/data/methodology_notes.json does.
+    note = {"queries": [{"caption": "c", "query": "SELECT * { GRAPH __GRAPH_URI__ {} }"}]}
     out = data_api.disclosed_queries(note, "http://aopwiki.org/graph/2024-01-01")
     assert out == [{"caption": "c", "query": "SELECT * { GRAPH <http://aopwiki.org/graph/2024-01-01> {} }"}]
     assert data_api.disclosed_queries({"sparql": "Q"}, None) == [{"caption": "", "query": "Q"}]
     assert data_api.disclosed_queries(None, None) == []
+
+
+def test_disclosed_queries_parse_for_every_note():
+    """Every query /api/v2 discloses is valid SPARQL once the graph is filled in (#244)."""
+    import json
+    from pathlib import Path
+    from rdflib.plugins.sparql.parser import parseQuery  # syntax only: notes lean on the endpoint's prefixes
+
+    notes = json.loads((Path(__file__).resolve().parent.parent / "static/data/methodology_notes.json").read_text())
+    checked = 0
+    for note in notes.values():
+        if not isinstance(note, dict) or "__GRAPH_URI__" not in json.dumps(note):
+            continue
+        for item in data_api.disclosed_queries(note, "http://aopwiki.org/graph/2024-01-01"):
+            parseQuery(item["query"])
+            checked += 1
+    assert checked > 50
