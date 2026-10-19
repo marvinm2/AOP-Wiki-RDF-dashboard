@@ -153,18 +153,22 @@ SPECS: tuple[PlotSpec, ...] = (
     *trend('aop_property_presence', 'plot_property_presence', note='aop_property_presence', args={'entity': 'aop'}, outputs={
         'aop_property_presence_absolute': (0, ('trends-all', 'trends-properties', 'all')),
         'aop_property_presence_percentage': (1, ('trends-properties',)),
+        'aop_property_heatmap': (2, ()),
     }),
     *trend('ke_property_presence', 'plot_property_presence', note='ke_property_presence', args={'entity': 'ke'}, outputs={
         'ke_property_presence_absolute': (0, ()),
         'ke_property_presence_percentage': (1, ()),
+        'ke_property_heatmap': (2, ()),
     }),
     *trend('ker_property_presence', 'plot_property_presence', note='ker_property_presence', args={'entity': 'ker'}, outputs={
         'ker_property_presence_absolute': (0, ()),
         'ker_property_presence_percentage': (1, ()),
+        'ker_property_heatmap': (2, ()),
     }),
     *trend('stressor_property_presence', 'plot_property_presence', note='stressor_property_presence', args={'entity': 'stressor'}, outputs={
         'stressor_property_presence_absolute': (0, ()),
         'stressor_property_presence_percentage': (1, ()),
+        'stressor_property_heatmap': (2, ()),
     }),
     *trend('entity_completeness_trends', 'plot_entity_completeness_trends', note='entity_completeness_trends', outputs={
         'entity_completeness_trends': (None, ()),

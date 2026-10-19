@@ -44,6 +44,77 @@
     </div>
 
 
+    <!-- Property x snapshot heatmap (#187) -->
+    <div class="plot-box full-width" id="property-heatmap">
+        <div class="plot-header">
+            <h3>Property Fill-in by Snapshot</h3>
+            <div class="download-dropdown">
+                <button class="download-button dropdown-toggle">Download ▼</button>
+                <div class="dropdown-menu props-downloads">
+                    <a href="/download/trend/aop_property_heatmap?format=csv" class="dropdown-item">📄 CSV</a>
+                    <a href="/download/trend/aop_property_heatmap?format=png" class="dropdown-item">🖼️ PNG</a>
+                    <a href="/download/trend/aop_property_heatmap?format=svg" class="dropdown-item">📐 SVG</a>
+                </div>
+            </div>
+        </div>
+        <p class="plot-description">
+            Which fields are filled in, and since when: one row per property, one column per snapshot, coloured by the
+            share of entities that have the property. White means no entity has it in that snapshot. Rows are grouped
+            by property type (Essential, Content, Context, Assessment, Metadata), and unlike the line charts below,
+            properties every entity has are kept. Hover a cell, or focus the chart and use the arrow keys, for the count
+            and the snapshot the property was first filled in; click a cell to open that snapshot.
+        </p>
+        <div class="props-view">
+            <div class="segmented-control props-tabs" role="tablist" aria-label="Entity type">
+                <button type="button" role="tab" class="segmented-button is-active" data-tab="aop"
+                        id="props-tab-aop" aria-controls="props-panel-aop" aria-selected="true">AOPs</button>
+                <button type="button" role="tab" class="segmented-button" data-tab="ke"
+                        id="props-tab-ke" aria-controls="props-panel-ke" aria-selected="false" tabindex="-1">KEs</button>
+                <button type="button" role="tab" class="segmented-button" data-tab="ker"
+                        id="props-tab-ker" aria-controls="props-panel-ker" aria-selected="false" tabindex="-1">KERs</button>
+                <button type="button" role="tab" class="segmented-button" data-tab="stressor"
+                        id="props-tab-stressor" aria-controls="props-panel-stressor" aria-selected="false" tabindex="-1">Stressors</button>
+            </div>
+            <div class="props-panel" role="tabpanel" id="props-panel-aop" aria-labelledby="props-tab-aop" data-entity="aop">
+                {{ methodology_note(methodology_notes, 'aop_property_presence') }}
+                <div class="props-scroll">
+                    <div class="lazy-plot" data-plot-name="aop_property_heatmap" data-a11y="self">
+                        <!-- Plot will be loaded here via JavaScript -->
+                    </div>
+                </div>
+                {{ data_table_toggle('aop_property_heatmap') }}
+            </div>
+            <div class="props-panel" role="tabpanel" id="props-panel-ke" aria-labelledby="props-tab-ke" data-entity="ke" hidden>
+                {{ methodology_note(methodology_notes, 'ke_property_presence') }}
+                <div class="props-scroll">
+                    <div class="lazy-plot" data-plot-name="ke_property_heatmap" data-a11y="self">
+                        <!-- Plot will be loaded here via JavaScript -->
+                    </div>
+                </div>
+                {{ data_table_toggle('ke_property_heatmap') }}
+            </div>
+            <div class="props-panel" role="tabpanel" id="props-panel-ker" aria-labelledby="props-tab-ker" data-entity="ker" hidden>
+                {{ methodology_note(methodology_notes, 'ker_property_presence') }}
+                <div class="props-scroll">
+                    <div class="lazy-plot" data-plot-name="ker_property_heatmap" data-a11y="self">
+                        <!-- Plot will be loaded here via JavaScript -->
+                    </div>
+                </div>
+                {{ data_table_toggle('ker_property_heatmap') }}
+            </div>
+            <div class="props-panel" role="tabpanel" id="props-panel-stressor" aria-labelledby="props-tab-stressor" data-entity="stressor" hidden>
+                {{ methodology_note(methodology_notes, 'stressor_property_presence') }}
+                <div class="props-scroll">
+                    <div class="lazy-plot" data-plot-name="stressor_property_heatmap" data-a11y="self">
+                        <!-- Plot will be loaded here via JavaScript -->
+                    </div>
+                </div>
+                {{ data_table_toggle('stressor_property_heatmap') }}
+            </div>
+            <p class="sr-only props-live" aria-live="polite"></p>
+        </div>
+    </div>
+
     <!-- AOP Property Presence -->
     <div class="plot-box full-width" id="aop-property-presence">
         <div class="plot-header">

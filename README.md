@@ -236,7 +236,9 @@ loads when the tab is first opened), with one cluster picker and pair table for 
 completeness beeswarm (`beeswarm.js`, renderer `plotly-beeswarm`, from
 `/api/v2/data/aop_completeness_beeswarm`) is Plotly: one dot per AOP for the snapshot at the end of the
 /trends range, with the AOP IRI as the dot's id so `Plotly.animate` slides each AOP to its new score
-when the range end moves (it jumps instead under `prefers-reduced-motion`). A view that draws
+when the range end moves (it jumps instead under `prefers-reduced-motion`). The property fill-in
+heatmaps (`property-heatmap.js`) are server Plotly figures, one per entity tab (`?props=`); the module
+adds the tabs and a cell-by-cell keyboard path, since `a11y.js` steps along one axis only. A view that draws
 one SVG with its colours as attributes marks it `svg[data-export="svg"]`, or builds one on request with
 `container.exportSvg()`, and its download menu gets "PNG/SVG (as shown)" like the Plotly figures.
 

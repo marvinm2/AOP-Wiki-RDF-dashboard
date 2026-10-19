@@ -22,17 +22,26 @@ NOTES = json.loads((ROOT / "static" / "data" / "methodology_notes.json").read_te
 TEMPLATES = {"snapshot": "latest.html", "trends": "trends.html"}
 
 
+NOTE_RE = r"methodology_note\(methodology_notes, '([^']+)'\)"
+
+
 def _cards(page):
-    """Plot cards of a page template: one methodology note, its containers and download links."""
+    """Plot cards of a page template: one methodology note, its containers and download links.
+
+    A card whose tab panels each carry their own note (the property heatmap,
+    #187) counts as one card per panel; the card's download links may point at
+    any of its panels' plots.
+    """
     html = (ROOT / "templates" / TEMPLATES[page]).read_text()
-    return [
-        {
-            "notes": re.findall(r"methodology_note\(methodology_notes, '([^']+)'\)", chunk),
-            "plots": re.findall(r'data-plot-name="([^"]+)"', chunk),
-            "downloads": re.findall(r'href="/download/([^"?]+)', chunk),
-        }
-        for chunk in re.split(r'<div class="plot-box', html)[1:]
-    ]
+    cards = []
+    for chunk in re.split(r'<div class="plot-box', html)[1:]:
+        downloads = re.findall(r'href="/download/([^"?]+)', chunk)
+        card_plots = re.findall(r'data-plot-name="([^"]+)"', chunk)
+        panels = re.split(r'role="tabpanel"', chunk)[1:]
+        units = panels if panels and all(re.search(NOTE_RE, p) for p in panels) else [chunk]
+        cards += [{"notes": re.findall(NOTE_RE, unit), "plots": re.findall(r'data-plot-name="([^"]+)"', unit),
+                   "downloads": downloads, "card_plots": card_plots} for unit in units]
+    return cards
 
 
 CARDS = {page: _cards(page) for page in TEMPLATES}
@@ -112,7 +121,7 @@ def _download_target(path):
 def test_download_links_point_at_the_cards_plots(page):
     for card in CARDS[page]:
         for path in card["downloads"]:
-            assert _download_target(path) in card["plots"], path
+            assert _download_target(path) in card["card_plots"], path
 
 
 def test_snapshot_ids_are_prefixed():
