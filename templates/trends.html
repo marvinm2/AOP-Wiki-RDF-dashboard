@@ -683,6 +683,44 @@
         {{ data_table_toggle('organ_coverage_absolute') }}
     </div>
 
+    <!-- Organ-system rank over time, a bump chart (#187) -->
+    <div class="plot-box full-width" id="organ-bump">
+        <div class="plot-header">
+            <h3>Organ-System Rank over Time</h3>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div class="bump-control">
+                    <label for="organ-bump-highlight">Highlight:</label>
+                    <select id="organ-bump-highlight" class="branch-selector">
+                        <option value="">All organ systems</option>
+                    </select>
+                </div>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/organ_coverage_bump?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/organ_coverage_bump?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/organ_coverage_bump?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <p class="plot-description">
+            The same counts as the chart above, as a league table: at each snapshot the 12 organ systems are ranked by
+            the number of AOPs classified into them, 1 being the most. A line that climbs gained AOPs faster than the
+            systems it passed. A system with no AOPs in a snapshot is not ranked there. Pick a system under
+            Highlight to follow its line, or focus the chart and use the arrow keys: left and right move between
+            snapshots, up and down between ranks.
+        </p>
+        {{ methodology_note(methodology_notes, 'organ_coverage') }}
+        <div class="bump-scroll">
+            <div class="lazy-plot" data-plot-name="organ_coverage_bump" data-a11y="self">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+        <p class="sr-only bump-live" aria-live="polite"></p>
+        {{ data_table_toggle('organ_coverage_bump') }}
+    </div>
+
     </div>
 </section>
 

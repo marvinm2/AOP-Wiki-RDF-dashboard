@@ -4253,15 +4253,115 @@ def _query_aop_total(graph_uri: str) -> int:
         return 0
 
 
-def plot_organ_coverage_trends() -> tuple[str, str, pd.DataFrame]:
+# The bump chart ranks the named organ systems only: "Other/Unclassified" and
+# "No annotation" are not systems, so they would only push the others down.
+ORGAN_BUMP_SYSTEMS = tuple(b for b in ORGAN_SYSTEM_BUCKETS if b != "Other/Unclassified")
+ORGAN_BUMP_COLUMNS = ["Version", "Organ System", "AOPs", "Rank", "Ranked Systems", "Rank Change"]
+
+
+def organ_bump_rows(df: pd.DataFrame) -> pd.DataFrame:
+    """Rank of each organ system by AOP count, per snapshot (#187).
+
+    ``df`` has one row per snapshot, oldest first, with a ``version`` column
+    and one AOP-count column per bucket. A system with no AOPs in a snapshot
+    is not ranked there (no row). Ties go to the system ranked higher in the
+    previous snapshot, then to the bucket order, so ranks are distinct and a
+    tie does not make lines swap back and forth. Rank Change is "+n" for a
+    move up, "-n" for a move down, "0", "new" when the system was not ranked
+    in the previous snapshot, and empty in the first snapshot.
+    """
+    order = {b: i for i, b in enumerate(ORGAN_BUMP_SYSTEMS)}
+    rows = []
+    previous: dict[str, int] | None = None
+    for _, snap in df.iterrows():
+        counts = {b: int(snap.get(b, 0) or 0) for b in ORGAN_BUMP_SYSTEMS}
+        ranked = sorted((b for b, n in counts.items() if n > 0),
+                        key=lambda b: (-counts[b], (previous or {}).get(b, len(order)), order[b]))
+        ranks = {b: i + 1 for i, b in enumerate(ranked)}
+        for b in ranked:
+            if previous is None:
+                change = ""
+            elif b not in previous:
+                change = "new"
+            else:
+                moved = previous[b] - ranks[b]
+                change = f"+{moved}" if moved > 0 else str(moved)
+            rows.append({"Version": snap["version"], "Organ System": b, "AOPs": counts[b],
+                         "Rank": ranks[b], "Ranked Systems": len(ranked), "Rank Change": change})
+        previous = ranks
+    return pd.DataFrame(rows, columns=ORGAN_BUMP_COLUMNS)
+
+
+def _bump_change_text(change: str) -> str:
+    if change == "":
+        return "first snapshot"
+    if change == "new":
+        return "newly ranked"
+    if change == "0":
+        return "same rank as the snapshot before"
+    n = int(change)
+    return f"{'up' if n > 0 else 'down'} {abs(n)} since the snapshot before"
+
+
+def _render_organ_bump(df: pd.DataFrame) -> go.Figure:
+    """One line per organ system through its rank at each snapshot.
+
+    Traces are ordered by rank at the latest snapshot, so the legend reads as
+    the current league table. A system with no AOPs in a snapshot leaves a gap.
+    """
+    versions = list(dict.fromkeys(df["Version"]))
+    latest = df[df["Version"] == versions[-1]].sort_values("Rank")
+    systems = list(latest["Organ System"]) + [s for s in ORGAN_BUMP_SYSTEMS
+                                              if s in set(df["Organ System"]) and s not in set(latest["Organ System"])]
+    palette = BRAND_COLORS["palette"]
+    fig = go.Figure()
+    for i, system in enumerate(systems):
+        by_version = df[df["Organ System"] == system].set_index("Version")
+        y, custom = [], []
+        for v in versions:
+            if v in by_version.index:
+                r = by_version.loc[v]
+                y.append(int(r["Rank"]))
+                custom.append([int(r["AOPs"]), _bump_change_text(r["Rank Change"]), int(r["Ranked Systems"])])
+            else:
+                y.append(None)
+                custom.append([0, "not ranked: no AOPs", 0])
+        fig.add_trace(go.Scatter(
+            x=versions, y=y, name=system, mode="lines+markers", connectgaps=False,
+            line=dict(color=palette[i % len(palette)]), customdata=custom,
+            hovertemplate="<b>%{fullData.name}</b><br>%{x}: rank %{y} of %{customdata[2]}"
+                          "<br>%{customdata[0]} AOPs, %{customdata[1]}<extra></extra>",
+        ))
+    _apply_marker_symbols(fig, size=8, line_width=2.2)
+    n = len(ORGAN_BUMP_SYSTEMS)
+    fig.update_layout(
+        title=dict(text="Organ-System Rank by AOP Count over Time"
+                        f"<br><sup>{len(systems)} organ systems ranked across {len(versions)} snapshots, "
+                        "1 = most AOPs (Signals A, A', B)</sup>"),
+        xaxis_title="Snapshot",
+        # A fixed, upside-down range (1 on top): autorange "reversed" would ignore it.
+        yaxis=dict(title="Rank", autorange=False, range=[n + 0.5, 0.5], dtick=1, zeroline=False, fixedrange=True),
+        # Below the plot, so the lines keep the width on narrow screens.
+        legend=dict(title=dict(text="Rank at latest snapshot:"), orientation="h",
+                    yanchor="top", y=-0.22, xanchor="left", x=0),
+        hovermode="closest",
+        height=620,
+        margin=dict(l=60, r=30, t=80, b=150),
+    )
+    fig.update_xaxes(tickangle=-45)
+    return fig
+
+
+def plot_organ_coverage_trends() -> tuple[str, str, str]:
     """Organ-system coverage of AOPs across every quarterly snapshot.
 
     For each snapshot date, count the number of AOPs that classify into each
     organ-system bucket via Signals A/A'/B (the structured-anatomy signals).
-    Produces a multi-line absolute plot and a percentage-of-snapshot view.
+    Produces a multi-line absolute plot, a percentage-of-snapshot view and a
+    bump chart of each organ system's rank (#187).
 
     Returns:
-        tuple: (absolute_html, percentage_html, long_dataframe)
+        tuple: (absolute_html, percentage_html, bump_html)
     """
     global _plot_data_cache, _plot_figure_cache
 
@@ -4269,7 +4369,7 @@ def plot_organ_coverage_trends() -> tuple[str, str, pd.DataFrame]:
         versions = get_all_versions()
         if not versions:
             fallback = create_fallback_plot("Organ-System Coverage Trends", "No versions available")
-            return (fallback, fallback, pd.DataFrame())
+            return (fallback, fallback, fallback)
 
         def _query_version(ver_info):
             graph_uri = ver_info["graph_uri"]
@@ -4307,7 +4407,7 @@ def plot_organ_coverage_trends() -> tuple[str, str, pd.DataFrame]:
 
         if not rows:
             fallback = create_fallback_plot("Organ-System Coverage Trends", "No data collected")
-            return (fallback, fallback, pd.DataFrame())
+            return (fallback, fallback, fallback)
 
         df = pd.DataFrame(rows)
         df["version_dt"] = pd.to_datetime(df["version"], errors="coerce")
@@ -4383,9 +4483,14 @@ def plot_organ_coverage_trends() -> tuple[str, str, pd.DataFrame]:
         _plot_figure_cache["organ_coverage_absolute"] = fig_abs
         _plot_figure_cache["organ_coverage_percentage"] = fig_pct
 
-        return (render_plot_html(fig_abs), render_plot_html(fig_pct), export_df)
+        df_bump = organ_bump_rows(df)
+        fig_bump = _render_organ_bump(df_bump)
+        _plot_data_cache["organ_coverage_bump"] = df_bump
+        _plot_figure_cache["organ_coverage_bump"] = fig_bump
+
+        return (render_plot_html(fig_abs), render_plot_html(fig_pct), render_plot_html(fig_bump))
 
     except Exception as e:
         logger.error(f"Failed to generate organ-coverage trends: {str(e)}")
         fallback = create_fallback_plot("Organ-System Coverage Trends", f"Error: {str(e)}")
-        return (fallback, fallback, pd.DataFrame())
+        return (fallback, fallback, fallback)
