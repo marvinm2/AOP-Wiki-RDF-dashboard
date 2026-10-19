@@ -773,6 +773,45 @@
             </div>
             {{ data_table_toggle('latest_ontology_coverage_holes') }}
         </div>
+        <!-- Ontology Coverage Map (#187): drawn by plots/latest_plots.py, keyboard and zoom in static/js/viz/coverage-map.js -->
+        <div class="plot-box full-width" id="latest-ontology-coverage-map">
+            <div class="plot-header">
+                <h3>Ontology Coverage Map</h3>
+                <div class="ontology-branch-control">
+                    <label for="ontology-map-branch-select">Organ system:</label>
+                    <select id="ontology-map-branch-select" class="branch-selector"
+                            data-target-plot="latest_ontology_coverage_map">
+                        {% for b in ontology_branches %}
+                        <option value="{{ b }}"{% if b == 'Cardiovascular' %} selected{% endif %}>{{ b }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download &#x25BC;</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/latest/ontology_coverage_map?format=csv" class="dropdown-item">CSV</a>
+                        <a href="/download/latest/ontology_coverage_map?format=png" class="dropdown-item">PNG</a>
+                        <a href="/download/latest/ontology_coverage_map?format=svg" class="dropdown-item">SVG</a>
+                    </div>
+                </div>
+            </div>
+            <p class="plot-description">
+                The same organ-system branch as the holes above, drawn whole: the branch on top, its
+                sub-branches below to depth 3, each block as wide as the part of the ontology beneath it.
+                Magenta blocks are the holes from the chart above, light blue ones sit inside a hole, and
+                the dark blocks are annotated or lead down to an annotation. Click a block, or focus the
+                chart and use the arrow keys and Enter, to zoom in. The organ system follows the selector
+                on either chart.
+            </p>
+            {{ methodology_note(methodology_notes, 'latest_ontology_coverage_map') }}
+            <div class="coverage-map-scroll">
+                <div class="lazy-plot" data-plot-name="latest_ontology_coverage_map" data-branch="Cardiovascular" data-a11y="self">
+                    <!-- Plot will be loaded here via JavaScript -->
+                </div>
+            </div>
+            <p class="sr-only coverage-map-live" aria-live="polite"></p>
+            {{ data_table_toggle('latest_ontology_coverage_map') }}
+        </div>
         <div class="plot-box">
             <div class="plot-header">
                 <h3>Most-Reused Ontology Terms</h3>
@@ -1014,6 +1053,7 @@ window.TIMELINE_EVENTS = {{ timeline_events|tojson }};
 <script src="{{ url_for('static', filename='js/viz/scrubber.js') }}"></script>
 <script src="{{ url_for('static', filename='js/viz/upset.js') }}"></script>
 <script src="{{ url_for('static', filename='js/viz/overlap.js') }}"></script>
+<script src="{{ url_for('static', filename='js/viz/coverage-map.js') }}"></script>
 <script src="{{ url_for('static', filename='js/snapshot-controls.js') }}"></script>
 <script>
 // EXPL-04: clicking a KE in the KE-reuse plot opens its identifiers.org IRI,

@@ -2594,3 +2594,22 @@ body:has(.sticky-controls) .section-block {
     outline: 3px solid var(--color-magenta);
     outline-offset: 2px;
 }
+
+/* ==========================================================================
+   Ontology coverage map (#187): static/js/viz/coverage-map.js
+   ========================================================================== */
+/* Narrow blocks lose their labels; on phones the map scrolls inside its card
+   so the blocks keep enough width to name the large sub-branches. */
+.coverage-map-scroll {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.coverage-map-scroll .lazy-plot {
+    min-width: 680px;
+}
+
+.coverage-map-scroll .lazy-plot:focus-visible {
+    outline: 3px solid var(--color-magenta);
+    outline-offset: 2px;
+}

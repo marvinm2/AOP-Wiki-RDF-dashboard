@@ -1,7 +1,7 @@
 /**
  * Plot settings on the Snapshot page (#181): the coverage scope/view toggles,
- * the overlap threshold slider, the ontology-branch selector and the domain
- * selector.
+ * the overlap threshold slider, the ontology-branch selectors (the holes bars
+ * and the coverage map share one setting) and the domain selector.
  *
  * Each control only writes its value into the page state (static/js/state.js);
  * the runtime reloads the plots that take that setting. A control's initial
@@ -87,6 +87,7 @@
         wireCoverageToggles();
         wireThresholdSlider();
         wireSelect('ontology-branch-select', 'branch');
+        wireSelect('ontology-map-branch-select', 'branch');  // the coverage map's copy (#187)
         wireSelect('domain-lens-select', 'domain');
     }
 

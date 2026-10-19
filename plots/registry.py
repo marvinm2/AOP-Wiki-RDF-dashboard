@@ -226,6 +226,7 @@ SPECS: tuple[PlotSpec, ...] = (
     snapshot('latest_ke_mmo_coverage', 'plot_latest_ke_mmo_coverage', precompute=True),
     snapshot('latest_aop_aop_overlap', 'plot_latest_aop_aop_overlap', precompute=True, params=('min_jaccard', 'min_shared_kes')),
     snapshot('latest_ontology_coverage_holes', 'plot_latest_ontology_coverage_holes', params=('branch',), bulk=('latest-all', 'data-quality')),
+    snapshot('latest_ontology_coverage_map', 'plot_latest_ontology_coverage_map', params=('branch',), bulk=('latest-all', 'data-quality')),
     snapshot('latest_domain_coverage', 'plot_latest_domain_coverage', params=('domain',), bulk=('latest-all',)),
     snapshot('latest_domain_completeness', 'plot_latest_domain_completeness', params=('domain',), bulk=('latest-all',)),
     snapshot('latest_domain_status', 'plot_latest_domain_status', params=('domain',), bulk=('latest-all',)),

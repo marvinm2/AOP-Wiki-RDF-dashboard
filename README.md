@@ -238,7 +238,10 @@ completeness beeswarm (`beeswarm.js`, renderer `plotly-beeswarm`, from
 /trends range, with the AOP IRI as the dot's id so `Plotly.animate` slides each AOP to its new score
 when the range end moves (it jumps instead under `prefers-reduced-motion`). The property fill-in
 heatmaps (`property-heatmap.js`) are server Plotly figures, one per entity tab (`?props=`); the module
-adds the tabs and a cell-by-cell keyboard path, since `a11y.js` steps along one axis only. A view that draws
+adds the tabs and a cell-by-cell keyboard path, since `a11y.js` steps along one axis only. The ontology
+coverage map (`coverage-map.js`) is a server icicle drawn as horizontal bars, one row per level of the
+organ-system branch (Plotly's icicle trace is not in the cartesian bundle); the module zooms to a block on
+click or Enter and walks the tree with the arrow keys. A view that draws
 one SVG with its colours as attributes marks it `svg[data-export="svg"]`, or builds one on request with
 `container.exportSvg()`, and its download menu gets "PNG/SVG (as shown)" like the Plotly figures.
 
