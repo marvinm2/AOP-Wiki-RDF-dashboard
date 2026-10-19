@@ -192,6 +192,7 @@ SPECS: tuple[PlotSpec, ...] = (
     *trend('organ_coverage', 'plot_organ_coverage_trends', note='organ_coverage', outputs={
         'organ_coverage_absolute': (0, ()),
         'organ_coverage_percentage': (1, ()),
+        'organ_coverage_bump': (2, ()),
     }),
 
     # --- Snapshot plots (rendered per version on request) ---------------------

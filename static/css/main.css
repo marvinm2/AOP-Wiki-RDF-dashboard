@@ -2590,6 +2590,16 @@ body:has(.sticky-controls) .section-block {
     min-width: 680px;
 }
 
+.bump-scroll {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.bump-scroll .lazy-plot {
+    min-width: 680px;
+}
+
+.bump-scroll .lazy-plot:focus-visible,
 .props-panel .lazy-plot:focus-visible {
     outline: 3px solid var(--color-magenta);
     outline-offset: 2px;

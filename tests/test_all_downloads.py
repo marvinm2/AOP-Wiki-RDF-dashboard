@@ -143,6 +143,7 @@ TREND_PLOTS = [
     "ontology_term_growth_delta",
     "organ_coverage_absolute",
     "organ_coverage_percentage",
+    "organ_coverage_bump",
 ]
 
 # Explicitly-registered routes (bare-key lookups) worth hitting directly to catch
