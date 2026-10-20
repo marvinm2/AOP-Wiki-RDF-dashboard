@@ -51,8 +51,10 @@ def journey():
 
 
 def test_one_anchor_per_year_and_the_latest_for_the_latest_year():
-    versions = ["2019-01-01", "2019-04-01", "2020-01-01", "2022-01-01", "2022-07-01", "2026-01-01", "2026-10-01"]
-    assert oecd_journey_anchors(versions) == ["2019-01-01", "2020-01-01", "2022-01-01", "2026-10-01"]
+    versions = ["2019-01-01", "2019-04-01", "2020-01-01", "2021-01-03", "2022-01-01", "2022-07-01",
+                "2023-04-01", "2026-01-01", "2026-10-01"]
+    # 2021's January snapshot is on the 3rd; 2023 has none.
+    assert oecd_journey_anchors(versions) == ["2019-01-01", "2020-01-01", "2021-01-03", "2022-01-01", "2026-10-01"]
     assert oecd_journey_anchors(["2025-01-01", "2026-01-01"]) == ["2025-01-01", "2026-01-01"]
     assert oecd_journey_anchors([]) == []
 
