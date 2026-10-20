@@ -102,6 +102,9 @@ SPECS: tuple[PlotSpec, ...] = (
     *trend('ke_reuse_race', 'plot_ke_reuse_race', note='ke_reuse_race', outputs={
         'ke_reuse_race': (0, ()),
     }),
+    *trend('ker_curation_calendar', 'plot_ker_curation_calendar', note='ker_curation_calendar', outputs={
+        'ker_curation_calendar': (0, ()),
+    }),
     *trend('oecd_status_distribution', 'plot_oecd_status_distribution', note='oecd_status_distribution', outputs={
         'oecd_status_distribution_absolute': (0, ()),
         'oecd_status_distribution_percentage': (1, ()),

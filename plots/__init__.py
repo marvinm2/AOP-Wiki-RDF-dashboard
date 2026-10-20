@@ -189,6 +189,7 @@ from .trends_plots import (
     plot_oecd_status_journey,
     plot_entity_survival,
     plot_ke_reuse_race,
+    plot_ker_curation_calendar,
 )
 
 # Import network analysis functions
@@ -332,6 +333,7 @@ __all__ = [
     'plot_oecd_status_journey',
     'plot_entity_survival',
     'plot_ke_reuse_race',
+    'plot_ker_curation_calendar',
 
     # Current snapshot functions
     'plot_latest_entity_counts',

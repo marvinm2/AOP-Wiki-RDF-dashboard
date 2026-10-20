@@ -982,6 +982,142 @@ def plot_ke_reuse_race() -> tuple[str, pd.DataFrame]:
         return create_fallback_plot("Most Reused Key Events", str(e)), pd.DataFrame()
 
 
+# --- KER curation calendar (#187) -------------------------------------------
+
+KER_CALENDAR_COLUMNS = ["Date", "Weekday", "Year", "Week", "KERs Created", "Bulk Import"]
+# A day with more KERs created than this is a bulk import, not curation: on
+# 2016-11-29 726 KERs were given one creation time within a minute.
+KER_CALENDAR_BULK_MIN = 100
+# Days with this many KERs or more share the darkest colour.
+KER_CALENDAR_CAP = 10
+_WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+
+
+def _calendar_week(day) -> int:
+    """Column of ``day`` in its year's calendar: weeks start on Monday, and
+    week 0 holds 1 January."""
+    import datetime as _dt
+    jan1 = _dt.date(day.year, 1, 1)
+    return (day - (jan1 - _dt.timedelta(days=jan1.weekday()))).days // 7
+
+
+def ker_calendar_days(created: list) -> pd.DataFrame:
+    """One row per day on which KERs were created (``KER_CALENDAR_COLUMNS``).
+
+    ``created`` holds the dcterms:created values, as written in the RDF
+    (no time zone, so the weekday is the one written). A day with more than
+    ``KER_CALENDAR_BULK_MIN`` KERs is flagged as a bulk import.
+    """
+    import datetime as _dt
+    days = pd.Series([str(c)[:10] for c in created if c]).value_counts().sort_index()
+    rows = []
+    for date, n in days.items():
+        day = _dt.date.fromisoformat(date)
+        rows.append({
+            "Date": date,
+            "Weekday": _WEEKDAYS[day.weekday()],
+            "Year": day.year,
+            "Week": _calendar_week(day),
+            "KERs Created": int(n),
+            "Bulk Import": bool(n > KER_CALENDAR_BULK_MIN),
+        })
+    return pd.DataFrame(rows, columns=KER_CALENDAR_COLUMNS)
+
+
+def _render_ker_calendar(df: pd.DataFrame, until: str) -> go.Figure:
+    """One strip per year: weeks across, weekdays down, a cell per day.
+
+    Days after ``until`` (the newest snapshot) are left blank: KERs created
+    then are not in any graph yet, so they are unknown rather than zero.
+    """
+    import datetime as _dt
+    from plotly.subplots import make_subplots
+
+    curated = df[~df["Bulk Import"]]
+    bulk = df[df["Bulk Import"]]
+    years = sorted(curated["Year"].unique())
+    counts = dict(zip(curated["Date"], curated["KERs Created"]))
+    fig = make_subplots(rows=max(len(years), 1), cols=1, vertical_spacing=0.025, shared_xaxes=True)
+    for r, year in enumerate(years, start=1):
+        z = [[None] * 54 for _ in range(7)]
+        dates = [[""] * 54 for _ in range(7)]
+        day = _dt.date(year, 1, 1)
+        while day.year == year and day.isoformat() <= until:
+            w, d = _calendar_week(day), day.weekday()
+            z[d][w] = min(counts.get(day.isoformat(), 0), KER_CALENDAR_CAP)
+            dates[d][w] = f"{_WEEKDAYS[d][:3]} {day.isoformat()}: {counts.get(day.isoformat(), 0)}"
+            day += _dt.timedelta(days=1)
+        fig.add_heatmap(
+            z=z, x=list(range(54)), y=_WEEKDAYS, customdata=dates, coloraxis="coloraxis",
+            xgap=2, ygap=2, name=str(year), meta=str(year),
+            hovertemplate="%{customdata} KERs created<extra></extra>", row=r, col=1,
+        )
+        fig.update_yaxes(autorange="reversed", tickvals=["Monday", "Wednesday", "Friday"],
+                         ticktext=["Mon", "Wed", "Fri"], title_text=str(year), title_standoff=6,
+                         showgrid=False, fixedrange=True, row=r, col=1)
+    # Month names over the first week of each month (a non-leap year; at
+    # most a column off in the others).
+    months = [_calendar_week(_dt.date(2025, m, 1)) for m in range(1, 13)]
+    fig.update_xaxes(showgrid=False, zeroline=False, fixedrange=True, tickvals=months,
+                     ticktext=[_dt.date(2025, m, 1).strftime("%b") for m in range(1, 13)],
+                     range=[-0.5, 53.5])
+    fig.update_xaxes(side="top", showticklabels=True, row=1, col=1)
+    left_out = (f"{int(bulk['KERs Created'].sum())} KERs of a bulk import on "
+                f"{', '.join(bulk['Date'])} left out" if len(bulk) else "")
+    fig.update_layout(
+        title=dict(text="KER Curation Calendar<br><sup>Key Event Relationships created per day"
+                        + (f"; {left_out}" if left_out else "") + "</sup>"),
+        coloraxis=dict(colorscale=[[0, "#EEF2F7"], [0.1, "#C9DDF0"], [0.5, BRAND_COLORS["blue"]],
+                                   [1, BRAND_COLORS["primary"]]],
+                       cmin=0, cmax=KER_CALENDAR_CAP,
+                       colorbar=dict(title=dict(text="KERs"), tickvals=[0, 5, KER_CALENDAR_CAP],
+                                     ticktext=["0", "5", f"{KER_CALENDAR_CAP}+"], len=0.4, y=1, yanchor="top")),
+        height=110 + 92 * len(years), margin=dict(l=80, r=30, t=110, b=20),
+        hovermode="closest",
+    )
+    return fig
+
+
+def plot_ker_curation_calendar() -> tuple[str, pd.DataFrame]:
+    """When KERs were created, day by day, as a week x weekday calendar (#187).
+
+    One query takes each KER's dcterms:created from every snapshot graph, so
+    KERs removed since are counted too (the value never differs between
+    graphs). The x axis is the week of the year, not a snapshot, so the
+    /trends range does not apply.
+
+    Returns:
+        tuple[str, pd.DataFrame]: the figure HTML and ``ker_calendar_days``.
+    """
+    global _plot_data_cache, _plot_figure_cache
+
+    try:
+        versions = sorted({v['version'] for v in get_all_versions()})
+        query = """
+        SELECT ?ker (MIN(STR(?created)) AS ?first)
+        WHERE {
+            GRAPH ?graph { ?ker a aopo:KeyEventRelationship ; dcterms:created ?created . }
+            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        GROUP BY ?ker
+        """
+        created = [r["first"]["value"] for r in run_sparql_query_with_retry(query)]
+        if not created or not versions:
+            return create_fallback_plot("KER Curation Calendar", "No KER creation dates"), pd.DataFrame()
+        df = ker_calendar_days(created)
+        fig = _render_ker_calendar(df, versions[-1])
+
+        _plot_data_cache['ker_curation_calendar'] = df
+        _plot_figure_cache['ker_curation_calendar'] = fig
+        return render_plot_html(fig), df
+
+    except SparqlUnavailable:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to generate KER curation calendar: {e}")
+        return create_fallback_plot("KER Curation Calendar", str(e)), pd.DataFrame()
+
+
 def plot_oecd_status_distribution() -> tuple[str, str, pd.DataFrame]:
     """Per-version count of AOPs in each OECD status (absolute + percentage).
 

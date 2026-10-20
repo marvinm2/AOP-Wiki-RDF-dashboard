@@ -945,6 +945,35 @@
         </div>
         {{ data_table_toggle('aop_creation_vs_modification_timeline') }}
     </div>
+
+    <!-- KER curation calendar (#187): server heatmap, keyboard in static/js/viz/calendar.js -->
+    <div class="plot-box full-width" id="ker-curation-calendar">
+        <div class="plot-header">
+            <h3>KER Curation Calendar</h3>
+            <div class="download-dropdown">
+                <button class="download-button dropdown-toggle">Download ▼</button>
+                <div class="dropdown-menu">
+                    <a href="/download/trend/ker_curation_calendar?format=csv" class="dropdown-item">📄 CSV</a>
+                    <a href="/download/trend/ker_curation_calendar?format=png" class="dropdown-item">🖼️ PNG</a>
+                    <a href="/download/trend/ker_curation_calendar?format=svg" class="dropdown-item">📐 SVG</a>
+                </div>
+            </div>
+        </div>
+        <p class="plot-description">
+            When Key Event Relationships are written: one strip per year, a cell per day, darker for more KERs
+            created that day. A bulk import on 2016-11-29, which gave 726 older KERs one creation time, is left
+            out. Focus the chart and use the arrow keys to step through the days (left and right move a week),
+            or Page Up and Page Down to change year. The calendar shows every year whatever the snapshot range.
+        </p>
+        {{ methodology_note(methodology_notes, 'ker_curation_calendar') }}
+        <div class="calendar-scroll">
+            <div class="lazy-plot" data-plot-name="ker_curation_calendar" data-a11y="self">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+        <p class="sr-only calendar-live" aria-live="polite"></p>
+        {{ data_table_toggle('ker_curation_calendar') }}
+    </div>
     </div>
 </section>
 

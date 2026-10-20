@@ -147,6 +147,7 @@ TREND_PLOTS = [
     "oecd_status_journey",
     "entity_survival",
     "ke_reuse_race",
+    "ker_curation_calendar",
 ]
 
 # Explicitly-registered routes (bare-key lookups) worth hitting directly to catch

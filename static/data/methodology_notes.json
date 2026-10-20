@@ -471,6 +471,23 @@
         "limitations": "Creation and modification dates reflect what is stored in the RDF data, which may differ from the AOP-Wiki web interface timestamps. Some AOPs may have missing or malformed date values. Dates come from every version graph; the scatter shows each distinct (AOP, created, modified) combination once, and the creation histogram counts each AOP once at its earliest creation date. Several dates are bulk events rather than curation: in the 2026-10-01 snapshot 172 AOPs share the creation date 2016-11-29, 200 share the modification date 2023-04-29 (AOP-Wiki Release 2.6) and 104 share 2026-01-11, which shows up as dense horizontal and vertical bands. Trend data covers only the published RDF release versions available in the SPARQL endpoint; the AOP-Wiki knowledge base predates the earliest RDF release, so earlier activity is not captured.",
         "sparql": "SELECT ?aop ?created ?modified\nWHERE {\n  GRAPH ?graph {\n    ?aop a aopo:AdverseOutcomePathway .\n    OPTIONAL { ?aop dc:date ?created . }\n    OPTIONAL { ?aop dcterms:modified ?modified . }\n  }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nORDER BY DESC(?graph)"
     },
+    "ker_curation_calendar": {
+        "title": "KER Curation Calendar",
+        "description": "The days on which Key Event Relationships were created in AOP-Wiki, as a calendar: one strip per year, weeks across and weekdays down. 2,181 KERs over 466 days are shown, typically 3 on a day; KERs are written on working days, most on Wednesdays (474) and fewest on Saturdays (67). 726 more KERs carry the creation time 2016-11-29 18:41: a bulk import of KERs written before then, which is left out.",
+        "data_source": "One SPARQL query takes the dcterms:created value of every KER in any snapshot graph, so KERs removed since are counted too; a KER has the same value in every graph. The days are counted in Python.",
+        "method_steps": [
+            "<strong>Day.</strong> The date part of dcterms:created, as written in the RDF. The values have no time zone, so a KER written late in the evening in one time zone can fall on the next day in another.",
+            "<strong>Bulk imports.</strong> A day with more than 100 KERs is flagged as a bulk import and left out of the calendar; the CSV keeps it, with Bulk Import set to true. Only 2016-11-29 qualifies.",
+            "<strong>Cells.</strong> Weeks start on Monday and the first column of a year holds 1 January. Colours run from 0 to 10 KERs, and days with 10 or more share the darkest colour (54 days). Days after the newest snapshot are blank: KERs created then are not in a graph yet."
+        ],
+        "limitations": "Only creation is shown. The RDF also has dcterms:modified, but each graph keeps only the latest edit of a KER, so earlier edits cannot be counted. A KER created and deleted between two snapshots is in no graph and is missed. The x axis is the week of the year, not a snapshot, so the /trends range does not apply.",
+        "queries": [
+            {
+                "caption": "The creation time of every KER in any snapshot graph",
+                "query": "SELECT ?ker (MIN(STR(?created)) AS ?first)\nWHERE {\n  GRAPH ?graph { ?ker a aopo:KeyEventRelationship ; dcterms:created ?created . }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?ker\nORDER BY ?first"
+            }
+        ]
+    },
     "ke_component_annotations": {
         "title": "KE Component Annotations Over Time",
         "description": "Tracks how many Key Event annotations include Process, Object, and Action elements over time. Shows the absolute number of each component type across database versions.",

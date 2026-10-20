@@ -258,7 +258,10 @@ one box rather than a label per trace. The KE reuse rank race (`race.js`, render
 ever in the top 15, keyed by its IRI, so `Plotly.animate` slides the bars to their new ranks as Play moves
 the range end. With transitions (redraw off) Plotly neither fills in text that was empty nor interpolates
 from a zero-length bar, and it stacks bars that share a y, so every bar keeps its label and a sliver of
-length, KEs outside the top wait off the canvas, and `barmode` is `overlay`. A view that draws
+length, KEs outside the top wait off the canvas, and `barmode` is `overlay`. The KER curation calendar is a
+server Plotly figure, one heatmap strip per year with a cell per day (customdata "Tue 2023-10-17: 33"); like
+survival it is in `EXCLUDED_PLOTS`, and `calendar.js` gives it a day-by-day keyboard path (up/down a day,
+left/right a week, Page Up/Down a year), hovering the cell with `Fx.hover` on that strip's subplot. A view that draws
 one SVG with its colours as attributes marks it `svg[data-export="svg"]`, or builds one on request with
 `container.exportSvg()`, and its download menu gets "PNG/SVG (as shown)" like the Plotly figures.
 
