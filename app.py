@@ -50,6 +50,7 @@ import time
 import os
 import re
 import json
+import functools
 import logging
 import threading
 
@@ -500,6 +501,28 @@ def _version_freshness() -> dict:
     return info
 
 
+# Committed ontology caches built offline from Ubergraph (scripts/build_*_cache.py),
+# rebuilt monthly by the ontology-caches workflow.
+ONTOLOGY_CACHES = {
+    "organ_systems": "organ_system_cache.json",
+    "domain_lens": "domain_lens_cache.json",
+    "ontology_branches": "ontology_branch_cache.json",
+}
+
+
+@functools.lru_cache(maxsize=1)
+def _ontology_cache_dates() -> dict:
+    """``generated_at`` of each ontology cache (None if missing); read once per process."""
+    dates = {}
+    for key, name in ONTOLOGY_CACHES.items():
+        try:
+            with open(os.path.join(app.static_folder, "data", name)) as fh:
+                dates[key] = json.load(fh).get("generated_at")
+        except (OSError, ValueError):
+            dates[key] = None
+    return dates
+
+
 @app.route("/health")
 def health_check():
     """Health check endpoint for application and service monitoring.
@@ -587,6 +610,7 @@ def health_check():
                 "timestamp": time.time()
             }
             health_status.update(_version_freshness())
+            health_status["ontology_caches"] = _ontology_cache_dates()
             if failed_plots:
                 health_status["plots_failed"] = failed_plots
             return health_status, 200
@@ -1278,7 +1302,7 @@ def network_page():
 @app.route("/about")
 def about():
     """Serve the About page with project info, funding, and contact links."""
-    return render_template("about.html", active_page='about')
+    return render_template("about.html", active_page='about', ontology_caches=_ontology_cache_dates())
 
 
 @app.route("/api/network/graph")

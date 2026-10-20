@@ -55,6 +55,13 @@
 } ORDER BY DESC(?v)</pre>
         <p><a href="https://aopwiki.org" target="_blank" rel="noopener"
               class="about-link">AOP-Wiki Website</a></p>
+        <p>The organ-system, domain-lens and ontology-branch views also use ontology
+           structure from <a href="https://github.com/INCATools/ubergraph" target="_blank"
+           rel="noopener" class="about-link">Ubergraph</a>, built ahead of time and rebuilt
+           monthly:
+           organ systems {{ (ontology_caches.organ_systems or 'unknown')[:10] }},
+           domain lens {{ (ontology_caches.domain_lens or 'unknown')[:10] }},
+           ontology branches {{ (ontology_caches.ontology_branches or 'unknown')[:10] }}.</p>
     </div>
 
     <div class="about-section">

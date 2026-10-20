@@ -1,0 +1,81 @@
+name: ontology-caches
+
+# Rebuilds the committed ontology caches (organ systems, domain lens, ontology
+# branches) from Ubergraph and the AOP-Wiki endpoint, and proposes the result
+# as a PR when the content changed (AOP-Wiki_multi-endpoint #22). New quarters
+# bring new terms, so the caches go stale without this. The dashboard shows
+# each cache's generated_at in /health and on /about.
+#
+# Opening the PR needs the repo setting "Allow GitHub Actions to create and
+# approve pull requests". Without it the branch is still pushed and the run
+# summary links to it.
+
+on:
+  schedule:
+    - cron: '0 6 8 * *'   # monthly, the 8th: after a new quarter is usually loaded
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Rebuild the caches
+        id: refresh
+        run: |
+          python scripts/refresh_ontology_caches.py --summary caches.md
+          # Changed = a cache's content changed (not just its timestamps).
+          if head -1 caches.md | grep -q '^No ontology cache changed'; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+          cat caches.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Propose the new caches
+        if: steps.refresh.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          BRANCH="caches/$(date -u +%Y-%m-%d)"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          # fma-ols-labels.json is the organ builder's label lookup, refreshed with it.
+          git add static/data/*_cache.json static/data/fma-ols-labels.json
+          git commit -m "data(caches): rebuild the ontology caches from Ubergraph"
+          git push --force origin "$BRANCH"
+          {
+            cat caches.md
+            echo ""
+            echo "Built by the \`ontology-caches\` workflow (run ${{ github.run_id }})."
+            echo "Check that the stats moved the way new quarters would move them (more terms"
+            echo "in snapshots, a few more classified) before merging; a big drop means an"
+            echo "Ubergraph change, not new AOP-Wiki data."
+          } > pr_body.md
+          if ! gh pr create --base main --head "$BRANCH" \
+               --title "Rebuild the ontology caches ($(date -u +%Y-%m-%d))" --body-file pr_body.md; then
+            URL="${{ github.server_url }}/${{ github.repository }}/compare/main...${BRANCH}?expand=1"
+            echo "::warning::Could not open the PR (repo setting 'Allow GitHub Actions to create and approve pull requests' is off). Open it from ${URL}"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "**Open the PR by hand:** ${URL}" >> "$GITHUB_STEP_SUMMARY"
+          fi
