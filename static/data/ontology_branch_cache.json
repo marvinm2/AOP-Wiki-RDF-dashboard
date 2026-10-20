@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-16T08:19:11.246271+00:00",
+  "generated_at": "2026-10-20T18:14:56.240688+00:00",
   "source": {
     "aopwiki_sparql": "https://aopwiki-multirdf.vhp4safety.nl/sparql",
     "ubergraph_sparql": "https://ubergraph.apps.renci.org/sparql",
@@ -23,7 +23,7 @@
         "cardiovascular system",
         "circulatory system"
       ],
-      "branch_size": 1781,
+      "branch_size": 1792,
       "candidates": {
         "CL_0000071": {
           "label": "blood vessel endothelial cell",
@@ -111,7 +111,7 @@
         },
         "UBERON_0001473": {
           "label": "lymphatic vessel",
-          "subtree_size": 51,
+          "subtree_size": 54,
           "depth": 3,
           "parents": [
             "UBERON_0004536"
@@ -180,7 +180,7 @@
         },
         "UBERON_0002049": {
           "label": "vasculature",
-          "subtree_size": 1409,
+          "subtree_size": 1420,
           "depth": 2,
           "parents": [
             "UBERON_0007798"
@@ -212,7 +212,7 @@
         },
         "UBERON_0002200": {
           "label": "vasculature of head",
-          "subtree_size": 133,
+          "subtree_size": 134,
           "depth": 3,
           "parents": [
             "UBERON_0002049"
@@ -220,7 +220,7 @@
         },
         "UBERON_0002201": {
           "label": "vasculature of trunk",
-          "subtree_size": 164,
+          "subtree_size": 168,
           "depth": 3,
           "parents": [
             "UBERON_0002049"
@@ -361,7 +361,7 @@
         },
         "UBERON_0003920": {
           "label": "venous blood vessel",
-          "subtree_size": 447,
+          "subtree_size": 448,
           "depth": 3,
           "parents": [
             "UBERON_0004582"
@@ -448,7 +448,7 @@
         },
         "UBERON_0004536": {
           "label": "lymph vasculature",
-          "subtree_size": 56,
+          "subtree_size": 59,
           "depth": 2,
           "parents": [
             "UBERON_0002049",
@@ -457,7 +457,7 @@
         },
         "UBERON_0004537": {
           "label": "blood vasculature",
-          "subtree_size": 1195,
+          "subtree_size": 1197,
           "depth": 3,
           "parents": [
             "UBERON_0002049"
@@ -490,7 +490,7 @@
         },
         "UBERON_0004581": {
           "label": "systemic venous system",
-          "subtree_size": 69,
+          "subtree_size": 70,
           "depth": 3,
           "parents": [
             "UBERON_0002049",
@@ -499,7 +499,7 @@
         },
         "UBERON_0004582": {
           "label": "venous system",
-          "subtree_size": 459,
+          "subtree_size": 460,
           "depth": 2,
           "parents": [
             "UBERON_0007798"
@@ -507,7 +507,7 @@
         },
         "UBERON_0004638": {
           "label": "blood vessel endothelium",
-          "subtree_size": 112,
+          "subtree_size": 113,
           "depth": 2,
           "parents": [
             "UBERON_0004852"
@@ -583,7 +583,7 @@
         },
         "UBERON_0004852": {
           "label": "cardiovascular system endothelium",
-          "subtree_size": 123,
+          "subtree_size": 124,
           "depth": 1,
           "parents": []
         },
@@ -671,13 +671,13 @@
         },
         "UBERON_0006558": {
           "label": "lymphatic part of lymphoid system",
-          "subtree_size": 64,
+          "subtree_size": 67,
           "depth": 1,
           "parents": []
         },
         "UBERON_0006876": {
           "label": "vasculature of organ",
-          "subtree_size": 250,
+          "subtree_size": 256,
           "depth": 3,
           "parents": [
             "UBERON_0002049"
@@ -717,7 +717,7 @@
         },
         "UBERON_0007798": {
           "label": "vascular system",
-          "subtree_size": 1435,
+          "subtree_size": 1446,
           "depth": 1,
           "parents": []
         },
@@ -802,7 +802,7 @@
         },
         "UBERON_0010523": {
           "label": "microcirculatory vessel",
-          "subtree_size": 137,
+          "subtree_size": 138,
           "depth": 3,
           "parents": [
             "UBERON_0002049"
@@ -1153,7 +1153,7 @@
         },
         "UBERON_2005260": {
           "label": "fenestrated capillary",
-          "subtree_size": 15,
+          "subtree_size": 16,
           "depth": 3,
           "parents": [
             "UBERON_0004638"
@@ -8538,7 +8538,7 @@
         "immune system",
         "haematopoietic system"
       ],
-      "branch_size": 1096,
+      "branch_size": 1110,
       "candidates": {
         "CL_0000041": {
           "label": "mature eosinophil",
@@ -9024,7 +9024,7 @@
         },
         "UBERON_0000029": {
           "label": "lymph node",
-          "subtree_size": 292,
+          "subtree_size": 293,
           "depth": 2,
           "parents": [
             "UBERON_0002465",
@@ -9072,7 +9072,7 @@
         },
         "UBERON_0000444": {
           "label": "lymphoid follicle",
-          "subtree_size": 34,
+          "subtree_size": 36,
           "depth": 3,
           "parents": [
             "UBERON_0001744"
@@ -9088,7 +9088,7 @@
         },
         "UBERON_0001249": {
           "label": "spleen lymphoid follicle",
-          "subtree_size": 7,
+          "subtree_size": 9,
           "depth": 3,
           "parents": [
             "UBERON_0000444",
@@ -9105,7 +9105,7 @@
         },
         "UBERON_0001744": {
           "label": "lymphoid tissue",
-          "subtree_size": 98,
+          "subtree_size": 100,
           "depth": 2,
           "parents": [
             "UBERON_0002465"
@@ -9113,7 +9113,7 @@
         },
         "UBERON_0001960": {
           "label": "periarterial lymphatic sheath",
-          "subtree_size": 1,
+          "subtree_size": 3,
           "depth": 2,
           "parents": [
             "UBERON_0004177",
@@ -9154,7 +9154,7 @@
         },
         "UBERON_0002106": {
           "label": "spleen",
-          "subtree_size": 41,
+          "subtree_size": 50,
           "depth": 2,
           "parents": [
             "UBERON_0004177",
@@ -9196,7 +9196,7 @@
         },
         "UBERON_0002371": {
           "label": "bone marrow",
-          "subtree_size": 18,
+          "subtree_size": 20,
           "depth": 1,
           "parents": []
         },
@@ -9218,7 +9218,7 @@
         },
         "UBERON_0002465": {
           "label": "lymphoid system",
-          "subtree_size": 433,
+          "subtree_size": 441,
           "depth": 1,
           "parents": []
         },
@@ -9295,7 +9295,7 @@
         },
         "UBERON_0004177": {
           "label": "hemopoietic organ",
-          "subtree_size": 141,
+          "subtree_size": 150,
           "depth": 1,
           "parents": []
         },
@@ -9309,7 +9309,7 @@
         },
         "UBERON_0004536": {
           "label": "lymph vasculature",
-          "subtree_size": 56,
+          "subtree_size": 59,
           "depth": 3,
           "parents": [
             "UBERON_0006558"
@@ -9341,7 +9341,7 @@
         },
         "UBERON_0005057": {
           "label": "immune organ",
-          "subtree_size": 434,
+          "subtree_size": 444,
           "depth": 1,
           "parents": []
         },
@@ -9353,14 +9353,6 @@
             "UBERON_0002106"
           ]
         },
-        "UBERON_0005463": {
-          "label": "subcapsular sinus of lymph node",
-          "subtree_size": 1,
-          "depth": 3,
-          "parents": [
-            "UBERON_0000029"
-          ]
-        },
         "UBERON_0005562": {
           "label": "thymus primordium",
           "subtree_size": 2,
@@ -9369,7 +9361,7 @@
         },
         "UBERON_0006558": {
           "label": "lymphatic part of lymphoid system",
-          "subtree_size": 64,
+          "subtree_size": 67,
           "depth": 2,
           "parents": [
             "UBERON_0002465"
@@ -9377,7 +9369,7 @@
         },
         "UBERON_0006561": {
           "label": "non-lymphatic part of lymphoid system",
-          "subtree_size": 8,
+          "subtree_size": 10,
           "depth": 2,
           "parents": [
             "UBERON_0002465"
@@ -9521,7 +9513,7 @@
         },
         "UBERON_0010393": {
           "label": "T cell domain",
-          "subtree_size": 11,
+          "subtree_size": 13,
           "depth": 3,
           "parents": [
             "UBERON_0010394"
@@ -9529,7 +9521,7 @@
         },
         "UBERON_0010394": {
           "label": "lymphocyte domain",
-          "subtree_size": 14,
+          "subtree_size": 16,
           "depth": 2,
           "parents": [
             "UBERON_0002465",
@@ -9554,7 +9546,7 @@
         },
         "UBERON_0010755": {
           "label": "secondary follicle corona",
-          "subtree_size": 4,
+          "subtree_size": 6,
           "depth": 3,
           "parents": [
             "UBERON_0001744"
@@ -9815,10 +9807,34 @@
         },
         "UBERON_1000024": {
           "label": "parenchyma of spleen",
-          "subtree_size": 25,
+          "subtree_size": 32,
           "depth": 3,
           "parents": [
             "UBERON_0002106"
+          ]
+        },
+        "UBERON_1200004": {
+          "label": "sinus of lymph node",
+          "subtree_size": 9,
+          "depth": 3,
+          "parents": [
+            "UBERON_0000029"
+          ]
+        },
+        "UBERON_1200342": {
+          "label": "bone marrow of skull",
+          "subtree_size": 2,
+          "depth": 2,
+          "parents": [
+            "UBERON_0002371"
+          ]
+        },
+        "UBERON_1200343": {
+          "label": "bone marrow of calvaria",
+          "subtree_size": 1,
+          "depth": 3,
+          "parents": [
+            "UBERON_1200342"
           ]
         },
         "UBERON_2000033": {
@@ -9832,14 +9848,6 @@
           "subtree_size": 1,
           "depth": 1,
           "parents": []
-        },
-        "UBERON_8410032": {
-          "label": "trabecular sinus of lymph node",
-          "subtree_size": 1,
-          "depth": 3,
-          "parents": [
-            "UBERON_0000029"
-          ]
         },
         "UBERON_8410041": {
           "label": "venule of lymph node",
@@ -9944,6 +9952,54 @@
           "depth": 2,
           "parents": [
             "UBERON_0005057"
+          ]
+        },
+        "UBERON_8930191": {
+          "label": "spleen connective tissue",
+          "subtree_size": 3,
+          "depth": 3,
+          "parents": [
+            "UBERON_0002106"
+          ]
+        },
+        "UBERON_8930192": {
+          "label": "inner mantle zone",
+          "subtree_size": 1,
+          "depth": 3,
+          "parents": [
+            "UBERON_0001744"
+          ]
+        },
+        "UBERON_8930193": {
+          "label": "inner periarterial lymphatic sheath of spleen",
+          "subtree_size": 1,
+          "depth": 3,
+          "parents": [
+            "UBERON_0001960"
+          ]
+        },
+        "UBERON_8930194": {
+          "label": "outer periarterial lymphatic sheath of spleen",
+          "subtree_size": 1,
+          "depth": 3,
+          "parents": [
+            "UBERON_0001960"
+          ]
+        },
+        "UBERON_8930197": {
+          "label": "spleen subcapsular zone",
+          "subtree_size": 1,
+          "depth": 3,
+          "parents": [
+            "UBERON_0002106"
+          ]
+        },
+        "UBERON_8930198": {
+          "label": "superficial mantle zone",
+          "subtree_size": 1,
+          "depth": 3,
+          "parents": [
+            "UBERON_0001744"
           ]
         }
       },
@@ -11441,7 +11497,7 @@
         "musculoskeletal system",
         "muscle tissue"
       ],
-      "branch_size": 4621,
+      "branch_size": 4623,
       "candidates": {
         "CL_0000188": {
           "label": "cell of skeletal muscle",
@@ -11516,7 +11572,7 @@
         },
         "UBERON_0000075": {
           "label": "subdivision of skeletal system",
-          "subtree_size": 3435,
+          "subtree_size": 3437,
           "depth": 2,
           "parents": [
             "UBERON_0001434"
@@ -11587,13 +11643,13 @@
         },
         "UBERON_0001434": {
           "label": "skeletal system",
-          "subtree_size": 4110,
+          "subtree_size": 4112,
           "depth": 1,
           "parents": []
         },
         "UBERON_0001474": {
           "label": "bone element",
-          "subtree_size": 2304,
+          "subtree_size": 2306,
           "depth": 3,
           "parents": [
             "UBERON_0004765"
@@ -11655,7 +11711,7 @@
         },
         "UBERON_0003128": {
           "label": "cranium",
-          "subtree_size": 311,
+          "subtree_size": 312,
           "depth": 3,
           "parents": [
             "UBERON_0000075"
@@ -11663,7 +11719,7 @@
         },
         "UBERON_0003129": {
           "label": "skull",
-          "subtree_size": 772,
+          "subtree_size": 774,
           "depth": 3,
           "parents": [
             "UBERON_0000075",
@@ -11948,7 +12004,7 @@
         },
         "UBERON_0004288": {
           "label": "skeleton",
-          "subtree_size": 2701,
+          "subtree_size": 2702,
           "depth": 2,
           "parents": [
             "UBERON_0001434"
@@ -12148,7 +12204,7 @@
         },
         "UBERON_0004765": {
           "label": "skeletal element",
-          "subtree_size": 3434,
+          "subtree_size": 3436,
           "depth": 2,
           "parents": [
             "UBERON_0001434"
@@ -12528,7 +12584,7 @@
         },
         "UBERON_0010323": {
           "label": "cranial skeletal system",
-          "subtree_size": 1315,
+          "subtree_size": 1317,
           "depth": 3,
           "parents": [
             "UBERON_0000075",
@@ -12577,7 +12633,7 @@
         },
         "UBERON_0010912": {
           "label": "subdivision of skeleton",
-          "subtree_size": 2675,
+          "subtree_size": 2676,
           "depth": 3,
           "parents": [
             "UBERON_0000075",
@@ -12611,7 +12667,7 @@
         },
         "UBERON_0011137": {
           "label": "axial skeletal system",
-          "subtree_size": 1656,
+          "subtree_size": 1658,
           "depth": 3,
           "parents": [
             "UBERON_0000075"
@@ -12627,7 +12683,7 @@
         },
         "UBERON_0011158": {
           "label": "primary subdivision of skull",
-          "subtree_size": 717,
+          "subtree_size": 718,
           "depth": 3,
           "parents": [
             "UBERON_0000075",
@@ -13590,7 +13646,7 @@
       "root_labels": [
         "nervous system"
       ],
-      "branch_size": 4030,
+      "branch_size": 4048,
       "candidates": {
         "CL_0000028": {
           "label": "CNS neuron (sensu Nematoda and Protostomia)",
@@ -13636,7 +13692,7 @@
         },
         "CL_0000099": {
           "label": "interneuron",
-          "subtree_size": 168,
+          "subtree_size": 170,
           "depth": 2,
           "parents": [
             "CL_2000029",
@@ -13792,7 +13848,7 @@
         },
         "CL_0000498": {
           "label": "inhibitory interneuron",
-          "subtree_size": 108,
+          "subtree_size": 110,
           "depth": 3,
           "parents": [
             "CL_0000099"
@@ -13824,7 +13880,7 @@
         },
         "CL_0000540": {
           "label": "neuron",
-          "subtree_size": 820,
+          "subtree_size": 831,
           "depth": 2,
           "parents": [
             "CL_0002319"
@@ -13842,7 +13898,7 @@
         },
         "CL_0000617": {
           "label": "GABAergic neuron",
-          "subtree_size": 164,
+          "subtree_size": 170,
           "depth": 3,
           "parents": [
             "CL_0000540"
@@ -13900,7 +13956,7 @@
         },
         "CL_0000679": {
           "label": "glutamatergic neuron",
-          "subtree_size": 98,
+          "subtree_size": 103,
           "depth": 3,
           "parents": [
             "CL_0000540"
@@ -14097,7 +14153,7 @@
         },
         "CL_0002319": {
           "label": "neural cell",
-          "subtree_size": 1062,
+          "subtree_size": 1073,
           "depth": 1,
           "parents": []
         },
@@ -14242,7 +14298,7 @@
         },
         "CL_0008031": {
           "label": "cortical interneuron",
-          "subtree_size": 55,
+          "subtree_size": 57,
           "depth": 3,
           "parents": [
             "CL_0000099"
@@ -14429,7 +14485,7 @@
         },
         "CL_2000029": {
           "label": "central nervous system neuron",
-          "subtree_size": 396,
+          "subtree_size": 406,
           "depth": 3,
           "parents": [
             "CL_0000540"
@@ -14606,7 +14662,7 @@
         },
         "CL_4033050": {
           "label": "catecholaminergic neuron",
-          "subtree_size": 25,
+          "subtree_size": 26,
           "depth": 3,
           "parents": [
             "CL_0000540"
@@ -14769,7 +14825,7 @@
         },
         "UBERON_0000010": {
           "label": "peripheral nervous system",
-          "subtree_size": 419,
+          "subtree_size": 425,
           "depth": 1,
           "parents": []
         },
@@ -14821,7 +14877,7 @@
         },
         "UBERON_0000073": {
           "label": "regional part of nervous system",
-          "subtree_size": 1962,
+          "subtree_size": 1966,
           "depth": 1,
           "parents": []
         },
@@ -14841,7 +14897,7 @@
         },
         "UBERON_0000122": {
           "label": "neuron projection bundle",
-          "subtree_size": 538,
+          "subtree_size": 544,
           "depth": 1,
           "parents": []
         },
@@ -14887,7 +14943,7 @@
         },
         "UBERON_0000203": {
           "label": "pallium",
-          "subtree_size": 500,
+          "subtree_size": 503,
           "depth": 3,
           "parents": [
             "UBERON_0001893",
@@ -14979,7 +15035,7 @@
         },
         "UBERON_0000955": {
           "label": "brain",
-          "subtree_size": 2059,
+          "subtree_size": 2062,
           "depth": 2,
           "parents": [
             "UBERON_0001017"
@@ -14987,7 +15043,7 @@
         },
         "UBERON_0000956": {
           "label": "cerebral cortex",
-          "subtree_size": 473,
+          "subtree_size": 476,
           "depth": 3,
           "parents": [
             "UBERON_0000203",
@@ -15005,7 +15061,7 @@
         },
         "UBERON_0000966": {
           "label": "retina",
-          "subtree_size": 109,
+          "subtree_size": 110,
           "depth": 2,
           "parents": [
             "UBERON_0005388"
@@ -15031,7 +15087,7 @@
         },
         "UBERON_0001017": {
           "label": "central nervous system",
-          "subtree_size": 2533,
+          "subtree_size": 2538,
           "depth": 1,
           "parents": []
         },
@@ -15062,7 +15118,7 @@
         },
         "UBERON_0001021": {
           "label": "nerve",
-          "subtree_size": 235,
+          "subtree_size": 241,
           "depth": 2,
           "parents": [
             "UBERON_0000010",
@@ -15212,7 +15268,7 @@
         },
         "UBERON_0001781": {
           "label": "layer of retina",
-          "subtree_size": 38,
+          "subtree_size": 39,
           "depth": 2,
           "parents": [
             "UBERON_0000966",
@@ -15394,7 +15450,7 @@
         },
         "UBERON_0001890": {
           "label": "forebrain",
-          "subtree_size": 1097,
+          "subtree_size": 1100,
           "depth": 3,
           "parents": [
             "UBERON_0002616"
@@ -15418,7 +15474,7 @@
         },
         "UBERON_0001893": {
           "label": "telencephalon",
-          "subtree_size": 732,
+          "subtree_size": 735,
           "depth": 3,
           "parents": [
             "UBERON_0001890",
@@ -15618,7 +15674,7 @@
         },
         "UBERON_0002020": {
           "label": "gray matter",
-          "subtree_size": 1260,
+          "subtree_size": 1263,
           "depth": 3,
           "parents": [
             "UBERON_0011215"
@@ -15797,7 +15853,7 @@
         },
         "UBERON_0002305": {
           "label": "layer of hippocampus",
-          "subtree_size": 69,
+          "subtree_size": 72,
           "depth": 3,
           "parents": [
             "UBERON_0002421",
@@ -15867,7 +15923,7 @@
         },
         "UBERON_0002421": {
           "label": "hippocampal formation",
-          "subtree_size": 119,
+          "subtree_size": 122,
           "depth": 3,
           "parents": [
             "UBERON_0000956",
@@ -16031,7 +16087,7 @@
         },
         "UBERON_0002616": {
           "label": "regional part of brain",
-          "subtree_size": 1863,
+          "subtree_size": 1866,
           "depth": 2,
           "parents": [
             "UBERON_0000073",
@@ -16542,7 +16598,7 @@
         },
         "UBERON_0003439": {
           "label": "nerve of trunk region",
-          "subtree_size": 14,
+          "subtree_size": 18,
           "depth": 3,
           "parents": [
             "UBERON_0001021"
@@ -16574,7 +16630,7 @@
         },
         "UBERON_0003528": {
           "label": "brain gray matter",
-          "subtree_size": 1216,
+          "subtree_size": 1219,
           "depth": 3,
           "parents": [
             "UBERON_0000955",
@@ -16646,7 +16702,7 @@
         },
         "UBERON_0003902": {
           "label": "retinal neural layer",
-          "subtree_size": 35,
+          "subtree_size": 36,
           "depth": 3,
           "parents": [
             "UBERON_0001781"
@@ -17173,7 +17229,7 @@
         },
         "UBERON_0005388": {
           "label": "photoreceptor array",
-          "subtree_size": 144,
+          "subtree_size": 145,
           "depth": 1,
           "parents": []
         },
@@ -18260,7 +18316,7 @@
         },
         "UBERON_0011215": {
           "label": "central nervous system cell part cluster",
-          "subtree_size": 1659,
+          "subtree_size": 1662,
           "depth": 2,
           "parents": [
             "UBERON_0001017"
@@ -19058,7 +19114,7 @@
         },
         "UBERON_0016548": {
           "label": "central nervous system gray matter layer",
-          "subtree_size": 490,
+          "subtree_size": 493,
           "depth": 2,
           "parents": [
             "UBERON_0022303"
@@ -19324,7 +19380,7 @@
         },
         "UBERON_0022303": {
           "label": "nervous system cell part layer",
-          "subtree_size": 606,
+          "subtree_size": 610,
           "depth": 1,
           "parents": []
         },
@@ -21012,6 +21068,15 @@
             "UBERON_0011215"
           ]
         },
+        "UBERON_1200341": {
+          "label": "ganglion cell-inner plexiform layer",
+          "subtree_size": 1,
+          "depth": 2,
+          "parents": [
+            "UBERON_0000073",
+            "UBERON_0003902"
+          ]
+        },
         "UBERON_2000120": {
           "label": "lateral line ganglion",
           "subtree_size": 6,
@@ -21510,6 +21575,22 @@
           "parents": [
             "UBERON_0007134"
           ]
+        },
+        "UBERON_8930073": {
+          "label": "nerve of fallopian tube infundibulum",
+          "subtree_size": 1,
+          "depth": 3,
+          "parents": [
+            "UBERON_0001021"
+          ]
+        },
+        "UBERON_8930076": {
+          "label": "nerve of mesosalpinx",
+          "subtree_size": 1,
+          "depth": 3,
+          "parents": [
+            "UBERON_0001021"
+          ]
         }
       },
       "used_term_ancestors": {
@@ -21722,6 +21803,9 @@
           "UBERON_0001017",
           "UBERON_0024914",
           "UBERON_0026546"
+        ],
+        "UBERON_6003623": [
+          "UBERON_0001017"
         ]
       },
       "used_terms_in_branch": [
@@ -21752,7 +21836,8 @@
         "UBERON_0001898",
         "UBERON_0001997",
         "UBERON_0002421",
-        "UBERON_0026546"
+        "UBERON_0026546",
+        "UBERON_6003623"
       ]
     },
     "Renal/Urinary": {
@@ -21762,7 +21847,7 @@
       "root_labels": [
         "renal system"
       ],
-      "branch_size": 625,
+      "branch_size": 627,
       "candidates": {
         "CL_0000474": {
           "label": "pericardial nephrocyte",
@@ -23060,7 +23145,7 @@
       "root_labels": [
         "reproductive system"
       ],
-      "branch_size": 643,
+      "branch_size": 694,
       "candidates": {
         "CL_0000178": {
           "label": "Leydig cell",
@@ -23068,14 +23153,6 @@
           "depth": 3,
           "parents": [
             "UBERON_0005212"
-          ]
-        },
-        "CL_0000503": {
-          "label": "theca cell",
-          "subtree_size": 3,
-          "depth": 3,
-          "parents": [
-            "UBERON_0000155"
           ]
         },
         "CL_0000637": {
@@ -23285,7 +23362,6 @@
           "subtree_size": 1,
           "depth": 3,
           "parents": [
-            "CL_0000503",
             "UBERON_0000157"
           ]
         },
@@ -23294,7 +23370,6 @@
           "subtree_size": 1,
           "depth": 3,
           "parents": [
-            "CL_0000503",
             "UBERON_0000156"
           ]
         },
@@ -23330,15 +23405,6 @@
           "depth": 1,
           "parents": []
         },
-        "UBERON_0000155": {
-          "label": "theca cell layer",
-          "subtree_size": 5,
-          "depth": 2,
-          "parents": [
-            "UBERON_0001305",
-            "UBERON_0005156"
-          ]
-        },
         "UBERON_0000156": {
           "label": "theca externa",
           "subtree_size": 2,
@@ -23352,7 +23418,6 @@
           "subtree_size": 2,
           "depth": 2,
           "parents": [
-            "UBERON_0000155",
             "UBERON_0005156"
           ]
         },
@@ -23400,7 +23465,7 @@
         },
         "UBERON_0000474": {
           "label": "female reproductive system",
-          "subtree_size": 267,
+          "subtree_size": 271,
           "depth": 1,
           "parents": []
         },
@@ -23423,7 +23488,7 @@
         },
         "UBERON_0000993": {
           "label": "oviduct",
-          "subtree_size": 53,
+          "subtree_size": 57,
           "depth": 2,
           "parents": [
             "UBERON_0000474",
@@ -23559,8 +23624,7 @@
           "subtree_size": 1,
           "depth": 2,
           "parents": [
-            "UBERON_0005156",
-            "UBERON_0005170"
+            "UBERON_0005156"
           ]
         },
         "UBERON_0001307": {
@@ -23922,7 +23986,7 @@
         },
         "UBERON_0003889": {
           "label": "fallopian tube",
-          "subtree_size": 31,
+          "subtree_size": 73,
           "depth": 3,
           "parents": [
             "UBERON_0013515"
@@ -23990,7 +24054,7 @@
         },
         "UBERON_0003984": {
           "label": "uterine tube infundibulum",
-          "subtree_size": 4,
+          "subtree_size": 13,
           "depth": 3,
           "parents": [
             "UBERON_0013515"
@@ -24259,7 +24323,7 @@
         },
         "UBERON_0004909": {
           "label": "epithelium of gonad",
-          "subtree_size": 15,
+          "subtree_size": 22,
           "depth": 2,
           "parents": [
             "UBERON_0000991",
@@ -24277,7 +24341,7 @@
         },
         "UBERON_0004911": {
           "label": "epithelium of female gonad",
-          "subtree_size": 4,
+          "subtree_size": 11,
           "depth": 3,
           "parents": [
             "UBERON_0000992",
@@ -24321,7 +24385,7 @@
         },
         "UBERON_0005048": {
           "label": "mucosa of fallopian tube",
-          "subtree_size": 3,
+          "subtree_size": 10,
           "depth": 3,
           "parents": [
             "UBERON_0003889",
@@ -24330,7 +24394,7 @@
         },
         "UBERON_0005049": {
           "label": "mucosa of infundibulum of uterine tube",
-          "subtree_size": 1,
+          "subtree_size": 2,
           "depth": 3,
           "parents": [
             "UBERON_0003984",
@@ -24348,18 +24412,9 @@
         },
         "UBERON_0005156": {
           "label": "reproductive structure",
-          "subtree_size": 617,
+          "subtree_size": 668,
           "depth": 1,
           "parents": []
-        },
-        "UBERON_0005170": {
-          "label": "granulosa cell layer",
-          "subtree_size": 2,
-          "depth": 2,
-          "parents": [
-            "UBERON_0001305",
-            "UBERON_0005156"
-          ]
         },
         "UBERON_0005192": {
           "label": "deferent duct artery",
@@ -24546,7 +24601,7 @@
         },
         "UBERON_0006642": {
           "label": "muscle layer of oviduct",
-          "subtree_size": 5,
+          "subtree_size": 12,
           "depth": 2,
           "parents": [
             "UBERON_0003889",
@@ -24729,7 +24784,7 @@
         },
         "UBERON_0006960": {
           "label": "ovary stroma",
-          "subtree_size": 3,
+          "subtree_size": 2,
           "depth": 2,
           "parents": [
             "UBERON_0000992",
@@ -24756,7 +24811,7 @@
         },
         "UBERON_0007182": {
           "label": "muscle layer of infundibulum of uterine tube",
-          "subtree_size": 1,
+          "subtree_size": 3,
           "depth": 2,
           "parents": [
             "UBERON_0003984",
@@ -25365,7 +25420,7 @@
         },
         "UBERON_0012499": {
           "label": "serosa of fallopian tube",
-          "subtree_size": 1,
+          "subtree_size": 4,
           "depth": 2,
           "parents": [
             "UBERON_0003889",
@@ -25374,7 +25429,7 @@
         },
         "UBERON_0012648": {
           "label": "ampulla of fallopian tube",
-          "subtree_size": 1,
+          "subtree_size": 11,
           "depth": 2,
           "parents": [
             "UBERON_0003889",
@@ -25403,8 +25458,8 @@
           "subtree_size": 1,
           "depth": 2,
           "parents": [
-            "UBERON_0005156",
-            "UBERON_0006960"
+            "UBERON_0000992",
+            "UBERON_0005156"
           ]
         },
         "UBERON_0013192": {
@@ -25486,7 +25541,7 @@
         },
         "UBERON_0013515": {
           "label": "subdivision of oviduct",
-          "subtree_size": 136,
+          "subtree_size": 187,
           "depth": 2,
           "parents": [
             "UBERON_0005156"
@@ -25767,7 +25822,7 @@
         },
         "UBERON_0016632": {
           "label": "isthmus of fallopian tube",
-          "subtree_size": 1,
+          "subtree_size": 13,
           "depth": 3,
           "parents": [
             "UBERON_0003889",
@@ -25843,7 +25898,7 @@
         },
         "UBERON_0018343": {
           "label": "oviduct mucosal fold",
-          "subtree_size": 1,
+          "subtree_size": 5,
           "depth": 3,
           "parents": [
             "UBERON_0000993",
@@ -25886,7 +25941,7 @@
         },
         "UBERON_0019042": {
           "label": "reproductive system mucosa",
-          "subtree_size": 33,
+          "subtree_size": 41,
           "depth": 2,
           "parents": [
             "UBERON_0005156"
@@ -26147,7 +26202,7 @@
         },
         "UBERON_0036441": {
           "label": "wall of fallopian tube",
-          "subtree_size": 1,
+          "subtree_size": 5,
           "depth": 2,
           "parents": [
             "UBERON_0003889",
@@ -26297,7 +26352,7 @@
         },
         "UBERON_8410010": {
           "label": "fimbria of fallopian tube",
-          "subtree_size": 1,
+          "subtree_size": 6,
           "depth": 3,
           "parents": [
             "UBERON_0003889",
@@ -26555,6 +26610,263 @@
             "UBERON_0005156",
             "UBERON_0006642"
           ]
+        },
+        "UBERON_8930037": {
+          "label": "basement membrane of fallopian tube ampulla",
+          "subtree_size": 1,
+          "depth": 3,
+          "parents": [
+            "UBERON_0012648"
+          ]
+        },
+        "UBERON_8930039": {
+          "label": "basement membrane of fallopian tube intramural segment",
+          "subtree_size": 1,
+          "depth": 3,
+          "parents": [
+            "UBERON_0036441"
+          ]
+        },
+        "UBERON_8930041": {
+          "label": "fluid of fallopian tube ampulla",
+          "subtree_size": 1,
+          "depth": 3,
+          "parents": [
+            "UBERON_0012648"
+          ]
+        },
+        "UBERON_8930046": {
+          "label": "inner muscle layer of fallopian tube ampulla",
+          "subtree_size": 1,
+          "depth": 2,
+          "parents": [
+            "UBERON_0005156",
+            "UBERON_0006642"
+          ]
+        },
+        "UBERON_8930047": {
+          "label": "inner muscle layer of fallopian tube infundibulum",
+          "subtree_size": 1,
+          "depth": 2,
+          "parents": [
+            "UBERON_0005156",
+            "UBERON_0007182"
+          ]
+        },
+        "UBERON_8930049": {
+          "label": "inner muscle layer of fallopian tube isthmus",
+          "subtree_size": 1,
+          "depth": 2,
+          "parents": [
+            "UBERON_0005156",
+            "UBERON_0016632"
+          ]
+        },
+        "UBERON_8930050": {
+          "label": "intramural segment of fallopian tube",
+          "subtree_size": 12,
+          "depth": 3,
+          "parents": [
+            "UBERON_0003889",
+            "UBERON_0013515"
+          ]
+        },
+        "UBERON_8930051": {
+          "label": "lamina propria of fallopian tube ampulla",
+          "subtree_size": 1,
+          "depth": 2,
+          "parents": [
+            "UBERON_0005156",
+            "UBERON_0012648"
+          ]
+        },
+        "UBERON_8930052": {
+          "label": "lamina propria of fallopian tube fimbria",
+          "subtree_size": 1,
+          "depth": 2,
+          "parents": [
+            "UBERON_0005156",
+            "UBERON_8410010"
+          ]
+        },
+        "UBERON_8930053": {
+          "label": "lamina propria of fallopian tube infundibulum",
+          "subtree_size": 1,
+          "depth": 2,
+          "parents": [
+            "UBERON_0003984",
+            "UBERON_0005156"
+          ]
+        },
+        "UBERON_8930054": {
+          "label": "lamina propria of fallopian tube intramural segment",
+          "subtree_size": 1,
+          "depth": 2,
+          "parents": [
+            "UBERON_0005156",
+            "UBERON_8930050"
+          ]
+        },
+        "UBERON_8930055": {
+          "label": "lamina propria of fallopian tube isthmus",
+          "subtree_size": 1,
+          "depth": 2,
+          "parents": [
+            "UBERON_0005156",
+            "UBERON_0016632"
+          ]
+        },
+        "UBERON_8930062": {
+          "label": "mucosa of fallopian tube ampulla",
+          "subtree_size": 1,
+          "depth": 3,
+          "parents": [
+            "UBERON_0005048",
+            "UBERON_0012648"
+          ]
+        },
+        "UBERON_8930067": {
+          "label": "muscle layer of fallopian tube ampulla",
+          "subtree_size": 1,
+          "depth": 3,
+          "parents": [
+            "UBERON_0006642",
+            "UBERON_0012648"
+          ]
+        },
+        "UBERON_8930069": {
+          "label": "muscle layer of fallopian tube intramural segment",
+          "subtree_size": 3,
+          "depth": 3,
+          "parents": [
+            "UBERON_0006642",
+            "UBERON_8930050"
+          ]
+        },
+        "UBERON_8930070": {
+          "label": "muscle layer of fallopian tube isthmus",
+          "subtree_size": 1,
+          "depth": 3,
+          "parents": [
+            "UBERON_0006642",
+            "UBERON_0016632"
+          ]
+        },
+        "UBERON_8930071": {
+          "label": "nerve of fallopian tube ampulla",
+          "subtree_size": 1,
+          "depth": 3,
+          "parents": [
+            "UBERON_0012648"
+          ]
+        },
+        "UBERON_8930077": {
+          "label": "outer muscle layer of fallopian tube ampulla",
+          "subtree_size": 1,
+          "depth": 2,
+          "parents": [
+            "UBERON_0005156",
+            "UBERON_0006642"
+          ]
+        },
+        "UBERON_8930078": {
+          "label": "outer muscle layer of fallopian tube infundibulum",
+          "subtree_size": 1,
+          "depth": 2,
+          "parents": [
+            "UBERON_0005156",
+            "UBERON_0007182"
+          ]
+        },
+        "UBERON_8930080": {
+          "label": "outer muscle layer of fallopian tube isthmus",
+          "subtree_size": 1,
+          "depth": 2,
+          "parents": [
+            "UBERON_0005156",
+            "UBERON_0016632"
+          ]
+        },
+        "UBERON_8930081": {
+          "label": "plica of fallopian tube ampulla",
+          "subtree_size": 1,
+          "depth": 3,
+          "parents": [
+            "UBERON_0005048",
+            "UBERON_0012648",
+            "UBERON_0018343"
+          ]
+        },
+        "UBERON_8930085": {
+          "label": "serosa of fallopian tube ampulla",
+          "subtree_size": 1,
+          "depth": 3,
+          "parents": [
+            "UBERON_0012499",
+            "UBERON_0012648"
+          ]
+        },
+        "UBERON_8930087": {
+          "label": "serosa of fallopian tube intramural segment",
+          "subtree_size": 1,
+          "depth": 3,
+          "parents": [
+            "UBERON_0012499",
+            "UBERON_8930050"
+          ]
+        },
+        "UBERON_8930088": {
+          "label": "serosa of fallopian tube isthmus",
+          "subtree_size": 1,
+          "depth": 3,
+          "parents": [
+            "UBERON_0012499",
+            "UBERON_0016632"
+          ]
+        },
+        "UBERON_8930090": {
+          "label": "vasculature of fallopian tube ampulla",
+          "subtree_size": 1,
+          "depth": 3,
+          "parents": [
+            "UBERON_0012648"
+          ]
+        },
+        "UBERON_8930096": {
+          "label": "wall of fallopian tube ampulla",
+          "subtree_size": 1,
+          "depth": 3,
+          "parents": [
+            "UBERON_0012648",
+            "UBERON_0036441"
+          ]
+        },
+        "UBERON_8930097": {
+          "label": "wall of fallopian tube infundibulum",
+          "subtree_size": 1,
+          "depth": 2,
+          "parents": [
+            "UBERON_0003984",
+            "UBERON_0005156"
+          ]
+        },
+        "UBERON_8930098": {
+          "label": "wall of fallopian tube intramural segment",
+          "subtree_size": 1,
+          "depth": 3,
+          "parents": [
+            "UBERON_0036441",
+            "UBERON_8930050"
+          ]
+        },
+        "UBERON_8930099": {
+          "label": "wall of fallopian tube isthmus",
+          "subtree_size": 1,
+          "depth": 3,
+          "parents": [
+            "UBERON_0016632",
+            "UBERON_0036441"
+          ]
         }
       },
       "used_term_ancestors": {
@@ -26587,14 +26899,14 @@
           "UBERON_8450001"
         ],
         "CL_0000503": [
-          "CL_0000503",
-          "UBERON_0000155",
           "UBERON_0000474",
           "UBERON_0000991",
           "UBERON_0000992",
           "UBERON_0001305",
           "UBERON_0003133",
           "UBERON_0003134",
+          "UBERON_0004909",
+          "UBERON_0004911",
           "UBERON_0005156",
           "UBERON_8450001"
         ],
@@ -26842,7 +27154,6 @@
           "UBERON_0003133",
           "UBERON_0003134",
           "UBERON_0005156",
-          "UBERON_0006960",
           "UBERON_0013191"
         ],
         "UBERON_2005272": [
@@ -29260,7 +29571,7 @@
         "ear",
         "eye"
       ],
-      "branch_size": 1350,
+      "branch_size": 1354,
       "candidates": {
         "CL_0000006": {
           "label": "neuronal receptor cell",
@@ -29959,7 +30270,7 @@
         },
         "UBERON_0000019": {
           "label": "camera-type eye",
-          "subtree_size": 352,
+          "subtree_size": 354,
           "depth": 2,
           "parents": [
             "UBERON_0000047"
@@ -29967,13 +30278,13 @@
         },
         "UBERON_0000020": {
           "label": "sense organ",
-          "subtree_size": 970,
+          "subtree_size": 974,
           "depth": 1,
           "parents": []
         },
         "UBERON_0000047": {
           "label": "simple eye",
-          "subtree_size": 357,
+          "subtree_size": 359,
           "depth": 1,
           "parents": []
         },
@@ -30018,7 +30329,7 @@
         },
         "UBERON_0000389": {
           "label": "lens cortex",
-          "subtree_size": 1,
+          "subtree_size": 3,
           "depth": 3,
           "parents": [
             "UBERON_0000965"
@@ -30059,7 +30370,7 @@
         },
         "UBERON_0000965": {
           "label": "lens of camera-type eye",
-          "subtree_size": 21,
+          "subtree_size": 23,
           "depth": 2,
           "parents": [
             "UBERON_0005389"
@@ -30067,7 +30378,7 @@
         },
         "UBERON_0000966": {
           "label": "retina",
-          "subtree_size": 109,
+          "subtree_size": 110,
           "depth": 2,
           "parents": [
             "UBERON_0005388",
@@ -30209,7 +30520,7 @@
         },
         "UBERON_0001781": {
           "label": "layer of retina",
-          "subtree_size": 38,
+          "subtree_size": 39,
           "depth": 3,
           "parents": [
             "UBERON_0000966"
@@ -30412,7 +30723,7 @@
         },
         "UBERON_0002104": {
           "label": "visual system",
-          "subtree_size": 477,
+          "subtree_size": 481,
           "depth": 1,
           "parents": []
         },
@@ -30554,7 +30865,7 @@
         },
         "UBERON_0002444": {
           "label": "lens fiber",
-          "subtree_size": 1,
+          "subtree_size": 3,
           "depth": 3,
           "parents": [
             "UBERON_0000965"
@@ -31164,13 +31475,13 @@
         },
         "UBERON_0005388": {
           "label": "photoreceptor array",
-          "subtree_size": 144,
+          "subtree_size": 145,
           "depth": 1,
           "parents": []
         },
         "UBERON_0005389": {
           "label": "transparent eye structure",
-          "subtree_size": 23,
+          "subtree_size": 25,
           "depth": 1,
           "parents": []
         },
@@ -31812,7 +32123,7 @@
         },
         "UBERON_0010230": {
           "label": "eyeball of camera-type eye",
-          "subtree_size": 152,
+          "subtree_size": 154,
           "depth": 2,
           "parents": [
             "UBERON_0000019",
@@ -31987,7 +32298,7 @@
         },
         "UBERON_0012430": {
           "label": "tunica fibrosa of eyeball",
-          "subtree_size": 21,
+          "subtree_size": 22,
           "depth": 3,
           "parents": [
             "UBERON_0010230"
@@ -32476,7 +32787,7 @@
         },
         "UBERON_0019207": {
           "label": "chorioretinal region",
-          "subtree_size": 128,
+          "subtree_size": 129,
           "depth": 3,
           "parents": [
             "UBERON_0010230"
@@ -33729,10 +34040,10 @@
   },
   "stats": {
     "branches": 12,
-    "candidates_total": 3913,
+    "candidates_total": 3949,
     "candidates_filtered_non_vertebrate": 73,
-    "used_terms_ever": 827,
+    "used_terms_ever": 831,
     "max_depth": 3,
-    "elapsed_s": 95.8
+    "elapsed_s": 59.4
   }
 }

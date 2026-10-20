@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-14T21:57:52.542702+00:00",
+  "generated_at": "2026-10-20T18:13:28.586901+00:00",
   "source": {
     "aopwiki_sparql": "https://aopwiki-multirdf.vhp4safety.nl/sparql",
     "ubergraph_sparql": "https://ubergraph.apps.renci.org/sparql",
@@ -642,6 +642,15 @@
         "Reproductive:\\btesticular\\b"
       ]
     },
+    "HP_0010987": {
+      "label": "Abnormal cellular immune system morphology",
+      "buckets": [
+        "Immune/Haematopoietic"
+      ],
+      "matched_patterns": [
+        "Immune/Haematopoietic:\\bimmun"
+      ]
+    },
     "HP_0012114": {
       "label": "Endometrial carcinoma",
       "buckets": [
@@ -658,6 +667,15 @@
       ],
       "matched_patterns": [
         "Immune/Haematopoietic:\\binflammat"
+      ]
+    },
+    "HP_0012852": {
+      "label": "Hepatic bridging fibrosis",
+      "buckets": [
+        "Hepatobiliary"
+      ],
+      "matched_patterns": [
+        "Hepatobiliary:\\bhepat"
       ]
     },
     "HP_0100526": {
@@ -862,6 +880,15 @@
         "Renal/Urinary:\\bkidney\\b"
       ]
     },
+    "MP_0003936": {
+      "label": "abnormal reproductive system development",
+      "buckets": [
+        "Reproductive"
+      ],
+      "matched_patterns": [
+        "Reproductive:\\breproduct"
+      ]
+    },
     "MP_0003990": {
       "label": "decreased neurotransmitter release",
       "buckets": [
@@ -887,6 +914,15 @@
       ],
       "matched_patterns": [
         "Cardiovascular:\\bvascular\\b"
+      ]
+    },
+    "MP_0004904": {
+      "label": "increased uterus weight",
+      "buckets": [
+        "Reproductive"
+      ],
+      "matched_patterns": [
+        "Reproductive:\\buter"
       ]
     },
     "MP_0004968": {
@@ -1368,6 +1404,9 @@
     "UBERON_0009773": [
       "Renal/Urinary"
     ],
+    "UBERON_0009853": [
+      "Reproductive"
+    ],
     "UBERON_0010364": [
       "Musculoskeletal"
     ],
@@ -1403,6 +1442,9 @@
     ],
     "UBERON_2005272": [
       "Reproductive"
+    ],
+    "UBERON_6003623": [
+      "Nervous"
     ]
   },
   "cl": {
@@ -1579,6 +1621,9 @@
     ],
     "GO_0008584": [
       "Reproductive"
+    ],
+    "GO_0008585": [
+      "Reproductive"
     ]
   },
   "hp": {
@@ -1624,11 +1669,17 @@
     "HP_0008715": [
       "Reproductive"
     ],
+    "HP_0010987": [
+      "Immune/Haematopoietic"
+    ],
     "HP_0012114": [
       "Reproductive"
     ],
     "HP_0012649": [
       "Immune/Haematopoietic"
+    ],
+    "HP_0012852": [
+      "Hepatobiliary"
     ],
     "HP_0100526": [
       "Respiratory"
@@ -1700,6 +1751,9 @@
     "MP_0003606": [
       "Renal/Urinary"
     ],
+    "MP_0003936": [
+      "Reproductive"
+    ],
     "MP_0003990": [
       "Nervous"
     ],
@@ -1708,6 +1762,9 @@
     ],
     "MP_0004878": [
       "Cardiovascular"
+    ],
+    "MP_0004904": [
+      "Reproductive"
     ],
     "MP_0004968": [
       "Renal/Urinary"
@@ -1771,20 +1828,20 @@
     ]
   },
   "stats": {
-    "uberon_terms_in_snapshots": 127,
-    "uberon_terms_classified": 101,
+    "uberon_terms_in_snapshots": 129,
+    "uberon_terms_classified": 103,
     "uberon_terms_pruned": 20,
     "cl_terms_in_snapshots": 96,
     "cl_terms_classified": 52,
     "cl_terms_pruned": 8,
-    "go_terms_in_snapshots": 452,
-    "go_terms_classified": 3,
-    "hp_terms_in_snapshots": 31,
-    "hp_terms_classified": 18,
-    "mp_terms_in_snapshots": 91,
-    "mp_terms_classified": 33,
-    "fma_terms_in_snapshots": 21,
+    "go_terms_in_snapshots": 456,
+    "go_terms_classified": 4,
+    "hp_terms_in_snapshots": 34,
+    "hp_terms_classified": 20,
+    "mp_terms_in_snapshots": 94,
+    "mp_terms_classified": 35,
+    "fma_terms_in_snapshots": 22,
     "fma_terms_classified": 9,
-    "elapsed_s": 28.3
+    "elapsed_s": 25.5
   }
 }
