@@ -708,6 +708,164 @@ def plot_entity_lifeline() -> tuple[str, pd.DataFrame]:
         return create_fallback_plot("Entity Lifeline", str(e)), pd.DataFrame()
 
 
+# --- Cohort survival (#187) -------------------------------------------------
+
+SURVIVAL_ENTITIES = ("AOPs", "KEs", "KERs")
+SURVIVAL_COLUMNS = ["Entity Type", "Cohort", "Cohort Size", "Years Since First Seen",
+                    "At Risk", "Removed", "Surviving (%)"]
+# A curve stops once fewer entities than this are still followed: past that
+# point one removal moves it by 10 points or more.
+SURVIVAL_MIN_AT_RISK = 10
+SURVIVAL_COHORT_YEARS = 2
+
+
+def survival_cohort(first: str, versions: list[str]) -> str:
+    """The cohort of an entity first seen in snapshot ``first``.
+
+    Entities in the first snapshot have no known creation date and form their
+    own cohort; the rest are grouped by the year they first appear, two years
+    to a cohort counted from the first snapshot's year.
+    """
+    if first == versions[0]:
+        return f"Already in {versions[0]}"
+    start, latest = int(versions[0][:4]), int(versions[-1][:4])
+    year = int(first[:4])
+    lo = start + (year - start) // SURVIVAL_COHORT_YEARS * SURVIVAL_COHORT_YEARS
+    hi = min(lo + SURVIVAL_COHORT_YEARS - 1, latest)
+    return f"First seen {lo}" if lo == hi else f"First seen {lo}–{hi}"
+
+
+def survival_rows(entity_type: str, uris_by_version: dict, versions: list[str]) -> list[dict]:
+    """Kaplan-Meier survival per cohort: the share still present k snapshots on.
+
+    An entity is "removed" at the first snapshot after its first appearance
+    that does not have it, even if it comes back later; an entity still
+    present in the latest snapshot is censored there. Snapshots are quarterly,
+    so k snapshots are k / 4 years. A version with no entities of the type at
+    all is a failed query rather than a mass removal, and is left out.
+    """
+    versions = [v for v in versions if uris_by_version.get(v)]
+    if not versions:
+        return []
+    ever = set().union(*(uris_by_version[v] for v in versions))
+    cohorts: dict = {}
+    for uri in ever:
+        present = [uri in uris_by_version[v] for v in versions]
+        first = present.index(True)
+        gone = present.index(False, first) if False in present[first:] else None
+        # (cohort, snapshots followed, removed at the end of them)
+        follow = (gone - first) if gone is not None else (len(versions) - 1 - first)
+        cohorts.setdefault(survival_cohort(versions[first], versions), []).append((follow, gone is not None))
+
+    order = sorted(cohorts, key=lambda c: (not c.startswith("Already"), c))
+    rows = []
+    for cohort in order:
+        members = cohorts[cohort]
+        surviving = 1.0
+        for k in range(0, max(f for f, _ in members) + 1):
+            at_risk = sum(1 for f, _ in members if f >= k)
+            removed = sum(1 for f, gone in members if gone and f == k) if k else 0
+            if at_risk < SURVIVAL_MIN_AT_RISK:
+                break
+            surviving *= 1 - removed / at_risk
+            rows.append({
+                "Entity Type": entity_type,
+                "Cohort": cohort,
+                "Cohort Size": len(members),
+                "Years Since First Seen": k / 4,
+                "At Risk": at_risk,
+                "Removed": removed,
+                "Surviving (%)": round(100 * surviving, 2),
+            })
+    return rows
+
+
+def _render_entity_survival(df: pd.DataFrame, totals: dict) -> go.Figure:
+    """One panel per entity type, one step line per cohort, shared y axis."""
+    from plotly.subplots import make_subplots
+
+    entities = [e for e in SURVIVAL_ENTITIES if e in totals]
+    fig = make_subplots(rows=1, cols=len(entities), shared_yaxes=True, horizontal_spacing=0.04,
+                        subplot_titles=[f"{e} ({totals[e]:,} ever seen)" for e in entities])
+    cohorts = list(dict.fromkeys(df["Cohort"]))
+    already = [c for c in cohorts if c.startswith("Already")]
+    later = [c for c in cohorts if c not in already]
+    colors = {c: "#8C8C8C" for c in already}
+    colors.update(zip(later, BRAND_COLORS["palette"]))
+    for col, entity in enumerate(entities, start=1):
+        sub = df[df["Entity Type"] == entity]
+        for cohort in cohorts:
+            line = sub[sub["Cohort"] == cohort]
+            if line.empty:
+                continue
+            fig.add_scatter(
+                x=line["Years Since First Seen"], y=line["Surviving (%)"],
+                mode="lines", line=dict(shape="hv", width=2.5, color=colors[cohort]),
+                name=cohort, legendgroup=cohort, showlegend=col == 1,
+                # Names the panel in the hover box and in keyboard steps
+                # (viz/a11y.js): the legend name repeats in every panel.
+                meta=f"{entity}, {cohort}",
+                customdata=line[["At Risk", "Removed", "Cohort Size"]].to_numpy(),
+                hovertemplate=("%{meta}: <b>%{y:.1f}%</b> "
+                               "(%{customdata[0]} of %{customdata[2]} followed, "
+                               "%{customdata[1]} removed)<extra></extra>"),
+                row=1, col=col,
+            )
+        fig.update_xaxes(title_text="Years since first seen", dtick=1, rangemode="tozero",
+                         hoverformat=".2f", row=1, col=col)
+    low = df["Surviving (%)"].min() if not df.empty else 0
+    fig.update_yaxes(range=[max(0, (low // 10) * 10 - 5), 101], ticksuffix="%", row=1, col=1,
+                     title_text="Still present without a gap")
+    fig.update_layout(
+        title=dict(text="Cohort Survival of AOPs, KEs and KERs<br><sup>Share of each cohort still "
+                        "in the database, by years since it first appeared</sup>"),
+        legend=dict(title=dict(text="Cohort:"), orientation="h", yanchor="top", y=-0.2,
+                    xanchor="left", x=0),
+        # One box per panel with every cohort at that age, not 18 labels.
+        hovermode="x unified",
+        height=520,
+        margin=dict(l=70, r=20, t=100, b=140),
+    )
+    return fig
+
+
+def plot_entity_survival() -> tuple[str, pd.DataFrame]:
+    """How long AOPs, Key Events and KERs survive after they first appear (#187).
+
+    Presence comes from the bulk per-graph entity query shared with the
+    birth/death plots and the lifeline. The curves are Kaplan-Meier estimates
+    per cohort (``survival_rows``); the x axis is years since first seen, not
+    a snapshot, so the /trends range does not apply.
+
+    Returns:
+        tuple[str, pd.DataFrame]: the figure HTML and one row per cohort and
+        step (``SURVIVAL_COLUMNS``).
+    """
+    global _plot_data_cache, _plot_figure_cache
+
+    try:
+        versions = sorted({v['version'] for v in get_all_versions()})
+        if len(versions) < 2:
+            return create_fallback_plot("Cohort Survival", "Not enough versions"), pd.DataFrame()
+        rows, totals = [], {}
+        for entity_type in SURVIVAL_ENTITIES:
+            uris = fetch_entity_uris_by_version(entity_type, versions)
+            totals[entity_type] = len(set().union(*uris.values())) if uris else 0
+            rows.extend(survival_rows(entity_type, uris, versions))
+        df = pd.DataFrame(rows, columns=SURVIVAL_COLUMNS)
+        fig = _render_entity_survival(df, totals)
+
+        _plot_data_cache['entity_survival'] = df
+        _plot_figure_cache['entity_survival'] = fig
+        return render_plot_html(fig), df
+
+    except SparqlUnavailable:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to generate cohort survival: {e}")
+        return create_fallback_plot("Cohort Survival", str(e)), pd.DataFrame()
+
+
 def plot_oecd_status_distribution() -> tuple[str, str, pd.DataFrame]:
     """Per-version count of AOPs in each OECD status (absolute + percentage).
 

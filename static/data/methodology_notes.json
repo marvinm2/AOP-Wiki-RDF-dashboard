@@ -989,5 +989,23 @@
                 "query": "SELECT ?e ?up ?down (MAX(STR(?graph)) AS ?last)\nWHERE {\n  GRAPH ?graph {\n    ?e a aopo:KeyEventRelationship ;\n       aopo:has_upstream_key_event ?up ;\n       aopo:has_downstream_key_event ?down .\n  }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?e ?up ?down"
             }
         ]
+    },
+    "entity_survival": {
+        "title": "Cohort Survival",
+        "description": "How long AOPs, Key Events and Key Event Relationships stay in the database after they first appear. Entities are grouped into cohorts by the year they first appear in a snapshot, two years to a cohort; each line is the share of its cohort still present, without a gap, a given number of years later. On the 2026-10-01 snapshot AOPs almost never disappear (2 of 601 ever did), while KEs and KERs from the 2018–2019 cohort fell fastest: about a fifth of the KEs and a quarter of the KERs were gone within a year, and 66% of the KEs and 59% of the KERs were still there 8 years on. Later cohorts lose far fewer in their first year (1 to 13%).",
+        "data_source": "For each entity class, one query lists every (graph, entity) pair across all snapshot graphs, the same query the Entity Lifeline and the birth/death plots use. Cohorts and survival are worked out in Python.",
+        "method_steps": [
+            "<strong>Cohort.</strong> The year of the first snapshot an entity is in, grouped two years at a time from 2018. Entities already in the first snapshot (2018-04-01) have no known creation date and form their own cohort.",
+            "<strong>Removal.</strong> An entity is removed at the first snapshot after its first appearance that does not have it, even if it comes back later (the Entity Lifeline shows the returns).",
+            "<strong>Survival.</strong> A Kaplan-Meier estimate per cohort: at each step the share of the entities still followed that are not removed, multiplied up. An entity still in the latest snapshot is followed up to it and no further, so recent cohorts have short lines. Snapshots are quarterly, so a step is a quarter of a year.",
+            "<strong>Cut-off.</strong> A line stops once fewer than 10 entities of its cohort are still followed."
+        ],
+        "limitations": "An entity is identified by its AOP-Wiki number; a merge or split shows up as one entity removed and another added. A removal can be an RDF conversion change rather than a curation decision. Cohorts start at the first RDF release (2018-04-01), not at creation in AOP-Wiki. The x axis is years since first seen, not a snapshot, so the /trends range and the shared zoom do not apply to this chart.",
+        "queries": [
+            {
+                "caption": "Every (snapshot, Key Event) pair; the same query runs for aopo:AdverseOutcomePathway and aopo:KeyEventRelationship",
+                "query": "SELECT ?graph ?e\nWHERE {\n  GRAPH ?graph { ?e a aopo:KeyEvent . }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}"
+            }
+        ]
     }
 }

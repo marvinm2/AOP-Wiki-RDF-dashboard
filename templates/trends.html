@@ -1269,6 +1269,36 @@
         {{ data_table_toggle('entity_lifeline') }}
     </div>
 
+    <!-- Cohort survival (#187): Kaplan-Meier lines per creation cohort -->
+    <div class="plot-box full-width" id="entity-survival">
+        <div class="plot-header">
+            <h3>Cohort Survival</h3>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/entity_survival?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/entity_survival?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/entity_survival?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <p class="plot-description">
+            How long AOPs, Key Events and KERs stay in the database once they appear. Each line is a cohort,
+            the entities first seen in the same two years, and shows the share of it still present without a gap
+            a given number of years later. A line that drops early is a cohort that lost entities soon after they
+            were added. The x axis counts years since first seen, so the snapshot range above does not apply here.
+        </p>
+        {{ methodology_note(methodology_notes, 'entity_survival') }}
+        <div class="survival-scroll">
+            <div class="lazy-plot" data-plot-name="entity_survival">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+        {{ data_table_toggle('entity_survival') }}
+    </div>
+
     <!-- Cumulative Removed Entities (#72) -->
     <div class="plot-box full-width" id="entity-cumulative-removed">
         <div class="plot-header">

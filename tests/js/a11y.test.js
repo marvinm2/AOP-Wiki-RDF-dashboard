@@ -33,6 +33,16 @@ test('values at a category: one entry per trace that has it, typed arrays includ
     assert.deepEqual(A.valuesAt(traces, '2025-01-01').map((p) => p.name), ['AOPs']);
 });
 
+test('side-by-side panels: hover every subplot and speak the meta name', () => {
+    const panels = [
+        { type: 'scatter', name: '2018–2019', meta: 'AOPs, 2018–2019', x: [0, 0.25], y: [100, 98], xaxis: 'x', yaxis: 'y' },
+        { type: 'scatter', name: '2018–2019', meta: 'KEs, 2018–2019', x: [0, 0.25], y: [100, 86], xaxis: 'x2', yaxis: 'y2' },
+        { type: 'scatter', name: '2020–2021', x: [0], y: [100] },
+    ];
+    assert.deepEqual(A.subplotsOf(panels), ['xy', 'x2y2']);
+    assert.deepEqual(A.valuesAt(panels, 0.25).map((p) => p.name), ['AOPs, 2018–2019', 'KEs, 2018–2019']);
+});
+
 test('horizontal bars and pies step through their categories, not their values', () => {
     const h = [{ type: 'bar', orientation: 'h', name: 'n', x: [3, 9], y: ['GO', 'CHEBI'] }];
     assert.deepEqual(A.categoriesOf(h), ['GO', 'CHEBI']);
