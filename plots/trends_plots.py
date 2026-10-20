@@ -819,14 +819,18 @@ OECD_JOURNEY_COLUMNS = ["From Snapshot", "To Snapshot", "From Status", "To Statu
 
 def oecd_journey_anchors(versions: list[str]) -> list[str]:
     """One anchor per year: its January snapshot, but the latest snapshot for
-    the latest year, so the journey ends at the current state. A year without
-    a January snapshot (2021) has no anchor."""
+    the latest year, so the journey ends at the current state. January
+    snapshots are not always on the 1st (2021-01-03); a year without one has
+    no anchor."""
     ordered = sorted(versions)
     if not ordered:
         return []
     latest = ordered[-1]
-    anchors = [v for v in ordered if v.endswith("-01-01") and v[:4] < latest[:4]]
-    return anchors + [latest]
+    january = {}
+    for v in ordered:
+        if v[5:7] == "01" and v[:4] < latest[:4]:
+            january.setdefault(v[:4], v)
+    return sorted(january.values()) + [latest]
 
 
 def _oecd_stage(statuses) -> str:
