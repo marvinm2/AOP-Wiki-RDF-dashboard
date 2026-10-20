@@ -7,8 +7,9 @@ name: ontology-caches
 # each cache's generated_at in /health and on /about.
 #
 # Opening the PR needs the repo setting "Allow GitHub Actions to create and
-# approve pull requests". Without it the branch is still pushed and the run
-# summary links to it.
+# approve pull requests" (on since 2026-10-20). Without it the branch is still
+# pushed and the run summary links to it. GitHub starts no workflows for a PR
+# opened with GITHUB_TOKEN, so CI runs only after the PR is closed and reopened.
 
 on:
   schedule:
@@ -71,6 +72,9 @@ jobs:
             echo "Check that the stats moved the way new quarters would move them (more terms"
             echo "in snapshots, a few more classified) before merging; a big drop means an"
             echo "Ubergraph change, not new AOP-Wiki data."
+            echo ""
+            echo "CI does not start on a PR opened by this workflow (GitHub does not run workflows"
+            echo "for events from its own token): close and reopen the PR to run the checks."
           } > pr_body.md
           if ! gh pr create --base main --head "$BRANCH" \
                --title "Rebuild the ontology caches ($(date -u +%Y-%m-%d))" --body-file pr_body.md; then
