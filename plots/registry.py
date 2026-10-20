@@ -221,6 +221,7 @@ SPECS: tuple[PlotSpec, ...] = (
     snapshot('latest_ontology_usage', 'plot_latest_ontology_usage', precompute=True, params=('ontology_chart',)),
     snapshot('latest_ke_annotation_depth', 'plot_latest_ke_annotation_depth', precompute=True, params=('depth_chart',), bulk=('latest-all', 'ke-analysis', 'all')),
     snapshot('latest_ke_by_bio_level', 'plot_latest_ke_by_bio_level', bulk=('latest-all',)),
+    snapshot('latest_ontology_by_bio_level', 'plot_latest_ontology_by_bio_level', bulk=('latest-all',)),
     snapshot('latest_taxonomic_groups', 'plot_latest_taxonomic_groups', bulk=('latest-all',)),
     snapshot('latest_entity_by_oecd_status', 'plot_latest_entity_by_oecd_status', bulk=('latest-all',)),
     snapshot('latest_ke_reuse', 'plot_latest_ke_reuse', bulk=('latest-all',)),

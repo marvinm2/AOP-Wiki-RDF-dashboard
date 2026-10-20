@@ -405,6 +405,34 @@ def test_lint01_02_sends_a_shared_query_once_but_reports_each_entry(endpoint_url
     assert len(responses.calls) == 1
 
 
+@responses.activate
+def test_prefetch_sends_each_distinct_query_once_and_feeds_the_checks():
+    endpoint = "https://example.org/sparql"
+    responses.add(responses.POST, endpoint, json={"results": {"bindings": [
+        {"n": {"type": "literal", "value": "3", "datatype": "http://www.w3.org/2001/XMLSchema#integer"}}]}})
+    shared = "SELECT ?n WHERE { GRAPH __GRAPH_URI__ { ?s ?p ?n } }"
+    work = [("a", {"sparql": shared}), ("b", {"sparql": shared}),
+            ("c", {"queries": [{"caption": "x", "query": shared + " # other"}]})]
+    cache = lint_methodology.prefetch_queries(work, "http://aopwiki.org/graph/2026-10-01",
+                                              endpoint=endpoint, workers=3)
+    assert len(responses.calls) == 2
+    assert len(cache) == 2
+    # The checks read the cache and send nothing more.
+    for name, entry in work:
+        assert lint_methodology.check_lint_01_02(name, entry, "http://aopwiki.org/graph/2026-10-01",
+                                                 endpoint=endpoint, cache=cache) == []
+    assert len(responses.calls) == 2
+
+
+@responses.activate
+def test_prefetch_raises_an_unreachable_endpoint():
+    endpoint = "https://example.org/sparql"
+    responses.add(responses.POST, endpoint, status=503, body="down")
+    with pytest.raises(lint_methodology.InfraError):
+        lint_methodology.prefetch_queries([("a", {"sparql": "SELECT * WHERE { ?s ?p ?o }"})],
+                                          "http://aopwiki.org/graph/2026-10-01", endpoint=endpoint)
+
+
 def test_lint05_real_methodology_under_budget():
     """Regression guard: when a 61st entry needing its own calls arrives, this test fails.
 
@@ -420,13 +448,18 @@ def test_lint05_real_methodology_under_budget():
     query is sent once per run, and an entry whose every query repeats an
     earlier entry's (e.g. a view sharing its data with older panels) is
     not counted.
+
+    2026-10-20: the second step. The distinct queries go out 4 at a time
+    (``prefetch_queries``, ``--workers``): the full live run took 34.7 s one
+    at a time and 12.9 s with 4 workers, with the same report, at 61 billable
+    entries. The canary moved from 60 to 80 on that measurement.
     """
     repo_root = pathlib.Path(__file__).resolve().parent.parent
     real_json = repo_root / "static" / "data" / "methodology_notes.json"
     with open(real_json) as fh:
         notes = json.load(fh)
-    # Should NOT raise at canary budget=60:
-    lint_methodology.enforce_call_budget(notes, budget=60, no_network=False)
+    # Should NOT raise at canary budget=80:
+    lint_methodology.enforce_call_budget(notes, budget=80, no_network=False)
 
 
 # ---------------------------------------------------------------------------

@@ -53,6 +53,8 @@ import requests
 
 DEFAULT_ENDPOINT = "https://aopwiki-multirdf.vhp4safety.nl/sparql"
 DEFAULT_TIMEOUT = 30
+# LINT-01/02 queries in flight at once (the endpoint is shared production).
+DEFAULT_WORKERS = 4
 INFRA_EXIT = 2
 LINT_FAIL_EXIT = 1
 PASS_EXIT = 0
@@ -72,8 +74,10 @@ LINT_04_SEVERITY = "fail"
 # LINT-05: methodology JSON must not exceed this many entries per run.
 # As of 2026-05 the real file has 56 entries; the production ceiling is
 # "well under the 2-minute LINT-05 runtime target". The test-side canary
-# (test_lint05_real_methodology_under_budget) sits at 60 — a tighter
+# (test_lint05_real_methodology_under_budget) sits at 80 — a tighter
 # tripwire so we revisit batching well before this production budget bites.
+# Since 2026-10-20 the queries go out DEFAULT_WORKERS at a time (12.9 s for
+# the full live run at 61 entries, against 34.7 s one at a time).
 DEFAULT_CALL_BUDGET = 100
 
 
@@ -252,6 +256,43 @@ def _classify(name: str, endpoint: str, http, wrapped: str, timeout: int) -> tup
     return response.status_code, "", _bindings_drift_empty(bindings)
 
 
+def _wrap(query: str, latest_graph_uri: str) -> str:
+    """The query as LINT-01/02 send it: on the latest graph, one row."""
+    substituted = query.replace("__GRAPH_URI__", f"<{latest_graph_uri}>")
+    return "SELECT * WHERE { { " + substituted + " } } LIMIT 1"
+
+
+def prefetch_queries(work: list, latest_graph_uri: str, *, endpoint: str = DEFAULT_ENDPOINT,
+                     timeout: int = DEFAULT_TIMEOUT, workers: int = DEFAULT_WORKERS,
+                     cache: Optional[dict] = None) -> dict:
+    """Send the distinct queries of ``work`` ((name, entry) pairs) ``workers``
+    at a time and fill ``cache`` with their outcomes, so check_lint_01_02 only
+    reads it. An ``InfraError`` from any query is raised, as when sent one by one.
+    """
+    from concurrent.futures import ThreadPoolExecutor
+
+    cache = {} if cache is None else cache
+    todo: dict = {}
+    for name, entry in work:
+        for _, _, query in _iter_queries(entry):
+            wrapped = _wrap(query, latest_graph_uri)
+            if wrapped not in cache:
+                todo.setdefault(wrapped, name)
+    if not todo:
+        return cache
+
+    def send(item):
+        wrapped, name = item
+        # One session per call: requests sessions are not thread-safe.
+        with requests.Session() as http:
+            return wrapped, _classify(name, endpoint, http, wrapped, timeout)
+
+    with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
+        for wrapped, outcome in pool.map(send, todo.items()):
+            cache[wrapped] = outcome
+    return cache
+
+
 def check_lint_01_02(
     name: str,
     entry: dict,
@@ -282,8 +323,7 @@ def check_lint_01_02(
     queries = list(_iter_queries(entry))
     total = len(queries)
     for _, caption, query in queries:
-        substituted = query.replace("__GRAPH_URI__", f"<{latest_graph_uri}>")
-        wrapped = "SELECT * WHERE { { " + substituted + " } } LIMIT 1"
+        wrapped = _wrap(query, latest_graph_uri)
         if wrapped not in cache:
             cache[wrapped] = _classify(name, endpoint, http, wrapped, timeout)
         status, first_line, empty = cache[wrapped]
@@ -533,9 +573,10 @@ def enforce_call_budget(
     Each entry costs one wrapped round-trip for LINT-01/02, plus one shared
     latest-graph resolution call per run. Entries whose every disclosed query
     repeats an earlier entry's cost nothing (run_lint sends each distinct
-    query once) and are not counted. With ``budget=60`` (canary value)
-    and 56 real entries as of 2026-05, a 30s per-call timeout keeps total
-    run-time well under the LINT-05 "<2 minutes" target.
+    query once) and are not counted. With ``budget=80`` (canary value)
+    and the queries sent ``DEFAULT_WORKERS`` at a time (61 billable entries
+    ran in 12.9 s on 2026-10-20), total run-time stays well under the
+    LINT-05 "<2 minutes" target.
 
     The guard is a no-op when ``no_network=True`` because the static-only
     path issues zero endpoint calls. Raises ``BudgetExceeded`` otherwise.
@@ -688,6 +729,7 @@ def run_lint(
     plots_dir: Optional[pathlib.Path] = None,
     no_network: bool = False,
     budget: int = DEFAULT_CALL_BUDGET,
+    workers: int = DEFAULT_WORKERS,
 ) -> list[dict]:
     """Run all enabled checks and return the merged findings list.
 
@@ -700,7 +742,10 @@ def run_lint(
       1. Load JSON.
       2. LINT-05 budget guard - refuse early if oversize.
       3. AST scan of ``plots_dir`` (amortised across all entries).
-      4. Per-entry checks (LINT-03 static, LINT-01/02 endpoint, LINT-04 AST).
+      4. Per-entry static checks (LINT-03, LINT-04 AST), noting which entries
+         go to the endpoint.
+      5. Their distinct queries, ``workers`` at a time (``prefetch_queries``).
+      6. LINT-01/02 findings from those outcomes, in entry order.
     """
     with open(json_path) as fh:
         notes = json.load(fh)
@@ -713,7 +758,6 @@ def run_lint(
         plot_call_counts = scan_plots_dir(plots_dir)
         note_producers = load_note_producers(plots_dir)
 
-    findings: list[dict] = []
     query_cache: dict = {}  # wrapped query -> outcome: a query several notes share is sent once
     session: Optional[requests.Session] = None
     latest_graph_uri: Optional[str] = None
@@ -721,27 +765,27 @@ def run_lint(
         session = requests.Session()
         latest_graph_uri = resolve_latest_graph_uri(endpoint, session=session)
 
+    # Pass 1: the static checks, and which entries go to the endpoint.
+    per_entry: list = []  # (name, entry, static findings, needs the endpoint)
     for name, entry in notes.items():
         if not isinstance(entry, dict):
             continue
-        lint03_findings = check_lint_03(name, entry)
-        findings.extend(lint03_findings)
+        static = check_lint_03(name, entry)
+        lint03_failed = bool(static)
         lint04 = check_lint_04(name, entry, plot_call_counts, note_producers.get(name))
         if lint04 is not None:
-            findings.append(lint04)
-        if no_network:
-            continue
-        # Skip the endpoint round-trip only for entries where EVERY disclosed
-        # query is truly unconstrained (no __GRAPH_URI__ AND no ORDER BY DESC).
-        # A partial-constraint latest_* query (ORDER BY + LIMIT 1 but no
-        # STRSTARTS) would still bind on the endpoint and produce SP030 etc.,
-        # so we want to keep it in the LINT-01/02 path.
-        all_queries = [q for _, _, q in _iter_queries(entry)]
-        any_constrained = any(
-            "__GRAPH_URI__" in q or "ORDER BY DESC(?graph)" in q
-            for q in all_queries
-        )
-        if lint03_findings and not any_constrained:
+            static = static + [lint04]
+        per_entry.append((name, entry, static, not no_network and _needs_endpoint(entry, lint03_failed)))
+
+    # The endpoint queries go out ``workers`` at a time; pass 2 reads the cache.
+    if not no_network:
+        prefetch_queries([(n, e) for n, e, _, needed in per_entry if needed], latest_graph_uri,
+                         endpoint=endpoint, workers=workers, cache=query_cache)
+
+    findings: list[dict] = []
+    for name, entry, static, needed in per_entry:
+        findings.extend(static)
+        if not needed:
             continue
         assert latest_graph_uri is not None  # for type-checkers
         findings.extend(
@@ -755,6 +799,21 @@ def run_lint(
             )
         )
     return findings
+
+
+def _needs_endpoint(entry: dict, lint03_failed: bool) -> bool:
+    """Whether LINT-01/02 send this entry's queries.
+
+    Skip the endpoint round-trip only for an entry that failed LINT-03 and
+    whose every disclosed query is truly unconstrained (no __GRAPH_URI__ and
+    no ORDER BY DESC(?graph)). A partial-constraint latest_* query (ORDER BY +
+    LIMIT 1 but no STRSTARTS) would still bind on the endpoint and produce
+    SP030 etc., so it stays in the LINT-01/02 path.
+    """
+    if not lint03_failed:
+        return True
+    return any("__GRAPH_URI__" in q or "ORDER BY DESC(?graph)" in q
+               for _, _, q in _iter_queries(entry))
 
 
 def main(argv: Optional[list[str]] = None) -> int:
@@ -774,6 +833,8 @@ def main(argv: Optional[list[str]] = None) -> int:
                         help="SPARQL endpoint URL")
     parser.add_argument("--no-network", action="store_true",
                         help="Skip endpoint calls; run static + AST checks only")
+    parser.add_argument("--workers", type=int, default=DEFAULT_WORKERS,
+                        help=f"LINT-01/02 queries sent at once (default {DEFAULT_WORKERS})")
     parser.add_argument("--call-budget", type=int, default=DEFAULT_CALL_BUDGET,
                         help=(
                             "LINT-05 entry-count ceiling. The lint refuses to "
@@ -789,6 +850,7 @@ def main(argv: Optional[list[str]] = None) -> int:
             plots_dir=args.plots_dir,
             no_network=args.no_network,
             budget=args.call_budget,
+            workers=args.workers,
         )
     except BudgetExceeded as exc:
         sys.stderr.write(f"call-budget refusal: {exc}\n")
