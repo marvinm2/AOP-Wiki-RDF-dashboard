@@ -243,7 +243,12 @@ coverage map (`coverage-map.js`) is a server icicle drawn as horizontal bars, on
 organ-system branch (Plotly's icicle trace is not in the cartesian bundle); the module zooms to a block on
 click or Enter and walks the tree with the arrow keys. The organ-system bump chart (`bump.js`) is a server
 Plotly figure; the module adds the Highlight select (`?organ=`), which dims the other lines, and a keyboard
-path that moves along a system's line with left and right and between ranks with up and down. A view that draws
+path that moves along a system's line with left and right and between ranks with up and down. The OECD
+status journey (`status-journey.js`, renderer `plotly-full`) is a server sankey, a trace the cartesian bundle
+lacks: the renderer loads the full Plotly bundle (`static/vendor/plotly@2.32.0`, same version) the first time
+the card comes into view, through a one-shot AMD `define` so `window.Plotly` stays the cartesian one, and
+keeps it on the drawn div as `div._dashPlotly` for the "as shown" downloads. The keyboard walks the bands
+and darkens the focused one on its SVG path, since a Plotly restyle of a sankey fades it in again. A view that draws
 one SVG with its colours as attributes marks it `svg[data-export="svg"]`, or builds one on request with
 `container.exportSvg()`, and its download menu gets "PNG/SVG (as shown)" like the Plotly figures.
 

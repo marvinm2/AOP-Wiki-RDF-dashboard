@@ -465,6 +465,38 @@
         </div>
         {{ data_table_toggle('oecd_status_distribution_absolute') }}
     </div>
+
+    <!-- OECD status journey, a sankey (#187) -->
+    <div class="plot-box full-width" id="oecd-status-journey">
+        <div class="plot-header">
+            <h3>OECD Status Journey</h3>
+            <div class="download-dropdown">
+                <button class="download-button dropdown-toggle">Download ▼</button>
+                <div class="dropdown-menu">
+                    <a href="/download/trend/oecd_status_journey?format=csv" class="dropdown-item">📄 CSV</a>
+                    <a href="/download/trend/oecd_status_journey?format=png" class="dropdown-item">🖼️ PNG</a>
+                    <a href="/download/trend/oecd_status_journey?format=svg" class="dropdown-item">📐 SVG</a>
+                </div>
+            </div>
+        </div>
+        <p class="plot-description">
+            Where AOPs went between OECD stages, one column per year: each block is a stage in that year's January
+            snapshot (the latest snapshot for the latest year), and each band the AOPs that moved from one stage to
+            the next, or kept it. Only AOPs whose stage changed at least once are drawn. The dashed line marks the
+            2024-04-01 status wipe. Hover a band for its count, or focus the chart and use the arrow keys: left and
+            right move between years, up and down between the bands of a year.
+        </p>
+        {{ methodology_note(methodology_notes, 'oecd_status_journey') }}
+        <div class="journey-scroll">
+            <div class="lazy-plot" data-plot-name="oecd_status_journey" data-renderer="plotly-full" data-a11y="self"
+                 data-lib-src="{{ url_for('static', filename=vendor['plotly'].path) }}"
+                 data-lib-integrity="{{ vendor['plotly'].integrity }}">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+        <p class="sr-only journey-live" aria-live="polite"></p>
+        {{ data_table_toggle('oecd_status_journey') }}
+    </div>
     </div>
 </section>
 

@@ -33,6 +33,9 @@ VENDOR = ROOT / "static" / "vendor"
 # version in step with what plotly.py (requirements.txt) emits.
 LIBRARIES = {
     "plotly-cartesian": ("2.32.0", "https://cdn.plot.ly/plotly-cartesian-2.32.0.min.js"),
+    # The full bundle, loaded on demand only by the views that need a trace the
+    # cartesian one lacks (the OECD status journey's sankey, #187). Same version.
+    "plotly": ("2.32.0", "https://cdn.plot.ly/plotly-2.32.0.min.js"),
     "cytoscape": ("3.33.1", "https://unpkg.com/cytoscape@3.33.1/dist/cytoscape.min.js"),
     # D3 for the views Plotly has no form for (version scrubber #182, ...).
     "d3": ("7.9.0", "https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"),
