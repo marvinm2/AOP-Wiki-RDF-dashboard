@@ -1859,6 +1859,15 @@ footer img {
     min-width: 56px;
 }
 
+/* Bar | Pie switch in a card header: next to the download menu, and never
+   wrapped onto two lines (two short buttons fit any phone). */
+.plot-header .chart-switch,
+.coverage-pair-cell-header .chart-switch {
+    margin-left: auto;
+    flex-wrap: nowrap;
+    flex-shrink: 0;
+}
+
 .segmented-control {
     display: inline-flex;
     border: 1px solid var(--color-blue-ui);
