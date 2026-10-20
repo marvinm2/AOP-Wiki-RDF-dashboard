@@ -867,6 +867,31 @@
             </div>
             {{ data_table_toggle('latest_ontology_usage') }}
         </div>
+        <div class="plot-box full-width">
+            <div class="plot-header">
+                <h3>Ontologies by Level of Biological Organisation</h3>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download &#x25BC;</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/latest/ontology_by_bio_level?format=csv" class="dropdown-item">CSV</a>
+                        <a href="/download/latest/ontology_by_bio_level?format=png" class="dropdown-item">PNG</a>
+                        <a href="/download/latest/ontology_by_bio_level?format=svg" class="dropdown-item">SVG</a>
+                    </div>
+                </div>
+            </div>
+            <p class="plot-description">
+                Which ontologies the Key Event annotations come from at each level of biological organisation, from
+                molecular to population. Each bar is one level and splits its annotations by source ontology; process
+                terms and object terms are shown apart, as they draw on different ontologies. Hover a segment for the counts.
+            </p>
+            {{ methodology_note(methodology_notes, 'latest_ontology_by_bio_level') }}
+            <div class="level-scroll">
+                <div class="lazy-plot" data-plot-name="latest_ontology_by_bio_level">
+                    <!-- Plot will be loaded here via JavaScript -->
+                </div>
+            </div>
+            {{ data_table_toggle('latest_ontology_by_bio_level') }}
+        </div>
         <div class="plot-box">
             <div class="plot-header">
                 <h3>AOP Completeness</h3>

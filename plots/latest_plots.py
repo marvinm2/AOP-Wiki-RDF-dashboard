@@ -1457,6 +1457,154 @@ def plot_latest_ke_by_bio_level(version: str = None) -> str:
     return render_plot_html(fig)
 
 
+# Levels of biological organisation, smallest first (nci:C25664 values).
+BIO_LEVEL_ORDER = ["Molecular", "Cellular", "Tissue", "Organ", "Individual", "Population"]
+ONTOLOGY_BY_LEVEL_COLUMNS = ["Biological Level", "Annotation", "Ontology", "Annotations",
+                             "Share (%)", "Level Annotations", "Level KEs", "Version"]
+# An ontology gets its own colour if it is among this many by total
+# annotations, or has this share of some level's annotations (PCO is small
+# overall but the population ontology); the rest share one "Other" colour.
+ONTOLOGY_BY_LEVEL_TOP = 10
+ONTOLOGY_BY_LEVEL_KEY_SHARE = 15.0
+
+
+def ontology_by_level_rows(results: list, version: str) -> pd.DataFrame:
+    """Annotations per level, role and ontology, with each one's share of its
+    level and role (``ONTOLOGY_BY_LEVEL_COLUMNS``).
+
+    ``results`` are SPARQL rows of level, role, ontology, annotations and the
+    level's KEs. An annotation is one (KE, term) pair. Levels outside
+    ``BIO_LEVEL_ORDER`` (and "Not annotated") follow it in name order.
+    """
+    rows = [{
+        "Biological Level": r["level"]["value"],
+        "Annotation": r["role"]["value"],
+        "Ontology": r["ontology"]["value"],
+        "Annotations": int(r["annotations"]["value"]),
+        "Level KEs": int(r["level_kes"]["value"]),
+    } for r in results]
+    df = pd.DataFrame(rows, columns=["Biological Level", "Annotation", "Ontology", "Annotations", "Level KEs"])
+    if df.empty:
+        return pd.DataFrame(columns=ONTOLOGY_BY_LEVEL_COLUMNS)
+    df["Level Annotations"] = df.groupby(["Biological Level", "Annotation"])["Annotations"].transform("sum")
+    df["Share (%)"] = (100 * df["Annotations"] / df["Level Annotations"]).round(1)
+    levels = sorted(set(df["Biological Level"]), key=lambda l: (
+        BIO_LEVEL_ORDER.index(l) if l in BIO_LEVEL_ORDER else len(BIO_LEVEL_ORDER), l))
+    df["_level"] = df["Biological Level"].map(levels.index)
+    df = df.sort_values(["_level", "Annotation", "Annotations", "Ontology"],
+                        ascending=[True, False, False, True]).drop(columns="_level")
+    df["Version"] = version
+    return df[ONTOLOGY_BY_LEVEL_COLUMNS].reset_index(drop=True)
+
+
+def _render_ontology_by_level(df: pd.DataFrame) -> go.Figure:
+    """Process and object panels side by side: a 100% bar per level, a segment
+    per ontology, the same colour for an ontology in both panels."""
+    from plotly.subplots import make_subplots
+
+    totals = df.groupby("Ontology")["Annotations"].sum().sort_values(ascending=False)
+    key = set(totals.index[:ONTOLOGY_BY_LEVEL_TOP]) | set(df.loc[df["Share (%)"] >= ONTOLOGY_BY_LEVEL_KEY_SHARE, "Ontology"])
+    top = [o for o in totals.index if o in key][:len(BRAND_COLORS["palette"])]
+    other = "Other"
+    df = df.assign(Group=df["Ontology"].where(df["Ontology"].isin(top), other))
+    groups = top + ([other] if (df["Group"] == other).any() else [])
+    colours = dict(zip(top, BRAND_COLORS["palette"]))
+    colours[other] = "#BFBFBF"
+
+    levels = list(dict.fromkeys(df["Biological Level"]))
+    kes = df.drop_duplicates("Biological Level").set_index("Biological Level")["Level KEs"]
+    labels = {lv: f"{lv} ({int(kes[lv]):,} KEs)" for lv in levels}
+    roles = [r for r in ("Process", "Object") if r in set(df["Annotation"])]
+    fig = make_subplots(rows=1, cols=len(roles), shared_yaxes=True, horizontal_spacing=0.03,
+                        subplot_titles=[f"{r} terms" for r in roles])
+    in_legend = set()
+    for col, role in enumerate(roles, start=1):
+        sub = df[df["Annotation"] == role]
+        level_total = sub.drop_duplicates("Biological Level").set_index("Biological Level")["Level Annotations"]
+        for group in groups:
+            g = sub[sub["Group"] == group].groupby("Biological Level", sort=False).agg(
+                Annotations=("Annotations", "sum"), Ontologies=("Ontology", lambda s: ", ".join(s)))
+            g = g.reindex([lv for lv in levels if lv in g.index])
+            if g.empty:
+                continue
+            share = 100 * g["Annotations"] / level_total.reindex(g.index)
+            fig.add_bar(
+                x=share.round(1), y=[labels[lv] for lv in g.index], orientation="h",
+                name=group, legendgroup=group, showlegend=group not in in_legend, marker_color=colours[group],
+                legendrank=groups.index(group),
+                text=[group if s >= 8 else "" for s in share], textposition="inside", insidetextanchor="middle",
+                textangle=0,
+                customdata=list(zip(g["Annotations"], level_total.reindex(g.index), g["Ontologies"])),
+                hovertemplate=(f"<b>%{{y}}</b>, {role.lower()} terms<br>"
+                               + ("%{customdata[2]}" if group == other else group)
+                               + ": %{customdata[0]} of %{customdata[1]} annotations (%{x:.1f}%)<extra></extra>"),
+                row=1, col=col,
+            )
+            in_legend.add(group)
+        fig.update_xaxes(range=[0, 100], ticksuffix="%", title_text="Share of annotations", row=1, col=col)
+    fig.update_yaxes(categoryorder="array", categoryarray=[labels[lv] for lv in reversed(levels)])
+    fig.update_layout(
+        barmode="stack", height=max(380, 70 * len(levels) + 200),
+        legend=dict(title=dict(text="Ontology:"), orientation="h", yanchor="top", y=-0.18, xanchor="left", x=0),
+        margin=dict(l=150, r=20, t=60, b=110), hovermode="closest",
+    )
+    return fig
+
+
+@resolves_version
+def plot_latest_ontology_by_bio_level(version: str = None) -> str:
+    """Which ontologies annotate Key Events at each level of biological organisation.
+
+    One query counts the KE annotations (distinct KE, term pairs) per level
+    (nci:C25664), role (process or object term) and source ontology, with the
+    same namespace buckets as Ontology Usage.
+    """
+    target_graph = f"http://aopwiki.org/graph/{version}"
+    level_pred = "<http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25664>"
+    query = f"""
+    SELECT ?level ?role ?ontology (COUNT(*) AS ?annotations) (MAX(?kes) AS ?level_kes)
+    WHERE {{
+      {{
+        SELECT DISTINCT ?level ?role ?ontology ?ke ?term
+        WHERE {{
+          GRAPH <{target_graph}> {{
+            ?ke a aopo:KeyEvent ;
+                aopo:hasBiologicalEvent ?bioevent .
+            {{ ?bioevent aopo:hasProcess ?term . BIND("Process" AS ?role) }}
+            UNION
+            {{ ?bioevent aopo:hasObject ?term . BIND("Object" AS ?role) }}
+            FILTER(isIRI(?term))
+            OPTIONAL {{ ?ke {level_pred} ?level_value . }}
+            BIND(COALESCE(STR(?level_value), "Not annotated") AS ?level)
+            BIND({ontology_bucket_sparql("term")} AS ?ontology)
+          }}
+        }}
+      }}
+      {{
+        SELECT ?level (COUNT(DISTINCT ?k) AS ?kes)
+        WHERE {{
+          GRAPH <{target_graph}> {{
+            ?k a aopo:KeyEvent .
+            OPTIONAL {{ ?k {level_pred} ?lv . }}
+            BIND(COALESCE(STR(?lv), "Not annotated") AS ?level)
+          }}
+        }}
+        GROUP BY ?level
+      }}
+    }}
+    GROUP BY ?level ?role ?ontology
+    ORDER BY ?level ?role DESC(?annotations)
+    """
+    results = run_sparql_query(query)
+    df = ontology_by_level_rows(results or [], version)
+    if df.empty:
+        return create_fallback_plot("Ontologies by Biological Level", "No annotated Key Events in this snapshot")
+    _plot_data_cache[f'latest_ontology_by_bio_level_{version}'] = df
+    fig = _render_ontology_by_level(df)
+    _plot_figure_cache[f'latest_ontology_by_bio_level_{version}'] = fig
+    return render_plot_html(fig)
+
+
 @resolves_version
 def plot_latest_taxonomic_groups(version: str = None) -> str:
     """Show which taxonomic groups are most represented across AOPs.

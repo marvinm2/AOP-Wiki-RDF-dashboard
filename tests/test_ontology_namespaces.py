@@ -59,6 +59,7 @@ DISCLOSED = [
     ("latest_process_usage", ("queries", 1, "query"), "process"),
     ("latest_object_usage", ("queries", 1, "query"), "object"),
     ("bio_annotations", ("sparql",), "process"),
+    ("latest_ontology_by_bio_level", ("queries", 0, "query"), "term"),
 ]
 
 

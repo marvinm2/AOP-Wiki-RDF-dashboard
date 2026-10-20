@@ -224,6 +224,7 @@ from .latest_plots import (
 
     # Breakdown analysis (Phase 04-02)
     plot_latest_ke_by_bio_level,
+    plot_latest_ontology_by_bio_level,
     plot_latest_taxonomic_groups,
     plot_latest_entity_by_oecd_status,
     plot_latest_ke_reuse,
@@ -347,6 +348,7 @@ __all__ = [
     'plot_latest_aop_completeness',
     'plot_latest_completeness_by_status',
     'plot_latest_ke_by_bio_level',
+    'plot_latest_ontology_by_bio_level',
     'plot_latest_taxonomic_groups',
     'plot_latest_entity_by_oecd_status',
     'plot_latest_ke_reuse',

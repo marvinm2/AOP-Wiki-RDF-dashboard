@@ -2613,6 +2613,15 @@ body:has(.sticky-controls) .section-block {
     outline-offset: 2px;
 }
 
+.level-scroll {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.level-scroll .lazy-plot {
+    min-width: 760px;
+}
+
 .calendar-scroll {
     max-width: 100%;
     overflow-x: auto;
