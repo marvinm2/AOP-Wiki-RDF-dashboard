@@ -146,6 +146,7 @@ TREND_PLOTS = [
     "organ_coverage_bump",
     "oecd_status_journey",
     "entity_survival",
+    "ke_reuse_race",
 ]
 
 # Explicitly-registered routes (bare-key lookups) worth hitting directly to catch

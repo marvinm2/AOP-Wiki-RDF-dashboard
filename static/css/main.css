@@ -2604,6 +2604,25 @@ body:has(.sticky-controls) .section-block {
     outline-offset: 2px;
 }
 
+.race-scroll {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.race-scroll .lazy-plot {
+    min-width: 720px;
+}
+
+.race-caption,
+.race-readout {
+    margin: 0.5rem 0;
+}
+
+.race-chart:focus-visible {
+    outline: 3px solid var(--color-magenta);
+    outline-offset: 2px;
+}
+
 .survival-scroll {
     max-width: 100%;
     overflow-x: auto;

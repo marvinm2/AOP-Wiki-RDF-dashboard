@@ -440,6 +440,23 @@
         "limitations": "Density is computed per AOP and then averaged, so it reflects typical within-AOP connectivity rather than one global graph over all Key Events. AOPs with fewer than 2 Key Events are excluded. Adding Key Events to an AOP without corresponding Key Event Relationships lowers its density. Trend data covers only the published RDF release versions available in the SPARQL endpoint; the AOP-Wiki knowledge base predates the earliest RDF release, so earlier activity is not captured.",
         "sparql": "SELECT ?graph ?aop (COUNT(DISTINCT ?ke) AS ?nodes) (COUNT(DISTINCT ?ker) AS ?edges)\nWHERE {\n  GRAPH ?graph {\n    ?aop a aopo:AdverseOutcomePathway .\n    OPTIONAL { ?aop aopo:has_key_event ?ke . }\n    OPTIONAL { ?aop aopo:has_key_event_relationship ?ker . }\n  }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph ?aop"
     },
+    "ke_reuse_race": {
+        "title": "Most Reused Key Events over Time",
+        "description": "The 15 Key Events that are part of the most AOPs, in every snapshot, as a race: the bars show the snapshot at the end of the /trends range and slide to their new places when it moves. Three KEs have led: KE 563 (Death/Failure, Colony) until 2019-10-01, KE 360 (Decrease, Population growth rate) from 2020-01-01 to 2025-07-01, and KE 1392 (Increase, Oxidative Stress) since 2025-10-01, in 72 AOPs on the 2026-10-01 snapshot. The 15th place took 7 AOPs in 2019-01-01 and 19 in 2026-10-01.",
+        "data_source": "One SPARQL query counts the AOPs that list each Key Event (aopo:has_key_event) in every snapshot graph. Titles are the newest dc:title a KE has had, as in the Entity Lifeline.",
+        "method_steps": [
+            "<strong>Rank.</strong> In each snapshot the KEs are ranked by their number of AOPs, most first. Equal counts keep the previous snapshot's order, then the KE number, so ties do not swap places from one snapshot to the next.",
+            "<strong>Racers.</strong> The data holds every KE that is in the top 15 of at least one snapshot, with its count and rank in every snapshot; one outside the top 15 waits below the chart, and a KE in no AOP of a snapshot has 0 AOPs and no rank.",
+            "<strong>Axis.</strong> The x axis is the same for every snapshot, so the bars grow as KEs are reused."
+        ],
+        "limitations": "Reuse counts the AOPs a KE belongs to through aopo:has_key_event, whatever its role (MIE, KE or AO). An AOP-Wiki merge of two KEs shows up as one KE losing its AOPs and the other gaining them. The PNG and SVG downloads show the newest snapshot; \"PNG/SVG (as shown)\" saves the snapshot on screen.",
+        "queries": [
+            {
+                "caption": "AOPs per Key Event in every snapshot graph",
+                "query": "SELECT ?graph ?ke (COUNT(DISTINCT ?aop) AS ?aops)\nWHERE {\n  GRAPH ?graph { ?aop a aopo:AdverseOutcomePathway ; aopo:has_key_event ?ke . }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph ?ke\nORDER BY DESC(?aops)"
+            }
+        ]
+    },
     "aop_authors": {
         "title": "Authors of AOPs Over Time",
         "description": "Tracks the number of unique authors contributing to AOPs over time. Shows how the contributor base has grown across database versions.",
