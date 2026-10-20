@@ -20,7 +20,7 @@
     'use strict';
 
     /** The keys this module owns, in the order they appear in the URL. */
-    var KEYS = ['version', 'start', 'end', 'scope', 'view', 'min_jaccard', 'branch', 'domain', 'entity', 'status', 'overlap', 'cohort', 'aop', 'props', 'organ'];
+    var KEYS = ['version', 'start', 'end', 'scope', 'view', 'min_jaccard', 'branch', 'domain', 'entity', 'status', 'overlap', 'cohort', 'aop', 'props', 'organ', 'ontology_chart', 'process_chart', 'object_chart', 'depth_chart', 'organ_chart'];
 
     /** {key: value or null} for every owned key, from a query string. */
     function parse(search) {

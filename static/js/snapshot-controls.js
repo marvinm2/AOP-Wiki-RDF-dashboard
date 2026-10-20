@@ -1,5 +1,6 @@
 /**
  * Plot settings on the Snapshot page (#181): the coverage scope/view toggles,
+ * the Bar | Pie switches (one setting per card, e.g. ?depth_chart=pie),
  * the overlap threshold slider, the ontology-branch selectors (the holes bars
  * and the coverage map share one setting) and the domain selector.
  *
@@ -53,6 +54,18 @@
         show();
     }
 
+    /** Bar | Pie switches: one setting per card (data-chart-key), bars by default. */
+    function wireChartSwitches() {
+        document.querySelectorAll('.chart-switch[data-chart-key]').forEach((group) => {
+            const key = group.dataset.chartKey;
+            const buttons = Array.from(group.querySelectorAll('[data-chart]'));
+            const show = () => setPressed(buttons, 'chart', state.get(key) === 'pie' ? 'pie' : 'bar');
+            buttons.forEach((btn) => btn.addEventListener('click', () => setSetting(key, btn.dataset.chart, 'bar')));
+            state.subscribe((changed) => { if (changed.includes(key)) show(); });
+            show();
+        });
+    }
+
     function wireThresholdSlider() {
         const slider = document.getElementById('aop-aop-threshold-slider');
         const label = document.getElementById('aop-aop-threshold-value');
@@ -86,6 +99,7 @@
     function init() {
         wireCoverageToggles();
         wireThresholdSlider();
+        wireChartSwitches();
         wireSelect('ontology-branch-select', 'branch');
         wireSelect('ontology-map-branch-select', 'branch');  // the coverage map's copy (#187)
         wireSelect('domain-lens-select', 'domain');

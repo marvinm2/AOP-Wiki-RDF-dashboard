@@ -111,6 +111,29 @@ def _load_ncbi_taxon_labels() -> dict:
     return _NCBI_TAXON_LABELS
 
 
+def _share_pie(df: pd.DataFrame, names: str, values: str, noun: str, *,
+               color_map: dict = None, order: list = None) -> go.Figure:
+    """The pie view of a snapshot count plot whose card has a Bar | Pie switch.
+
+    Slices keep the row order of ``df`` (``order`` for an ordinal variable) and
+    show their share; the hover gives the count. The bars stay the default
+    view: they compare sizes better, and the pie is there for part-of-whole
+    reading.
+    """
+    kwargs = dict(color=names, color_discrete_map=color_map) if color_map else dict(
+        color_discrete_sequence=BRAND_COLORS['palette'])
+    fig = px.pie(df, names=names, values=values,
+                 category_orders={names: order or df[names].tolist()}, **kwargs)
+    fig.update_traces(
+        sort=False, direction="clockwise", textposition="inside", textinfo="percent+label",
+        hovertemplate=f"<b>%{{label}}</b><br>{noun}: %{{value}}<br>Share: %{{percent}}<extra></extra>",
+    )
+    # The legend goes under the pie, so a narrow card keeps its width for the pie.
+    fig.update_layout(margin=dict(l=20, r=20, t=50, b=20),
+                      legend=dict(title="", orientation="h", yanchor="top", y=-0.02, xanchor="center", x=0.5))
+    return fig
+
+
 def _build_graph_filter(version: str = None) -> tuple[str, str]:
     """Helper function to build SPARQL graph filter clause based on version parameter.
 
@@ -607,7 +630,7 @@ def plot_latest_avg_per_aop(version: str = None) -> str:
 
 
 @resolves_version
-def plot_latest_ontology_usage(version: str = None) -> str:
+def plot_latest_ontology_usage(version: str = None, ontology_chart: str = "bar") -> str:
     """Create a chart showing current ontology usage."""
 
     # Determine target graph directly for reliable query execution
@@ -671,17 +694,20 @@ def plot_latest_ontology_usage(version: str = None) -> str:
     df["Version"] = latest_version
     _plot_data_cache[f'latest_ontology_usage_{version or "latest"}'] = df
 
-    fig = px.bar(
-        df, x="Ontology", y="Terms", text="Terms"
-    )
+    if ontology_chart == "pie":
+        fig = _share_pie(df, "Ontology", "Terms", "Terms")
+    else:
+        fig = px.bar(
+            df, x="Ontology", y="Terms", text="Terms"
+        )
 
-    fig.update_traces(marker_color=BRAND_COLORS['blue'], textposition='outside')
-    fig.update_layout(
-        showlegend=False,
-        margin=dict(l=50, r=20, t=50, b=50),
-        yaxis=dict(title="Number of Terms"),
-        xaxis=dict(title="Ontology Source")
-    )
+        fig.update_traces(marker_color=BRAND_COLORS['blue'], textposition='outside')
+        fig.update_layout(
+            showlegend=False,
+            margin=dict(l=50, r=20, t=50, b=50),
+            yaxis=dict(title="Number of Terms"),
+            xaxis=dict(title="Ontology Source")
+        )
 
     # Cache the figure object for image export (PNG/SVG/PDF)
     _plot_figure_cache[f'latest_ontology_usage_{version or "latest"}'] = fig
@@ -690,7 +716,7 @@ def plot_latest_ontology_usage(version: str = None) -> str:
 
 
 @resolves_version
-def plot_latest_process_usage(version: str = None) -> str:
+def plot_latest_process_usage(version: str = None, process_chart: str = "bar") -> str:
     """Create a sorted bar chart showing current ontology source distribution for biological processes."""
     global _plot_data_cache
 
@@ -756,17 +782,20 @@ def plot_latest_process_usage(version: str = None) -> str:
     # Store in global cache for CSV download
     _plot_data_cache[f'latest_process_usage_{version or "latest"}'] = df
 
-    fig = px.bar(
-        df, x="Ontology", y="Count", text="Count"
-    )
+    if process_chart == "pie":
+        fig = _share_pie(df, "Ontology", "Count", "Terms")
+    else:
+        fig = px.bar(
+            df, x="Ontology", y="Count", text="Count"
+        )
 
-    fig.update_traces(marker_color=BRAND_COLORS['blue'], textposition='outside')
-    fig.update_layout(
-        showlegend=False,
-        margin=dict(l=50, r=20, t=50, b=50),
-        yaxis=dict(title="Number of Terms"),
-        xaxis=dict(title="Ontology Source")
-    )
+        fig.update_traces(marker_color=BRAND_COLORS['blue'], textposition='outside')
+        fig.update_layout(
+            showlegend=False,
+            margin=dict(l=50, r=20, t=50, b=50),
+            yaxis=dict(title="Number of Terms"),
+            xaxis=dict(title="Ontology Source")
+        )
 
     # Cache the figure object for image export (PNG/SVG/PDF)
     _plot_figure_cache[f'latest_process_usage_{version or "latest"}'] = fig
@@ -775,7 +804,7 @@ def plot_latest_process_usage(version: str = None) -> str:
 
 
 @resolves_version
-def plot_latest_object_usage(version: str = None) -> str:
+def plot_latest_object_usage(version: str = None, object_chart: str = "bar") -> str:
     """Create a sorted bar chart showing current ontology source distribution for biological objects."""
     global _plot_data_cache
 
@@ -841,17 +870,20 @@ def plot_latest_object_usage(version: str = None) -> str:
     # Store in global cache for CSV download
     _plot_data_cache[f'latest_object_usage_{version or "latest"}'] = df
 
-    fig = px.bar(
-        df, x="Ontology", y="Count", text="Count"
-    )
+    if object_chart == "pie":
+        fig = _share_pie(df, "Ontology", "Count", "Terms")
+    else:
+        fig = px.bar(
+            df, x="Ontology", y="Count", text="Count"
+        )
 
-    fig.update_traces(marker_color=BRAND_COLORS['blue'], textposition='outside')
-    fig.update_layout(
-        showlegend=False,
-        margin=dict(l=50, r=20, t=50, b=50),
-        yaxis=dict(title="Number of Terms"),
-        xaxis=dict(title="Ontology Source")
-    )
+        fig.update_traces(marker_color=BRAND_COLORS['blue'], textposition='outside')
+        fig.update_layout(
+            showlegend=False,
+            margin=dict(l=50, r=20, t=50, b=50),
+            yaxis=dict(title="Number of Terms"),
+            xaxis=dict(title="Ontology Source")
+        )
 
     # Cache the figure object for image export (PNG/SVG/PDF)
     _plot_figure_cache[f'latest_object_usage_{version or "latest"}'] = fig
@@ -986,7 +1018,7 @@ def plot_latest_aop_completeness(version: str = None) -> str:
 
 
 @resolves_version
-def plot_latest_ke_annotation_depth(version: str = None) -> str:
+def plot_latest_ke_annotation_depth(version: str = None, depth_chart: str = "bar") -> str:
     """Show current distribution of Key Events by annotation depth (number of components)."""
     global _plot_data_cache
 
@@ -1059,19 +1091,23 @@ def plot_latest_ke_annotation_depth(version: str = None) -> str:
     # Store in global cache for CSV download
     _plot_data_cache[f'latest_ke_annotation_depth_{version or "latest"}'] = df
 
-    # Ordinal variable (annotation depth) — keep the depth order, not a pie.
-    fig = px.bar(
-        df, x="Depth", y="KE Count", text="KE Count",
-        category_orders={"Depth": df["Depth"].tolist()}
-    )
+    if depth_chart == "pie":
+        # Ordinal: the slices run clockwise in depth order.
+        fig = _share_pie(df, "Depth", "KE Count", "Key Events", order=df["Depth"].tolist())
+    else:
+        # Ordinal variable (annotation depth): the bars keep the depth order.
+        fig = px.bar(
+            df, x="Depth", y="KE Count", text="KE Count",
+            category_orders={"Depth": df["Depth"].tolist()}
+        )
 
-    fig.update_traces(marker_color=BRAND_COLORS['blue'], textposition='outside')
-    fig.update_layout(
-        showlegend=False,
-        margin=dict(l=50, r=20, t=50, b=50),
-        yaxis=dict(title="Number of Key Events"),
-        xaxis=dict(title="Annotation depth")
-    )
+        fig.update_traces(marker_color=BRAND_COLORS['blue'], textposition='outside')
+        fig.update_layout(
+            showlegend=False,
+            margin=dict(l=50, r=20, t=50, b=50),
+            yaxis=dict(title="Number of Key Events"),
+            xaxis=dict(title="Annotation depth")
+        )
 
     # Cache the figure object for image export (PNG/SVG/PDF)
     _plot_figure_cache[f'latest_ke_annotation_depth_{version or "latest"}'] = fig
@@ -3271,8 +3307,9 @@ def plot_latest_organ_coverage_unified(
 def plot_latest_organ_coverage_pie(
     version: str = None,
     scope: str = "all",
+    organ_chart: str = "bar",
 ) -> str:
-    """Pie of AOP membership per organ-system bucket under a given scope.
+    """AOPs per organ-system bucket under a given scope, as bars or a pie.
 
     An AOP can be in multiple buckets; the pie counts each (AOP, bucket) pair
     once, so slices sum to bucket-memberships, not to total AOPs. An
@@ -3339,9 +3376,28 @@ def plot_latest_organ_coverage_pie(
         f"({avg_buckets:.2f} buckets/AOP on average)"
     )
 
-    # Bucket memberships are non-additive (an AOP can be in several buckets),
-    # so a pie's part-of-whole framing is misleading — use a sorted bar of the
-    # per-bucket AOP counts instead.
+    if organ_chart == "pie":
+        # Bucket memberships are non-additive (an AOP can be in several
+        # buckets): the slices are shares of memberships, not of AOPs, and the
+        # subtitle says so. The bars are the default for that reason.
+        colour_map = dict(_BUCKET_PALETTE)
+        colour_map["Unclassified"] = "#cccccc"
+        fig = _share_pie(df, "Organ System", "AOPs", "AOPs", color_map=colour_map,
+                         order=[b for b in list(ORGAN_SYSTEM_BUCKETS) + ["Unclassified"]
+                                if b in set(df["Organ System"])])
+        fig.update_traces(hovertemplate=("<b>%{label}</b><br>AOPs: %{value}<br>"
+                                         "Share of memberships: %{percent}<extra></extra>"))
+        fig.update_layout(
+            title={"text": f"Organ-system bucket distribution<br><sub>{subtitle}</sub><br>"
+                           "<sub>Slices overlap: an AOP in several systems counts in each</sub>"},
+            margin=dict(l=30, r=30, t=110, b=30),
+            # 13 legend entries under the pie: room for both in a narrow cell.
+            height=640,
+        )
+        _plot_figure_cache[cache_key] = fig
+        _plot_figure_cache[f"latest_organ_coverage_pie_{version or 'latest'}"] = fig
+        return render_plot_html(fig)
+
     df_bar = df.sort_values("AOPs", ascending=True)
     fig = px.bar(
         df_bar,

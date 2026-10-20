@@ -57,8 +57,8 @@ def setting_variants(spec):
     """Every combination of the settings a page offers for this plot (defaults included).
 
     Mirrors the controls in templates/latest.html: the coverage scope/view
-    toggles, the overlap slider (0.30-0.60 in steps of 0.02), and the ontology
-    branch and domain selectors. ``min_shared_kes`` has no control and keeps its
+    toggles, the overlap slider (0.30-0.60 in steps of 0.02), the ontology
+    branch and domain selectors, and the Bar | Pie switches (bars only). ``min_shared_kes`` has no control and keeps its
     default.
     """
     import itertools
@@ -70,6 +70,10 @@ def setting_variants(spec):
         "min_jaccard": [f"{0.30 + 0.02 * i:.2f}" for i in range(16)],
         "branch": plots.available_ontology_branches(),
         "domain": plots.available_domains(),
+        # Bar | Pie switches: both views run the same queries, and the store
+        # keys on query text, so rendering the bars stores what the pie needs.
+        **{key: ["bar"] for key in ("ontology_chart", "process_chart", "object_chart",
+                                    "depth_chart", "organ_chart")},
     }
     names = [p for p in spec.params if p in choices]
     return [dict(zip(names, combo)) for combo in itertools.product(*(choices[n] for n in names))]
