@@ -825,6 +825,34 @@
         {{ data_table_toggle('aop_network_density') }}
     </div>
 
+    <!-- KE reuse rank race (#187): Plotly view of /api/v2/data, static/js/viz/race.js -->
+    <div class="plot-box full-width" id="ke-reuse-race">
+        <div class="plot-header">
+            <h3>Most Reused Key Events over Time</h3>
+            <div class="download-dropdown">
+                <button class="download-button dropdown-toggle">Download ▼</button>
+                <div class="dropdown-menu">
+                    <a href="/download/trend/ke_reuse_race?format=csv" class="dropdown-item">📄 CSV</a>
+                    <a href="/download/trend/ke_reuse_race?format=png" class="dropdown-item">🖼️ PNG (newest snapshot)</a>
+                    <a href="/download/trend/ke_reuse_race?format=svg" class="dropdown-item">📐 SVG (newest snapshot)</a>
+                </div>
+            </div>
+        </div>
+        <p class="plot-description">
+            The 15 Key Events that appear in the most AOPs, for the snapshot at the <strong>end of the selected
+            range</strong>. Move the end of the range on the timeline, or press <strong>Play</strong>, and the bars
+            grow and change places as the Key Events are reused in more AOPs. Click a bar, or use the up and down
+            arrows on the chart, to follow one Key Event through the snapshots.
+        </p>
+        {{ methodology_note(methodology_notes, 'ke_reuse_race') }}
+        <div class="race-scroll">
+            <div class="lazy-plot lazy-plot--race" data-plot-name="ke_reuse_race" data-renderer="plotly-race">
+                <!-- Drawn by static/js/viz/race.js -->
+            </div>
+        </div>
+        {{ data_table_toggle('ke_reuse_race') }}
+    </div>
+
     </div>
 </section>
 

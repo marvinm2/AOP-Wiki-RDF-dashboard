@@ -253,7 +253,12 @@ survival is a plain server Plotly figure whose x axis is years since first seen,
 range selector's `EXCLUDED_PLOTS`, and `trend-links.js` only shares a zoom between plots that have snapshots on
 x. Its three panels repeat the cohort names, so each trace carries `meta` ("KEs, First seen 2018–2019"), which
 `a11y.js` speaks instead of the name; for an `x unified` figure the keyboard hovers by x value, so Plotly draws
-one box rather than a label per trace. A view that draws
+one box rather than a label per trace. The KE reuse rank race (`race.js`, renderer `plotly-race`, from
+`/api/v2/data/ke_reuse_race`) follows the end of the /trends range like the beeswarm: one bar per KE that is
+ever in the top 15, keyed by its IRI, so `Plotly.animate` slides the bars to their new ranks as Play moves
+the range end. With transitions (redraw off) Plotly neither fills in text that was empty nor interpolates
+from a zero-length bar, and it stacks bars that share a y, so every bar keeps its label and a sliver of
+length, KEs outside the top wait off the canvas, and `barmode` is `overlay`. A view that draws
 one SVG with its colours as attributes marks it `svg[data-export="svg"]`, or builds one on request with
 `container.exportSvg()`, and its download menu gets "PNG/SVG (as shown)" like the Plotly figures.
 

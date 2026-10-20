@@ -866,6 +866,122 @@ def plot_entity_survival() -> tuple[str, pd.DataFrame]:
         return create_fallback_plot("Cohort Survival", str(e)), pd.DataFrame()
 
 
+# --- KE reuse rank race (#187) ----------------------------------------------
+
+KE_RACE_TOP = 15
+KE_RACE_COLUMNS = ["Version", "KE", "KE ID", "Title", "AOPs", "Rank"]
+
+
+def _ke_number(uri: str) -> int:
+    tail = uri.rsplit("/", 1)[-1]
+    return int(tail) if tail.isdigit() else 0
+
+
+def ke_race_rows(counts: dict, titles: dict, top: int = KE_RACE_TOP) -> pd.DataFrame:
+    """Rank of every KE by the AOPs it is in, per snapshot, for the KEs that
+    are in the top ``top`` of at least one snapshot (``KE_RACE_COLUMNS``).
+
+    ``counts`` is {version: {KE IRI: AOPs}}. Ties keep the previous
+    snapshot's order, then the KE number, so equal counts do not swap places
+    from one snapshot to the next. A KE in no AOP of a snapshot has 0 AOPs and
+    no rank there.
+    """
+    versions = sorted(counts)
+    ranks: dict = {}
+    previous: dict = {}
+    for v in versions:
+        order = sorted(counts[v], key=lambda ke: (-counts[v][ke], previous.get(ke, float("inf")), _ke_number(ke)))
+        previous = {ke: i + 1 for i, ke in enumerate(order)}
+        ranks[v] = previous
+    racers = {ke for v in versions for ke, r in ranks[v].items() if r <= top}
+    rows = []
+    for v in versions:
+        for ke in sorted(racers, key=_ke_number):
+            rows.append({
+                "Version": v,
+                "KE": ke,
+                "KE ID": f"KE {_ke_number(ke)}",
+                "Title": titles.get(ke, ""),
+                "AOPs": counts[v].get(ke, 0),
+                "Rank": ranks[v].get(ke),
+            })
+    df = pd.DataFrame(rows, columns=KE_RACE_COLUMNS)
+    df["Rank"] = df["Rank"].astype("Int64")
+    return df
+
+
+def _race_label(ke_id: str, title: str, width: int = 42) -> str:
+    title = " ".join(str(title or "").split())
+    if len(title) > width:
+        title = title[:width - 1].rstrip() + "…"
+    return f"{ke_id} · {title}" if title else ke_id
+
+
+def _render_ke_reuse_race(df: pd.DataFrame, version: str) -> go.Figure:
+    """The top KEs of one snapshot as horizontal bars (the downloads; the page
+    animates the same bars with static/js/viz/race.js)."""
+    shown = df[(df["Version"] == version) & df["Rank"].notna() & (df["Rank"] <= KE_RACE_TOP)].sort_values("Rank")
+    fig = go.Figure(go.Bar(
+        x=shown["AOPs"], y=shown["Rank"].astype(int), orientation="h",
+        text=shown["AOPs"], textposition="outside", cliponaxis=False,
+        marker_color=BRAND_COLORS["blue"],
+        customdata=shown[["KE ID", "Title"]].to_numpy(),
+        hovertemplate="<b>%{customdata[0]}</b> %{customdata[1]}<br>Rank %{y}: %{x} AOPs<extra></extra>",
+    ))
+    fig.update_yaxes(tickvals=list(shown["Rank"].astype(int)),
+                     ticktext=[_race_label(i, t) for i, t in zip(shown["KE ID"], shown["Title"])],
+                     range=[KE_RACE_TOP + 0.6, 0.4], autorange=False)
+    fig.update_xaxes(title_text="Number of AOPs", range=[0, float(df["AOPs"].max() or 1) * 1.12])
+    fig.update_layout(
+        title=dict(text=f"Most Reused Key Events, {version}<br><sup>Top {KE_RACE_TOP} KEs by the "
+                        "number of AOPs they are in</sup>"),
+        height=600, margin=dict(l=330, r=40, t=90, b=60), showlegend=False,
+    )
+    return fig
+
+
+def plot_ke_reuse_race() -> tuple[str, pd.DataFrame]:
+    """The most reused Key Events in every snapshot, as a rank race (#187).
+
+    One query counts the AOPs of every KE in every snapshot graph; titles are
+    the newest dc:title (as for the lifeline). The page draws the race from
+    /api/v2/data with static/js/viz/race.js; the figure here is the newest
+    snapshot, for the PNG/SVG downloads.
+
+    Returns:
+        tuple[str, pd.DataFrame]: the figure HTML and ``ke_race_rows``.
+    """
+    global _plot_data_cache, _plot_figure_cache
+
+    try:
+        query = """
+        SELECT ?graph ?ke (COUNT(DISTINCT ?aop) AS ?aops)
+        WHERE {
+            GRAPH ?graph { ?aop a aopo:AdverseOutcomePathway ; aopo:has_key_event ?ke . }
+            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }
+        GROUP BY ?graph ?ke
+        """
+        counts: dict = {}
+        for r in run_sparql_query_with_retry(query):
+            version = r["graph"]["value"].rsplit("/", 1)[-1]
+            counts.setdefault(version, {})[r["ke"]["value"]] = int(r["aops"]["value"])
+        if not counts:
+            return create_fallback_plot("Most Reused Key Events", "No KE data"), pd.DataFrame()
+        df = ke_race_rows(counts, _lifeline_labels("KEs"))
+        fig = _render_ke_reuse_race(df, max(counts))
+
+        _plot_data_cache['ke_reuse_race'] = df
+        _plot_figure_cache['ke_reuse_race'] = fig
+        return render_plot_html(fig), df
+
+    except SparqlUnavailable:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to generate KE reuse race: {e}")
+        return create_fallback_plot("Most Reused Key Events", str(e)), pd.DataFrame()
+
+
 def plot_oecd_status_distribution() -> tuple[str, str, pd.DataFrame]:
     """Per-version count of AOPs in each OECD status (absolute + percentage).
 
