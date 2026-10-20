@@ -2604,6 +2604,20 @@ body:has(.sticky-controls) .section-block {
     outline-offset: 2px;
 }
 
+.calendar-scroll {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.calendar-scroll .lazy-plot {
+    min-width: 760px;
+}
+
+.calendar-scroll .lazy-plot:focus-visible {
+    outline: 3px solid var(--color-magenta);
+    outline-offset: 2px;
+}
+
 .race-scroll {
     max-width: 100%;
     overflow-x: auto;
