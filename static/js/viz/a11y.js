@@ -14,7 +14,7 @@
  * - Reduced motion: motionMs() is 0 when the user asks for reduced motion
  *   (the network page's zoom animations use it; CSS handles the rest).
  *
- * categoriesOf(), visibleCategories(), valuesAt(), describeStep() and
+ * categoriesOf(), visibleCategories(), valuesAt(), subplotsOf(), describeStep() and
  * tableHtml() are pure and
  * exported for node --test.
  */
@@ -86,9 +86,23 @@
             var a = axesOf(t);
             var pointNumber = a.cats.map(String).indexOf(String(category));
             if (pointNumber === -1) return;
-            out.push({ curveNumber: curveNumber, pointNumber: pointNumber, name: t.name, value: a.vals[pointNumber] });
+            // A string `meta` is the trace's spoken name, for figures whose
+            // panels repeat legend names (cohort survival: one line per
+            // cohort in each entity's panel).
+            var name = typeof t.meta === 'string' ? t.meta : t.name;
+            out.push({ curveNumber: curveNumber, pointNumber: pointNumber, name: name, value: a.vals[pointNumber] });
         });
         return out;
+    }
+
+    /** The subplots ('xy', 'x2y2', ...) of the traces, for Fx.hover across panels. */
+    function subplotsOf(traces) {
+        var ids = [];
+        traces.forEach(function (t) {
+            var id = (t.xaxis || 'x') + (t.yaxis || 'y');
+            if (ids.indexOf(id) === -1) ids.push(id);
+        });
+        return ids;
     }
 
     function fmt(v) {
@@ -150,7 +164,7 @@
     }
 
     var api = {
-        categoriesOf: categoriesOf, visibleCategories: visibleCategories, valuesAt: valuesAt, describeStep: describeStep,
+        categoriesOf: categoriesOf, visibleCategories: visibleCategories, valuesAt: valuesAt, subplotsOf: subplotsOf, describeStep: describeStep,
         tableHtml: tableHtml, reducedMotion: reducedMotion, motionMs: motionMs,
     };
 
@@ -229,9 +243,13 @@
         var values = valuesAt(traces, cats[i]);
         var hoverable = values.filter(function (p) { return traces[p.curveNumber].type !== 'pie'; });
         if (hoverable.length) {
-            root.Plotly.Fx.hover(div, hoverable.map(function (p) {
+            var subplots = subplotsOf(hoverable.map(function (p) { return traces[p.curveNumber]; }));
+            // A unified hover draws one box per panel only when Plotly finds
+            // the points itself; a list of points gets one label each.
+            var unified = /unified/.test((div._fullLayout || {}).hovermode || '');
+            root.Plotly.Fx.hover(div, unified ? { xval: cats[i] } : hoverable.map(function (p) {
                 return { curveNumber: p.curveNumber, pointNumber: p.pointNumber };
-            }));
+            }), subplots);
         }
         announce(describeStep(cats[i], values));
     }

@@ -22,7 +22,9 @@
     // a "version range" doesn't apply.
     const EXCLUDED_PLOTS = new Set([
         'aops_created_over_time',
-        'aop_creation_vs_modification_timeline'
+        'aop_creation_vs_modification_timeline',
+        // x is years since first seen, not a snapshot (#187).
+        'entity_survival'
     ]);
 
     let allVersions = []; // [{version, graph_uri, date}, ...] newest first

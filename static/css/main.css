@@ -2604,6 +2604,20 @@ body:has(.sticky-controls) .section-block {
     outline-offset: 2px;
 }
 
+.survival-scroll {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.survival-scroll .lazy-plot {
+    min-width: 760px;
+}
+
+.survival-scroll .lazy-plot:focus-visible {
+    outline: 3px solid var(--color-magenta);
+    outline-offset: 2px;
+}
+
 .bump-scroll {
     max-width: 100%;
     overflow-x: auto;

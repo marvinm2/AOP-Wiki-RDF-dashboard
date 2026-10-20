@@ -248,7 +248,12 @@ status journey (`status-journey.js`, renderer `plotly-full`) is a server sankey,
 lacks: the renderer loads the full Plotly bundle (`static/vendor/plotly@2.32.0`, same version) the first time
 the card comes into view, through a one-shot AMD `define` so `window.Plotly` stays the cartesian one, and
 keeps it on the drawn div as `div._dashPlotly` for the "as shown" downloads. The keyboard walks the bands
-and darkens the focused one on its SVG path, since a Plotly restyle of a sankey fades it in again. A view that draws
+and darkens the focused one on its SVG path, since a Plotly restyle of a sankey fades it in again. Cohort
+survival is a plain server Plotly figure whose x axis is years since first seen, not a snapshot: it is in the
+range selector's `EXCLUDED_PLOTS`, and `trend-links.js` only shares a zoom between plots that have snapshots on
+x. Its three panels repeat the cohort names, so each trace carries `meta` ("KEs, First seen 2018–2019"), which
+`a11y.js` speaks instead of the name; for an `x unified` figure the keyboard hovers by x value, so Plotly draws
+one box rather than a label per trace. A view that draws
 one SVG with its colours as attributes marks it `svg[data-export="svg"]`, or builds one on request with
 `container.exportSvg()`, and its download menu gets "PNG/SVG (as shown)" like the Plotly figures.
 

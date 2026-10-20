@@ -3,7 +3,8 @@
  *
  * - Crosshair: hovering a snapshot on one plot shows the same snapshot on every
  *   other drawn trend plot.
- * - Shared zoom: zooming the x-axis of one plot (or resetting it) applies to all.
+ * - Shared zoom: zooming the x-axis of one plot (or resetting it) applies to all
+ *   that plot snapshots on x.
  * - Click a snapshot to open it on the Snapshot page (/snapshot?version=...).
  *
  * Only points whose x is a snapshot version take part, so the creation-date
@@ -62,6 +63,12 @@
             && String(axis.range[0]) === String(want[0]) && String(axis.range[1]) === String(want[1]);
     }
 
+    /** True if `div` plots snapshots on x (not, say, years since first seen). */
+    function onSnapshots(div) {
+        const first = (div._fullData || [])[0];
+        return !!(first && first.x && first.x.length && snapshotOf({ x: String(first.x[0]) }));
+    }
+
     function link(div) {
         if (linked.has(div) || typeof div.on !== 'function') return;
         linked.add(div);
@@ -89,7 +96,7 @@
             if (snapshot) window.location.assign(`/snapshot?version=${encodeURIComponent(snapshot)}`);
         });
         div.on('plotly_relayout', (change) => {
-            if (syncing || !change) return;
+            if (syncing || !change || !onSnapshots(div)) return;
             let update = null;
             if ('xaxis.range[0]' in change && 'xaxis.range[1]' in change) {
                 update = { 'xaxis.range': [change['xaxis.range[0]'], change['xaxis.range[1]']], 'xaxis.autorange': false };
@@ -98,8 +105,7 @@
             }
             if (!update) return;
             others(div).forEach((other) => {
-                const first = (other._fullData || [])[0];
-                if (!first || !first.x || !snapshotOf({ x: String(first.x[0]) })) return;
+                if (!onSnapshots(other)) return;
                 // Relayout is asynchronous, so its own plotly_relayout event
                 // arrives after any flag is cleared. Skipping plots that already
                 // show the range is what stops the echo bouncing between plots.
