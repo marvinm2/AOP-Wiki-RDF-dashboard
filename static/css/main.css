@@ -2787,3 +2787,120 @@ body:has(.sticky-controls) .section-block {
         height: 420px;
     }
 }
+
+/* AOP composition history on /aop (#190). The strip scrolls inside its card
+   on a narrow screen; the page itself does not. */
+.aop-picker {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+.aop-picker-input {
+    width: 22rem;
+    max-width: 60vw;
+    padding: 4px 8px;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    font: inherit;
+}
+.aop-picker-button {
+    padding: 4px 12px;
+    border: 0;
+    border-radius: 4px;
+    background: var(--color-blue-ui);
+    color: #fff;
+    font: inherit;
+    cursor: pointer;
+}
+.aop-picker-error {
+    flex-basis: 100%;
+    color: var(--color-deep-magenta);
+    font-size: 0.85rem;
+}
+.lazy-plot--strip {
+    min-height: 200px;
+}
+.aop-strip-scroll {
+    overflow-x: auto;
+    max-width: 100%;
+    padding: 4px;   /* room for the focus outline inside the scroll box */
+}
+.aop-strip {
+    display: block;
+    font-size: 11px;
+}
+.aop-strip:focus {
+    outline: 2px solid var(--color-blue-ui);
+    outline-offset: 1px;
+}
+.aop-band {
+    fill: #f4f4f8;
+}
+.aop-year {
+    fill: var(--color-text);
+    font-weight: 600;
+}
+.aop-month {
+    fill: var(--color-text-muted);
+    font-size: 9px;
+}
+.aop-year-rule {
+    stroke: #d8d8e0;
+}
+.aop-row-label {
+    fill: var(--color-text);
+}
+.aop-row-label--stage {
+    font-style: italic;
+}
+.aop-row-label--mie,
+.aop-row-label--ao {
+    font-weight: 600;
+}
+.aop-strip a:hover .aop-row-label {
+    text-decoration: underline;
+}
+.aop-mark--added {
+    fill: #fff;
+    font-size: 11px;
+    pointer-events: none;
+}
+.aop-mark--removed {
+    fill: #7F7F7F;
+    font-size: 13px;
+}
+.aop-cursor {
+    fill: none;
+    stroke: var(--color-primary);
+    stroke-width: 2;
+    pointer-events: none;
+}
+.aop-summary {
+    margin: 6px 0;
+    font-size: 0.9rem;
+    color: #444;
+}
+.aop-empty {
+    padding: 24px 0;
+    color: var(--color-text-secondary);
+}
+.aop-key {
+    padding: 0 4px;
+    border-radius: 3px;
+    color: #fff;
+}
+.aop-key--mie { background: #EB5B25; }
+.aop-key--ke { background: #307BBF; }
+.aop-key--ao { background: #E6007E; }
+.aop-key--added { background: #307BBF; }
+.aop-key--removed { color: #7F7F7F; background: transparent; font-weight: 700; }
+.history-link {
+    margin-left: 6px;
+    white-space: nowrap;
+}
+
+/* Five landing cards in two columns: the last one spans both. */
+.landing-cards > .landing-card:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+}

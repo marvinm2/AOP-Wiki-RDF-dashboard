@@ -341,7 +341,8 @@
                         <td>${data.completeness_optional[r] === null ? '' : pct(data.completeness_optional[r])}</td>
                         <td>${data.completeness_all[r] === null ? '' : pct(data.completeness_all[r])}</td>
                         <td>${data.entity_count[r]}</td></tr>`).join('')}</tbody>
-                </table>`;
+                </table>
+                <p class="beeswarm-history"><a class="history-link" href="/aop?aop=${numberOf(id)}">${esc(id)}'s Key Events in every version</a></p>`;
         }
 
         function pick(aop) {

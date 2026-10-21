@@ -91,6 +91,7 @@ test('clicking a dot picks the AOP, marks it and lists it across the snapshots',
     await expect(table.locator('caption')).toHaveText('AOP 10 across the snapshots: in 6, with 5 changes in its scores (unchanged snapshots left out)');
     await expect(table.locator('tbody tr')).toHaveCount(VERSIONS.length - 1);  // AOP 10 joins at the second
     await expect(table.locator('tbody tr[aria-current="true"] th')).toHaveText(NEWEST);
+    await expect(view.locator('.beeswarm-history a')).toHaveAttribute('href', '/aop?aop=10');   // #190
 
     // The pick follows the AOP to an older snapshot, and says when it is not in one.
     await page.evaluate((v) => window.DashState.set({ end: v, aop: '1' }), VERSIONS[VERSIONS.length - 1]);

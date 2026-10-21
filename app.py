@@ -1317,6 +1317,26 @@ def network_page():
     return render_template("network.html", methodology_notes=methodology_notes, sparql_endpoint=Config.SPARQL_PUBLIC_ENDPOINT, latest_graph_uri=_current_latest_graph_uri(), timeline_events=registry.TIMELINE_EVENTS, active_page='network')
 
 
+@app.route("/aop")
+def aop_history_page():
+    """Serve the AOP composition history: one AOP's Key Events in every version (#190).
+
+    The page state is ?aop= (the AOP number) and ?version= (the last version shown, default the latest).
+    """
+    aop_specs = [s for s in registry.snapshot_specs() if s.page == "aop"]
+    return render_template("aop.html", methodology_notes=methodology_notes, sparql_endpoint=Config.SPARQL_PUBLIC_ENDPOINT, latest_graph_uri=_current_latest_graph_uri(), versioned_plots=[s.id for s in aop_specs], plot_params={s.id: list(s.params) for s in aop_specs}, timeline_events=registry.TIMELINE_EVENTS, active_page='aop')
+
+
+@app.route("/api/aops")
+def api_aops():
+    """Every AOP ever in AOP-Wiki, ``{number, title}`` with its newest title: the /aop picker (#190)."""
+    try:
+        return jsonify({'aops': plots.aop_index()})
+    except Exception as e:
+        logger.error(f"AOP index failed: {e}")
+        return jsonify({'error': 'AOP list unavailable'}), 503
+
+
 @app.route("/about")
 def about():
     """Serve the About page with project info, funding, and contact links."""

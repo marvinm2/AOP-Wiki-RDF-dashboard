@@ -61,6 +61,12 @@
         return `${escapeHtml(r['OECD Stage A'] || '—')} → ${escapeHtml(r['OECD Stage B'] || '—')}`;
     }
 
+    /** An AOP row's link to its composition history on /aop (#190). */
+    function historyLink(r) {
+        if (r.Type !== 'AOPs' || !/^\d+$/.test(String(r.ID))) return '';
+        return ` <a class="history-link" href="/aop?aop=${r.ID}" aria-label="Key Event history of AOP ${r.ID}">history</a>`;
+    }
+
     function tableHtml(rows, limit) {
         let html = '<div class="data-table-wrapper"><table class="raw-data-table diff-worklist-table">'
             + '<caption class="sr-only">Changed entities</caption><thead><tr>'
@@ -68,7 +74,7 @@
             + '</tr></thead><tbody>';
         rows.slice(0, limit).forEach((r) => {
             html += `<tr><td>${escapeHtml(r.Type)}</td>`
-                + `<td><a href="${escapeHtml(r.Link)}" target="_blank" rel="noopener">${escapeHtml(r.ID)}</a></td>`
+                + `<td><a href="${escapeHtml(r.Link)}" target="_blank" rel="noopener">${escapeHtml(r.ID)}</a>${historyLink(r)}</td>`
                 + `<td>${escapeHtml(r.Name)}</td><td>${escapeHtml(r.Change)}</td>`
                 + `<td>${escapeHtml(r['Fields Changed'])}</td><td>${stageCell(r)}</td></tr>`;
         });

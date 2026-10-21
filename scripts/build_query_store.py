@@ -53,6 +53,11 @@ def code_hash() -> str:
     return digest.hexdigest()
 
 
+# Settings that pick one entity and run on demand: the build stores nothing for
+# them (#190: one AOP's two small queries, about 0.1 s each).
+ON_DEMAND = frozenset({"aop"})
+
+
 def setting_variants(spec):
     """Every combination of the settings a page offers for this plot (defaults included).
 
@@ -78,6 +83,8 @@ def setting_variants(spec):
         # against the one before it stores what any pair of versions needs (#188).
         "against": ["previous"],
     }
+    if any(p in ON_DEMAND for p in spec.params):
+        return []
     names = [p for p in spec.params if p in choices]
     return [dict(zip(names, combo)) for combo in itertools.product(*(choices[n] for n in names))]
 

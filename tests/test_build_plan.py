@@ -41,6 +41,9 @@ def test_every_tuning_param_has_choices():
     """A new tuning param must get its choices in setting_variants()."""
     for spec in registry.snapshot_specs():
         variants = build.setting_variants(spec)
+        if set(spec.params) & build.ON_DEMAND:
+            assert variants == [], spec.id   # one entity at a time, never stored
+            continue
         assert variants, spec.id
         missing = set(spec.params) - set(variants[0]) - {"min_shared_kes"}
         assert not missing, (spec.id, missing)

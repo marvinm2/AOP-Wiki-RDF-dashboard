@@ -19,7 +19,7 @@ from plots import registry
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 NOTES = json.loads((ROOT / "static" / "data" / "methodology_notes.json").read_text())
-TEMPLATES = {"snapshot": "latest.html", "trends": "trends.html", "diff": "diff.html", "network": "network.html"}
+TEMPLATES = {"snapshot": "latest.html", "trends": "trends.html", "diff": "diff.html", "network": "network.html", "aop": "aop.html"}
 
 
 NOTE_RE = r"methodology_note\(methodology_notes, '([^']+)'\)"

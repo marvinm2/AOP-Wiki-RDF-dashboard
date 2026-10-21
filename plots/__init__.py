@@ -273,6 +273,9 @@ from .diff_plots import plot_latest_version_diff
 # Network evolution (#189) — every snapshot's KE network on one layout
 from .network_evolution import plot_network_evolution
 
+# AOP composition history (#190) — one AOP's Key Events in every snapshot
+from .aop_history import plot_latest_aop_composition, aop_index
+
 # Define module version and metadata
 __version__ = "2.0.0"
 __author__ = "Marvin Martens"
@@ -282,6 +285,8 @@ __all__ = [
     # Shared utilities
     'plot_latest_version_diff',
     'plot_network_evolution',
+    'plot_latest_aop_composition',
+    'aop_index',
     'run_sparql_query',
     'run_sparql_query_with_retry',
     'SparqlUnavailable',
