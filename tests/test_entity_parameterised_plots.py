@@ -147,6 +147,12 @@ def test_completeness_by_status_fallback_names_the_entity(monkeypatch, entity):
 def test_bound_producer_carries_the_spec_args(spec):
     bound = plots.bind_producer(spec)
     assert bound.keywords == spec.kwargs
+    assert spec.producer in bound.__name__
+
+
+@pytest.mark.parametrize("spec", [s for s in registry.SPECS if "entity" in s.kwargs], ids=lambda s: s.id)
+def test_entity_plots_are_named_after_their_entity(spec):
+    bound = plots.bind_producer(spec)
     assert spec.id.startswith(f"latest_{spec.kwargs['entity']}_") or \
         spec.id.startswith(f"{spec.kwargs['entity']}_")
     assert spec.producer in bound.__name__ and repr(spec.kwargs["entity"]) in bound.__name__

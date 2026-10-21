@@ -757,7 +757,7 @@ footer img {
 /* Landing Cards */
 .landing-cards {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 24px;
     max-width: 1000px;
     margin: 20px auto 40px;
@@ -2701,4 +2701,51 @@ body:has(.sticky-controls) .section-block {
 .coverage-map-scroll .lazy-plot:focus-visible {
     outline: 3px solid var(--color-magenta);
     outline-offset: 2px;
+}
+
+/* Version Diff worklist (#188) */
+.diff-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 20px;
+    align-items: center;
+    margin: 4px 0 8px;
+}
+.diff-filters label {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    font-size: 0.9rem;
+}
+.diff-filters select,
+.diff-filters input {
+    padding: 4px 6px;
+    border: 1px solid #c8c8d0;
+    border-radius: 4px;
+    font: inherit;
+    max-width: 100%;
+}
+.diff-count {
+    margin: 0 0 6px;
+    font-size: 0.9rem;
+    color: #555;
+}
+/* Long names and field lists wrap, so every column fits the card. */
+.diff-worklist-table td {
+    white-space: normal;
+    vertical-align: top;
+}
+.diff-worklist-table td:nth-child(1),
+.diff-worklist-table td:nth-child(2),
+.diff-worklist-table td:nth-child(4) {
+    white-space: nowrap;
+}
+.diff-worklist-table td:nth-child(3) {
+    min-width: 14rem;
+}
+.diff-worklist-table td:nth-child(5) {
+    min-width: 10rem;
+}
+.diff-empty {
+    padding: 12px 0;
 }

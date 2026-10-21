@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+
+{% block title %}Version Diff - AOP-Wiki RDF Dashboard{% endblock %}
+
+{% block head_extra %}
+    {% from 'macros/vendor.html' import vendor_script with context %}
+    {{ vendor_script('plotly-cartesian', defer=True) }}
+{% endblock %}
+
+{% block page_header %}
+<div class="snapshot-topbar">
+    <div class="snapshot-topbar-title">
+        <h1>Version Diff</h1>
+    </div>
+    <div class="snapshot-topbar-range">
+        <label for="diff-against" class="version-selector-label">From (A):</label>
+        <select id="diff-against" class="version-selector version-selector--compact">
+            <option value="">The version before B</option>
+        </select>
+        <span class="snapshot-topbar-range-sep" aria-hidden="true">→</span>
+        <label for="version-selector" class="version-selector-label">To (B):</label>
+        <select id="version-selector" class="version-selector version-selector--compact">
+            <option value="">Loading versions...</option>
+        </select>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+{% from 'macros/methodology.html' import methodology_note with context %}
+{% from 'macros/data_table.html' import data_table_toggle %}
+
+<details class="tab-intro-collapsible">
+    <summary>About this page</summary>
+    <p>
+        What changed in AOP-Wiki between two versions: which AOPs, Key Events, Key Event Relationships and
+        stressors were added, removed or changed, which fields changed, and which AOPs moved between OECD stages.
+        Version B is the selected version (the latest by default) and version A the one before it, unless you
+        choose another. A change is found by comparing every triple of an entity in the two versions, not by
+        modification dates; see <strong>Methodology</strong> under each view.
+    </p>
+</details>
+
+<section class="section-block" id="diff-summary">
+    <h2 class="section-header">What Changed</h2>
+    <div class="plot-grid">
+    <div class="plot-box full-width">
+        <div class="plot-header">
+            <h3>Changes per Entity Type</h3>
+            <div class="download-dropdown">
+                <button class="download-button dropdown-toggle">Download ▼</button>
+                <div class="dropdown-menu">
+                    <a href="/download/latest/version_diff?format=csv" class="dropdown-item">📄 CSV</a>
+                    <a href="/download/latest/version_diff?format=png" class="dropdown-item">🖼️ PNG</a>
+                    <a href="/download/latest/version_diff?format=svg" class="dropdown-item">📐 SVG</a>
+                </div>
+            </div>
+        </div>
+        <p class="plot-description">
+            For each entity type, how many were added or removed, and how many of those in both versions changed:
+            <strong>edited</strong> (a describing field such as the title, description, status or an ontology term),
+            <strong>links only</strong> (only links to other entities, for example a Key Event that joined another AOP),
+            or <strong>metadata only</strong> (only the modification date, licence or access rights).
+        </p>
+        {{ methodology_note(methodology_notes, 'latest_version_diff') }}
+        <div class="lazy-plot" data-plot-name="latest_version_diff" data-renderer="plotly-json">
+            <!-- Plot will be loaded here via JavaScript -->
+        </div>
+        {{ data_table_toggle('latest_version_diff') }}
+    </div>
+    </div>
+</section>
+
+<section class="section-block" id="diff-stages">
+    <h2 class="section-header">OECD Stage Moves</h2>
+    <div class="plot-grid">
+    <div class="plot-box full-width">
+        <div class="plot-header">
+            <h3>AOPs that Changed OECD Stage</h3>
+            <div class="download-dropdown">
+                <button class="download-button dropdown-toggle">Download ▼</button>
+                <div class="dropdown-menu">
+                    <a href="/download/latest/version_diff_stages?format=csv" class="dropdown-item">📄 CSV</a>
+                    <a href="/download/latest/version_diff_stages?format=png" class="dropdown-item">🖼️ PNG</a>
+                    <a href="/download/latest/version_diff_stages?format=svg" class="dropdown-item">📐 SVG</a>
+                </div>
+            </div>
+        </div>
+        <p class="plot-description">
+            Each band is the AOPs that went from a stage in A (left) to a stage in B (right), including new AOPs
+            ("Not in A") and removed ones ("Not in B"). AOPs that kept their stage are left out. Hover a band for its
+            count, or focus the chart and use the up and down arrow keys to step through the bands.
+        </p>
+        {{ methodology_note(methodology_notes, 'latest_version_diff_stages') }}
+        <div class="journey-scroll">
+            <div class="lazy-plot" data-plot-name="latest_version_diff_stages" data-renderer="plotly-full" data-a11y="self"
+                 data-aria-label="Sankey of AOPs moving between OECD stages from version A to version B. Use up and down to step through the bands, or &quot;Show Raw Data&quot; below for the table."
+                 data-lib-src="{{ url_for('static', filename=vendor['plotly'].path) }}"
+                 data-lib-integrity="{{ vendor['plotly'].integrity }}">
+                <!-- Plot will be loaded here via JavaScript -->
+            </div>
+        </div>
+        <p class="sr-only journey-live" aria-live="polite"></p>
+        {{ data_table_toggle('latest_version_diff_stages') }}
+    </div>
+    </div>
+</section>
+
+<section class="section-block" id="diff-worklist">
+    <h2 class="section-header">Changed Entities</h2>
+    <div class="plot-grid">
+    <div class="plot-box full-width">
+        <div class="plot-header">
+            <h3>Worklist</h3>
+            <div class="download-dropdown">
+                <button class="download-button dropdown-toggle">Download ▼</button>
+                <div class="dropdown-menu">
+                    <a href="/download/latest/version_diff_worklist?format=csv" class="dropdown-item">📄 CSV</a>
+                </div>
+            </div>
+        </div>
+        <p class="plot-description">
+            Every entity that was added, removed or changed, with the fields that changed and a link to its AOP-Wiki
+            page. Filter by type, kind of change or text in the name; the CSV holds every row.
+        </p>
+        {{ methodology_note(methodology_notes, 'latest_version_diff_worklist') }}
+        <div class="lazy-plot lazy-plot--table" data-plot-name="latest_version_diff_worklist" data-renderer="diff-worklist" data-a11y="self">
+            <noscript>The worklist needs JavaScript; download the CSV above for the same rows.</noscript>
+        </div>
+    </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+// The diff plots take ?version= (B) and ?against= (A) (plots/registry.py, #188).
+window.VERSIONED_PLOTS = {{ versioned_plots|tojson }};
+window.PLOT_PARAMS = {{ plot_params|tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/version-selector.js') }}"></script>
+<script src="{{ url_for('static', filename='js/viz/status-journey.js') }}"></script>
+<script src="{{ url_for('static', filename='js/viz/diff.js') }}"></script>
+{% endblock %}

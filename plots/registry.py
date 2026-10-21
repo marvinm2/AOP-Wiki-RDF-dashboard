@@ -35,7 +35,7 @@ class PlotSpec:
         output: Position of this plot's HTML in the task's result tuple, or
             None when the task returns the HTML itself.
         note: Key of its entry in ``static/data/methodology_notes.json``.
-        page: ``"snapshot"`` or ``"trends"`` for the page holding its
+        page: ``"snapshot"``, ``"trends"`` or ``"diff"`` for the page holding its
             container, or None for a plot served by the API only.
         precompute: Rendered at startup. Always true for trend plots.
         params: Query-string tuning arguments ``/api/plot`` passes through.
@@ -244,6 +244,10 @@ SPECS: tuple[PlotSpec, ...] = (
     snapshot('latest_domain_coverage', 'plot_latest_domain_coverage', params=('domain',), bulk=('latest-all',)),
     snapshot('latest_domain_completeness', 'plot_latest_domain_completeness', params=('domain',), bulk=('latest-all',)),
     snapshot('latest_domain_status', 'plot_latest_domain_status', params=('domain',), bulk=('latest-all',)),
+    # Version Diff Explorer on /diff (#188): one comparison, three views; ?against= is version A.
+    snapshot('latest_version_diff', 'plot_latest_version_diff', page='diff', params=('against',), args={'part': 'summary'}),
+    snapshot('latest_version_diff_stages', 'plot_latest_version_diff', page='diff', params=('against',), args={'part': 'stages'}),
+    snapshot('latest_version_diff_worklist', 'plot_latest_version_diff', page='diff', params=('against',), args={'part': 'worklist'}),
 )
 
 BY_ID: dict[str, PlotSpec] = {s.id: s for s in SPECS}

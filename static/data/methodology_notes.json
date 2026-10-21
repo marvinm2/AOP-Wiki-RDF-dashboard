@@ -1058,5 +1058,65 @@
                 "query": "SELECT ?graph ?e\nWHERE {\n  GRAPH ?graph { ?e a aopo:KeyEvent . }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}"
             }
         ]
+    },
+    "latest_version_diff": {
+        "title": "Version Diff: What Changed",
+        "description": "How many AOPs, KEs, KERs and stressors were added, removed or changed between two versions. Each entity counts once, under the strongest kind of change: Edited (a describing field changed: title, description, status, an ontology term, a context, ...), Links only (only links to other entities changed: dcterms:isPartOf, has_key_event, has_upstream_key_event, the AOP's stressors, ...; a KE that joined another AOP is here), or Metadata only (only dcterms:modified, created, license or accessRights).",
+        "data_source": "Three SPARQL queries, each on one named graph and run for A and for B; the comparison is worked out in Python and kept for the last few pairs. Version A is the version before B unless another is chosen. For every AOP, KE, KER and stressor, one query per graph returns a short hash of each of its triples (6 hex characters of the predicate's MD5, then 10 of the MD5 of predicate and value). An entity whose set of hashes differs between A and B changed, and the predicates whose hashes differ are the fields that changed. No dates are used: Key Events have no dcterms:modified, and on the other types the date moves without content changes.",
+        "limitations": "A hash collision would hide a change; with 16 hex characters per triple that is not a practical risk. A changed value is shown as a changed field, not as old and new text: follow the link to see the record. A change in the conversion (a new predicate, a different IRI form) shows up as edits on every entity it touches. The 2024-04-01 release wiped OECD statuses and set a licence on every AOP, so a comparison across it is dominated by those. Only the four entity types are compared; changes inside an ontology term or a gene mapping are not.",
+        "queries": [
+            {
+                "caption": "A short hash of every triple of every AOP, KE, KER and stressor (run on graph A and graph B)",
+                "query": "SELECT ?type ?entity (GROUP_CONCAT(CONCAT(SUBSTR(MD5(STR(?p)), 1, 6),\n       SUBSTR(MD5(CONCAT(STR(?p), \" \", STR(?o))), 1, 10)); separator=\" \") AS ?hashes)\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    VALUES ?type { aopo:AdverseOutcomePathway aopo:KeyEvent aopo:KeyEventRelationship nci:C54571 }\n    ?entity a ?type ; ?p ?o .\n  }\n}\nGROUP BY ?type ?entity"
+            },
+            {
+                "caption": "The predicates those entities use, to name the fields that changed",
+                "query": "SELECT DISTINCT ?p\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    VALUES ?type { aopo:AdverseOutcomePathway aopo:KeyEvent aopo:KeyEventRelationship nci:C54571 }\n    ?entity a ?type ; ?p ?o .\n  }\n}"
+            },
+            {
+                "caption": "Titles and OECD statuses",
+                "query": "SELECT ?entity (SAMPLE(?t) AS ?title) (GROUP_CONCAT(DISTINCT ?s; separator=\"|\") AS ?statuses)\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    VALUES ?type { aopo:AdverseOutcomePathway aopo:KeyEvent aopo:KeyEventRelationship nci:C54571 }\n    ?entity a ?type .\n    OPTIONAL { ?entity dc:title ?t . }\n    OPTIONAL { ?entity nci:C25688 ?s . }\n  }\n}\nGROUP BY ?entity"
+            }
+        ]
+    },
+    "latest_version_diff_stages": {
+        "title": "Version Diff: OECD Stage Moves",
+        "description": "The AOPs whose OECD stage differs between A and B, as a sankey from A's stages to B's: stages moved, new AOPs (from \"Not in A\") and removed ones (to \"Not in B\"). AOPs that kept their stage are left out.",
+        "data_source": "Three SPARQL queries, each on one named graph and run for A and for B; the comparison is worked out in Python and kept for the last few pairs. The stage comes from NCI Thesaurus C25688, as in OECD Status Journey: \"Included in OECD Work Plan\" is a flag next to a stage, not a stage, and an AOP without a status is No Status.",
+        "limitations": "Moves between A and B are seen only at the two ends: an AOP that went from Under Development to Under Review and back counts as not moving. A change in the conversion (a new predicate, a different IRI form) shows up as edits on every entity it touches. The 2024-04-01 release wiped OECD statuses and set a licence on every AOP, so a comparison across it is dominated by those. Only the four entity types are compared; changes inside an ontology term or a gene mapping are not.",
+        "queries": [
+            {
+                "caption": "A short hash of every triple of every AOP, KE, KER and stressor (run on graph A and graph B)",
+                "query": "SELECT ?type ?entity (GROUP_CONCAT(CONCAT(SUBSTR(MD5(STR(?p)), 1, 6),\n       SUBSTR(MD5(CONCAT(STR(?p), \" \", STR(?o))), 1, 10)); separator=\" \") AS ?hashes)\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    VALUES ?type { aopo:AdverseOutcomePathway aopo:KeyEvent aopo:KeyEventRelationship nci:C54571 }\n    ?entity a ?type ; ?p ?o .\n  }\n}\nGROUP BY ?type ?entity"
+            },
+            {
+                "caption": "The predicates those entities use, to name the fields that changed",
+                "query": "SELECT DISTINCT ?p\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    VALUES ?type { aopo:AdverseOutcomePathway aopo:KeyEvent aopo:KeyEventRelationship nci:C54571 }\n    ?entity a ?type ; ?p ?o .\n  }\n}"
+            },
+            {
+                "caption": "Titles and OECD statuses",
+                "query": "SELECT ?entity (SAMPLE(?t) AS ?title) (GROUP_CONCAT(DISTINCT ?s; separator=\"|\") AS ?statuses)\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    VALUES ?type { aopo:AdverseOutcomePathway aopo:KeyEvent aopo:KeyEventRelationship nci:C54571 }\n    ?entity a ?type .\n    OPTIONAL { ?entity dc:title ?t . }\n    OPTIONAL { ?entity nci:C25688 ?s . }\n  }\n}\nGROUP BY ?entity"
+            }
+        ]
+    },
+    "latest_version_diff_worklist": {
+        "title": "Version Diff: Changed Entities",
+        "description": "Every entity added, removed or changed between A and B, with the kind of change, the fields that changed, the OECD stage in A and B for AOPs, and a link to its AOP-Wiki page. Filter by type, kind of change or text; the CSV holds every row, with the two versions compared in its first columns.",
+        "data_source": "Three SPARQL queries, each on one named graph and run for A and for B; the comparison is worked out in Python and kept for the last few pairs. Version A is the version before B unless another is chosen. For every AOP, KE, KER and stressor, one query per graph returns a short hash of each of its triples (6 hex characters of the predicate's MD5, then 10 of the MD5 of predicate and value). An entity whose set of hashes differs between A and B changed, and the predicates whose hashes differ are the fields that changed. No dates are used: Key Events have no dcterms:modified, and on the other types the date moves without content changes. Each entity counts once, under the strongest kind of change: Edited (a describing field changed: title, description, status, an ontology term, a context, ...), Links only (only links to other entities changed: dcterms:isPartOf, has_key_event, has_upstream_key_event, the AOP's stressors, ...; a KE that joined another AOP is here), or Metadata only (only dcterms:modified, created, license or accessRights).",
+        "limitations": "A hash collision would hide a change; with 16 hex characters per triple that is not a practical risk. A changed value is shown as a changed field, not as old and new text: follow the link to see the record. A change in the conversion (a new predicate, a different IRI form) shows up as edits on every entity it touches. The 2024-04-01 release wiped OECD statuses and set a licence on every AOP, so a comparison across it is dominated by those. Only the four entity types are compared; changes inside an ontology term or a gene mapping are not.",
+        "queries": [
+            {
+                "caption": "A short hash of every triple of every AOP, KE, KER and stressor (run on graph A and graph B)",
+                "query": "SELECT ?type ?entity (GROUP_CONCAT(CONCAT(SUBSTR(MD5(STR(?p)), 1, 6),\n       SUBSTR(MD5(CONCAT(STR(?p), \" \", STR(?o))), 1, 10)); separator=\" \") AS ?hashes)\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    VALUES ?type { aopo:AdverseOutcomePathway aopo:KeyEvent aopo:KeyEventRelationship nci:C54571 }\n    ?entity a ?type ; ?p ?o .\n  }\n}\nGROUP BY ?type ?entity"
+            },
+            {
+                "caption": "The predicates those entities use, to name the fields that changed",
+                "query": "SELECT DISTINCT ?p\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    VALUES ?type { aopo:AdverseOutcomePathway aopo:KeyEvent aopo:KeyEventRelationship nci:C54571 }\n    ?entity a ?type ; ?p ?o .\n  }\n}"
+            },
+            {
+                "caption": "Titles and OECD statuses",
+                "query": "SELECT ?entity (SAMPLE(?t) AS ?title) (GROUP_CONCAT(DISTINCT ?s; separator=\"|\") AS ?statuses)\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    VALUES ?type { aopo:AdverseOutcomePathway aopo:KeyEvent aopo:KeyEventRelationship nci:C54571 }\n    ?entity a ?type .\n    OPTIONAL { ?entity dc:title ?t . }\n    OPTIONAL { ?entity nci:C25688 ?s . }\n  }\n}\nGROUP BY ?entity"
+            }
+        ]
     }
 }

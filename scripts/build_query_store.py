@@ -74,6 +74,9 @@ def setting_variants(spec):
         # keys on query text, so rendering the bars stores what the pie needs.
         **{key: ["bar"] for key in ("ontology_chart", "process_chart", "object_chart",
                                     "depth_chart", "organ_chart")},
+        # The diff's queries name one graph each, so storing every version
+        # against the one before it stores what any pair of versions needs (#188).
+        "against": ["previous"],
     }
     names = [p for p in spec.params if p in choices]
     return [dict(zip(names, combo)) for combo in itertools.product(*(choices[n] for n in names))]

@@ -7,6 +7,7 @@ A comprehensive web dashboard for monitoring and analyzing the AOP-Wiki RDF know
 ### **Interactive Visualizations**
 - **Latest Data Overview**: Current state snapshots of the AOP-Wiki database
 - **Historical Trends**: Time-series analysis of database evolution
+- **Version Diff** (`/diff`): What changed between two versions — entities added, removed or edited, the fields that changed, OECD stage moves, and a worklist with AOP-Wiki links
 - **Network Analysis**: AOP connectivity and structural relationships
 - **Data Quality Metrics**: Annotation completeness and ontology usage patterns
 
@@ -151,6 +152,7 @@ Failures are tracked via GitHub issues (e.g. #35 SP031 in `latest_ontology_usage
 ### **Navigation**
 - **Latest Data**: Current database snapshots and quality metrics
 - **Historical Trends**: Time-series analysis and evolution patterns
+- **Version Diff**: `/diff?version=B&against=A` (or `?a=&b=`); A defaults to the version before B
 
 ### **Interactive Features**
 - **Toggle Views**: Switch between absolute values and deltas
