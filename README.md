@@ -9,6 +9,7 @@ A comprehensive web dashboard for monitoring and analyzing the AOP-Wiki RDF know
 - **Historical Trends**: Time-series analysis of database evolution
 - **Version Diff** (`/diff`): What changed between two versions — entities added, removed or edited, the fields that changed, OECD stage moves, and a worklist with AOP-Wiki links
 - **Network Analysis**: AOP connectivity and structural relationships
+- **Network Evolution** (`/network`, Evolution tab): every snapshot's KE/KER network on one fixed layout, picked with the version scrubber; new and gone elements marked
 - **Data Quality Metrics**: Annotation completeness and ontology usage patterns
 
 ### **Comprehensive Analytics**

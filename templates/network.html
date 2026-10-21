@@ -6,6 +6,8 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/network.css') }}">
     {% from 'macros/vendor.html' import vendor_script with context %}
     {{ vendor_script('cytoscape') }}
+    {{ vendor_script('plotly-cartesian', defer=True) }}
+    {{ vendor_script('d3', defer=True) }}
 {% endblock %}
 
 {% block page_header %}
@@ -24,6 +26,7 @@
     <div class="tab-nav">
         <button class="tab-btn active" data-tab="graph-view">Graph View</button>
         <button class="tab-btn" data-tab="metrics-view">Metrics &amp; Communities</button>
+        <button class="tab-btn" data-tab="evolution-view">Evolution</button>
     </div>
 
     <!-- Graph View Tab -->
@@ -204,9 +207,49 @@
             </div>
         </div>
     </div>
+
+    <!-- Evolution Tab (#189): every snapshot's network on one layout -->
+    <div class="tab-content" id="evolution-view">
+        {% from 'macros/methodology.html' import methodology_note with context %}
+        {% from 'macros/data_table.html' import data_table_toggle %}
+        <div class="plot-box full-width" id="network-evolution">
+            <div class="plot-header">
+                <h3>Network Evolution</h3>
+                <div class="download-dropdown">
+                    <button class="download-button dropdown-toggle">Download ▼</button>
+                    <div class="dropdown-menu">
+                        <a href="/download/trend/network_evolution?format=csv" class="dropdown-item">📄 CSV</a>
+                        <a href="/download/trend/network_evolution?format=png" class="dropdown-item">🖼️ PNG</a>
+                        <a href="/download/trend/network_evolution?format=svg" class="dropdown-item">📐 SVG</a>
+                    </div>
+                </div>
+            </div>
+            <p class="plot-description">
+                The Key Event network of every snapshot on one layout, so a Key Event keeps its place as the
+                network grows. Pick a snapshot on the timeline (drag, click, or focus a handle and use the arrow
+                keys; Play steps through them). Key Events and relationships
+                <span class="evolution-key evolution-key--new">new since the snapshot before</span> are magenta,
+                those <span class="evolution-key evolution-key--gone">gone since it</span> light grey.
+            </p>
+            {{ methodology_note(methodology_notes, 'network_evolution') }}
+            <div id="version-scrubber" class="version-scrubber" data-mode="single" aria-label="Snapshot shown in the network" role="group"></div>
+            <p class="evolution-summary" aria-live="polite"></p>
+            <div class="lazy-plot lazy-plot--evolution" data-plot-name="network_evolution" data-renderer="cy-evolution" data-a11y="self">
+                <noscript>The network needs JavaScript; download the CSV above for the same elements.</noscript>
+            </div>
+            <p class="evolution-picked">Click a Key Event to name it here.</p>
+            {{ data_table_toggle('network_evolution') }}
+        </div>
+    </div>
 </div>
 {% endblock %}
 
 {% block scripts_extra %}
+<script>
+// Shaded periods on the version scrubber (plots/registry.py, #182).
+window.TIMELINE_EVENTS = {{ timeline_events|tojson }};
+</script>
 <script src="{{ url_for('static', filename='js/network-graph.js') }}"></script>
+<script src="{{ url_for('static', filename='js/viz/scrubber.js') }}"></script>
+<script src="{{ url_for('static', filename='js/viz/network-evolution.js') }}"></script>
 {% endblock %}

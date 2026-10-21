@@ -35,7 +35,7 @@ class PlotSpec:
         output: Position of this plot's HTML in the task's result tuple, or
             None when the task returns the HTML itself.
         note: Key of its entry in ``static/data/methodology_notes.json``.
-        page: ``"snapshot"``, ``"trends"`` or ``"diff"`` for the page holding its
+        page: ``"snapshot"``, ``"trends"``, ``"diff"`` or ``"network"`` for the page holding its
             container, or None for a plot served by the API only.
         precompute: Rendered at startup. Always true for trend plots.
         params: Query-string tuning arguments ``/api/plot`` passes through.
@@ -71,11 +71,11 @@ def snapshot(id, producer, *, note="", page="snapshot", precompute=False,
                     args=tuple((args or {}).items()))
 
 
-def trend(task, producer, *, note, outputs, args=None) -> tuple[PlotSpec, ...]:
+def trend(task, producer, *, note, outputs, args=None, page="trends") -> tuple[PlotSpec, ...]:
     """The plots one trend task produces: ``outputs`` maps id -> (index, bulk)."""
     return tuple(
         PlotSpec(id=id, kind="trend", producer=producer, task=task, output=index,
-                 note=note, page="trends", precompute=True, bulk=tuple(bulk),
+                 note=note, page=page, precompute=True, bulk=tuple(bulk),
                  args=tuple((args or {}).items()))
         for id, (index, bulk) in outputs.items()
     )
@@ -95,6 +95,10 @@ SPECS: tuple[PlotSpec, ...] = (
     }),
     *trend('entity_lifeline', 'plot_entity_lifeline', note='entity_lifeline', outputs={
         'entity_lifeline': (0, ('trends-all', 'trends-main', 'all')),
+    }),
+    # The KE/KER network of every snapshot on one layout, on /network (#189).
+    *trend('network_evolution', 'plot_network_evolution', note='network_evolution', page='network', outputs={
+        'network_evolution': (0, ('trends-network',)),
     }),
     *trend('entity_survival', 'plot_entity_survival', note='entity_survival', outputs={
         'entity_survival': (0, ('trends-all', 'trends-main', 'all')),

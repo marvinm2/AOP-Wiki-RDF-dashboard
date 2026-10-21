@@ -614,15 +614,17 @@ def lifeline_rows(entity_type: str, uris_by_version: dict, versions: list,
     return rows
 
 
-def _lifeline_labels(entity_type: str) -> dict:
-    """IRI -> label: the newest dc:title (KERs: their upstream and downstream KE)."""
-    cls = ENTITY_TYPE_CLASSES[entity_type]
-    if entity_type == "KERs":
-        query = f"""
+def ker_endpoints() -> dict:
+    """KER IRI -> (upstream KE IRI, downstream KE IRI), as in the newest snapshot that has it.
+
+    Shared by the lifeline labels and the network evolution (#189), which send
+    the same query text and so share one result in the query store.
+    """
+    query = f"""
         SELECT ?e ?up ?down (MAX(STR(?graph)) AS ?last)
         WHERE {{
             GRAPH ?graph {{
-                ?e a {cls} ;
+                ?e a {ENTITY_TYPE_CLASSES["KERs"]} ;
                    aopo:has_upstream_key_event ?up ;
                    aopo:has_downstream_key_event ?down .
             }}
@@ -630,23 +632,32 @@ def _lifeline_labels(entity_type: str) -> dict:
         }}
         GROUP BY ?e ?up ?down
         """
-        value = lambda r: (f"KE {r['up']['value'].rsplit('/', 1)[-1]} → "
-                           f"KE {r['down']['value'].rsplit('/', 1)[-1]}")
-    else:
-        query = f"""
-        SELECT ?e ?title (MAX(STR(?graph)) AS ?last)
-        WHERE {{
-            GRAPH ?graph {{ ?e a {cls} ; dc:title ?title . }}
-            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
-        }}
-        GROUP BY ?e ?title
-        """
-        value = lambda r: " ".join(r['title']['value'].split())
     newest: dict = {}
     for r in run_sparql_query_with_retry(query):
         uri, last = r['e']['value'], r['last']['value']
         if uri not in newest or last > newest[uri][0]:
-            newest[uri] = (last, value(r))
+            newest[uri] = (last, r['up']['value'], r['down']['value'])
+    return {uri: (up, down) for uri, (_, up, down) in newest.items()}
+
+
+def _lifeline_labels(entity_type: str) -> dict:
+    """IRI -> label: the newest dc:title (KERs: their upstream and downstream KE)."""
+    if entity_type == "KERs":
+        return {uri: f"KE {up.rsplit('/', 1)[-1]} → KE {down.rsplit('/', 1)[-1]}"
+                for uri, (up, down) in ker_endpoints().items()}
+    query = f"""
+        SELECT ?e ?title (MAX(STR(?graph)) AS ?last)
+        WHERE {{
+            GRAPH ?graph {{ ?e a {ENTITY_TYPE_CLASSES[entity_type]} ; dc:title ?title . }}
+            FILTER(STRSTARTS(STR(?graph), "http://aopwiki.org/graph/"))
+        }}
+        GROUP BY ?e ?title
+        """
+    newest: dict = {}
+    for r in run_sparql_query_with_retry(query):
+        uri, last = r['e']['value'], r['last']['value']
+        if uri not in newest or last > newest[uri][0]:
+            newest[uri] = (last, " ".join(r['title']['value'].split()))
     return {uri: label for uri, (_, label) in newest.items()}
 
 
