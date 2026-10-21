@@ -62,6 +62,7 @@ import time
 import logging
 import functools
 import threading
+import warnings
 from collections import OrderedDict
 import requests
 from typing import List, Dict, Any, Optional, Tuple
@@ -395,6 +396,36 @@ PLOTLY_HTML_CONFIG = {
 config = PLOTLY_HTML_CONFIG
 
 
+# plotly>=6 encodes numeric arrays as base64 typed arrays ({"dtype", "bdata"}). The
+# browser JS reads trace arrays from the figure (bump, heatmap, trend links), so the
+# figures it is sent keep plain lists, as before #267. Image export takes the figure
+# as it is.
+_TYPED_ARRAY_DTYPES = {
+    "f8": "float64", "f4": "float32", "i1": "int8", "u1": "uint8", "u1c": "uint8",
+    "i2": "int16", "u2": "uint16", "i4": "int32", "u4": "uint32",
+}
+
+
+def _plain_arrays(obj):
+    if isinstance(obj, dict):
+        if "bdata" in obj and obj.get("dtype") in _TYPED_ARRAY_DTYPES and set(obj) <= {"bdata", "dtype", "shape"}:
+            import base64
+            import numpy as np
+            arr = np.frombuffer(base64.b64decode(obj["bdata"]), dtype=_TYPED_ARRAY_DTYPES[obj["dtype"]])
+            if "shape" in obj:
+                arr = arr.reshape([int(n) for n in str(obj["shape"]).split(",")])
+            return arr.tolist()
+        return {k: _plain_arrays(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_plain_arrays(v) for v in obj]
+    return obj
+
+
+def plain_figure(fig) -> dict:
+    """The figure as a dict with plain lists instead of base64 typed arrays."""
+    return _plain_arrays(fig.to_dict() if hasattr(fig, "to_dict") else fig)
+
+
 def render_plot_html(fig, include_plotlyjs=False):
     """Render a Plotly figure to HTML with standardized config.
 
@@ -402,10 +433,11 @@ def render_plot_html(fig, include_plotlyjs=False):
     (hidden until hover, no Plotly logo, responsive sizing).
     """
     return pio.to_html(
-        fig,
+        plain_figure(fig),
         full_html=False,
         include_plotlyjs=include_plotlyjs,
         config=PLOTLY_HTML_CONFIG,
+        validate=False,
     )
 
 # Global data cache for CSV export functionality (TTL + LRU eviction, pinned latest version)
@@ -1135,7 +1167,7 @@ def create_fallback_plot(title: str, error_message: str) -> str:
         margin=dict(l=50, r=20, t=50, b=50)
     )
     # Plotly is already on the page (vendored, #175); never pull it from a CDN.
-    return pio.to_html(fig, full_html=False, include_plotlyjs=False, config=PLOTLY_HTML_CONFIG)
+    return render_plot_html(fig)
 
 
 def safe_plot_execution(plot_func, *args, **kwargs) -> Any:
@@ -1558,6 +1590,70 @@ def build_export_filename(plot_name: str, format: str, version: str = None) -> s
     return f"{clean_name}_{date_str}.{format}"
 
 
+# One Chromium per worker for image exports (#267). Kaleido's sync server hands
+# results back on a single queue, so concurrent calls could swap images: the lock
+# serialises them. Started lazily, after gunicorn forks the worker. Its renderer
+# grows with every figure (600-800 MB after ~100), so it is restarted after
+# KALEIDO_RECYCLE_AFTER exports and stopped after KALEIDO_IDLE_SECONDS without one.
+KALEIDO_RECYCLE_AFTER = 25
+KALEIDO_IDLE_SECONDS = 120
+_kaleido_lock = threading.Lock()
+_kaleido_pid = None
+_kaleido_exports = 0
+_kaleido_idle_timer = None
+
+
+def _stop_kaleido():
+    """Stop this worker's Chromium. The caller holds ``_kaleido_lock``."""
+    global _kaleido_pid, _kaleido_exports
+    if _kaleido_pid == os.getpid():
+        try:
+            import kaleido
+            kaleido.stop_sync_server(silence_warnings=True)
+        except Exception as e:
+            logger.warning(f"Kaleido server not stopped: {e}")
+    _kaleido_pid = None
+    _kaleido_exports = 0
+
+
+def _stop_kaleido_when_idle():
+    with _kaleido_lock:
+        _stop_kaleido()
+
+
+def _to_image(fig, **kwargs) -> bytes:
+    global _kaleido_pid, _kaleido_exports, _kaleido_idle_timer
+    with _kaleido_lock:
+        if _kaleido_idle_timer is not None:
+            _kaleido_idle_timer.cancel()
+            _kaleido_idle_timer = None
+        if _kaleido_pid != os.getpid():
+            try:
+                import kaleido
+                # No MathJax: no figure uses LaTeX, and it would be fetched from a CDN.
+                kaleido.start_sync_server(silence_warnings=True, mathjax=False)
+            except Exception as e:  # falls back to one Chromium per export
+                logger.warning(f"Kaleido server not started: {e}")
+            _kaleido_pid = os.getpid()
+            _kaleido_exports = 0
+        try:
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", message="The kopts argument is ignored")
+                image = pio.to_image(fig, **kwargs)
+        except Exception:
+            # A crashed Chromium would fail every later export: start afresh next time.
+            _stop_kaleido()
+            raise
+        _kaleido_exports += 1
+        if _kaleido_exports >= KALEIDO_RECYCLE_AFTER:
+            _stop_kaleido()
+        else:
+            _kaleido_idle_timer = threading.Timer(KALEIDO_IDLE_SECONDS, _stop_kaleido_when_idle)
+            _kaleido_idle_timer.daemon = True
+            _kaleido_idle_timer.start()
+        return image
+
+
 def export_figure_as_image(
     plot_name: str,
     format: str = 'png',
@@ -1610,14 +1706,7 @@ def export_figure_as_image(
             except Exception as e:  # never let a clamp failure break the export
                 logger.warning(f"Could not apply date-range clamp to {plot_name}: {e}")
 
-        # Export to image format using Kaleido
-        image_bytes = pio.to_image(
-            fig,
-            format=format,
-            width=width,
-            height=height,
-            engine='kaleido'
-        )
+        image_bytes = _to_image(fig, format=format, width=width, height=height)
 
         logger.info(f"Successfully exported {plot_name} as {format.upper()}")
         return image_bytes
@@ -1867,7 +1956,9 @@ def _figure_x_categories(fig) -> list:
     seen = set()
     for tr in getattr(fig, 'data', []) or []:
         xs = getattr(tr, 'x', None)
-        if xs is None:
+        # plotly>=6 stores numeric arrays as a typed-array spec ({'bdata', 'dtype'}),
+        # e.g. after a deepcopy; its keys are not categories.
+        if xs is None or isinstance(xs, dict):
             continue
         for x in xs:
             if isinstance(x, str):

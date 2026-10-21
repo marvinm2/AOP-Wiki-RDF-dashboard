@@ -226,7 +226,11 @@ every view can be bookmarked or shared. Controls only change that state.
 
 Once a figure is drawn, `static/js/viz/export.js` adds "PNG (as shown)" and "SVG (as shown)" to its
 download menu. These save the figure with its current zoom, range and settings, under a file name that
-records the version or range and the settings. `static/js/viz/a11y.js` makes each figure a labelled,
+records the version or range and the settings. The other PNG/SVG links (`/download/...?format=png|svg`)
+are rendered on the server by Kaleido 1.x with the Chromium headless shell in the image, one browser per
+worker, started on the first export. The browser gets figures with plain number lists; plotly.py's base64
+arrays are decoded first (`plots.shared.plain_figure`), because the view modules read trace values.
+`static/js/viz/a11y.js` makes each figure a labelled,
 focusable element (arrow keys, Home and End step through its values and read them out) and loads the
 "Show Raw Data" tables from `/api/v2/data` for the same selection as the figure.
 

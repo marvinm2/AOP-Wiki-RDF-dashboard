@@ -17,6 +17,9 @@ from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
+import plotly.io as pio
+
+from .shared import plain_figure
 
 
 def _json_value(value: Any) -> Any:
@@ -80,7 +83,7 @@ def figure_to_json(fig) -> Dict[str, Any]:
     The template is the same ~7 KB for every figure; a client applies its own
     (Plotly's default, or the dashboard's) with ``Plotly.react``.
     """
-    spec = json.loads(fig.to_json())
+    spec = json.loads(pio.to_json(plain_figure(fig), validate=False))
     spec.get("layout", {}).pop("template", None)
     return spec
 

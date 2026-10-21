@@ -45,7 +45,8 @@ services:
         - traefik.docker.network=core
       resources:
         limits:
-          memory: 2G
+          # 3G since #267: each worker's export Chromium takes ~500 MB while it runs
+          memory: 3G
         reservations:
           memory: 512M
     healthcheck:
