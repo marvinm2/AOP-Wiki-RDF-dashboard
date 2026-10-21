@@ -1118,5 +1118,34 @@
                 "query": "SELECT ?entity (SAMPLE(?t) AS ?title) (GROUP_CONCAT(DISTINCT ?s; separator=\"|\") AS ?statuses)\nWHERE {\n  GRAPH __GRAPH_URI__ {\n    VALUES ?type { aopo:AdverseOutcomePathway aopo:KeyEvent aopo:KeyEventRelationship nci:C54571 }\n    ?entity a ?type .\n    OPTIONAL { ?entity dc:title ?t . }\n    OPTIONAL { ?entity nci:C25688 ?s . }\n  }\n}\nGROUP BY ?entity"
             }
         ]
+    },
+    "network_evolution": {
+        "title": "Network Evolution",
+        "description": "The Key Event network of every snapshot on one layout: Key Events are the nodes and Key Event Relationships the edges, upstream to downstream. The layout is computed once over the union of all snapshots, so a Key Event keeps its place, and the version scrubber picks the snapshot shown. Elements new since the snapshot before are drawn in magenta, elements gone since it in light grey.",
+        "data_source": "No queries of its own: the presence of each Key Event and Key Event Relationship per snapshot comes from the queries the birth/death and lifeline views send, and the labels and KER endpoints from the lifeline's. The layout is worked out in Python (networkx spring layout, Fruchterman-Reingold, fixed seed 42) over every Key Event ever seen and an edge for every relationship ever seen.",
+        "method_steps": [
+            "<strong>Presence.</strong> For each Key Event and relationship ever seen, a string with one character per snapshot, oldest first: <code>x</code> present, <code>-</code> absent (as in Entity Lifeline).",
+            "<strong>Shown.</strong> A Key Event is drawn in the snapshots it is in; a relationship when it and both its Key Events are in the snapshot.",
+            "<strong>New and gone.</strong> New: in the snapshot shown and not in the one before. Gone: in the one before and not in the snapshot shown. The first snapshot has neither."
+        ],
+        "limitations": "The layout is a picture of the union, not of any one snapshot: distances in an early snapshot reflect connections made later. A relationship is drawn between the Key Events it links in the newest snapshot that has it; on the 2026-10-01 data no relationship changed its Key Events. Key Events without relationships sit at the edge of the layout. A merge or split in AOP-Wiki shows as one Key Event gone and another new, because the RDF has no replacement predicate.",
+        "queries": [
+            {
+                "caption": "Every (snapshot, Key Event) pair",
+                "query": "SELECT ?graph ?e\nWHERE {\n  GRAPH ?graph { ?e a aopo:KeyEvent . }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}"
+            },
+            {
+                "caption": "Every (snapshot, Key Event Relationship) pair",
+                "query": "SELECT ?graph ?e\nWHERE {\n  GRAPH ?graph { ?e a aopo:KeyEventRelationship . }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}"
+            },
+            {
+                "caption": "Titles with the newest snapshot that has each one (AOPs, KEs and stressors)",
+                "query": "SELECT ?e ?title (MAX(STR(?graph)) AS ?last)\nWHERE {\n  GRAPH ?graph { ?e a aopo:KeyEvent ; dc:title ?title . }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?e ?title"
+            },
+            {
+                "caption": "KER labels: upstream and downstream Key Events",
+                "query": "SELECT ?e ?up ?down (MAX(STR(?graph)) AS ?last)\nWHERE {\n  GRAPH ?graph {\n    ?e a aopo:KeyEventRelationship ;\n       aopo:has_upstream_key_event ?up ;\n       aopo:has_downstream_key_event ?down .\n  }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?e ?up ?down"
+            }
+        ]
     }
 }

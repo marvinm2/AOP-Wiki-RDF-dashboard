@@ -1314,7 +1314,7 @@ def dashboard():
 @app.route("/network")
 def network_page():
     """Serve the Network Analysis page."""
-    return render_template("network.html", active_page='network')
+    return render_template("network.html", methodology_notes=methodology_notes, sparql_endpoint=Config.SPARQL_PUBLIC_ENDPOINT, latest_graph_uri=_current_latest_graph_uri(), timeline_events=registry.TIMELINE_EVENTS, active_page='network')
 
 
 @app.route("/about")

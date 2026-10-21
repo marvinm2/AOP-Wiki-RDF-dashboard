@@ -270,6 +270,9 @@ from .domain_plots import (
 # Version Diff Explorer (#188) — what changed between two snapshots
 from .diff_plots import plot_latest_version_diff
 
+# Network evolution (#189) — every snapshot's KE network on one layout
+from .network_evolution import plot_network_evolution
+
 # Define module version and metadata
 __version__ = "2.0.0"
 __author__ = "Marvin Martens"
@@ -278,6 +281,7 @@ __author__ = "Marvin Martens"
 __all__ = [
     # Shared utilities
     'plot_latest_version_diff',
+    'plot_network_evolution',
     'run_sparql_query',
     'run_sparql_query_with_retry',
     'SparqlUnavailable',
