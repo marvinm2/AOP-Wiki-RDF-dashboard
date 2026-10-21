@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block title %}AOP History - AOP-Wiki RDF Dashboard{% endblock %}
+
+{% block head_extra %}
+    {% from 'macros/vendor.html' import vendor_script with context %}
+    {{ vendor_script('d3', defer=True) }}
+{% endblock %}
+
+{% block page_header %}
+<div class="snapshot-topbar">
+    <div class="snapshot-topbar-title">
+        <h1>AOP History</h1>
+    </div>
+    <div class="snapshot-topbar-range">
+        <form id="aop-picker" class="aop-picker" role="search">
+            <label for="aop-input" class="version-selector-label">AOP:</label>
+            <input id="aop-input" class="aop-picker-input" type="text" list="aop-options" autocomplete="off"
+                   placeholder="Number or title" aria-describedby="aop-picker-help">
+            <datalist id="aop-options"></datalist>
+            <button type="submit" class="aop-picker-button">Show</button>
+            <span id="aop-picker-help" class="sr-only">Type an AOP number, or part of its title and pick it from the list.</span>
+        </form>
+        <label for="version-selector" class="version-selector-label">Up to:</label>
+        <select id="version-selector" class="version-selector version-selector--compact">
+            <option value="">Loading versions...</option>
+        </select>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+{% from 'macros/methodology.html' import methodology_note with context %}
+{% from 'macros/data_table.html' import data_table_toggle %}
+
+<details class="tab-intro-collapsible">
+    <summary>About this page</summary>
+    <p>
+        How one AOP's set of Key Events changed across the AOP-Wiki versions: which Key Events it had in each
+        version, in which role, and when Key Events joined or left it. Pick an AOP by number or title; AOP links
+        elsewhere on the dashboard (the completeness beeswarm, the Version Diff worklist) open it here.
+    </p>
+</details>
+
+<section class="section-block" id="aop-composition">
+    <h2 class="section-header">Key Events per Version</h2>
+    <div class="plot-grid">
+    <div class="plot-box full-width">
+        <div class="plot-header">
+            <h3>AOP Composition History</h3>
+            <div class="download-dropdown">
+                <button class="download-button dropdown-toggle">Download ▼</button>
+                <div class="dropdown-menu">
+                    <a href="/download/latest/aop_composition?format=csv" class="dropdown-item">📄 CSV</a>
+                    <a href="/download/latest/aop_composition?format=png" class="dropdown-item">🖼️ PNG</a>
+                    <a href="/download/latest/aop_composition?format=svg" class="dropdown-item">📐 SVG</a>
+                </div>
+            </div>
+        </div>
+        <p class="plot-description">
+            One row per Key Event the AOP has had, one column per version from the AOP's first. A cell shows the
+            Key Event's role in that version:
+            <span class="aop-key aop-key--mie">molecular initiating event</span>,
+            <span class="aop-key aop-key--ke">key event</span> or
+            <span class="aop-key aop-key--ao">adverse outcome</span>.
+            <span class="aop-key aop-key--added">▸</span> marks a Key Event that joined the AOP in that version,
+            <span class="aop-key aop-key--removed">×</span> one that left it. The top row is the AOP's OECD stage.
+            Focus the strip and use the arrow keys to read the cells, and Enter to open the Key Event's AOP-Wiki page.
+        </p>
+        {{ methodology_note(methodology_notes, 'aop_composition') }}
+        <p class="aop-summary" aria-live="polite"></p>
+        <div class="lazy-plot lazy-plot--strip" data-plot-name="latest_aop_composition" data-renderer="d3-aop-strip" data-a11y="self">
+            <noscript>The strip needs JavaScript; download the CSV above for the same rows.</noscript>
+        </div>
+        {{ data_table_toggle('latest_aop_composition') }}
+    </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+// The strip takes ?aop= (the AOP number) and ?version= (the last version shown) (plots/registry.py, #190).
+window.VERSIONED_PLOTS = {{ versioned_plots|tojson }};
+window.PLOT_PARAMS = {{ plot_params|tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/version-selector.js') }}"></script>
+<script src="{{ url_for('static', filename='js/viz/aop-strip.js') }}"></script>
+{% endblock %}

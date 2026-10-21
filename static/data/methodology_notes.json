@@ -1147,5 +1147,31 @@
                 "query": "SELECT ?e ?up ?down (MAX(STR(?graph)) AS ?last)\nWHERE {\n  GRAPH ?graph {\n    ?e a aopo:KeyEventRelationship ;\n       aopo:has_upstream_key_event ?up ;\n       aopo:has_downstream_key_event ?down .\n  }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?e ?up ?down"
             }
         ]
+    },
+    "aop_composition": {
+        "title": "AOP Composition History",
+        "description": "For one AOP, every Key Event it has had in any version up to the selected one: a row per Key Event, a column per version, coloured by the Key Event's role in the AOP in that version (molecular initiating event, key event or adverse outcome). Key Events that joined the AOP after it first appeared, or left it, are marked. The first row is the AOP's own OECD stage per version.",
+        "data_source": "Two SPARQL queries over every version graph, with the AOP in a VALUES block, run when an AOP is picked and kept in memory for the last 64 AOPs: the Key Events the AOP links with aopo:has_key_event, aopo:has_molecular_initiating_event and aopo:has_adverse_outcome in each graph, and the AOP's title and OECD status (nci:C25688) in each graph. Key Event titles are the newest dc:title, from the query the entity lifeline sends.",
+        "method_steps": [
+            "A Key Event's role in a version is MIE when the AOP lists it as molecular initiating event, else AO when it lists it as adverse outcome, else KE (has_key_event also lists the MIEs and AOs).",
+            "Rows are ordered by the Key Event's role in the newest version that has it (MIE, KE, AO), then by the version it joined, then by number.",
+            "Added: in the AOP in a version but not in the version before, after the AOP's first version. Removed: in the version before but not in this one.",
+            "The AOP row gives one OECD stage per version, picked as on the OECD status journey: the work-plan flag only when it is the AOP's only status."
+        ],
+        "limitations": "Only the AOP's links to Key Events are followed; its Key Event Relationships, stressors and the Key Events' own edits are not shown (the Version Diff lists those). A Key Event's title is its newest one, not the one it had in each version. The 2024-04-01 release wiped OECD statuses, so the stage row shows No Status from then on for many AOPs. A Key Event that is both MIE and AO of one AOP shows as MIE.",
+        "queries": [
+            {
+                "caption": "The Key Events of one AOP in every version, with how the AOP links them (here AOP 3)",
+                "query": "SELECT ?graph ?p ?ke\nWHERE {\n  VALUES ?aop { <https://identifiers.org/aop/3> }\n  VALUES ?p { aopo:has_key_event aopo:has_molecular_initiating_event aopo:has_adverse_outcome }\n  GRAPH ?graph { ?aop ?p ?ke . }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}"
+            },
+            {
+                "caption": "The AOP's title and OECD status in every version (here AOP 3)",
+                "query": "SELECT ?graph (SAMPLE(?t) AS ?title) (GROUP_CONCAT(DISTINCT ?s; separator=\"|\") AS ?statuses)\nWHERE {\n  VALUES ?aop { <https://identifiers.org/aop/3> }\n  GRAPH ?graph {\n    ?aop a aopo:AdverseOutcomePathway .\n    OPTIONAL { ?aop dc:title ?t . }\n    OPTIONAL { ?aop nci:C25688 ?s . }\n  }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?graph"
+            },
+            {
+                "caption": "Titles with the newest snapshot that has each one (AOPs, KEs and stressors)",
+                "query": "SELECT ?e ?title (MAX(STR(?graph)) AS ?last)\nWHERE {\n  GRAPH ?graph { ?e a aopo:KeyEvent ; dc:title ?title . }\n  FILTER(STRSTARTS(STR(?graph), \"http://aopwiki.org/graph/\"))\n}\nGROUP BY ?e ?title"
+            }
+        ]
     }
 }
