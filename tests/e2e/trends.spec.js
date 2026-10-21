@@ -40,8 +40,16 @@ test('trend plots draw from figure JSON; deltas are derived without a request', 
 test('linked plots: crosshair, shared zoom without an echo loop, click to snapshot', async ({ page }) => {
     await installStubs(page);
     await page.goto('/trends');
-    const plots = page.locator('.lazy-plot[data-rendered-url] .js-plotly-plot');
-    await expect(plots.nth(1)).toBeVisible();
+    // Two line charts with snapshots on x, by name: which plot renders first
+    // depends on timing, and the property heatmap (its own hover, a category
+    // axis) is not linked (#264).
+    const chart = (name) => page.locator(`.lazy-plot[data-plot-name="${name}"][data-rendered-url] .js-plotly-plot`);
+    const first = chart('aop_entity_counts_absolute');
+    const second = chart('aop_property_presence_absolute');
+    await expect(first).toBeVisible();
+    await second.scrollIntoViewIfNeeded().catch(() => {});
+    await expect(second).toBeVisible();
+    const plots = { nth: (i) => (i === 0 ? first : second) };
 
     // Crosshair: hovering a snapshot on one plot shows it on the others.
     const target = VERSIONS[2];
