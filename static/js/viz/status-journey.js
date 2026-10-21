@@ -1,5 +1,6 @@
 /**
- * OECD status journey on /trends (#187).
+ * OECD status journey on /trends (#187), and the OECD stage moves on /diff
+ * (#188), which is the same sankey with two columns.
  *
  * The journey is a server Plotly sankey, and sankey is not in the cartesian
  * bundle the pages load. Renderer `plotly-full` loads the full bundle (same
@@ -170,7 +171,8 @@
         }
         // _fullData: the figure may send its arrays base64-packed.
         const trace = view.div._fullData[0];
-        view.bands = bandsOf(trace);
+        // A figure with nothing to draw (no AOP moved) is a message, not a sankey.
+        view.bands = trace && trace.type === 'sankey' ? bandsOf(trace) : [];
         view.focus = null;
         wire(element);
     }
@@ -222,9 +224,10 @@
     function wire(element) {
         element.setAttribute('role', 'figure');
         element.tabIndex = 0;
-        element.setAttribute('aria-label', 'Sankey of AOPs moving between OECD stages, one column per year. '
+        element.setAttribute('aria-label', element.dataset.ariaLabel
+            || ('Sankey of AOPs moving between OECD stages, one column per year. '
             + 'Use left and right to move between years, up and down between the bands of a year, '
-            + 'or "Show Raw Data" below for the table.');
+            + 'or "Show Raw Data" below for the table.'));
         if (!element.dataset.journeyKeys) {
             element.dataset.journeyKeys = '1';
             element.addEventListener('keydown', onKey);

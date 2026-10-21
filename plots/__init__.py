@@ -267,6 +267,9 @@ from .domain_plots import (
     serialise_domain_lens,
 )
 
+# Version Diff Explorer (#188) — what changed between two snapshots
+from .diff_plots import plot_latest_version_diff
+
 # Define module version and metadata
 __version__ = "2.0.0"
 __author__ = "Marvin Martens"
@@ -274,6 +277,7 @@ __author__ = "Marvin Martens"
 # Define public API - all functions that should be importable
 __all__ = [
     # Shared utilities
+    'plot_latest_version_diff',
     'run_sparql_query',
     'run_sparql_query_with_retry',
     'SparqlUnavailable',

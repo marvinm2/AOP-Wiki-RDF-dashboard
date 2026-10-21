@@ -1287,6 +1287,24 @@ def historical_trends():
     return render_template("trends_page.html", methodology_notes=methodology_notes, sparql_endpoint=Config.SPARQL_PUBLIC_ENDPOINT, latest_graph_uri=_current_latest_graph_uri(), delta_views=registry.DELTA_VIEWS, timeline_events=registry.TIMELINE_EVENTS, active_page='trends')
 
 
+@app.route("/diff")
+def version_diff_page():
+    """Serve the Version Diff Explorer: what changed from version A to version B (#188).
+
+    The page state is ?version= (B, default the latest) and ?against= (A,
+    default the version before B); ?a= and ?b= are accepted and redirect there.
+    """
+    if request.args.get("a") or request.args.get("b"):
+        args = {k: v for k, v in request.args.items() if k not in ("a", "b")}
+        if request.args.get("b"):
+            args["version"] = request.args["b"]
+        if request.args.get("a"):
+            args["against"] = request.args["a"]
+        return redirect(url_for("version_diff_page", **args))
+    diff_specs = [s for s in registry.snapshot_specs() if s.page == "diff"]
+    return render_template("diff.html", methodology_notes=methodology_notes, sparql_endpoint=Config.SPARQL_PUBLIC_ENDPOINT, latest_graph_uri=_current_latest_graph_uri(), versioned_plots=[s.id for s in diff_specs], plot_params={s.id: list(s.params) for s in diff_specs}, timeline_events=registry.TIMELINE_EVENTS, active_page='diff')
+
+
 @app.route("/dashboard")
 def dashboard():
     """Redirect legacy dashboard route to the modern snapshot page."""

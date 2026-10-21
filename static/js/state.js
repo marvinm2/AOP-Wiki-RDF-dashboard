@@ -5,7 +5,7 @@
  * scope/view, overlap threshold and tab, ontology branch, domain, and the
  * lifeline's entity type and status filter, the beeswarm's cohort and picked
  * AOP, the property heatmap's tab, the organ system the
- * bump chart highlights) live in the query string, so a view can be bookmarked, shared or
+ * bump chart highlights, the diff's version A) live in the query string, so a view can be bookmarked, shared or
  * reloaded as it is. A value of
  * null means "the default": it is left out of the URL and the server applies
  * its own default.
@@ -20,7 +20,7 @@
     'use strict';
 
     /** The keys this module owns, in the order they appear in the URL. */
-    var KEYS = ['version', 'start', 'end', 'scope', 'view', 'min_jaccard', 'branch', 'domain', 'entity', 'status', 'overlap', 'cohort', 'aop', 'props', 'organ', 'ontology_chart', 'process_chart', 'object_chart', 'depth_chart', 'organ_chart'];
+    var KEYS = ['version', 'start', 'end', 'scope', 'view', 'min_jaccard', 'branch', 'domain', 'entity', 'status', 'overlap', 'cohort', 'aop', 'props', 'organ', 'ontology_chart', 'process_chart', 'object_chart', 'depth_chart', 'organ_chart', 'against'];
 
     /** {key: value or null} for every owned key, from a query string. */
     function parse(search) {
