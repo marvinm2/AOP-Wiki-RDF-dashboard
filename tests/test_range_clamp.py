@@ -125,11 +125,11 @@ def test_clamped_date_figure_renders_to_decodable_png():
     browser) — the unit tests above remain the always-on regression guard.
     """
     Image = pytest.importorskip("PIL.Image", reason="Pillow not installed")
-    import plotly.io as pio
+    from plots.shared import _to_image
 
     fig = _clamp_figure_to_range(_date_axis_figure(), "2022-01-01", "2024-01-01")
     try:
-        png = pio.to_image(fig, format="png", width=800, height=500, engine="kaleido")
+        png = _to_image(fig, format="png", width=800, height=500)
     except Exception as e:  # pragma: no cover - environment-dependent
         pytest.skip(f"Kaleido PNG export unavailable: {e}")
 

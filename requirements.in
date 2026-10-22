@@ -1,8 +1,8 @@
 Flask~=3.1
 flask-cors~=5.0
 pandas~=2.2
-plotly~=5.22
-kaleido~=0.2
+plotly~=7.1
+kaleido~=1.5
 SPARQLWrapper~=2.0
 gunicorn~=25.1
 python-json-logger~=2.0
