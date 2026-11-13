@@ -6,7 +6,7 @@ Deployment of the AOP-Wiki RDF Dashboard and Virtuoso SPARQL endpoint to the VHP
 
 Before deploying, ensure:
 
-1. **DNS A records** point to `81.169.246.233`:
+1. **DNS A records** point to tgx1 (cluster docs: `architecture/dns-inventory.md`):
    - `aopwiki-dashboard.vhp4safety.nl`
    - `aopwiki-multirdf.vhp4safety.nl`
 
@@ -18,7 +18,7 @@ Before deploying, ensure:
 
 3. **RDF data** is loaded into the GlusterFS directory via the AOP-Wiki-RDF Setup pipeline.
 
-4. **SSH access** as `mmartens` (must be in the `docker` group).
+4. **SSH access** to tgx1 as a user in the `docker` group.
 
 5. **Traefik** is running on the Swarm with the `core` overlay network and `letsencrypt` cert resolver.
 
@@ -173,8 +173,8 @@ After regenerating the per-version TTLs (via the AOP-Wiki-RDF Setup pipeline —
 `generate_all_rdf.py` + `copy_data_files.sh`), refresh the live endpoint:
 
 ```bash
-# 1. Ship the regenerated TTLs to the Virtuoso data dir on TGX1. mmartens
-#    cannot write the bind-mounted data dir directly, so stage to home and
+# 1. Ship the regenerated TTLs to the Virtuoso data dir on TGX1. A docker-group
+#    user cannot write the bind-mounted data dir directly, so stage to home and
 #    docker cp into the container (writes through to the mount):
 rsync -az aopwikirdf/*.ttl tgx1:~/staging/
 ssh tgx1
