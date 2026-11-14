@@ -36,7 +36,9 @@ jobs:
   # the pages. The app serves the pages; the tests stub every data request, so
   # no SPARQL endpoint is involved.
   frontend:
-    runs-on: ubuntu-latest
+    # Pinned: ubuntu-latest moved to 26.04, which Playwright's chromium install does not support yet
+    # ("Playwright does not support chromium on ubuntu26.04-x64"). Back to ubuntu-latest once it does.
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
     steps:
